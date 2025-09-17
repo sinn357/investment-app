@@ -10,10 +10,17 @@ from crawlers.industrial_production_1755 import get_industrial_production_1755
 from crawlers.retail_sales import get_retail_sales_data
 from crawlers.retail_sales_yoy import get_retail_sales_yoy_data
 from services.database_service import DatabaseService
-from services.postgres_database_service import PostgresDatabaseService
 from services.crawler_service import CrawlerService
 import threading
 import time
+
+# PostgreSQL 서비스 임포트 시도
+try:
+    from services.postgres_database_service import PostgresDatabaseService
+    POSTGRES_AVAILABLE = True
+except ImportError as e:
+    print(f"PostgreSQL not available: {e}")
+    POSTGRES_AVAILABLE = False
 
 load_dotenv()
 
@@ -23,7 +30,7 @@ CORS(app, origins=["https://investment-app-rust-one.vercel.app", "http://localho
 # 데이터베이스 서비스 초기화 (PostgreSQL 우선 사용)
 try:
     database_url = os.getenv('DATABASE_URL')
-    if database_url and database_url.startswith('postgres'):
+    if database_url and database_url.startswith('postgres') and POSTGRES_AVAILABLE:
         print("Using PostgreSQL database...")
         db_service = PostgresDatabaseService(database_url)
     else:
