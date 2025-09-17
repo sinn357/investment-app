@@ -57,6 +57,12 @@ export default function DataSection() {
       name: 'Retail Sales MoM',
       data: [],
       loading: false
+    },
+    {
+      id: 'retail-sales-yoy',
+      name: 'Retail Sales YoY',
+      data: [],
+      loading: false
     }
   ]);
 
