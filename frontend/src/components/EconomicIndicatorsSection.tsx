@@ -202,7 +202,7 @@ export default function EconomicIndicatorsSection() {
         ]);
 
         // 실제 데이터들을 첫 번째로, 목업 데이터를 나머지로 설정
-        const realData = [ismManufacturingData, ismNonManufacturingData, spGlobalCompositeData, industrialProductionData, industrialProduction1755Data].filter(Boolean);
+        const realData = [ismManufacturingData, ismNonManufacturingData, spGlobalCompositeData, industrialProductionData, industrialProduction1755Data].filter(Boolean) as EconomicIndicator[];
 
         setIndicators(realData);
       } catch (error) {
