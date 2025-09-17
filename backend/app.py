@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 import os
 from dotenv import load_dotenv
@@ -9,11 +9,28 @@ from crawlers.industrial_production import get_industrial_production
 from crawlers.industrial_production_1755 import get_industrial_production_1755
 from crawlers.retail_sales import get_retail_sales_data
 from crawlers.retail_sales_yoy import get_retail_sales_yoy_data
+from services.database_service import DatabaseService
+from services.crawler_service import CrawlerService
+import threading
+import time
 
 load_dotenv()
 
 app = Flask(__name__)
 CORS(app, origins=["https://investment-app-rust-one.vercel.app", "http://localhost:3000"])
+
+# 데이터베이스 서비스 초기화
+db_service = DatabaseService()
+
+# 업데이트 상태 추적 (전역 변수)
+update_status = {
+    "is_updating": False,
+    "progress": 0,
+    "current_indicator": "",
+    "completed_indicators": [],
+    "failed_indicators": [],
+    "start_time": None
+}
 
 # Import test
 try:
@@ -337,6 +354,187 @@ def get_retail_sales_yoy_history():
         return jsonify({"status": "error", "message": "Failed to fetch retail sales YoY history data"})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
+
+# ========== 새로운 데이터베이스 기반 API 엔드포인트 ==========
+
+@app.route('/api/v2/indicators')
+def get_all_indicators_from_db():
+    """데이터베이스에서 모든 지표 데이터 조회 (빠른 로딩용)"""
+    try:
+        indicators = db_service.get_all_indicators()
+        results = []
+
+        for indicator_id in indicators:
+            data = db_service.get_indicator_data(indicator_id)
+            if "error" not in data:
+                results.append({
+                    "indicator_id": indicator_id,
+                    "name": CrawlerService.get_indicator_name(indicator_id),
+                    "data": data
+                })
+
+        return jsonify({
+            "status": "success",
+            "indicators": results,
+            "total_count": len(results),
+            "source": "database"
+        })
+
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": f"Database query failed: {str(e)}"
+        }), 500
+
+@app.route('/api/v2/indicators/<indicator_id>')
+def get_indicator_from_db(indicator_id):
+    """데이터베이스에서 특정 지표 데이터 조회"""
+    try:
+        data = db_service.get_indicator_data(indicator_id)
+
+        if "error" in data:
+            return jsonify({
+                "status": "error",
+                "message": data["error"]
+            }), 404
+
+        return jsonify({
+            "status": "success",
+            "indicator": CrawlerService.get_indicator_name(indicator_id),
+            "data": data,
+            "source": "database"
+        })
+
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": f"Database query failed: {str(e)}"
+        }), 500
+
+@app.route('/api/v2/history/<indicator_id>')
+def get_history_from_db(indicator_id):
+    """데이터베이스에서 히스토리 데이터 조회"""
+    try:
+        history_data = db_service.get_history_data(indicator_id)
+
+        return jsonify({
+            "status": "success",
+            "indicator": indicator_id,
+            "data": history_data,
+            "total_rows": len(history_data),
+            "source": "database"
+        })
+
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": f"Database query failed: {str(e)}"
+        }), 500
+
+def update_all_indicators_background():
+    """백그라운드에서 모든 지표 업데이트 실행"""
+    global update_status
+
+    try:
+        update_status["is_updating"] = True
+        update_status["start_time"] = time.time()
+        update_status["progress"] = 0
+        update_status["completed_indicators"] = []
+        update_status["failed_indicators"] = []
+
+        indicators = db_service.get_all_indicators()
+        total_indicators = len(indicators)
+
+        for i, indicator_id in enumerate(indicators):
+            update_status["current_indicator"] = indicator_id
+            update_status["progress"] = int((i / total_indicators) * 100)
+
+            try:
+                # 크롤링 실행
+                crawled_data = CrawlerService.crawl_indicator(indicator_id)
+
+                if "error" in crawled_data:
+                    update_status["failed_indicators"].append({
+                        "indicator_id": indicator_id,
+                        "error": crawled_data["error"]
+                    })
+                else:
+                    # 데이터베이스에 저장
+                    db_service.save_indicator_data(indicator_id, crawled_data)
+                    update_status["completed_indicators"].append(indicator_id)
+
+            except Exception as e:
+                update_status["failed_indicators"].append({
+                    "indicator_id": indicator_id,
+                    "error": str(e)
+                })
+
+            # 크롤링 간격
+            time.sleep(1)
+
+        update_status["progress"] = 100
+        update_status["current_indicator"] = ""
+
+    except Exception as e:
+        update_status["failed_indicators"].append({
+            "indicator_id": "system",
+            "error": f"Update process failed: {str(e)}"
+        })
+    finally:
+        update_status["is_updating"] = False
+
+@app.route('/api/v2/update-indicators', methods=['POST'])
+def trigger_update_indicators():
+    """모든 지표 업데이트 트리거 (백그라운드 실행)"""
+    global update_status
+
+    if update_status["is_updating"]:
+        return jsonify({
+            "status": "error",
+            "message": "Update is already in progress"
+        }), 409
+
+    # 백그라운드 스레드로 업데이트 실행
+    thread = threading.Thread(target=update_all_indicators_background)
+    thread.daemon = True
+    thread.start()
+
+    return jsonify({
+        "status": "success",
+        "message": "Update started in background",
+        "check_status_url": "/api/v2/update-status"
+    })
+
+@app.route('/api/v2/update-status')
+def get_update_status():
+    """업데이트 진행 상황 조회"""
+    return jsonify({
+        "status": "success",
+        "update_status": update_status
+    })
+
+@app.route('/api/v2/crawl-info')
+def get_all_crawl_info():
+    """모든 지표의 크롤링 정보 조회"""
+    try:
+        indicators = db_service.get_all_indicators()
+        crawl_info_list = []
+
+        for indicator_id in indicators:
+            crawl_info = db_service.get_crawl_info(indicator_id)
+            if crawl_info:
+                crawl_info_list.append(crawl_info)
+
+        return jsonify({
+            "status": "success",
+            "crawl_info": crawl_info_list
+        })
+
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5001)
