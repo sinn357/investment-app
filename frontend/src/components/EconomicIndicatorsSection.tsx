@@ -186,6 +186,39 @@ export default function EconomicIndicatorsSection() {
     }
   };
 
+  // Retail Sales MoM 데이터 가져오기
+  const fetchRetailSalesData = async (): Promise<EconomicIndicator | null> => {
+    try {
+      const response = await fetch('https://investment-app-backend-x166.onrender.com/api/rawdata/retail-sales');
+      const result = await response.json();
+
+      if (result.status === 'success' && result.data.latest_release && result.data.next_release) {
+        const latest = result.data.latest_release;
+        const next = result.data.next_release;
+
+        // 서프라이즈 계산 (actual - forecast) - 소수점 2자리 반올림
+        const surprise = latest.actual !== null && latest.forecast !== null
+          ? Math.round((latest.actual - latest.forecast) * 100) / 100
+          : null;
+
+        return {
+          name: "Retail Sales MoM",
+          latestDate: latest.release_date,
+          nextDate: next.release_date,
+          actual: latest.actual,
+          forecast: latest.forecast,
+          previous: latest.previous,
+          surprise: surprise,
+          threshold: { value: 0.0, type: 'neutral' } // 소매판매는 0% 기준
+        };
+      }
+      return null;
+    } catch (error) {
+      console.error('Error fetching Retail Sales data:', error);
+      return null;
+    }
+  };
+
   // 목업 데이터는 제거 - 실제 크롤링 데이터만 사용
 
   useEffect(() => {
@@ -193,16 +226,17 @@ export default function EconomicIndicatorsSection() {
     const fetchData = async () => {
       try {
         // 실제 데이터 가져오기
-        const [ismManufacturingData, ismNonManufacturingData, spGlobalCompositeData, industrialProductionData, industrialProduction1755Data] = await Promise.all([
+        const [ismManufacturingData, ismNonManufacturingData, spGlobalCompositeData, industrialProductionData, industrialProduction1755Data, retailSalesData] = await Promise.all([
           fetchISMManufacturingData(),
           fetchISMNonManufacturingData(),
           fetchSPGlobalCompositeData(),
           fetchIndustrialProductionData(),
-          fetchIndustrialProduction1755Data()
+          fetchIndustrialProduction1755Data(),
+          fetchRetailSalesData()
         ]);
 
         // 실제 데이터들을 첫 번째로, 목업 데이터를 나머지로 설정
-        const realData = [ismManufacturingData, ismNonManufacturingData, spGlobalCompositeData, industrialProductionData, industrialProduction1755Data].filter(Boolean) as EconomicIndicator[];
+        const realData = [ismManufacturingData, ismNonManufacturingData, spGlobalCompositeData, industrialProductionData, industrialProduction1755Data, retailSalesData].filter(Boolean) as EconomicIndicator[];
 
         setIndicators(realData);
       } catch (error) {

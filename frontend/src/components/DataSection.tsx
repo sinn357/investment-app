@@ -51,6 +51,12 @@ export default function DataSection() {
       name: 'Industrial Production YoY',
       data: [],
       loading: false
+    },
+    {
+      id: 'retail-sales',
+      name: 'Retail Sales MoM',
+      data: [],
+      loading: false
     }
   ]);
 
