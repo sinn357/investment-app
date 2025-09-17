@@ -142,6 +142,9 @@ investment-app/
 - **T-015:** % 데이터 처리 시스템 구축 ✅ (문자열 저장, 차트 숫자 변환, 원본값 표시)
 - **T-016:** 서프라이즈 값 전용 반올림 규칙 ✅ (history data는 원본, surprise만 소수점 2자리)
 - **T-017:** DataSection formatValue 오류 수정 ✅ (% 문자열 데이터 타입 처리)
+- **T-018:** Vercel + Render 배포 시스템 구축 ✅ (프론트엔드 Vercel, 백엔드 Render 분리 배포)
+- **T-019:** CORS 설정 및 502 Bad Gateway 해결 ✅ (Python 3.13 호환성 및 CORS 정책 수정)
+- **T-020:** Retail Sales MoM 지표 추가 진행 중 🔄 (1-3단계 완료, Raw Data 카드 오류 디버깅 중)
 
 ### Backlog
 - **B-010:** 실시간 데이터 업데이트 시스템
