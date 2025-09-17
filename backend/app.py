@@ -256,18 +256,26 @@ def get_industrial_production_1755_rawdata():
 @app.route('/api/rawdata/retail-sales')
 def get_retail_sales_rawdata():
     try:
-        print("Retail sales API endpoint called")
         data = get_retail_sales_data()
-        print(f"Retail sales data result: {data}")
-        if data:
-            return jsonify(data)
-        else:
-            return jsonify({"status": "error", "message": "Failed to fetch retail sales data"})
+
+        if "error" in data:
+            return jsonify({
+                "status": "error",
+                "message": data["error"]
+            }), 500
+
+        return jsonify({
+            "status": "success",
+            "data": data,
+            "source": "investing.com",
+            "indicator": "Retail Sales MoM"
+        })
+
     except Exception as e:
-        print(f"Exception in retail sales API: {e}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({"status": "error", "message": str(e)})
+        return jsonify({
+            "status": "error",
+            "message": f"Internal server error: {str(e)}"
+        }), 500
 
 @app.route('/api/history-table/retail-sales')
 def get_retail_sales_history():
