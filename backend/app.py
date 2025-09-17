@@ -7,6 +7,7 @@ from crawlers.ism_non_manufacturing import get_ism_non_manufacturing_pmi
 from crawlers.sp_global_composite import get_sp_global_composite_pmi
 from crawlers.industrial_production import get_industrial_production
 from crawlers.industrial_production_1755 import get_industrial_production_1755
+from crawlers.retail_sales import get_retail_sales_data
 
 load_dotenv()
 
@@ -241,6 +242,35 @@ def get_industrial_production_1755_rawdata():
             "status": "error",
             "message": f"Internal server error: {str(e)}"
         }), 500
+
+@app.route('/api/rawdata/retail-sales')
+def get_retail_sales_rawdata():
+    try:
+        data = get_retail_sales_data()
+        if data:
+            return jsonify(data)
+        else:
+            return jsonify({"status": "error", "message": "Failed to fetch retail sales data"})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+
+@app.route('/api/history-table/retail-sales')
+def get_retail_sales_history():
+    try:
+        url = "https://www.investing.com/economic-calendar/retail-sales-256"
+        html_content = fetch_html(url)
+        if html_content:
+            history_data = parse_history_table(html_content)
+            if history_data:
+                return jsonify({
+                    "status": "success",
+                    "data": history_data,
+                    "indicator": "Retail Sales MoM",
+                    "source": "investing.com"
+                })
+        return jsonify({"status": "error", "message": "Failed to fetch retail sales history data"})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5001)
