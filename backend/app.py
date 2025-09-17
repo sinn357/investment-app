@@ -8,6 +8,7 @@ from crawlers.sp_global_composite import get_sp_global_composite_pmi
 from crawlers.industrial_production import get_industrial_production
 from crawlers.industrial_production_1755 import get_industrial_production_1755
 from crawlers.retail_sales import get_retail_sales_data
+from crawlers.retail_sales_yoy import get_retail_sales_yoy_data
 
 load_dotenv()
 
@@ -292,6 +293,48 @@ def get_retail_sales_history():
                     "source": "investing.com"
                 })
         return jsonify({"status": "error", "message": "Failed to fetch retail sales history data"})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+
+@app.route('/api/rawdata/retail-sales-yoy')
+def get_retail_sales_yoy_rawdata():
+    try:
+        data = get_retail_sales_yoy_data()
+
+        if "error" in data:
+            return jsonify({
+                "status": "error",
+                "message": data["error"]
+            }), 500
+
+        return jsonify({
+            "status": "success",
+            "data": data,
+            "source": "investing.com",
+            "indicator": "Retail Sales YoY"
+        })
+
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": f"Internal server error: {str(e)}"
+        }), 500
+
+@app.route('/api/history-table/retail-sales-yoy')
+def get_retail_sales_yoy_history():
+    try:
+        url = "https://www.investing.com/economic-calendar/retail-sales-1878"
+        html_content = fetch_html(url)
+        if html_content:
+            history_data = parse_history_table(html_content)
+            if history_data:
+                return jsonify({
+                    "status": "success",
+                    "data": history_data,
+                    "indicator": "Retail Sales YoY",
+                    "source": "investing.com"
+                })
+        return jsonify({"status": "error", "message": "Failed to fetch retail sales YoY history data"})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
 
