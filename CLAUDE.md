@@ -145,6 +145,8 @@ investment-app/
 - **T-018:** Vercel + Render 배포 시스템 구축 ✅ (프론트엔드 Vercel, 백엔드 Render 분리 배포)
 - **T-019:** CORS 설정 및 502 Bad Gateway 해결 ✅ (Python 3.13 호환성 및 CORS 정책 수정)
 - **T-020:** Retail Sales MoM 지표 추가 완료 ✅ (API 응답 구조 표준화로 전체 4단계 완료)
+- **T-021:** Retail Sales YoY 지표 추가 완료 ✅ (7번째 지표, 전체 4단계 표준 절차 완료)
+- **T-022:** 서프라이즈 값 계산 표준화 ✅ (% 데이터 parsePercentValue 처리, ADR-008 수립)
 
 ### Backlog
 - **B-010:** 실시간 데이터 업데이트 시스템
@@ -187,6 +189,7 @@ investment-app/
   - **3단계:** 데이터 섹션 테이블 연동 (탭 추가, History Table 표시)
   - **4단계:** 차트 구현 (기존 DataCharts 컴포넌트 자동 처리)
   - **핵심:** ADR-007의 표준 API 구조를 반드시 준수해야 프론트엔드 연동 성공
+  - **필수 체크:** 서프라이즈 값 계산 검증 (% 데이터는 parsePercentValue 사용)
 
 ### ADR-004: 다음 발표일 "미정" 표시 규칙
 - Date: 2025-09-17
@@ -232,6 +235,18 @@ investment-app/
   - **오류 응답 구조**: `{status: "error", message: "오류메시지"}` (500 상태 코드)
   - **크롤링 함수 표준**: `extract_raw_data(rows)` 호출, `{"error": "메시지"}` 반환 시 오류 처리
   - **프론트엔드 호환성**: 모든 지표가 `result.data.latest_release` 접근 패턴 사용
+
+### ADR-008: 서프라이즈 값 계산 표준화
+- Date: 2025-09-17
+- Context: 일부 지표의 서프라이즈 값이 표시되지 않는 문제 발견
+- Options: 전체 지표 서프라이즈 제거 vs 계산 가능한 지표만 표시 vs 통합 처리 로직
+- Decision: 데이터 타입별 서프라이즈 계산 로직 표준화
+- Consequences:
+  - **숫자 데이터**: 기존 로직 유지 `(actual - forecast)`
+  - **% 문자열 데이터**: `parsePercentValue()` 함수로 변환 후 계산
+  - **forecast 없는 지표**: surprise = null (Industrial Production YoY, Retail Sales YoY)
+  - **표시 규칙**: surprise가 null이면 "-" 표시, 숫자면 소수점 2자리 반올림
+  - **신규 지표 체크리스트**: 2단계에서 반드시 서프라이즈 계산 검증 필수
   - 신규 지표 추가 시 이 구조를 반드시 준수해야 함
 
 ---
