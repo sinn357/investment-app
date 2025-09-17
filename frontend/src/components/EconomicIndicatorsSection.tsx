@@ -120,6 +120,18 @@ export default function EconomicIndicatorsSection() {
     }
   };
 
+  // % 데이터를 숫자로 변환하는 헬퍼 함수
+  const parsePercentValue = (value: string | number | null): number | null => {
+    if (value === null) return null;
+    if (typeof value === 'number') return value;
+    if (typeof value === 'string') {
+      const numStr = value.replace('%', '');
+      const num = parseFloat(numStr);
+      return isNaN(num) ? null : num;
+    }
+    return null;
+  };
+
   // Industrial Production 데이터를 API에서 가져와서 카드 형식으로 변환
   const fetchIndustrialProductionData = async (): Promise<EconomicIndicator | null> => {
     try {
@@ -130,9 +142,11 @@ export default function EconomicIndicatorsSection() {
         const latest = result.data.latest_release;
         const next = result.data.next_release;
 
-        // 서프라이즈 계산 (actual - forecast) - 소수점 2자리 반올림
-        const surprise = latest.actual !== null && latest.forecast !== null
-          ? Math.round((latest.actual - latest.forecast) * 100) / 100
+        // % 데이터를 숫자로 변환하여 서프라이즈 계산
+        const actualNum = parsePercentValue(latest.actual);
+        const forecastNum = parsePercentValue(latest.forecast);
+        const surprise = actualNum !== null && forecastNum !== null
+          ? Math.round((actualNum - forecastNum) * 100) / 100
           : null;
 
         return {
@@ -196,9 +210,11 @@ export default function EconomicIndicatorsSection() {
         const latest = result.data.latest_release;
         const next = result.data.next_release;
 
-        // 서프라이즈 계산 (actual - forecast) - 소수점 2자리 반올림
-        const surprise = latest.actual !== null && latest.forecast !== null
-          ? Math.round((latest.actual - latest.forecast) * 100) / 100
+        // % 데이터를 숫자로 변환하여 서프라이즈 계산
+        const actualNum = parsePercentValue(latest.actual);
+        const forecastNum = parsePercentValue(latest.forecast);
+        const surprise = actualNum !== null && forecastNum !== null
+          ? Math.round((actualNum - forecastNum) * 100) / 100
           : null;
 
         return {
