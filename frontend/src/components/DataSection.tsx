@@ -57,7 +57,7 @@ export default function DataSection() {
   // API에서 데이터 가져오기
   const fetchHistoryData = async (indicatorId: string) => {
     try {
-      const response = await fetch(`http://localhost:5001/api/history-table/${indicatorId}`);
+      const response = await fetch(`https://investment-app-backend-x166.onrender.com/api/history-table/${indicatorId}`);
       const result = await response.json();
 
       if (result.status === 'success') {

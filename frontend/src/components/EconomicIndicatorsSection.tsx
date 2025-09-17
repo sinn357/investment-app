@@ -24,7 +24,7 @@ export default function EconomicIndicatorsSection() {
   // ISM Manufacturing PMI 데이터를 API에서 가져와서 카드 형식으로 변환
   const fetchISMManufacturingData = async (): Promise<EconomicIndicator | null> => {
     try {
-      const response = await fetch('http://localhost:5001/api/rawdata/latest');
+      const response = await fetch('https://investment-app-backend-x166.onrender.com/api/rawdata/latest');
       const result = await response.json();
 
       if (result.status === 'success' && result.data.latest_release && result.data.next_release) {
@@ -57,7 +57,7 @@ export default function EconomicIndicatorsSection() {
   // ISM Non-Manufacturing PMI 데이터를 API에서 가져와서 카드 형식으로 변환
   const fetchISMNonManufacturingData = async (): Promise<EconomicIndicator | null> => {
     try {
-      const response = await fetch('http://localhost:5001/api/rawdata/ism-non-manufacturing');
+      const response = await fetch('https://investment-app-backend-x166.onrender.com/api/rawdata/ism-non-manufacturing');
       const result = await response.json();
 
       if (result.status === 'success' && result.data.latest_release && result.data.next_release) {
@@ -90,7 +90,7 @@ export default function EconomicIndicatorsSection() {
   // S&P Global Composite PMI 데이터를 API에서 가져와서 카드 형식으로 변환
   const fetchSPGlobalCompositeData = async (): Promise<EconomicIndicator | null> => {
     try {
-      const response = await fetch('http://localhost:5001/api/rawdata/sp-global-composite');
+      const response = await fetch('https://investment-app-backend-x166.onrender.com/api/rawdata/sp-global-composite');
       const result = await response.json();
 
       if (result.status === 'success' && result.data.latest_release && result.data.next_release) {
@@ -123,7 +123,7 @@ export default function EconomicIndicatorsSection() {
   // Industrial Production 데이터를 API에서 가져와서 카드 형식으로 변환
   const fetchIndustrialProductionData = async (): Promise<EconomicIndicator | null> => {
     try {
-      const response = await fetch('http://localhost:5001/api/rawdata/industrial-production');
+      const response = await fetch('https://investment-app-backend-x166.onrender.com/api/rawdata/industrial-production');
       const result = await response.json();
 
       if (result.status === 'success' && result.data.latest_release && result.data.next_release) {
@@ -156,7 +156,7 @@ export default function EconomicIndicatorsSection() {
   // Industrial Production (1755) 데이터를 API에서 가져와서 카드 형식으로 변환
   const fetchIndustrialProduction1755Data = async (): Promise<EconomicIndicator | null> => {
     try {
-      const response = await fetch('http://localhost:5001/api/rawdata/industrial-production-1755');
+      const response = await fetch('https://investment-app-backend-x166.onrender.com/api/rawdata/industrial-production-1755');
       const result = await response.json();
 
       if (result.status === 'success' && result.data.latest_release && result.data.next_release) {
