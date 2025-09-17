@@ -8,8 +8,8 @@
 - **Project:** Investment App - Economic Indicators Dashboard
 - **Repo Root:** /Users/woocheolshin/Documents/Vibecoding_1/investment-app
 - **Owner:** Partner
-- **Last Updated:** 2025-09-17 14:35 KST
-- **Session Goal (Today):** 다섯 번째 지표 Industrial Production YoY 구현 + % 데이터 처리 시스템 구축 완료 ✅
+- **Last Updated:** 2025-09-17 22:35 KST
+- **Session Goal (Today):** 데이터 로딩 성능 최적화 완료 ✅ (10-15초 → 1-2초, SQLite + 수동 업데이트 시스템)
 
 ---
 
@@ -147,11 +147,16 @@ investment-app/
 - **T-020:** Retail Sales MoM 지표 추가 완료 ✅ (API 응답 구조 표준화로 전체 4단계 완료)
 - **T-021:** Retail Sales YoY 지표 추가 완료 ✅ (7번째 지표, 전체 4단계 표준 절차 완료)
 - **T-022:** 서프라이즈 값 계산 표준화 ✅ (% 데이터 parsePercentValue 처리, ADR-008 수립)
+- **T-023:** 모바일 탭 레이아웃 반응형 최적화 ✅ (가로 스크롤, 축약 이름, 그라데이션 힌트)
+- **T-024:** 데이터 로딩 성능 최적화 아키텍처 구현 ✅ (SQLite + v2 API + 수동 업데이트 시스템)
+- **T-025:** SQLite 데이터베이스 락 및 CORS 문제 해결 ✅ (WAL 모드, 멀티스레딩 지원, 오류 복구)
 
 ### Backlog
-- **B-010:** 실시간 데이터 업데이트 시스템
-- **B-011:** 사용자 알림 기능
-- **B-012:** 차트 시각화 컴포넌트
+- **B-010:** 추가 경제지표 확장 (목표: 10개 지표)
+- **B-011:** 데이터 알림 및 임계값 설정 기능
+- **B-012:** 고급 차트 시각화 (비교 차트, 상관관계 분석)
+- **B-013:** 사용자 대시보드 커스터마이징
+- **B-014:** 데이터 내보내기 기능 (CSV, PDF)
 
 > 원칙: **세션당 Active ≤ 2**.
 
@@ -248,6 +253,30 @@ investment-app/
   - **표시 규칙**: surprise가 null이면 "-" 표시, 숫자면 소수점 2자리 반올림
   - **신규 지표 체크리스트**: 2단계에서 반드시 서프라이즈 계산 검증 필수
   - 신규 지표 추가 시 이 구조를 반드시 준수해야 함
+
+### ADR-009: 데이터 로딩 성능 최적화 아키텍처
+- Date: 2025-09-17
+- Context: 실시간 크롤링으로 인한 초기 로딩 시간 문제 (10-15초)
+- Options: 캐싱 vs 데이터베이스 저장 vs 백그라운드 스케줄링
+- Decision: SQLite 데이터베이스 + 수동 업데이트 시스템
+- Consequences:
+  - **성능 개선**: 페이지 로딩 10-15초 → 1-2초 (85% 단축)
+  - **사용자 경험**: 즉시 데이터 확인 + 선택적 실시간 업데이트
+  - **아키텍처**: 실시간 크롤링 → 데이터베이스 조회 + 수동 크롤링
+  - **기술 스택**: SQLite WAL 모드, v2 API 엔드포인트, React 업데이트 버튼
+  - **데이터 신선도**: 마지막 크롤링 시점 표시, 업데이트 버튼으로 최신화
+
+### ADR-010: SQLite 멀티스레딩 및 락 해결
+- Date: 2025-09-17
+- Context: 동시 크롤링 시 "database is locked" 오류 발생
+- Options: MySQL 전환 vs SQLite 최적화 vs 락 제어 로직
+- Decision: SQLite WAL 모드 + 연결 최적화
+- Consequences:
+  - **WAL 모드**: Write-Ahead Logging으로 동시 읽기/쓰기 지원
+  - **연결 설정**: timeout=30초, check_same_thread=False
+  - **PRAGMA 최적화**: cache_size=1000, synchronous=NORMAL
+  - **오류 복구**: try-catch 포괄, 기본값 반환, 상세 로깅
+  - **확장성**: 7개 지표 동시 크롤링 지원
 
 ---
 
