@@ -11,7 +11,7 @@ from crawlers.industrial_production_1755 import get_industrial_production_1755
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, origins=["https://investment-app-rust-one.vercel.app", "http://localhost:3000"])
 
 @app.route('/')
 def health_check():
