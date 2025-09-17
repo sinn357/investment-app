@@ -73,7 +73,7 @@ export default function DataSection() {
             : tab
         ));
       }
-    } catch (error) {
+    } catch {
       setTabsData(prev => prev.map(tab =>
         tab.id === indicatorId
           ? { ...tab, loading: false, error: 'Failed to fetch data' }
@@ -85,7 +85,7 @@ export default function DataSection() {
   useEffect(() => {
     // 컴포넌트 마운트 시 활성 탭 데이터 가져오기
     fetchHistoryData(activeTab);
-  }, []);
+  }, [activeTab]);
 
   useEffect(() => {
     // 탭 변경 시 해당 탭 데이터 가져오기
@@ -93,11 +93,11 @@ export default function DataSection() {
     if (currentTab && currentTab.data.length === 0 && !currentTab.loading) {
       fetchHistoryData(activeTab);
     }
-  }, [activeTab]);
+  }, [activeTab, tabsData]);
 
   const currentTabData = tabsData.find(tab => tab.id === activeTab);
 
-  const formatValue = (value: any) => {
+  const formatValue = (value: string | number | null) => {
     if (value === null) return '-';
     // If value is string (like "0.87%"), return as is
     if (typeof value === 'string') return value;
