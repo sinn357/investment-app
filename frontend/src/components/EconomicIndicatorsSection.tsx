@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import EconomicIndicatorCard from './EconomicIndicatorCard';
 import UpdateButton from './UpdateButton';
 
@@ -41,7 +41,20 @@ export default function EconomicIndicatorsSection() {
       const result = await response.json();
 
       if (result.status === 'success' && result.indicators) {
-        const indicators: EconomicIndicator[] = result.indicators.map((item: any) => {
+        const indicators: EconomicIndicator[] = result.indicators.map((item: {
+          name: string;
+          data: {
+            latest_release: {
+              release_date: string;
+              actual: string | number | null;
+              forecast: string | number | null;
+              previous: string | number;
+            };
+            next_release: {
+              release_date: string;
+            };
+          };
+        }) => {
           const latest = item.data.latest_release;
           const next = item.data.next_release;
 
@@ -82,17 +95,17 @@ export default function EconomicIndicatorsSection() {
   };
 
   // 데이터 새로고침 함수
-  const refreshData = async () => {
+  const refreshData = useCallback(async () => {
     setLoading(true);
     const data = await fetchAllIndicatorsFromDB();
     setIndicators(data);
     setLoading(false);
-  };
+  }, []);
 
   useEffect(() => {
     // 컴포넌트 마운트 시 데이터베이스에서 즉시 로딩
     refreshData();
-  }, []);
+  }, [refreshData]);
 
   if (loading) {
     return (
@@ -126,7 +139,7 @@ export default function EconomicIndicatorsSection() {
         {/* 데이터 소스 표시 */}
         <div className="mt-6 text-center text-sm text-gray-500 dark:text-gray-400">
           <p>* 데이터 소스: 데이터베이스 (investing.com 크롤링)</p>
-          <p>* 실시간 업데이트를 원하시면 위의 '실시간 업데이트' 버튼을 클릭하세요</p>
+          <p>* 실시간 업데이트를 원하시면 위의 &apos;실시간 업데이트&apos; 버튼을 클릭하세요</p>
         </div>
       </div>
     </section>
