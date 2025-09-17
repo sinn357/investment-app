@@ -17,7 +17,7 @@ interface DataChartsProps {
 
 export default function DataCharts({ data, indicatorName }: DataChartsProps) {
   // Helper function to convert value (number or string with %) to number for chart
-  const parseChartValue = (value: string | number): number | null => {
+  const parseChartValue = (value: string | number | null): number | null => {
     if (value === null || value === undefined) return null;
     if (typeof value === 'number') return value;
     if (typeof value === 'string' && value.includes('%')) {
@@ -33,8 +33,8 @@ export default function DataCharts({ data, indicatorName }: DataChartsProps) {
     .reverse() // 오래된 순서로 정렬 (차트에서 시간 순으로 표시)
     .map(row => ({
       date: new Date(row.release_date).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' }),
-      actual: parseChartValue(row.actual),
-      originalValue: row.actual, // 원본 값 (% 포함) 보관
+      actual: parseChartValue(row.actual!),
+      originalValue: row.actual!, // 원본 값 (% 포함) 보관
       fullDate: row.release_date
     }))
     .filter(row => row.actual !== null); // 변환 실패한 항목 제거

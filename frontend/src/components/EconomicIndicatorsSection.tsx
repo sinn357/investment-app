@@ -217,7 +217,7 @@ export default function EconomicIndicatorsSection() {
     };
 
     fetchData();
-  }, [mockData]);
+  }, []);
 
   if (loading) {
     return (
