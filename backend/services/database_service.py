@@ -196,6 +196,12 @@ class DatabaseService:
                     ORDER BY created_at DESC LIMIT 1
                 """, (indicator_id,)).fetchone()
 
+                # 마지막 크롤링 시간 조회
+                crawl_row = conn.execute("""
+                    SELECT last_crawl_time FROM crawl_info WHERE indicator_id = ?
+                    ORDER BY last_crawl_time DESC LIMIT 1
+                """, (indicator_id,)).fetchone()
+
                 if not latest_row:
                     return {"error": "No data found for indicator"}
 
@@ -214,6 +220,7 @@ class DatabaseService:
                     "forecast": self._parse_value(next_row['forecast']) if next_row else None,
                     "previous": self._parse_value(next_row['previous']) if next_row else None
                 },
+                "last_updated": crawl_row['last_crawl_time'] if crawl_row else None,
                 "timestamp": datetime.now().isoformat()
             }
 

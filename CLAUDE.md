@@ -9,7 +9,7 @@
 - **Repo Root:** /Users/woocheolshin/Documents/Vibecoding_1/investment-app
 - **Owner:** Partner
 - **Last Updated:** 2025-09-17 22:35 KST
-- **Session Goal (Today):** 데이터 로딩 성능 최적화 완료 ✅ (10-15초 → 1-2초, SQLite + 수동 업데이트 시스템)
+- **Session Goal (Today):** PostgreSQL 마이그레이션으로 데이터 지속성 문제 해결 ✅ (Neon.tech + Render 환경변수 설정 완료)
 
 ---
 
@@ -118,10 +118,10 @@ investment-app/
 
 ## 12) Tasks (Single Source of Truth)
 ### Active (in this session)
-- **T-001:** 크롤링 대상 웹사이트 조사 및 분석
-  - DoD: 주요 경제지표 사이트 URL 및 크롤링 방식 결정
-  - Files: backend/crawlers/ 모듈 생성 예정
-  - Risks: 웹사이트 구조 변경 가능성
+- **T-026:** Render 배포 PostgreSQL 연결 최종 검증 🔄 진행중
+  - DoD: Render 환경에서 PostgreSQL 정상 작동 확인, 데이터 지속성 문제 완전 해결
+  - Files: Render 환경변수, PostgresDatabaseService
+  - Risks: 배포 환경에서 DB 연결 실패 가능성
 
 ### Recent Done
 - **T-000:** 프로젝트 초기 구조 구축 ✅ (Flask + Next.js 기본 골격 완성)
@@ -150,6 +150,9 @@ investment-app/
 - **T-023:** 모바일 탭 레이아웃 반응형 최적화 ✅ (가로 스크롤, 축약 이름, 그라데이션 힌트)
 - **T-024:** 데이터 로딩 성능 최적화 아키텍처 구현 ✅ (SQLite + v2 API + 수동 업데이트 시스템)
 - **T-025:** SQLite 데이터베이스 락 및 CORS 문제 해결 ✅ (WAL 모드, 멀티스레딩 지원, 오류 복구)
+- **T-026:** PostgreSQL 마이그레이션 완료 ✅ (Neon.tech 연결, psycopg2 설치, PostgresDatabaseService 구현)
+- **T-027:** 로컬 PostgreSQL 테스트 검증 ✅ (데이터 저장/조회 정상, v2 API 응답 확인)
+- **T-028:** Render 환경변수 설정 완료 ✅ (DATABASE_URL 추가, 자동 재배포 진행중)
 
 ### Backlog
 - **B-010:** 추가 경제지표 확장 (목표: 10개 지표)
@@ -353,3 +356,29 @@ investment-app/
 ## 20) Notes
 - 장시간 세션에서는 **요약 빈도↑**, 파일 전체 출력 금지.
 - 광범위 변경 필요 시: 먼저 목표/범위를 5줄로 합의 → 티켓 생성 → 분할 수행.
+
+---
+
+## 21) PostgreSQL 마이그레이션 요약 (2025-09-17)
+
+### 문제 상황
+- **데이터 손실**: 30분 후 Render 서버 재시작 시 SQLite 데이터 삭제
+- **원인**: Render 컨테이너 파일시스템 초기화, SQLite 파일 임시 저장
+
+### 해결책 구현
+1. **Neon.tech PostgreSQL**: 서버리스 PostgreSQL 데이터베이스 서비스 선택
+2. **PostgresDatabaseService**: 새로운 DB 서비스 클래스 구현 (`services/postgres_database_service.py`)
+3. **요구사항 추가**: `psycopg2-binary==2.9.9` (`requirements.txt`)
+4. **이중화 설정**: PostgreSQL 우선, SQLite 폴백 (`app.py`)
+5. **환경변수**: `.env` 파일 및 Render DATABASE_URL 설정
+
+### 검증 결과
+- ✅ **로컬 테스트**: PostgreSQL 연결/저장/조회 정상
+- ✅ **API 응답**: v2 엔드포인트에서 "source": "database" 확인
+- ✅ **Render 설정**: DATABASE_URL 환경변수 추가 완료
+- 🔄 **배포 진행중**: Render 자동 재배포 (2-3분 소요 예상)
+
+### 다음 세션 체크리스트
+1. Render 배포 완료 확인: `curl https://investment-app-backend-oujv.onrender.com/`
+2. PostgreSQL 연결 검증: `curl https://investment-app-backend-oujv.onrender.com/api/v2/indicators/ism-manufacturing`
+3. 데이터 지속성 테스트: 30분 후 재접속하여 데이터 보존 확인

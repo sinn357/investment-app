@@ -10,6 +10,7 @@ from crawlers.industrial_production_1755 import get_industrial_production_1755
 from crawlers.retail_sales import get_retail_sales_data
 from crawlers.retail_sales_yoy import get_retail_sales_yoy_data
 from services.database_service import DatabaseService
+from services.postgres_database_service import PostgresDatabaseService
 from services.crawler_service import CrawlerService
 import threading
 import time
@@ -19,8 +20,18 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app, origins=["https://investment-app-rust-one.vercel.app", "http://localhost:3000"])
 
-# 데이터베이스 서비스 초기화
-db_service = DatabaseService()
+# 데이터베이스 서비스 초기화 (PostgreSQL 우선 사용)
+try:
+    database_url = os.getenv('DATABASE_URL')
+    if database_url and database_url.startswith('postgres'):
+        print("Using PostgreSQL database...")
+        db_service = PostgresDatabaseService(database_url)
+    else:
+        print("Using SQLite database...")
+        db_service = DatabaseService()
+except Exception as e:
+    print(f"PostgreSQL connection failed, falling back to SQLite: {e}")
+    db_service = DatabaseService()
 
 # 업데이트 상태 추적 (전역 변수)
 update_status = {
