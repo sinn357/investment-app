@@ -14,6 +14,16 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app, origins=["https://investment-app-rust-one.vercel.app", "http://localhost:3000"])
 
+# Import test
+try:
+    print("Testing retail sales import...")
+    from crawlers.retail_sales import get_retail_sales_data
+    print("Retail sales import successful")
+except Exception as e:
+    print(f"Retail sales import failed: {e}")
+    import traceback
+    traceback.print_exc()
+
 @app.route('/')
 def health_check():
     return jsonify({"status": "healthy", "service": "investment-app-backend"})
@@ -246,12 +256,17 @@ def get_industrial_production_1755_rawdata():
 @app.route('/api/rawdata/retail-sales')
 def get_retail_sales_rawdata():
     try:
+        print("Retail sales API endpoint called")
         data = get_retail_sales_data()
+        print(f"Retail sales data result: {data}")
         if data:
             return jsonify(data)
         else:
             return jsonify({"status": "error", "message": "Failed to fetch retail sales data"})
     except Exception as e:
+        print(f"Exception in retail sales API: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({"status": "error", "message": str(e)})
 
 @app.route('/api/history-table/retail-sales')
