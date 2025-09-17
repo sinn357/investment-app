@@ -66,10 +66,10 @@ export default function DataSection() {
     }
   ]);
 
-  // API에서 데이터 가져오기
+  // v2 API에서 히스토리 데이터 가져오기 (빠른 로딩)
   const fetchHistoryData = async (indicatorId: string) => {
     try {
-      const response = await fetch(`https://investment-app-backend-x166.onrender.com/api/history-table/${indicatorId}`);
+      const response = await fetch(`https://investment-app-backend-x166.onrender.com/api/v2/history/${indicatorId}`);
       const result = await response.json();
 
       if (result.status === 'success') {
