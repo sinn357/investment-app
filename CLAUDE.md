@@ -144,7 +144,7 @@ investment-app/
 - **T-017:** DataSection formatValue 오류 수정 ✅ (% 문자열 데이터 타입 처리)
 - **T-018:** Vercel + Render 배포 시스템 구축 ✅ (프론트엔드 Vercel, 백엔드 Render 분리 배포)
 - **T-019:** CORS 설정 및 502 Bad Gateway 해결 ✅ (Python 3.13 호환성 및 CORS 정책 수정)
-- **T-020:** Retail Sales MoM 지표 추가 진행 중 🔄 (1-3단계 완료, Raw Data 카드 오류 디버깅 중)
+- **T-020:** Retail Sales MoM 지표 추가 완료 ✅ (API 응답 구조 표준화로 전체 4단계 완료)
 
 ### Backlog
 - **B-010:** 실시간 데이터 업데이트 시스템
@@ -182,11 +182,11 @@ investment-app/
 - Options: 지표별 개별 구현 vs 표준 절차 수립
 - Decision: 4단계 표준 절차 수립
 - Consequences:
-  - **1단계:** Investing.com URL 크롤링 및 데이터 검증
-  - **2단계:** Raw Data 카드 연동 (latest_release, next_release, surprise 계산)
-  - **3단계:** 데이터 섹션 테이블 연동 (History Table 전체 데이터 표시)
-  - **4단계:** 차트 구현 (막대형 + 선형, Actual 값 기준)
-  - 모든 지표는 동일한 절차로 빠른 확장 가능
+  - **1단계:** 백엔드 크롤링 모듈 구현 (ADR-007 표준 API 응답 구조 준수)
+  - **2단계:** Raw Data 카드 연동 (fetchXXXData 함수 추가, surprise 계산)
+  - **3단계:** 데이터 섹션 테이블 연동 (탭 추가, History Table 표시)
+  - **4단계:** 차트 구현 (기존 DataCharts 컴포넌트 자동 처리)
+  - **핵심:** ADR-007의 표준 API 구조를 반드시 준수해야 프론트엔드 연동 성공
 
 ### ADR-004: 다음 발표일 "미정" 표시 규칙
 - Date: 2025-09-17
@@ -221,6 +221,18 @@ investment-app/
   - Surprise 계산: Math.round((actual - forecast) * 100) / 100
   - Surprise 표시: .toFixed(2)로 일관된 포맷
   - 데이터 무결성과 사용자 경험 모두 확보
+
+### ADR-007: API 응답 구조 표준화
+- Date: 2025-09-17
+- Context: Retail Sales MoM 추가 시 API 응답 구조 불일치로 프론트엔드 연동 실패
+- Options: 프론트엔드 수정 vs 백엔드 표준화 vs 개별 처리
+- Decision: 모든 /api/rawdata/* 엔드포인트를 표준 구조로 통일
+- Consequences:
+  - **표준 응답 구조**: `{status: "success", data: {latest_release, next_release}, source: "investing.com", indicator: "지표명"}`
+  - **오류 응답 구조**: `{status: "error", message: "오류메시지"}` (500 상태 코드)
+  - **크롤링 함수 표준**: `extract_raw_data(rows)` 호출, `{"error": "메시지"}` 반환 시 오류 처리
+  - **프론트엔드 호환성**: 모든 지표가 `result.data.latest_release` 접근 패턴 사용
+  - 신규 지표 추가 시 이 구조를 반드시 준수해야 함
 
 ---
 
