@@ -187,10 +187,9 @@ export default function EconomicIndicatorsSection() {
   };
 
   // 목업 데이터는 제거 - 실제 크롤링 데이터만 사용
-  const mockData: EconomicIndicator[] = [];
 
   useEffect(() => {
-    // 실제 API 데이터와 목업 데이터 결합
+    // 실제 API 데이터 가져오기
     const fetchData = async () => {
       try {
         // 실제 데이터 가져오기
@@ -204,13 +203,12 @@ export default function EconomicIndicatorsSection() {
 
         // 실제 데이터들을 첫 번째로, 목업 데이터를 나머지로 설정
         const realData = [ismManufacturingData, ismNonManufacturingData, spGlobalCompositeData, industrialProductionData, industrialProduction1755Data].filter(Boolean);
-        const allIndicators = [...realData, ...mockData];
 
-        setIndicators(allIndicators);
+        setIndicators(realData);
       } catch (error) {
         console.error('Error fetching indicators:', error);
-        // 에러 시 목업 데이터만 표시
-        setIndicators(mockData);
+        // 에러 시 빈 배열 표시
+        setIndicators([]);
       } finally {
         setLoading(false);
       }

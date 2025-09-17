@@ -52,8 +52,8 @@ export default function DataCharts({ data, indicatorName }: DataChartsProps) {
     );
   }
 
-  const formatTooltip = (value: number, name: string, payload: { payload: { originalValue: string | number } }) => {
-    if (name === 'actual' && payload && payload.payload) {
+  const formatTooltip = (value: number, name: string, payload?: { payload?: { originalValue: string | number } }) => {
+    if (name === 'actual' && payload?.payload) {
       // 원본 값(% 포함)이 있으면 그것을 표시, 없으면 숫자값으로 표시
       const originalValue = payload.payload.originalValue;
       if (typeof originalValue === 'string' && originalValue.includes('%')) {
