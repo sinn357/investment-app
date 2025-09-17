@@ -217,7 +217,7 @@ class DatabaseService:
                 "timestamp": datetime.now().isoformat()
             }
 
-                return result
+            return result
 
         except Exception as e:
             print(f"Error getting indicator data for {indicator_id}: {e}")
