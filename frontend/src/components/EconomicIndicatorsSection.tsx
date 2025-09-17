@@ -209,7 +209,7 @@ export default function EconomicIndicatorsSection() {
           forecast: latest.forecast,
           previous: latest.previous,
           surprise: surprise,
-          threshold: { value: 0.0, type: 'neutral' } // 소매판매는 0% 기준
+          threshold: { value: 0.0, type: 'warning' } // 소매판매는 0% 기준
         };
       }
       return null;
