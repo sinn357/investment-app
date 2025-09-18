@@ -242,6 +242,45 @@ CORS(app,
 # update_all_indicators() 함수 로직 확인
 ```
 
+### 지표 구현 후 데이터가 표시되지 않는 경우 (Michigan Consumer Sentiment 사례)
+**문제 상황**: 모든 4단계 구현 완료 후에도 Raw Data 카드와 데이터 섹션에 데이터가 표시되지 않음
+
+#### 문제점 1: 수동 데이터베이스 저장 누락
+- **증상**: API 엔드포인트는 정상 작동하지만 v2 API에서 지표가 보이지 않음
+- **원인**: 배포 후 프로덕션 데이터베이스에 수동 크롤링하지 않음
+- **해결**: 배포 완료 후 반드시 수동 크롤링 실행 필요
+```bash
+# 배포 후 필수 단계
+curl -X POST https://investment-app-backend-x166.onrender.com/api/v2/crawl/{indicator-id}
+curl https://investment-app-backend-x166.onrender.com/api/v2/indicators | jq '.indicators | length'
+```
+
+#### 문제점 2: 모바일 탭 축약 이름 누락
+- **증상**: 데스크톱에서는 정상 표시되지만 모바일에서 탭 이름이 표시되지 않음
+- **원인**: DataSection.tsx의 모바일용 축약 이름 조건문 누락
+- **해결**: 신규 지표의 모바일 축약 이름 추가
+```typescript
+// frontend/src/components/DataSection.tsx
+{tab.name === 'Michigan Consumer Sentiment' && 'MI Sentiment'}
+{tab.name === 'CB Consumer Confidence' && 'CB Confidence'}
+{tab.name === 'GDP QoQ' && 'GDP'}
+```
+
+#### 근본 원인 분석
+1. **문서 가이드 미준수**: docs/ECONOMIC_INDICATOR_GUIDE.md의 "배포 후 테스트" 섹션 절차를 생략
+2. **체크리스트 누락**: 구현 완료 체크리스트에서 모바일 UI 검증 단계 빠짐
+3. **검증 불충분**: 프론트엔드 배포 후 실제 사용자 시나리오 테스트 생략
+
+#### 예방 방법
+```bash
+# 구현 완료 후 필수 검증 절차
+1. API 배포 확인: curl /api/rawdata/{indicator-slug}
+2. 수동 DB 저장: curl -X POST /api/v2/crawl/{indicator-id}
+3. v2 API 확인: curl /api/v2/indicators | jq '.indicators | length'
+4. 프론트엔드 배포 후 모바일/데스크톱 UI 검증
+5. Raw Data 카드, 데이터 섹션, 차트 모두 정상 작동 확인
+```
+
 ## 체크리스트
 
 ### 구현 완료 체크리스트
@@ -250,9 +289,11 @@ CORS(app,
 - [ ] API 엔드포인트 2개 추가 (/rawdata, /history-table)
 - [ ] CrawlerService 설정 업데이트 (URL, 이름)
 - [ ] DataSection.tsx 탭 추가
+- [ ] **DataSection.tsx 모바일 축약 이름 추가 (필수)**
 - [ ] 로컬 테스트 통과
 - [ ] Git commit & push
-- [ ] 배포 후 수동 데이터 저장
+- [ ] **배포 후 수동 데이터 저장 (필수)**
+- [ ] **모바일/데스크톱 UI 검증 (필수)**
 - [ ] 프론트엔드 카드/테이블/차트 확인
 
 ### ADR 준수 체크리스트
@@ -308,5 +349,6 @@ name_mapping = {
 ---
 
 **작성일**: 2025-09-18
-**버전**: 1.0
+**버전**: 1.1
+**마지막 업데이트**: 2025-09-18 (Michigan Consumer Sentiment 사례 추가)
 **다음 업데이트**: 새로운 지표 추가 시
