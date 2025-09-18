@@ -69,6 +69,12 @@ export default function DataSection() {
       name: 'GDP QoQ',
       data: [],
       loading: false
+    },
+    {
+      id: 'cb-consumer-confidence',
+      name: 'CB Consumer Confidence',
+      data: [],
+      loading: false
     }
   ]);
 
