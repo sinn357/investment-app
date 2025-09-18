@@ -594,5 +594,39 @@ def get_all_crawl_info():
             "message": str(e)
         }), 500
 
+@app.route('/api/v2/crawl/<indicator_id>', methods=['POST'])
+def crawl_single_indicator(indicator_id):
+    """단일 지표 크롤링 후 데이터베이스 저장"""
+    try:
+        # 크롤링 실행
+        crawled_data = CrawlerService.crawl_indicator(indicator_id)
+
+        if "error" in crawled_data:
+            return jsonify({
+                "status": "error",
+                "message": crawled_data["error"]
+            }), 400
+
+        # 데이터베이스에 저장
+        success = db_service.save_indicator_data(indicator_id, crawled_data)
+
+        if success:
+            return jsonify({
+                "status": "success",
+                "message": f"Successfully crawled and saved {indicator_id}",
+                "data": crawled_data
+            })
+        else:
+            return jsonify({
+                "status": "error",
+                "message": f"Failed to save {indicator_id} to database"
+            }), 500
+
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": f"Error crawling {indicator_id}: {str(e)}"
+        }), 500
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5001)
