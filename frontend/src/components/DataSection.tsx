@@ -75,6 +75,12 @@ export default function DataSection() {
       name: 'CB Consumer Confidence',
       data: [],
       loading: false
+    },
+    {
+      id: 'michigan-consumer-sentiment',
+      name: 'Michigan Consumer Sentiment',
+      data: [],
+      loading: false
     }
   ]);
 
@@ -177,6 +183,9 @@ export default function DataSection() {
                       {tab.name === 'Industrial Production YoY' && 'Ind. Prod. YoY'}
                       {tab.name === 'Retail Sales MoM' && 'Retail MoM'}
                       {tab.name === 'Retail Sales YoY' && 'Retail YoY'}
+                      {tab.name === 'GDP QoQ' && 'GDP'}
+                      {tab.name === 'CB Consumer Confidence' && 'CB Confidence'}
+                      {tab.name === 'Michigan Consumer Sentiment' && 'MI Sentiment'}
                     </span>
                     <span className="hidden sm:block">
                       {/* 데스크톱용 전체 이름 */}
