@@ -1,6 +1,7 @@
 'use client';
 
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
+import { THRESHOLD_CONFIGS } from '../utils/thresholds';
 
 interface DataRow {
   release_date: string;
@@ -77,10 +78,54 @@ export default function DataCharts({ data, indicatorName }: DataChartsProps) {
   // Calculate Y-axis domain for this indicator
   const yAxisDomain = getYAxisDomain(chartData, indicatorName);
 
-  // Check if this is a PMI indicator that needs a 50 reference line
-  const shouldShow50Line = indicatorName.includes('PMI') ||
-                          indicatorName.includes('Manufacturing') ||
-                          indicatorName.includes('Non-Manufacturing');
+  // 지표 ID 매핑 함수 (name에서 indicator ID 추출)
+  const getIndicatorId = (name: string): string => {
+    if (name.includes('ISM Manufacturing PMI')) return 'ism-manufacturing';
+    if (name.includes('ISM Non-Manufacturing PMI')) return 'ism-non-manufacturing';
+    if (name.includes('S&P Global Composite PMI')) return 'sp-global-composite';
+    if (name.includes('CB Consumer Confidence')) return 'cb-consumer-confidence';
+    if (name.includes('Michigan Consumer Sentiment')) return 'michigan-consumer-sentiment';
+    if (name.includes('Industrial Production YoY')) return 'industrial-production-1755';
+    if (name.includes('Industrial Production')) return 'industrial-production';
+    if (name.includes('Retail Sales YoY')) return 'retail-sales-yoy';
+    if (name.includes('Retail Sales')) return 'retail-sales';
+    if (name.includes('GDP')) return 'gdp';
+    return 'unknown';
+  };
+
+  // 다중 기준선 설정 (THRESHOLD_CONFIGS 기반)
+  const getReferenceLines = () => {
+    const indicatorId = getIndicatorId(indicatorName);
+    const config = THRESHOLD_CONFIGS[indicatorId];
+
+    if (!config) return [];
+
+    const lines = [];
+
+    // 주요 기준선 (baseline)
+    lines.push({
+      value: config.baseline,
+      color: '#EF4444',
+      dashArray: '5 5',
+      label: `${config.baseline} (기준선)`,
+      strokeWidth: 2
+    });
+
+    // 보조 기준선 (secondaryBaseline)
+    if (config.secondaryBaseline) {
+      lines.push({
+        value: config.secondaryBaseline,
+        color: '#F59E0B',
+        dashArray: '3 3',
+        label: `${config.secondaryBaseline}`,
+        strokeWidth: 1.5
+      });
+    }
+
+    return lines;
+  };
+
+  const referenceLines = getReferenceLines();
 
   if (chartData.length === 0) {
     return (
@@ -156,15 +201,16 @@ export default function DataCharts({ data, indicatorName }: DataChartsProps) {
                   fill="#3B82F6"
                   radius={[2, 2, 0, 0]}
                 />
-                {shouldShow50Line && (
+                {referenceLines.map((line, index) => (
                   <ReferenceLine
-                    y={50}
-                    stroke="#EF4444"
-                    strokeDasharray="5 5"
-                    strokeWidth={2}
-                    label="50 (기준선)"
+                    key={index}
+                    y={line.value}
+                    stroke={line.color}
+                    strokeDasharray={line.dashArray}
+                    strokeWidth={line.strokeWidth}
+                    label={line.label}
                   />
-                )}
+                ))}
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -210,15 +256,16 @@ export default function DataCharts({ data, indicatorName }: DataChartsProps) {
                   dot={{ fill: '#10B981', strokeWidth: 2, r: 4 }}
                   activeDot={{ r: 6, stroke: '#10B981', strokeWidth: 2 }}
                 />
-                {shouldShow50Line && (
+                {referenceLines.map((line, index) => (
                   <ReferenceLine
-                    y={50}
-                    stroke="#EF4444"
-                    strokeDasharray="5 5"
-                    strokeWidth={2}
-                    label="50 (기준선)"
+                    key={index}
+                    y={line.value}
+                    stroke={line.color}
+                    strokeDasharray={line.dashArray}
+                    strokeWidth={line.strokeWidth}
+                    label={line.label}
                   />
-                )}
+                ))}
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -230,7 +277,7 @@ export default function DataCharts({ data, indicatorName }: DataChartsProps) {
         <p>* Actual 값만 표시됨 (과거 데이터)</p>
         <p>* 시간순으로 정렬된 데이터 ({chartData.length}개 포인트)</p>
         <p>* 막대형: 각 시점별 값, 선형: 트렌드 변화</p>
-        <p>* Y축 범위: 지표 특성에 따라 최적화됨 {shouldShow50Line && '(PMI: 50 기준선 포함)'}</p>
+        <p>* Y축 범위: 지표 특성에 따라 최적화됨 {referenceLines.length > 0 && `(기준선 ${referenceLines.length}개 포함)`}</p>
       </div>
     </div>
   );
