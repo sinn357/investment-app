@@ -422,10 +422,11 @@ def get_gdp_history():
 def get_all_indicators_from_db():
     """데이터베이스에서 모든 지표 데이터 조회 (빠른 로딩용)"""
     try:
-        indicators = db_service.get_all_indicators()
+        # CrawlerService에 정의된 모든 지표를 확인하고 데이터베이스에 저장된 것만 포함
+        all_indicator_ids = list(CrawlerService.INDICATOR_URLS.keys())
         results = []
 
-        for indicator_id in indicators:
+        for indicator_id in all_indicator_ids:
             data = db_service.get_indicator_data(indicator_id)
             if "error" not in data:
                 results.append({
