@@ -9,6 +9,7 @@ from crawlers.industrial_production import get_industrial_production
 from crawlers.industrial_production_1755 import get_industrial_production_1755
 from crawlers.retail_sales import get_retail_sales_data
 from crawlers.retail_sales_yoy import get_retail_sales_yoy_data
+from crawlers.gdp import get_gdp_data
 from services.database_service import DatabaseService
 from services.crawler_service import CrawlerService
 import threading
@@ -370,6 +371,45 @@ def get_retail_sales_yoy_history():
                     "source": "investing.com"
                 })
         return jsonify({"status": "error", "message": "Failed to fetch retail sales YoY history data"})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+
+@app.route('/api/rawdata/gdp')
+def get_gdp_rawdata():
+    try:
+        data = get_gdp_data()
+        if "error" in data:
+            return jsonify({
+                "status": "error",
+                "message": data["error"]
+            }), 500
+        return jsonify({
+            "status": "success",
+            "data": data,
+            "source": "investing.com",
+            "indicator": "GDP QoQ"
+        })
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": f"Internal server error: {str(e)}"
+        }), 500
+
+@app.route('/api/history-table/gdp')
+def get_gdp_history():
+    try:
+        url = "https://www.investing.com/economic-calendar/gdp-375"
+        html_content = fetch_html(url)
+        if html_content:
+            history_data = parse_history_table(html_content)
+            if history_data:
+                return jsonify({
+                    "status": "success",
+                    "data": history_data,
+                    "indicator": "GDP QoQ",
+                    "source": "investing.com"
+                })
+        return jsonify({"status": "error", "message": "Failed to fetch GDP history data"})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
 

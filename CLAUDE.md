@@ -8,8 +8,8 @@
 - **Project:** Investment App - Economic Indicators Dashboard
 - **Repo Root:** /Users/woocheolshin/Documents/Vibecoding_1/investment-app
 - **Owner:** Partner
-- **Last Updated:** 2025-09-17 22:35 KST
-- **Session Goal (Today):** PostgreSQL 마이그레이션으로 데이터 지속성 문제 해결 ✅ (Neon.tech + Render 환경변수 설정 완료)
+- **Last Updated:** 2025-09-18 01:00 KST
+- **Session Goal (Today):** PostgreSQL 데이터 지속성 복구 완료 ✅ (Neon DB 연결, 실시간 업데이트 검증, 30분 후 데이터 손실 문제 해결)
 
 ---
 
@@ -54,6 +54,7 @@ investment-app/
 - **Build:** Frontend: `npm run build`
 - **Lint/Format/Typecheck:** Frontend: `npm run lint`
 - **Local URLs:** Backend: http://localhost:5000, Frontend: http://localhost:3000
+- **Production URLs:** Backend: https://investment-app-backend-x166.onrender.com, Frontend: https://investment-app-rust-one.vercel.app
 - **Secrets:** `.env` 사용. **절대** 코드/로그/PR에 노출 금지.
 
 ---
@@ -153,6 +154,7 @@ investment-app/
 - **T-026:** PostgreSQL 마이그레이션 완료 ✅ (Neon.tech 연결, psycopg2 설치, PostgresDatabaseService 구현)
 - **T-027:** 로컬 PostgreSQL 테스트 검증 ✅ (데이터 저장/조회 정상, v2 API 응답 확인)
 - **T-028:** Render 환경변수 설정 완료 ✅ (DATABASE_URL 추가, 자동 재배포 진행중)
+- **T-029:** PostgreSQL 연결 복구 및 실시간 업데이트 검증 ✅ (psycopg2-binary 재추가, Neon DB 저장 확인, last_updated 필드 정상 작동)
 
 ### Backlog
 - **B-010:** 추가 경제지표 확장 (목표: 10개 지표)
@@ -281,6 +283,18 @@ investment-app/
   - **오류 복구**: try-catch 포괄, 기본값 반환, 상세 로깅
   - **확장성**: 7개 지표 동시 크롤링 지원
 
+### ADR-011: PostgreSQL 데이터 지속성 복구
+- Date: 2025-09-18
+- Context: Render 컨테이너 재시작으로 SQLite 데이터 손실, PostgreSQL 연결 끊김 문제
+- Options: SQLite 유지 vs PostgreSQL 복구 vs 하이브리드 접근
+- Decision: Neon.tech PostgreSQL 완전 복구 + 실시간 업데이트 검증
+- Consequences:
+  - **데이터 지속성**: 컨테이너 재시작 후에도 데이터 영구 보존
+  - **성능 유지**: 기존 v2 API + 데이터베이스 조회 속도 1-2초
+  - **실시간 검증**: last_updated 필드로 업데이트 시점 추적 가능
+  - **장기 안정성**: 30분 비활성화 후에도 데이터 손실 없음
+  - **검증 완료**: 실시간 업데이트 시 Neon DB 저장 확인 (2025-09-17T15:30→15:44 갱신)
+
 ---
 
 ## 14) Risk Log
@@ -379,6 +393,6 @@ investment-app/
 - 🔄 **배포 진행중**: Render 자동 재배포 (2-3분 소요 예상)
 
 ### 다음 세션 체크리스트
-1. Render 배포 완료 확인: `curl https://investment-app-backend-oujv.onrender.com/`
-2. PostgreSQL 연결 검증: `curl https://investment-app-backend-oujv.onrender.com/api/v2/indicators/ism-manufacturing`
+1. Render 배포 완료 확인: `curl https://investment-app-backend-x166.onrender.com/`
+2. PostgreSQL 연결 검증: `curl https://investment-app-backend-x166.onrender.com/api/v2/indicators/ism-manufacturing`
 3. 데이터 지속성 테스트: 30분 후 재접속하여 데이터 보존 확인

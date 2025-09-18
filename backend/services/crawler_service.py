@@ -13,7 +13,8 @@ class CrawlerService:
         'industrial-production': 'https://www.investing.com/economic-calendar/industrial-production-161',
         'industrial-production-1755': 'https://www.investing.com/economic-calendar/industrial-production-1755',
         'retail-sales': 'https://www.investing.com/economic-calendar/retail-sales-256',
-        'retail-sales-yoy': 'https://www.investing.com/economic-calendar/retail-sales-1878'
+        'retail-sales-yoy': 'https://www.investing.com/economic-calendar/retail-sales-1878',
+        'gdp': 'https://www.investing.com/economic-calendar/gdp-375'
     }
 
     @classmethod
@@ -75,6 +76,7 @@ class CrawlerService:
             'industrial-production': 'Industrial Production',
             'industrial-production-1755': 'Industrial Production YoY',
             'retail-sales': 'Retail Sales MoM',
-            'retail-sales-yoy': 'Retail Sales YoY'
+            'retail-sales-yoy': 'Retail Sales YoY',
+            'gdp': 'GDP QoQ'
         }
         return name_mapping.get(indicator_id, indicator_id)
