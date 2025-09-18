@@ -88,7 +88,7 @@ export default function EconomicIndicatorCard({ indicator }: EconomicIndicatorCa
     const actualValue = parseActualValue(indicator.actual);
     if (actualValue === null) return null;
 
-    const badge = getThresholdBadge(actualValue, config, trend);
+    const badge = getThresholdBadge(actualValue, config, trend || undefined);
 
     return (
       <span className={`px-3 py-1 rounded-full text-sm font-bold ${badge.color}`}>
