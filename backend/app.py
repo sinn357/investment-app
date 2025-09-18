@@ -26,7 +26,10 @@ except ImportError as e:
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app, origins=["https://investment-app-rust-one.vercel.app", "http://localhost:3000"])
+CORS(app,
+     origins=["https://investment-app-rust-one.vercel.app", "http://localhost:3000"],
+     methods=['GET', 'POST', 'OPTIONS'],
+     allow_headers=['Content-Type', 'Authorization'])
 
 # 데이터베이스 서비스 초기화 (PostgreSQL 우선 사용)
 try:
