@@ -63,6 +63,12 @@ export default function DataSection() {
       name: 'Retail Sales YoY',
       data: [],
       loading: false
+    },
+    {
+      id: 'gdp',
+      name: 'GDP QoQ',
+      data: [],
+      loading: false
     }
   ]);
 
