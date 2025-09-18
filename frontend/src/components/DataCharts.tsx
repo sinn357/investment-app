@@ -162,7 +162,7 @@ export default function DataCharts({ data, indicatorName }: DataChartsProps) {
                     stroke="#EF4444"
                     strokeDasharray="5 5"
                     strokeWidth={2}
-                    label={{ value: "50 (기준선)", position: "topRight", fill: "#EF4444" }}
+                    label="50 (기준선)"
                   />
                 )}
               </BarChart>
@@ -216,7 +216,7 @@ export default function DataCharts({ data, indicatorName }: DataChartsProps) {
                     stroke="#EF4444"
                     strokeDasharray="5 5"
                     strokeWidth={2}
-                    label={{ value: "50 (기준선)", position: "topRight", fill: "#EF4444" }}
+                    label="50 (기준선)"
                   />
                 )}
               </LineChart>
