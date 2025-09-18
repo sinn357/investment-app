@@ -1,20 +1,23 @@
-# 경제지표 임계점 기반 배지 시스템 및 그래프 기준선 구현 계획
+# 경제지표 임계점 기반 배지 시스템 및 그래프 기준선 구현 계획 (GPT 검토 반영)
 
 ## 개요
-기존 Raw Data 카드의 ⚠️ 50 형태 배지 시스템을 활용하여 경제지표별 임계점 기반 시각적 신호 시스템을 구현합니다.
+GPT 검토를 통해 개선된 경제학적 기준치와 추세 분석을 반영한 배지 시스템을 구현합니다.
+기존 Raw Data 카드의 ⚠️ 50 형태를 확장하여 **연속 추세**와 **다단계 배지**를 포함합니다.
 
 ## 10개 지표별 임계점 및 배지 규칙
 
 ### PMI 계열 (3개 지표) - 기준선: 50
 #### 1. ISM Manufacturing PMI
-- 🟢 **Good**: 50 이상 (확장)
-- 🟡 **Warning**: 45-50 (수축)
-- 🔴 **Bad**: 45 미만 (심각한 수축)
-- **그래프 기준선**: 50 (빨간 점선)
-- **배지 예시**:
-  - 현재값 48.7 → ⚠️ 48.7 (노란색)
-  - 현재값 52.1 → ✅ 52.1 (초록색)
-  - 현재값 44.2 → 🔴 44.2 (빨간색)
+- ✅ **Good**: 50 이상 (확장)
+- ➖ **Neutral**: 45-50 (수축)
+- ⚠️ **Warning**: 42.3-45 (침체 위험)
+- 🔴 **Bad**: 42.3 미만 (GDP 연계 침체)
+- **그래프 기준선**: 50선, 42.3선 (참고)
+- **GPT 개선 배지 예시**:
+  - 현재값 48.7 → ➖ 48.7 (3개월 연속 하락)
+  - 현재값 52.1 → ✅ 52.1 (2개월 연속 상승)
+  - 현재값 43.8 → ⚠️ 43.8 (침체 위험)
+  - 현재값 41.5 → 🔴 41.5 (GDP 침체 신호)
 
 #### 2. ISM Non-Manufacturing PMI
 - 🟢 **Good**: 50 이상 (확장)
@@ -110,24 +113,63 @@ const THRESHOLD_CONFIGS: Record<string, ThresholdConfig> = {
 };
 ```
 
-### 2. 배지 시스템 로직
+### 2. GPT 개선 배지 시스템 로직
 ```typescript
-function getThresholdBadge(value: number, config: ThresholdConfig): {
-  status: 'good' | 'warning' | 'bad';
+interface TrendInfo {
+  consecutiveMonths: number;
+  direction: 'up' | 'down' | 'stable';
+}
+
+function getThresholdBadge(
+  value: number,
+  config: ThresholdConfig,
+  trend?: TrendInfo
+): {
+  status: 'good' | 'neutral' | 'warning' | 'bad';
   icon: string;
   color: string;
+  message: string;
 } {
+  let trendText = '';
+  if (trend && trend.consecutiveMonths >= 3) {
+    const direction = trend.direction === 'up' ? '상승' : '하락';
+    trendText = ` (${trend.consecutiveMonths}개월 연속 ${direction})`;
+  }
+
+  // 4단계 배지 시스템
   if (config.good.min !== undefined && value >= config.good.min) {
-    if (config.good.max === undefined || value <= config.good.max) {
-      return { status: 'good', icon: '✅', color: 'text-green-600' };
-    }
+    return {
+      status: 'good',
+      icon: '✅',
+      color: 'text-green-600',
+      message: `${value}${trendText}`
+    };
   }
 
-  if (value >= config.warning.min && value <= config.warning.max) {
-    return { status: 'warning', icon: '⚠️', color: 'text-yellow-600' };
+  if (config.neutral && value >= config.neutral.min && value <= config.neutral.max) {
+    return {
+      status: 'neutral',
+      icon: '➖',
+      color: 'text-gray-600',
+      message: `${value}${trendText}`
+    };
   }
 
-  return { status: 'bad', icon: '🔴', color: 'text-red-600' };
+  if (config.warning && value >= config.warning.min && value <= config.warning.max) {
+    return {
+      status: 'warning',
+      icon: '⚠️',
+      color: 'text-yellow-600',
+      message: `${value}${trendText}`
+    };
+  }
+
+  return {
+    status: 'bad',
+    icon: '🔴',
+    color: 'text-red-600',
+    message: `${value}${trendText}`
+  };
 }
 ```
 
@@ -160,31 +202,44 @@ const shouldShowBaseline = (indicatorName: string): number | null => {
 )}
 ```
 
-## 구현 단계
+## GPT 검토 반영 구현 단계
 
-### Phase 1: 기본 배지 시스템
-1. **THRESHOLD_CONFIGS 정의** (10개 지표 모두)
-2. **getThresholdBadge 함수** 구현
-3. **EconomicIndicatorCard 수정** (배지 표시)
-4. **테스트 및 검증**
+### Phase 1: 4단계 배지 시스템 + 추세 분석
+1. **ThresholdConfig 확장** (good/neutral/warning/bad + 42.3선 등)
+2. **TrendInfo 인터페이스** 추가 (연속 추세 분석)
+3. **getThresholdBadge 함수** 개선 (4단계 + 추세 메시지)
+4. **EconomicIndicatorCard 수정** (➖ 48.7 (3개월 연속 하락) 형태)
 
-### Phase 2: 그래프 기준선 확장
-1. **DataCharts.tsx 수정** (모든 지표 기준선)
-2. **기준선 라벨링** 개선
-3. **색상 및 스타일** 통일
+### Phase 2: 다중 기준선 그래프
+1. **DataCharts.tsx 수정** (PMI 42.3선, Consumer 70/80선, 0%선 등)
+2. **기준선 색상 차별화** (주요/참고 기준선)
+3. **범례 추가** (기준선 의미 설명)
 
-### Phase 3: 고도화
-1. **툴팁에 임계점 설명** 추가
-2. **대시보드 전체 위험도** 표시
-3. **알림 시스템** 연동 (옵션)
+### Phase 3: 히트맵 확장 준비
+1. **전체 대시보드 위험도** 매트릭스
+2. **연속 추세 강조** 시각화
+3. **경제학적 의미** 툴팁 추가
+
+### Phase 4: 실시간 경고 시스템
+1. **침체 신호 종합 판단** (3개월 연속 하락 등)
+2. **다중 지표 교차 분석** (PMI+Consumer+Growth 종합)
+3. **사용자 알림** 시스템 (선택사항)
 
 ## 예상 시각적 효과
 
-### Raw Data 카드 예시
+### GPT 개선 Raw Data 카드 예시
 ```
 ISM Manufacturing PMI
-⚠️ 48.7  (기존: 단순 48.7)
+➖ 48.7 (3개월 연속 하락)  (기존: 단순 48.7)
 Forecast: 49.0 | Previous: 48.0
+
+Michigan Consumer Sentiment
+🔴 55.4 (5개월 연속 하락)  (침체 위험)
+Forecast: - | Previous: 58.2
+
+CB Consumer Confidence
+✅ 97.4 (2개월 연속 상승)  (안정)
+Forecast: 96.4 | Previous: 98.7
 ```
 
 ### 그래프 예시
@@ -203,7 +258,15 @@ Forecast: 49.0 | Previous: 48.0
 
 ---
 
+## GPT 검토 요약
+- ✅ **4단계 배지 시스템**: Good/Neutral/Warning/Bad
+- ✅ **연속 추세 분석**: 3개월 이상 연속 변화 표시
+- ✅ **다중 기준선**: PMI 42.3선, Consumer 70/80선 추가
+- ✅ **경제학적 정확성**: ISM 42.3, CB 80, Michigan 70 임계점 확인
+- ✅ **직관적 UI**: ➖ 48.7 (3개월 연속 하락) 형태로 즉시 위험도 파악
+
 **작성일**: 2025-09-18
-**상태**: 계획 단계
-**예상 구현 시간**: 2-3시간
-**우선순위**: 높음 (사용자 경험 크게 개선)
+**GPT 검토**: 2025-09-18 (경제학적 기준치 및 UI/UX 개선)
+**상태**: GPT 검토 완료, 구현 준비
+**예상 구현 시간**: 3-4시간 (추세 분석 추가로 증가)
+**우선순위**: 높음 (경제학적 정확성 + 사용자 경험 대폭 개선)
