@@ -15,7 +15,8 @@ class CrawlerService:
         'retail-sales': 'https://www.investing.com/economic-calendar/retail-sales-256',
         'retail-sales-yoy': 'https://www.investing.com/economic-calendar/retail-sales-1878',
         'gdp': 'https://www.investing.com/economic-calendar/gdp-375',
-        'cb-consumer-confidence': 'https://www.investing.com/economic-calendar/cb-consumer-confidence-48'
+        'cb-consumer-confidence': 'https://www.investing.com/economic-calendar/cb-consumer-confidence-48',
+        'michigan-consumer-sentiment': 'https://www.investing.com/economic-calendar/michigan-consumer-sentiment-320'
     }
 
     @classmethod
@@ -79,6 +80,7 @@ class CrawlerService:
             'retail-sales': 'Retail Sales MoM',
             'retail-sales-yoy': 'Retail Sales YoY',
             'gdp': 'GDP QoQ',
-            'cb-consumer-confidence': 'CB Consumer Confidence'
+            'cb-consumer-confidence': 'CB Consumer Confidence',
+            'michigan-consumer-sentiment': 'Michigan Consumer Sentiment'
         }
         return name_mapping.get(indicator_id, indicator_id)

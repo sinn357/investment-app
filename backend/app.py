@@ -11,6 +11,7 @@ from crawlers.retail_sales import get_retail_sales_data
 from crawlers.retail_sales_yoy import get_retail_sales_yoy_data
 from crawlers.gdp import get_gdp_data
 from crawlers.cb_consumer_confidence import get_cb_consumer_confidence_data
+from crawlers.michigan_consumer_sentiment import get_michigan_consumer_sentiment_data
 from services.database_service import DatabaseService
 from services.crawler_service import CrawlerService
 import threading
@@ -453,6 +454,45 @@ def get_cb_consumer_confidence_history():
                     "source": "investing.com"
                 })
         return jsonify({"status": "error", "message": "Failed to fetch CB Consumer Confidence history data"})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+
+@app.route('/api/rawdata/michigan-consumer-sentiment')
+def get_michigan_consumer_sentiment_rawdata():
+    try:
+        data = get_michigan_consumer_sentiment_data()
+        if "error" in data:
+            return jsonify({
+                "status": "error",
+                "message": data["error"]
+            }), 500
+        return jsonify({
+            "status": "success",
+            "data": data,
+            "source": "investing.com",
+            "indicator": "Michigan Consumer Sentiment"
+        })
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": f"Internal server error: {str(e)}"
+        }), 500
+
+@app.route('/api/history-table/michigan-consumer-sentiment')
+def get_michigan_consumer_sentiment_history():
+    try:
+        url = "https://www.investing.com/economic-calendar/michigan-consumer-sentiment-320"
+        html_content = fetch_html(url)
+        if html_content:
+            history_data = parse_history_table(html_content)
+            if history_data:
+                return jsonify({
+                    "status": "success",
+                    "data": history_data,
+                    "indicator": "Michigan Consumer Sentiment",
+                    "source": "investing.com"
+                })
+        return jsonify({"status": "error", "message": "Failed to fetch Michigan Consumer Sentiment history data"})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
 
