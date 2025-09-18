@@ -29,6 +29,8 @@ export default function EconomicIndicatorsSection() {
     if (typeof value === 'string') {
       const numStr = value.replace('%', '');
       const num = parseFloat(numStr);
+
+
       return isNaN(num) ? null : num;
     }
     return null;
@@ -41,7 +43,7 @@ export default function EconomicIndicatorsSection() {
       const result = await response.json();
 
       if (result.status === 'success' && result.indicators) {
-        const indicators: EconomicIndicator[] = result.indicators.map((item: {
+        const allIndicators: EconomicIndicator[] = result.indicators.map((item: {
           name: string;
           data: {
             latest_release: {
@@ -65,6 +67,7 @@ export default function EconomicIndicatorsSection() {
             ? Math.round((actualNum - forecastNum) * 100) / 100
             : null;
 
+
           // 지표별 threshold 설정
           let threshold;
           if (item.name.includes('PMI')) {
@@ -85,7 +88,13 @@ export default function EconomicIndicatorsSection() {
           };
         });
 
-        return indicators;
+        // 중복 제거 (name 기준)
+        const uniqueIndicators = allIndicators.filter((indicator, index, self) =>
+          index === self.findIndex(i => i.name === indicator.name)
+        );
+
+
+        return uniqueIndicators;
       }
       return [];
     } catch (error) {
@@ -130,7 +139,7 @@ export default function EconomicIndicatorsSection() {
         {/* 업데이트 버튼 */}
         <UpdateButton onUpdateComplete={refreshData} />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 items-start">
           {indicators.map((indicator) => (
             <EconomicIndicatorCard key={indicator.name} indicator={indicator} />
           ))}

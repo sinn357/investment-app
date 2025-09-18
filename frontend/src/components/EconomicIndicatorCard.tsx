@@ -42,6 +42,7 @@ export default function EconomicIndicatorCard({ indicator }: EconomicIndicatorCa
   useEffect(() => {
     const fetchTrendData = async () => {
       const indicatorId = getIndicatorId(indicator.name);
+
       if (indicatorId === 'unknown') return;
 
       try {
@@ -74,8 +75,8 @@ export default function EconomicIndicatorCard({ indicator }: EconomicIndicatorCa
 
   const getSurpriseColor = (surprise: number | null) => {
     if (surprise === null) return 'text-gray-500';
-    if (surprise > 0) return 'text-green-600';
-    if (surprise < 0) return 'text-red-600';
+    if (surprise > 0) return 'text-green-600'; // Positive surprise = actual better than forecast = GREEN
+    if (surprise < 0) return 'text-red-600';   // Negative surprise = actual worse than forecast = RED
     return 'text-gray-500';
   };
 
@@ -149,8 +150,13 @@ export default function EconomicIndicatorCard({ indicator }: EconomicIndicatorCa
       {/* 접기/펼치기 버튼 */}
       <div className="mt-4 border-t border-gray-200 dark:border-gray-700 pt-3">
         <button
-          onClick={() => setIsExpanded(!isExpanded)}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setIsExpanded(!isExpanded);
+          }}
           className="w-full flex items-center justify-center text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+          data-indicator-button={indicator.name}
         >
           <span className="mr-2">배지 시스템 설명</span>
           <svg
@@ -166,7 +172,10 @@ export default function EconomicIndicatorCard({ indicator }: EconomicIndicatorCa
 
       {/* 확장 가능한 정보 섹션 */}
       {isExpanded && (
-        <div className="mt-3 px-4 py-3 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm">
+        <div
+          className="mt-3 px-4 py-3 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm transition-all duration-300 ease-in-out"
+          data-indicator={indicator.name}
+        >
           {(() => {
             const indicatorId = getIndicatorId(indicator.name);
             const info = INDICATOR_INFO[indicatorId];

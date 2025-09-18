@@ -352,10 +352,29 @@ export function calculateTrend(historyData: HistoryDataItem[]): TrendInfo {
     return { consecutiveMonths: 0, direction: 'stable' };
   }
 
-  let consecutiveMonths = 1;
+  let consecutiveMonths = 0;
   let currentDirection: 'up' | 'down' | 'stable' = 'stable';
 
-  for (let i = 0; i < validData.length - 1; i++) {
+  // 첫 번째 비교에서 방향 결정
+  const firstValue = parseValue(validData[0].actual);
+  const secondValue = parseValue(validData[1].actual);
+
+  if (firstValue === null || secondValue === null) {
+    return { consecutiveMonths: 0, direction: 'stable' };
+  }
+
+  const initialDirection = firstValue > secondValue ? 'up' :
+                          firstValue < secondValue ? 'down' : 'stable';
+
+  if (initialDirection === 'stable') {
+    return { consecutiveMonths: 0, direction: 'stable' };
+  }
+
+  currentDirection = initialDirection;
+  consecutiveMonths = 1; // 첫 번째 변화를 1개월로 시작
+
+  // 나머지 데이터에서 연속성 확인 (i=1부터 시작하여 다음 비교 수행)
+  for (let i = 1; i < validData.length - 1; i++) {
     const currentValue = parseValue(validData[i].actual);
     const previousValue = parseValue(validData[i + 1].actual);
 
@@ -364,16 +383,16 @@ export function calculateTrend(historyData: HistoryDataItem[]): TrendInfo {
     const direction = currentValue > previousValue ? 'up' :
                      currentValue < previousValue ? 'down' : 'stable';
 
-    if (i === 0) {
-      currentDirection = direction;
-    } else if (direction !== currentDirection || direction === 'stable') {
+    // 방향이 바뀌거나 stable이면 연속성 중단
+    if (direction !== currentDirection) {
       break;
     }
 
-    if (direction !== 'stable') {
-      consecutiveMonths++;
-    }
+    // 연속성이 유지되면 카운트 증가
+    consecutiveMonths++;
   }
+
+
 
   return {
     consecutiveMonths: consecutiveMonths,

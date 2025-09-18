@@ -119,10 +119,10 @@ investment-app/
 
 ## 12) Tasks (Single Source of Truth)
 ### Active (in this session)
-- **T-026:** Render 배포 PostgreSQL 연결 최종 검증 🔄 진행중
-  - DoD: Render 환경에서 PostgreSQL 정상 작동 확인, 데이터 지속성 문제 완전 해결
-  - Files: Render 환경변수, PostgresDatabaseService
-  - Risks: 배포 환경에서 DB 연결 실패 가능성
+- **T-030:** 음수 지표 서프라이즈 색상 로직 검토 🔄 진행중
+  - DoD: GDP QoQ 등 음수 지표에서 예측 초과/미달 색상 정확히 표시
+  - Files: EconomicIndicatorCard.tsx 서프라이즈 색상 로직
+  - Risks: 지표별 성격 차이로 인한 해석 복잡성
 
 ### Recent Done
 - **T-000:** 프로젝트 초기 구조 구축 ✅ (Flask + Next.js 기본 골격 완성)
@@ -155,6 +155,9 @@ investment-app/
 - **T-027:** 로컬 PostgreSQL 테스트 검증 ✅ (데이터 저장/조회 정상, v2 API 응답 확인)
 - **T-028:** Render 환경변수 설정 완료 ✅ (DATABASE_URL 추가, 자동 재배포 진행중)
 - **T-029:** PostgreSQL 연결 복구 및 실시간 업데이트 검증 ✅ (psycopg2-binary 재추가, Neon DB 저장 확인, last_updated 필드 정상 작동)
+- **T-030:** 4단계 배지 시스템 + 추세 분석 구현 완료 ✅ (✅➖⚠️🔴 배지, 실시간 추세 분석, 다중 기준선 차트, 접기/펼치기 설명)
+- **T-031:** 실제 히스토리 데이터 기반 추세 계산 로직 구현 ✅ (Michigan Consumer Sentiment 4개월 연속 하락 정확 감지)
+- **T-032:** 배지 시스템 접기/펼치기 정보 섹션 추가 ✅ (10개 지표별 상세 설명, 독립적 상태 관리)
 
 ### Backlog
 - **B-010:** 추가 경제지표 확장 (목표: 10개 지표)
