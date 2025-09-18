@@ -14,7 +14,8 @@ class CrawlerService:
         'industrial-production-1755': 'https://www.investing.com/economic-calendar/industrial-production-1755',
         'retail-sales': 'https://www.investing.com/economic-calendar/retail-sales-256',
         'retail-sales-yoy': 'https://www.investing.com/economic-calendar/retail-sales-1878',
-        'gdp': 'https://www.investing.com/economic-calendar/gdp-375'
+        'gdp': 'https://www.investing.com/economic-calendar/gdp-375',
+        'cb-consumer-confidence': 'https://www.investing.com/economic-calendar/cb-consumer-confidence-48'
     }
 
     @classmethod
@@ -77,6 +78,7 @@ class CrawlerService:
             'industrial-production-1755': 'Industrial Production YoY',
             'retail-sales': 'Retail Sales MoM',
             'retail-sales-yoy': 'Retail Sales YoY',
-            'gdp': 'GDP QoQ'
+            'gdp': 'GDP QoQ',
+            'cb-consumer-confidence': 'CB Consumer Confidence'
         }
         return name_mapping.get(indicator_id, indicator_id)
