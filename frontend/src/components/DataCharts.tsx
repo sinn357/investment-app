@@ -1,6 +1,6 @@
 'use client';
 
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 
 interface DataRow {
   release_date: string;
@@ -27,6 +27,41 @@ export default function DataCharts({ data, indicatorName }: DataChartsProps) {
     return parseFloat(value) || null;
   };
 
+  // Determine indicator group and calculate optimal Y-axis domain
+  const getYAxisDomain = (chartData: any[], indicatorName: string): [number, number] | undefined => {
+    if (chartData.length === 0) return undefined;
+
+    const values = chartData.map(d => d.actual).filter(v => v !== null);
+    if (values.length === 0) return undefined;
+
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+
+    // Group 1: Consumer indicators - dynamic range with padding
+    if (indicatorName.includes('Consumer')) {
+      const padding = (max - min) * 0.15; // 15% padding
+      return [Math.max(0, min - padding), max + padding];
+    }
+
+    // Group 2: PMI indicators - meaningful economic range with 50 baseline
+    if (indicatorName.includes('PMI') || indicatorName.includes('Manufacturing') || indicatorName.includes('Non-Manufacturing')) {
+      const baseMin = Math.min(40, min - 2);
+      const baseMax = Math.max(65, max + 2);
+      return [baseMin, baseMax];
+    }
+
+    // Group 3: Percentage data - include zero baseline for positive/negative changes
+    if (indicatorName.includes('Production') || indicatorName.includes('Sales') || indicatorName.includes('GDP')) {
+      const absMax = Math.max(Math.abs(min), Math.abs(max));
+      const padding = absMax * 0.2; // 20% padding
+      return [Math.min(-padding, min - padding), Math.max(padding, max + padding)];
+    }
+
+    // Group 4: Other indicators - dynamic range
+    const padding = (max - min) * 0.1; // 10% padding
+    return [Math.max(0, min - padding), max + padding];
+  };
+
   // actual 값이 있는 데이터만 필터링하고 차트 데이터로 변환
   const chartData = data
     .filter(row => row.actual !== null)
@@ -38,6 +73,14 @@ export default function DataCharts({ data, indicatorName }: DataChartsProps) {
       fullDate: row.release_date
     }))
     .filter(row => row.actual !== null); // 변환 실패한 항목 제거
+
+  // Calculate Y-axis domain for this indicator
+  const yAxisDomain = getYAxisDomain(chartData, indicatorName);
+
+  // Check if this is a PMI indicator that needs a 50 reference line
+  const shouldShow50Line = indicatorName.includes('PMI') ||
+                          indicatorName.includes('Manufacturing') ||
+                          indicatorName.includes('Non-Manufacturing');
 
   if (chartData.length === 0) {
     return (
@@ -96,6 +139,7 @@ export default function DataCharts({ data, indicatorName }: DataChartsProps) {
                 <YAxis
                   stroke="#6B7280"
                   fontSize={12}
+                  domain={yAxisDomain}
                 />
                 <Tooltip
                   formatter={formatTooltip}
@@ -112,6 +156,15 @@ export default function DataCharts({ data, indicatorName }: DataChartsProps) {
                   fill="#3B82F6"
                   radius={[2, 2, 0, 0]}
                 />
+                {shouldShow50Line && (
+                  <ReferenceLine
+                    y={50}
+                    stroke="#EF4444"
+                    strokeDasharray="5 5"
+                    strokeWidth={2}
+                    label={{ value: "50 (기준선)", position: "topRight", fill: "#EF4444" }}
+                  />
+                )}
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -137,6 +190,7 @@ export default function DataCharts({ data, indicatorName }: DataChartsProps) {
                 <YAxis
                   stroke="#6B7280"
                   fontSize={12}
+                  domain={yAxisDomain}
                 />
                 <Tooltip
                   formatter={formatTooltip}
@@ -156,6 +210,15 @@ export default function DataCharts({ data, indicatorName }: DataChartsProps) {
                   dot={{ fill: '#10B981', strokeWidth: 2, r: 4 }}
                   activeDot={{ r: 6, stroke: '#10B981', strokeWidth: 2 }}
                 />
+                {shouldShow50Line && (
+                  <ReferenceLine
+                    y={50}
+                    stroke="#EF4444"
+                    strokeDasharray="5 5"
+                    strokeWidth={2}
+                    label={{ value: "50 (기준선)", position: "topRight", fill: "#EF4444" }}
+                  />
+                )}
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -167,6 +230,7 @@ export default function DataCharts({ data, indicatorName }: DataChartsProps) {
         <p>* Actual 값만 표시됨 (과거 데이터)</p>
         <p>* 시간순으로 정렬된 데이터 ({chartData.length}개 포인트)</p>
         <p>* 막대형: 각 시점별 값, 선형: 트렌드 변화</p>
+        <p>* Y축 범위: 지표 특성에 따라 최적화됨 {shouldShow50Line && '(PMI: 50 기준선 포함)'}</p>
       </div>
     </div>
   );
