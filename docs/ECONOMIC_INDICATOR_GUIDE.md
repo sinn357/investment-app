@@ -281,6 +281,69 @@ curl https://investment-app-backend-x166.onrender.com/api/v2/indicators | jq '.i
 5. Raw Data 카드, 데이터 섹션, 차트 모두 정상 작동 확인
 ```
 
+### 차트 Y축 범위 문제 및 최적화 (2025-09-18)
+**문제 상황**: 차트에서 Y축 범위가 너무 커서 데이터 변화가 작게 보이는 문제
+
+#### 문제 분석
+- 기본 Recharts 설정: Y축이 0부터 시작하여 실제 데이터 변화 폭이 작게 보임
+- Consumer 지표 (95-100 범위) → 변화가 거의 보이지 않음
+- PMI 지표 → 50 기준선 없어서 경제적 의미 파악 어려움
+- % 데이터 → 양수/음수 변화 구분 어려움
+
+#### 해결 방안: 지표 타입별 Y축 최적화 전략
+```typescript
+// DataCharts.tsx에 구현된 4그룹 전략
+const getYAxisDomain = (chartData, indicatorName) => {
+  // Group 1: Consumer 지표 - 동적 범위 + 15% 패딩
+  if (indicatorName.includes('Consumer')) {
+    const padding = (max - min) * 0.15;
+    return [Math.max(0, min - padding), max + padding];
+  }
+
+  // Group 2: PMI 지표 - 경제적 의미 범위 + 50 기준선
+  if (indicatorName.includes('PMI')) {
+    return [Math.min(40, min - 2), Math.max(65, max + 2)];
+  }
+
+  // Group 3: % 데이터 - 0 기준선 포함
+  if (indicatorName.includes('Production') || indicatorName.includes('Sales')) {
+    return [Math.min(-padding, min - padding), Math.max(padding, max + padding)];
+  }
+
+  // Group 4: 기타 - 동적 범위 + 10% 패딩
+}
+```
+
+#### 구현 세부사항
+1. **ReferenceLine 추가**: PMI 지표에 50 기준선 (빨간 점선)
+2. **동적 Y축 도메인**: `<YAxis domain={yAxisDomain} />`
+3. **지표별 맞춤 범위**: 경제적 의미를 반영한 Y축 범위
+
+#### Vercel 빌드 오류 해결 과정
+**오류 1**: TypeScript explicit any 에러
+```typescript
+// 해결: 구체적 타입 지정
+const getYAxisDomain = (chartData: Array<{actual: number | null}>, ...)
+```
+
+**오류 2**: useCallback dependency 경고
+```typescript
+// 해결: fetchAllIndicatorsFromDB를 useCallback으로 감싸기
+const fetchAllIndicatorsFromDB = useCallback(async () => {...}, []);
+```
+
+**오류 3**: ReferenceLine label position 타입 오류
+```typescript
+// 해결: 복잡한 객체 → 간단한 문자열
+label="50 (기준선)"  // instead of position: "topRight"
+```
+
+#### 최종 결과
+- **Consumer 지표**: 95-100 범위 → 세밀한 변화 명확히 보임
+- **PMI 지표**: 50 기준선으로 확장/수축 구분 용이
+- **% 데이터**: 0 기준선으로 양수/음수 변화 명확
+- **시각적 개선**: 모든 지표에서 데이터 변화가 더 뚜렷하게 표시
+
 ## 체크리스트
 
 ### 구현 완료 체크리스트
@@ -349,6 +412,6 @@ name_mapping = {
 ---
 
 **작성일**: 2025-09-18
-**버전**: 1.1
-**마지막 업데이트**: 2025-09-18 (Michigan Consumer Sentiment 사례 추가)
+**버전**: 1.2
+**마지막 업데이트**: 2025-09-18 (차트 Y축 최적화 및 빌드 오류 해결 추가)
 **다음 업데이트**: 새로운 지표 추가 시
