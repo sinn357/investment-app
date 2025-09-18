@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { THRESHOLD_CONFIGS, getThresholdBadge, calculateTrend, TrendInfo } from '../utils/thresholds';
+import { THRESHOLD_CONFIGS, getThresholdBadge, calculateTrend, TrendInfo, INDICATOR_INFO } from '../utils/thresholds';
 
 interface EconomicIndicator {
   name: string;
@@ -21,6 +21,7 @@ interface EconomicIndicatorCardProps {
 
 export default function EconomicIndicatorCard({ indicator }: EconomicIndicatorCardProps) {
   const [trend, setTrend] = useState<TrendInfo | null>(null);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   // 지표 ID 매핑 함수 (name에서 indicator ID 추출)
   const getIndicatorId = (name: string): string => {
@@ -144,6 +145,96 @@ export default function EconomicIndicatorCard({ indicator }: EconomicIndicatorCa
           </p>
         </div>
       </div>
+
+      {/* 접기/펼치기 버튼 */}
+      <div className="mt-4 border-t border-gray-200 dark:border-gray-700 pt-3">
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="w-full flex items-center justify-center text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+        >
+          <span className="mr-2">배지 시스템 설명</span>
+          <svg
+            className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+      </div>
+
+      {/* 확장 가능한 정보 섹션 */}
+      {isExpanded && (
+        <div className="mt-3 px-4 py-3 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm">
+          {(() => {
+            const indicatorId = getIndicatorId(indicator.name);
+            const info = INDICATOR_INFO[indicatorId];
+
+            if (!info) {
+              return (
+                <p className="text-gray-500 dark:text-gray-400">
+                  이 지표에 대한 상세 정보가 없습니다.
+                </p>
+              );
+            }
+
+            return (
+              <div className="space-y-3">
+                {/* 지표 설명 */}
+                <div>
+                  <h4 className="font-semibold text-gray-900 dark:text-white mb-1">지표 설명</h4>
+                  <p className="text-gray-600 dark:text-gray-300">{info.description}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">카테고리: {info.category}</p>
+                </div>
+
+                {/* 배지 임계점 */}
+                <div>
+                  <h4 className="font-semibold text-gray-900 dark:text-white mb-2">배지 시스템</h4>
+                  <div className="space-y-1">
+                    <div className="flex items-center">
+                      <span className="text-green-600 mr-2">✅</span>
+                      <span className="text-gray-600 dark:text-gray-300">{info.thresholds.good}</span>
+                    </div>
+                    <div className="flex items-center">
+                      <span className="text-gray-600 mr-2">➖</span>
+                      <span className="text-gray-600 dark:text-gray-300">{info.thresholds.neutral}</span>
+                    </div>
+                    <div className="flex items-center">
+                      <span className="text-yellow-600 mr-2">⚠️</span>
+                      <span className="text-gray-600 dark:text-gray-300">{info.thresholds.warning}</span>
+                    </div>
+                    <div className="flex items-center">
+                      <span className="text-red-600 mr-2">🔴</span>
+                      <span className="text-gray-600 dark:text-gray-300">{info.thresholds.bad}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 차트 기준선 */}
+                <div>
+                  <h4 className="font-semibold text-gray-900 dark:text-white mb-2">차트 기준선</h4>
+                  <div className="space-y-1">
+                    {info.referenceLines.map((line, index) => (
+                      <div key={index} className="flex items-center">
+                        <div className={`w-4 h-0.5 mr-2 ${index === 0 ? 'bg-red-500' : 'bg-orange-400'}`}
+                             style={{ backgroundImage: 'repeating-linear-gradient(to right, transparent, transparent 2px, currentColor 2px, currentColor 4px)' }}></div>
+                        <span className="text-gray-600 dark:text-gray-300 text-xs">{line}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 경제적 의미 */}
+                <div>
+                  <h4 className="font-semibold text-gray-900 dark:text-white mb-1">경제적 의미</h4>
+                  <p className="text-gray-600 dark:text-gray-300">{info.economicMeaning}</p>
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+      )}
     </div>
   );
 }
