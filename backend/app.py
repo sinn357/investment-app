@@ -500,7 +500,8 @@ def update_all_indicators_background():
         update_status["completed_indicators"] = []
         update_status["failed_indicators"] = []
 
-        indicators = db_service.get_all_indicators()
+        # CrawlerService에 정의된 모든 지표 사용 (신규 지표 포함)
+        indicators = list(CrawlerService.INDICATOR_URLS.keys())
         total_indicators = len(indicators)
 
         for i, indicator_id in enumerate(indicators):
