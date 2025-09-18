@@ -28,7 +28,7 @@ export default function DataCharts({ data, indicatorName }: DataChartsProps) {
   };
 
   // Determine indicator group and calculate optimal Y-axis domain
-  const getYAxisDomain = (chartData: any[], indicatorName: string): [number, number] | undefined => {
+  const getYAxisDomain = (chartData: Array<{actual: number | null}>, indicatorName: string): [number, number] | undefined => {
     if (chartData.length === 0) return undefined;
 
     const values = chartData.map(d => d.actual).filter(v => v !== null);

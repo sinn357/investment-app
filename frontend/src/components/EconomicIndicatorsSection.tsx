@@ -35,7 +35,7 @@ export default function EconomicIndicatorsSection() {
   };
 
   // v2 API에서 모든 지표 데이터 가져오기 (빠른 로딩)
-  const fetchAllIndicatorsFromDB = async () => {
+  const fetchAllIndicatorsFromDB = useCallback(async () => {
     try {
       const response = await fetch('https://investment-app-backend-x166.onrender.com/api/v2/indicators');
       const result = await response.json();
@@ -92,7 +92,7 @@ export default function EconomicIndicatorsSection() {
       console.error('Error fetching indicators from database:', error);
       return [];
     }
-  };
+  }, []);
 
   // 데이터 새로고침 함수
   const refreshData = useCallback(async () => {
@@ -100,7 +100,7 @@ export default function EconomicIndicatorsSection() {
     const data = await fetchAllIndicatorsFromDB();
     setIndicators(data);
     setLoading(false);
-  }, []);
+  }, [fetchAllIndicatorsFromDB]);
 
   useEffect(() => {
     // 컴포넌트 마운트 시 데이터베이스에서 즉시 로딩
