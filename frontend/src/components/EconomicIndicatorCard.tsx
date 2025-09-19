@@ -71,20 +71,17 @@ export default function EconomicIndicatorCard({ indicator }: EconomicIndicatorCa
 • 공급업체 납기 (Supplier Deliveries) → 공급망 병목·수요 강도
 • 재고 (Inventories) → 기업의 미래 수요 전망 반영
 • 투입가격 (Input Prices) → 원자재·부품 가격 변동, 인플레 압력`,
-        interpretation: `**핵심 임계점**:
-- **50 이상**: 제조업 확장 (경기 호조)
-- **45-50**: 수축하지만 GDP 성장 가능
-- **42.3 미만**: GDP 위축 가능성 높음
+        interpretation: `**알 수 있는 것**
+• 경기 사이클 방향: 산업생산·GDP보다 1~2분기 선행
+• 기업 체감 경기: 구매담당자의 발주 변화 → 가장 빠른 경기 시그널
+• 인플레이션 신호: Input Prices → CPI·PCE 이전 단계 확인 가능
+• 고용·공급망 신호: Employment + Supplier Deliveries → 경기순환 & 병목 동시 반영
 
-**주의사항**:
-- 계절 조정된 수치 사용
-- 고용 지표와 연계 분석 필요
-- 서비스업 PMI와 함께 종합 판단
-
-**다른 지표와의 관계**:
-- ISM Non-Manufacturing PMI (보완)
-- 고용통계 선행지표 역할
-- 연준 금리 정책 결정 요소`,
+**알아야 하는 것**
+• 심리지표 특성: 실제 생산·소비와 괴리 발생 가능
+• 50선 근처(48~52): 방향 불확실 → 3개월 평균 추세 확인 필요
+• 서비스업 중심 경제: 미국 GDP의 70% 이상이 서비스업 → 제조업 PMI 단독으로 경기 전체 해석엔 한계
+• ISM PMI vs S&P Global PMI: ISM은 대기업 중심, 역사성·시장 충격력 큼`,
         investment: `**투자 전략**:
 - **50↑ 지속**: 제조업 관련주, 원자재 주식 매수
 - **50↓ 하락**: 방어주, 채권 비중 확대
