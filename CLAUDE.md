@@ -8,8 +8,8 @@
 - **Project:** Investment App - Economic Indicators Dashboard
 - **Repo Root:** /Users/woocheolshin/Documents/Vibecoding_1/investment-app
 - **Owner:** Partner
-- **Last Updated:** 2025-09-18 01:00 KST
-- **Session Goal (Today):** PostgreSQL 데이터 지속성 복구 완료 ✅ (Neon DB 연결, 실시간 업데이트 검증, 30분 후 데이터 손실 문제 해결)
+- **Last Updated:** 2025-09-18 22:30 KST
+- **Session Goal (Today):** 4방향 확장 버튼 구현 🔄 (UI 완료, 로딩 이슈 해결 중)
 
 ---
 
@@ -119,10 +119,10 @@ investment-app/
 
 ## 12) Tasks (Single Source of Truth)
 ### Active (in this session)
-- **T-030:** 음수 지표 서프라이즈 색상 로직 검토 🔄 진행중
-  - DoD: GDP QoQ 등 음수 지표에서 예측 초과/미달 색상 정확히 표시
-  - Files: EconomicIndicatorCard.tsx 서프라이즈 색상 로직
-  - Risks: 지표별 성격 차이로 인한 해석 복잡성
+- **T-035:** 4방향 확장 버튼 구현 🔄 진행중 (토큰 제한으로 중단 예정)
+  - DoD: 위/왼쪽/오른쪽/아래쪽 독립적 확장 기능 + 실제 콘텐츠 추가
+  - Files: EconomicIndicatorCard.tsx, EconomicIndicatorsSection.tsx
+  - Risks: 로딩 성능 이슈, Render 백엔드 응답 지연
 
 ### Recent Done
 - **T-000:** 프로젝트 초기 구조 구축 ✅ (Flask + Next.js 기본 골격 완성)
@@ -158,6 +158,8 @@ investment-app/
 - **T-030:** 4단계 배지 시스템 + 추세 분석 구현 완료 ✅ (✅➖⚠️🔴 배지, 실시간 추세 분석, 다중 기준선 차트, 접기/펼치기 설명)
 - **T-031:** 실제 히스토리 데이터 기반 추세 계산 로직 구현 ✅ (Michigan Consumer Sentiment 4개월 연속 하락 정확 감지)
 - **T-032:** 배지 시스템 접기/펼치기 정보 섹션 추가 ✅ (10개 지표별 상세 설명, 독립적 상태 관리)
+- **T-033:** DataSection History Table 색상 로직 수정 ✅ (문자열→숫자 비교로 음수 지표 색상 정상화)
+- **T-034:** 프로젝트 문서화 가이드 수립 ✅ (MD 파일 역할 분담, 작업 기록 표준 방식 정의)
 
 ### Backlog
 - **B-010:** 추가 경제지표 확장 (목표: 10개 지표)
@@ -297,6 +299,30 @@ investment-app/
   - **실시간 검증**: last_updated 필드로 업데이트 시점 추적 가능
   - **장기 안정성**: 30분 비활성화 후에도 데이터 손실 없음
   - **검증 완료**: 실시간 업데이트 시 Neon DB 저장 확인 (2025-09-17T15:30→15:44 갱신)
+
+### ADR-012: DataSection 색상 로직 표준화
+- Date: 2025-09-18
+- Context: History Table에서 음수 경제지표 색상이 반대로 표시되는 문제 발견
+- Options: 문자열 비교 유지 vs parsePercentValue 도입 vs 새로운 비교 함수
+- Decision: parsePercentValue 함수를 DataSection에 도입하여 숫자 비교로 변경
+- Consequences:
+  - **정확성**: 음수 지표에서 올바른 예측 초과/미달 색상 표시
+  - **일관성**: EconomicIndicatorCard와 동일한 로직 사용
+  - **확장성**: 향후 모든 퍼센트 데이터 비교에 표준 적용 가능
+  - **검증**: GDP, Retail Sales, Industrial Production 모든 음수 케이스 정상화
+  - **유지보수**: JavaScript 문자열 vs 숫자 비교 함정 예방
+
+### ADR-013: 프로젝트 문서화 표준 수립
+- Date: 2025-09-18
+- Context: 프로젝트 문서가 분산되어 일관성 부족, 작업 기록 방식 표준화 필요
+- Options: 단일 문서 vs 역할별 분리 vs 자동화 도구
+- Decision: MD 파일 역할별 분리 + 표준 작업 기록 방식 수립
+- Consequences:
+  - **CLAUDE.md**: 세션 관리 (Tasks/ADR) 전용
+  - **docs/**: 기술 구현 가이드 전용
+  - **루트 분석 파일**: 복잡한 이슈 해결 기록 전용
+  - **표준화**: 네이밍 컨벤션 및 템플릿 제공
+  - **효율성**: 향후 유지보수 및 온보딩 개선
 
 ---
 

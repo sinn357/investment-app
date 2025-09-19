@@ -127,6 +127,18 @@ export default function DataSection() {
 
   const currentTabData = tabsData.find(tab => tab.id === activeTab);
 
+  // % 데이터를 숫자로 변환하는 헬퍼 함수 (색상 비교용)
+  const parsePercentValue = (value: string | number | null): number | null => {
+    if (value === null) return null;
+    if (typeof value === 'number') return value;
+    if (typeof value === 'string') {
+      const numStr = value.replace('%', '');
+      const num = parseFloat(numStr);
+      return isNaN(num) ? null : num;
+    }
+    return null;
+  };
+
   const formatValue = (value: string | number | null) => {
     if (value === null) return '-';
     // If value is string (like "0.87%"), return as is
@@ -282,15 +294,19 @@ export default function DataSection() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                         <span
-                          className={`font-medium ${
-                            row.actual === null
-                              ? 'text-gray-400'
-                              : row.forecast && row.actual > row.forecast
-                              ? 'text-green-600 dark:text-green-400'
-                              : row.forecast && row.actual < row.forecast
-                              ? 'text-red-600 dark:text-red-400'
-                              : 'text-gray-900 dark:text-white'
-                          }`}
+                          className={`font-medium ${(() => {
+                            if (row.actual === null) return 'text-gray-400';
+
+                            const actualNum = parsePercentValue(row.actual);
+                            const forecastNum = parsePercentValue(row.forecast);
+
+                            if (actualNum !== null && forecastNum !== null) {
+                              if (actualNum > forecastNum) return 'text-green-600 dark:text-green-400'; // actual better than forecast
+                              if (actualNum < forecastNum) return 'text-red-600 dark:text-red-400';   // actual worse than forecast
+                            }
+
+                            return 'text-gray-900 dark:text-white';
+                          })()}`}
                         >
                           {formatValue(row.actual)}
                         </span>
