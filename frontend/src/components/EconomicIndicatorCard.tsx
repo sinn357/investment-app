@@ -412,7 +412,7 @@ export default function EconomicIndicatorCard({ indicator }: EconomicIndicatorCa
         <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border-l-4 border-blue-500">
           <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">📊 지표 개요</h4>
           <div className="text-sm text-blue-800 dark:text-blue-200 whitespace-pre-line">
-            {getIndicatorContent().overview}
+            {getIndicatorContent(getIndicatorId(indicator.name)).overview}
           </div>
         </div>
       )}
@@ -429,7 +429,7 @@ export default function EconomicIndicatorCard({ indicator }: EconomicIndicatorCa
           <div className="mr-4 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border-l-4 border-green-500 min-w-[200px]">
             <h4 className="font-semibold text-green-900 dark:text-green-100 mb-2">💡 해석 포인트</h4>
             <div className="text-sm text-green-800 dark:text-green-200 whitespace-pre-line">
-              {getIndicatorContent().interpretation}
+              {getIndicatorContent(getIndicatorId(indicator.name)).interpretation}
             </div>
           </div>
         )}
@@ -483,7 +483,7 @@ export default function EconomicIndicatorCard({ indicator }: EconomicIndicatorCa
           <div className="ml-4 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border-l-4 border-purple-500 min-w-[200px]">
             <h4 className="font-semibold text-purple-900 dark:text-purple-100 mb-2">📈 경제·투자 적용</h4>
             <div className="text-sm text-purple-800 dark:text-purple-200 whitespace-pre-line">
-              {getIndicatorContent().investment}
+              {getIndicatorContent(getIndicatorId(indicator.name)).investment}
             </div>
           </div>
         )}
