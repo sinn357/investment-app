@@ -426,21 +426,29 @@ export default function EconomicIndicatorCard({ indicator }: EconomicIndicatorCa
         {getNewThresholdBadge()}
       </div>
 
-      {/* 메인 콘텐츠 영역 - flex로 변경하여 좌우 확장 지원 */}
-      <div className="flex">
-        {/* 왼쪽 확장 섹션 - 해석 포인트 */}
-        {expandedSections.left && (
-          <div className="mr-4 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border-l-4 border-green-500 min-w-[200px]">
-            <h4 className="font-semibold text-green-900 dark:text-green-100 mb-2">💡 해석 포인트</h4>
-            <div className="text-sm text-green-800 dark:text-green-200 whitespace-pre-line">
-              {getIndicatorContent(getIndicatorId(indicator.name)).interpretation}
-            </div>
+      {/* 왼쪽 확장 섹션 - 해석 포인트 (전체 덮기) */}
+      {expandedSections.left && (
+        <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border-l-4 border-green-500">
+          <h4 className="font-semibold text-green-900 dark:text-green-100 mb-2">💡 해석 포인트</h4>
+          <div className="text-sm text-green-800 dark:text-green-200 whitespace-pre-line">
+            {getIndicatorContent(getIndicatorId(indicator.name)).interpretation}
           </div>
-        )}
+        </div>
+      )}
 
-        {/* 중앙 메인 콘텐츠 */}
-        <div className="flex-1">
-          <div className="grid grid-cols-2 gap-3 text-sm">
+      {/* 오른쪽 확장 섹션 - 경제·투자 적용 (전체 덮기) */}
+      {expandedSections.right && (
+        <div className="mb-4 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border-l-4 border-purple-500">
+          <h4 className="font-semibold text-purple-900 dark:text-purple-100 mb-2">📈 경제·투자 적용</h4>
+          <div className="text-sm text-purple-800 dark:text-purple-200 whitespace-pre-line">
+            {getIndicatorContent(getIndicatorId(indicator.name)).investment}
+          </div>
+        </div>
+      )}
+
+      {/* 메인 콘텐츠 영역 - 왼쪽/오른쪽 확장 시 숨김 */}
+      {!expandedSections.left && !expandedSections.right && (
+        <div className="grid grid-cols-2 gap-3 text-sm">
         <div>
           <p className="text-gray-500 dark:text-gray-400">최신 발표일</p>
           <p className="font-medium text-gray-900 dark:text-white">{indicator.latestDate}</p>
@@ -479,19 +487,8 @@ export default function EconomicIndicatorCard({ indicator }: EconomicIndicatorCa
             }
           </p>
         </div>
-          </div>
         </div>
-
-        {/* 오른쪽 확장 섹션 - 경제·투자 적용 */}
-        {expandedSections.right && (
-          <div className="ml-4 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border-l-4 border-purple-500 min-w-[200px]">
-            <h4 className="font-semibold text-purple-900 dark:text-purple-100 mb-2">📈 경제·투자 적용</h4>
-            <div className="text-sm text-purple-800 dark:text-purple-200 whitespace-pre-line">
-              {getIndicatorContent(getIndicatorId(indicator.name)).investment}
-            </div>
-          </div>
-        )}
-      </div>
+      )}
 
       {/* 접기/펼치기 버튼 */}
       <div className="mt-4 border-t border-gray-200 dark:border-gray-700 pt-3">
