@@ -119,10 +119,10 @@ investment-app/
 
 ## 12) Tasks (Single Source of Truth)
 ### Active (in this session)
-- **T-035:** 4방향 확장 버튼 구현 🔄 진행중 (토큰 제한으로 중단 예정)
-  - DoD: 위/왼쪽/오른쪽/아래쪽 독립적 확장 기능 + 실제 콘텐츠 추가
-  - Files: EconomicIndicatorCard.tsx, EconomicIndicatorsSection.tsx
-  - Risks: 로딩 성능 이슈, Render 백엔드 응답 지연
+- **T-040:** 포트폴리오 대시보드 시스템 구현 완료 ✅ (2025-09-20)
+  - DoD: 백엔드 API + 프론트엔드 대시보드 + 차트 시각화 + 실시간 데이터 연동
+  - Files: backend/app.py, services/postgres_database_service.py, frontend/components/PortfolioDashboard.tsx
+  - Risks: 실시간 시세 연동 필요 시 추가 개발 필요
 
 ### Recent Done
 - **T-000:** 프로젝트 초기 구조 구축 ✅ (Flask + Next.js 기본 골격 완성)
@@ -160,6 +160,11 @@ investment-app/
 - **T-032:** 배지 시스템 접기/펼치기 정보 섹션 추가 ✅ (10개 지표별 상세 설명, 독립적 상태 관리)
 - **T-033:** DataSection History Table 색상 로직 수정 ✅ (문자열→숫자 비교로 음수 지표 색상 정상화)
 - **T-034:** 프로젝트 문서화 가이드 수립 ✅ (MD 파일 역할 분담, 작업 기록 표준 방식 정의)
+- **T-035:** PostgreSQL RealDictRow 접근 오류 수정 ✅ (result[0] → result['id'] 수정, save_asset API 정상화)
+- **T-036:** 포트폴리오 백엔드 API 구현 ✅ (/api/portfolio 엔드포인트, get_all_assets 메서드)
+- **T-037:** 포트폴리오 프론트엔드 대시보드 구현 ✅ (요약카드, 테이블, 필터링, 정렬)
+- **T-038:** 차트 시각화 시스템 구현 ✅ (도넛차트, 막대차트, Recharts 활용)
+- **T-039:** 세션 작업 문서화 완료 ✅ (포트폴리오 시스템 구현 가이드 작성 + CLAUDE.md Tasks/ADR 갱신)
 
 ### Backlog
 - **B-010:** 추가 경제지표 확장 (목표: 10개 지표)
@@ -323,6 +328,43 @@ investment-app/
   - **루트 분석 파일**: 복잡한 이슈 해결 기록 전용
   - **표준화**: 네이밍 컨벤션 및 템플릿 제공
   - **효율성**: 향후 유지보수 및 온보딩 개선
+
+### ADR-014: 포트폴리오 대시보드 아키텍처 설계
+- Date: 2025-09-20
+- Context: 포트폴리오 자산 관리를 위한 통합 대시보드 시스템 필요
+- Options: 단순 리스트 vs 대시보드 vs 외부 서비스 연동
+- Decision: 백엔드 API + 프론트엔드 대시보드 + 차트 시각화 통합 시스템
+- Consequences:
+  - **백엔드**: `/api/portfolio` 엔드포인트, get_all_assets 메서드로 PostgreSQL 연동
+  - **프론트엔드**: 요약카드 + 테이블 + 차트로 구성된 종합 대시보드
+  - **차트**: Recharts 라이브러리로 도넛차트(비중) + 막대차트(금액) 시각화
+  - **필터링**: 자산군별 필터 + 금액/수익률/이름 정렬 기능
+  - **실시간성**: 자산 추가 후 즉시 대시보드 새로고침
+
+### ADR-015: PostgreSQL RealDictRow 데이터 접근 표준화
+- Date: 2025-09-20
+- Context: PostgreSQL save_asset 메서드에서 "Error saving asset: 0" 발생
+- Options: SQLite 전환 vs PostgreSQL 수정 vs 하이브리드 유지
+- Decision: RealDictRow 객체의 올바른 딕셔너리 접근 방식 적용
+- Consequences:
+  - **수정 내용**: `result[0]` → `result['id']`로 변경
+  - **원인**: RealDictRow는 딕셔너리 형태 접근 필요, 인덱스 접근 시 오류
+  - **영향**: save_asset API 정상화, 포트폴리오 자산 저장 완전 복구
+  - **예방**: 향후 PostgreSQL 쿼리 결과는 컬럼명으로 접근 필수
+  - **검증**: 실제 Neon PostgreSQL에 자산 데이터 영구 저장 확인
+
+
+### ADR-016: 동적 폼 필드 시스템 설계
+- Date: 2025-09-20
+- Context: 자산군별로 필요한 입력 필드가 다름 (주식 vs 부동산 vs 현금)
+- Options: 모든 필드 노출 vs 조건부 렌더링 vs 단계별 입력
+- Decision: React 조건부 렌더링 기반 동적 필드 시스템
+- Consequences:
+  - **UX 향상**: 자산군 선택 시 관련 필드만 표시
+  - **데이터 정확성**: 자산군별 필수 필드 강제 검증
+  - **실시간 계산**: 수량×평균가 자동 총액 계산
+  - **유지보수성**: 새 자산군 추가 시 간단한 배열 수정만 필요
+  - **확장성**: 향후 복잡한 자산 계산 로직 추가 가능
 
 ---
 

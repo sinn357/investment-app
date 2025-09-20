@@ -341,3 +341,141 @@ class DatabaseService:
                 return float(value)
         except (ValueError, TypeError):
             return value  # 변환 실패 시 원본 반환
+
+    def save_asset(self, asset_data: Dict[str, Any]) -> Dict[str, Any]:
+        """자산 데이터를 SQLite 데이터베이스에 저장"""
+        try:
+            # SQLite에는 assets 테이블이 없으므로 먼저 생성
+            with self.get_connection() as conn:
+                # assets 테이블 생성 (없으면)
+                conn.execute("""
+                    CREATE TABLE IF NOT EXISTS assets (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        asset_type TEXT,
+                        name TEXT,
+                        amount REAL,
+                        quantity REAL,
+                        avg_price REAL,
+                        eval_amount REAL,
+                        date TEXT,
+                        note TEXT,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+
+                # 자산 데이터 삽입
+                cursor = conn.execute("""
+                    INSERT INTO assets (asset_type, name, amount, quantity, avg_price, eval_amount, date, note)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    asset_data.get('asset_type'),
+                    asset_data.get('name'),
+                    asset_data.get('amount'),
+                    asset_data.get('quantity'),
+                    asset_data.get('avg_price'),
+                    asset_data.get('eval_amount'),
+                    asset_data.get('date'),
+                    asset_data.get('note')
+                ))
+
+                asset_id = cursor.lastrowid
+                conn.commit()
+
+                return {
+                    "status": "success",
+                    "message": "자산 저장 완료 (SQLite)",
+                    "asset_id": asset_id
+                }
+
+        except Exception as e:
+            print(f"Error saving asset to SQLite: {e}")
+            return {
+                "status": "error",
+                "message": f"자산 저장 실패: {str(e)}"
+            }
+
+    def get_all_assets(self) -> Dict[str, Any]:
+        """모든 자산 데이터 조회 (포트폴리오 대시보드용) - SQLite"""
+        try:
+            with self.get_connection() as conn:
+                rows = conn.execute("""
+                    SELECT id, asset_type, name, amount, quantity, avg_price, eval_amount, date, note, created_at
+                    FROM assets
+                    ORDER BY created_at DESC
+                """).fetchall()
+
+                if not rows:
+                    return {
+                        "status": "success",
+                        "data": [],
+                        "summary": {
+                            "total_assets": 0,
+                            "total_principal": 0,
+                            "total_profit_loss": 0,
+                            "profit_rate": 0
+                        },
+                        "by_category": {}
+                    }
+
+                # 데이터 변환 및 계산
+                assets = []
+                total_amount = 0
+                category_summary = {}
+
+                for row in rows:
+                    asset = {
+                        "id": row['id'],
+                        "asset_type": row['asset_type'],
+                        "name": row['name'],
+                        "amount": float(row['amount']) if row['amount'] else 0,
+                        "quantity": float(row['quantity']) if row['quantity'] else None,
+                        "avg_price": float(row['avg_price']) if row['avg_price'] else None,
+                        "eval_amount": float(row['eval_amount']) if row['eval_amount'] else None,
+                        "date": row['date'],
+                        "note": row['note'],
+                        "created_at": row['created_at'] if row['created_at'] else None
+                    }
+
+                    # 손익 계산 (현재는 평가금액 = 매수금액으로 가정)
+                    asset["profit_loss"] = 0  # 실시간 시세 연동 시 구현
+                    asset["profit_rate"] = 0   # 실시간 시세 연동 시 구현
+
+                    assets.append(asset)
+                    total_amount += asset["amount"]
+
+                    # 자산군별 합계
+                    category = asset["asset_type"]
+                    if category not in category_summary:
+                        category_summary[category] = {
+                            "total_amount": 0,
+                            "count": 0,
+                            "percentage": 0
+                        }
+                    category_summary[category]["total_amount"] += asset["amount"]
+                    category_summary[category]["count"] += 1
+
+                # 자산군별 비중 계산
+                for category in category_summary:
+                    if total_amount > 0:
+                        category_summary[category]["percentage"] = round(
+                            (category_summary[category]["total_amount"] / total_amount) * 100, 2
+                        )
+
+                return {
+                    "status": "success",
+                    "data": assets,
+                    "summary": {
+                        "total_assets": total_amount,
+                        "total_principal": total_amount,  # 실시간 시세 연동 시 구분
+                        "total_profit_loss": 0,           # 실시간 시세 연동 시 구현
+                        "profit_rate": 0                  # 실시간 시세 연동 시 구현
+                    },
+                    "by_category": category_summary
+                }
+
+        except Exception as e:
+            print(f"Error getting all assets from SQLite: {e}")
+            return {
+                "status": "error",
+                "message": f"자산 조회 실패: {str(e)}"
+            }

@@ -2,31 +2,29 @@
 
 import { useState } from 'react';
 import Navigation from '@/components/Navigation';
-import PortfolioForm from '@/components/PortfolioForm';
+import EnhancedPortfolioForm from '@/components/EnhancedPortfolioForm';
 import PortfolioDashboard from '@/components/PortfolioDashboard';
 
 export interface PortfolioItem {
   id: string;
   assetType: string;
-  symbol: string;
-  title: string;
+  name: string;
+  amount: number;
+  quantity?: number;
+  avgPrice?: number;
+  principal?: number;
+  evaluationAmount?: number;
+  date: string;
+  note?: string;
   createdAt: string;
 }
 
 export default function PortfolioPage() {
-  const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>([]);
+  const [refreshKey, setRefreshKey] = useState(0);
 
-  const addPortfolioItem = (item: Omit<PortfolioItem, 'id' | 'createdAt'>) => {
-    const newItem: PortfolioItem = {
-      ...item,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString()
-    };
-    setPortfolioItems(prev => [...prev, newItem]);
-  };
-
-  const removePortfolioItem = (id: string) => {
-    setPortfolioItems(prev => prev.filter(item => item.id !== id));
+  const handleAssetAdded = () => {
+    // 자산 추가 후 대시보드 새로고침
+    setRefreshKey(prev => prev + 1);
   };
 
   return (
@@ -45,18 +43,15 @@ export default function PortfolioPage() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid lg:grid-cols-2 gap-8">
+        <div className="space-y-8">
           {/* 입력 폼 섹션 */}
           <div>
-            <PortfolioForm onAddItem={addPortfolioItem} />
+            <EnhancedPortfolioForm onAddItem={handleAssetAdded} />
           </div>
 
           {/* 대시보드 섹션 */}
           <div>
-            <PortfolioDashboard
-              items={portfolioItems}
-              onRemoveItem={removePortfolioItem}
-            />
+            <PortfolioDashboard key={refreshKey} />
           </div>
         </div>
       </main>

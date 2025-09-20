@@ -713,5 +713,95 @@ def crawl_single_indicator(indicator_id):
             "message": f"Error crawling {indicator_id}: {str(e)}"
         }), 500
 
+@app.route('/api/add-asset', methods=['POST'])
+def add_asset():
+    """포트폴리오 자산 추가 API"""
+    try:
+        # JSON 데이터 받기
+        data = request.get_json()
+        print(f"Received data: {data}")
+
+        if not data:
+            return jsonify({
+                "status": "error",
+                "message": "No data provided"
+            }), 400
+
+        # 필수 필드 검증
+        required_fields = ['assetType', 'name', 'date']
+        for field in required_fields:
+            if field not in data or not data[field]:
+                return jsonify({
+                    "status": "error",
+                    "message": f"Missing required field: {field}"
+                }), 400
+
+        # 데이터 변환 (프론트엔드 형식 → DB 형식)
+        asset_data = {
+            'asset_type': data.get('assetType'),
+            'name': data.get('name'),
+            'amount': data.get('amount'),
+            'quantity': data.get('quantity'),
+            'avg_price': data.get('avgPrice'),
+            'eval_amount': data.get('evaluationAmount'),
+            'date': data.get('date'),
+            'note': data.get('note')
+        }
+
+        # 데이터베이스에 저장
+        print(f"About to save asset_data: {asset_data}")
+        print(f"db_service type: {type(db_service)}")
+        print(f"db_service has save_asset: {hasattr(db_service, 'save_asset')}")
+
+        result = db_service.save_asset(asset_data)
+        print(f"Save result: {result}")
+
+        if result.get('status') == 'success':
+            return jsonify(result)
+        else:
+            return jsonify(result), 500
+
+    except Exception as e:
+        print(f"Error in add_asset: {e}")
+        return jsonify({
+            "status": "error",
+            "message": f"Server error: {str(e)}"
+        }), 500
+
+@app.route('/api/test-db', methods=['GET'])
+def test_db():
+    """데이터베이스 연결 및 메서드 테스트"""
+    try:
+        print(f"Testing database connection...")
+        print(f"Database service type: {type(db_service)}")
+        print(f"Database service methods: {[m for m in dir(db_service) if not m.startswith('_')]}")
+
+        return jsonify({
+            "status": "success",
+            "db_type": str(type(db_service)),
+            "has_save_asset": hasattr(db_service, 'save_asset')
+        })
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/api/portfolio', methods=['GET'])
+def get_portfolio():
+    """포트폴리오 전체 데이터 조회 API"""
+    try:
+        # PostgreSQL에서 모든 자산 데이터 조회
+        result = db_service.get_all_assets()
+
+        if result.get('status') == 'success':
+            return jsonify(result)
+        else:
+            return jsonify(result), 500
+
+    except Exception as e:
+        print(f"Error getting portfolio: {e}")
+        return jsonify({
+            "status": "error",
+            "message": f"포트폴리오 조회 실패: {str(e)}"
+        }), 500
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5001)
