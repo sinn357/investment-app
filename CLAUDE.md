@@ -8,8 +8,8 @@
 - **Project:** Investment App - Economic Indicators Dashboard
 - **Repo Root:** /Users/woocheolshin/Documents/Vibecoding_1/investment-app
 - **Owner:** Partner
-- **Last Updated:** 2025-09-21 22:20 KST
-- **Session Goal (Today):** 포트폴리오 수익률 계산 시스템 구현 ✅ (원금/평가액 입력 + 실시간 계산 완료)
+- **Last Updated:** 2025-09-21 23:45 KST
+- **Session Goal (Today):** 포트폴리오 관리 시스템 완성 ✅ (삭제 기능 + 자산군별 그룹화 + 손익 계산 수정 완료)
 
 ---
 
@@ -119,10 +119,15 @@ investment-app/
 
 ## 12) Tasks (Single Source of Truth)
 ### Active (in this session)
-- **T-041:** 포트폴리오 수익률 계산 시스템 구현 완료 ✅ (2025-09-21)
-  - DoD: 원금/평가액 입력 + 실시간 수익률 계산 + 색상 표시 + 백엔드 저장
-  - Files: frontend/components/EnhancedPortfolioForm.tsx, PortfolioDashboard.tsx, backend/services/postgres_database_service.py
-  - Risks: 수동 시세 입력 방식이므로 실시간성 제한
+- **T-042:** 포트폴리오 자산 삭제 기능 구현 ✅ (2025-09-21)
+  - DoD: 삭제 버튼 + 확인 다이얼로그 + 백엔드 DELETE API + 실시간 새로고침
+  - Files: frontend/components/PortfolioDashboard.tsx, backend/app.py, services/postgres_database_service.py
+  - Risks: 삭제 시 되돌릴 수 없음 (현재 휴지통 기능 없음)
+
+- **T-043:** 포트폴리오 자산군별 그룹화 및 손익 계산 수정 ✅ (2025-09-21)
+  - DoD: 자산군별 테이블 그룹화 + 동적 손익 계산 + 시각적 개선
+  - Files: frontend/components/PortfolioDashboard.tsx, backend/services/postgres_database_service.py
+  - Risks: 기존 데이터의 principal 값이 null인 경우 amount로 폴백
 
 ### Recent Done
 - **T-000:** 프로젝트 초기 구조 구축 ✅ (Flask + Next.js 기본 골격 완성)
@@ -166,6 +171,7 @@ investment-app/
 - **T-038:** 차트 시각화 시스템 구현 ✅ (도넛차트, 막대차트, Recharts 활용)
 - **T-039:** 세션 작업 문서화 완료 ✅ (포트폴리오 시스템 구현 가이드 작성 + CLAUDE.md Tasks/ADR 갱신)
 - **T-040:** 포트폴리오 대시보드 시스템 구현 완료 ✅ (백엔드 API + 프론트엔드 대시보드 + 차트 시각화 + 실시간 데이터 연동)
+- **T-041:** 포트폴리오 수익률 계산 시스템 구현 완료 ✅ (원금/평가액 입력 + 실시간 수익률 계산 + 색상 표시 + 백엔드 저장)
 
 ### Backlog
 - **B-010:** 추가 경제지표 확장 (목표: 10개 지표)
@@ -380,6 +386,46 @@ investment-app/
   - **데이터 지속성**: PostgreSQL에 principal, profit_loss, profit_rate 저장
   - **확장성**: 향후 실시간 시세 API 연동 시 평가액 자동 업데이트 가능
   - **제한사항**: 현재 시세는 수동 입력이므로 실시간 추적에 한계
+
+### ADR-018: 포트폴리오 자산 삭제 시스템 설계
+- Date: 2025-09-21
+- Context: 포트폴리오에서 불필요한 자산을 제거할 수 있는 삭제 기능 필요
+- Options: 소프트 삭제(휴지통) vs 하드 삭제 vs 아카이브 시스템
+- Decision: 확인 다이얼로그를 통한 하드 삭제 시스템
+- Consequences:
+  - **안전장치**: "정말로 삭제하시겠습니까?" 확인 다이얼로그로 실수 방지
+  - **시각적 피드백**: 빨간색 휴지통 아이콘으로 직관적 UI
+  - **백엔드 검증**: 자산 존재 여부 확인 후 삭제 진행
+  - **실시간 업데이트**: 삭제 후 포트폴리오 자동 새로고침
+  - **CORS 해결**: DELETE 메서드를 CORS 허용 목록에 추가
+  - **제한사항**: 삭제된 데이터 복구 불가 (향후 휴지통 기능 검토 필요)
+
+### ADR-019: 포트폴리오 자산군별 그룹화 UI 설계
+- Date: 2025-09-21
+- Context: 다양한 자산군(주식, 현금, 펀드 등)을 체계적으로 관리하기 위한 UI 개선 필요
+- Options: 단일 테이블 유지 vs 자산군별 그룹화 vs 탭 기반 분리
+- Decision: 자산군별 그룹화된 테이블 + 그라데이션 헤더 시스템
+- Consequences:
+  - **시각적 구분**: 자산군마다 그라데이션 헤더로 명확한 구분
+  - **통계 표시**: 각 그룹의 자산 개수와 총액을 헤더에 표시
+  - **독립적 관리**: 자산군별로 독립된 테이블로 관리 편의성 향상
+  - **원금/평가액 분리**: 별도 컬럼으로 투자 성과 명확히 표시
+  - **동적 계산**: principal이 null인 기존 데이터는 amount로 폴백
+  - **확장성**: 새로운 자산군 추가 시 자동으로 그룹 생성
+  - **반응형 디자인**: 모바일에서도 그룹별로 깔끔한 표시
+
+### ADR-020: 동적 손익 계산 로직 표준화
+- Date: 2025-09-21
+- Context: 기존 저장된 profit_loss, profit_rate 데이터가 0 또는 null로 부정확한 문제
+- Options: 데이터 마이그레이션 vs 동적 계산 vs 하이브리드 접근
+- Decision: 백엔드에서 실시간 동적 계산 + 폴백 로직 적용
+- Consequences:
+  - **데이터 정확성**: 실시간으로 (평가액-원금)/원금×100 계산
+  - **폴백 로직**: principal이 null이면 amount를 원금으로 사용
+  - **기존 호환성**: 저장된 profit 값 무시하고 동적 계산 우선
+  - **성능 최적화**: 조회 시점에만 계산하므로 저장 용량 절약
+  - **일관성 보장**: 모든 자산이 동일한 계산 로직 적용
+  - **확장성**: 향후 복잡한 수익률 계산 로직 추가 용이
 
 ---
 
