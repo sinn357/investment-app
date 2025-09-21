@@ -33,12 +33,29 @@ export default function EnhancedPortfolioForm({ onAddItem }: EnhancedPortfolioFo
 
   // 자산군별 필드 표시 로직
   const showQuantityAndPrice = ['stock', 'fund', 'crypto'].includes(formData.assetType);
-  const showPrincipalAndEvaluation = ['real-estate', 'bond'].includes(formData.assetType);
+  const showPrincipalAndEvaluation = ['stock', 'fund', 'crypto', 'real-estate', 'bond'].includes(formData.assetType);
   const showOnlyAmount = ['cash', 'account', 'securities', 'foreign-currency'].includes(formData.assetType);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  // 수익률 계산 함수
+  const calculateProfitRate = () => {
+    const principal = parseFloat(formData.principal) || 0;
+    const evaluationAmount = parseFloat(formData.evaluationAmount) || 0;
+
+    if (principal > 0) {
+      return ((evaluationAmount - principal) / principal * 100).toFixed(2);
+    }
+    return '0.00';
+  };
+
+  const calculateProfitLoss = () => {
+    const principal = parseFloat(formData.principal) || 0;
+    const evaluationAmount = parseFloat(formData.evaluationAmount) || 0;
+    return evaluationAmount - principal;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -77,10 +94,24 @@ export default function EnhancedPortfolioForm({ onAddItem }: EnhancedPortfolioFo
       submitData.quantity = Number(formData.quantity);
       submitData.avgPrice = Number(formData.avgPrice);
       submitData.amount = Number(formData.quantity) * Number(formData.avgPrice);
+
+      // 주식/펀드/크립토도 원금/평가액이 있으면 수익률 계산
+      if (formData.principal && formData.evaluationAmount) {
+        submitData.principal = Number(formData.principal);
+        submitData.evaluationAmount = Number(formData.evaluationAmount);
+        submitData.profitLoss = Number(formData.evaluationAmount) - Number(formData.principal);
+        submitData.profitRate = Number(formData.principal) > 0
+          ? ((Number(formData.evaluationAmount) - Number(formData.principal)) / Number(formData.principal) * 100)
+          : 0;
+      }
     } else if (showPrincipalAndEvaluation) {
       submitData.principal = Number(formData.principal);
       submitData.evaluationAmount = Number(formData.evaluationAmount);
       submitData.amount = Number(formData.evaluationAmount);
+      submitData.profitLoss = Number(formData.evaluationAmount) - Number(formData.principal);
+      submitData.profitRate = Number(formData.principal) > 0
+        ? ((Number(formData.evaluationAmount) - Number(formData.principal)) / Number(formData.principal) * 100)
+        : 0;
     } else if (showOnlyAmount) {
       submitData.amount = Number(formData.amount);
     }
@@ -209,38 +240,60 @@ export default function EnhancedPortfolioForm({ onAddItem }: EnhancedPortfolioFo
         )}
 
         {showPrincipalAndEvaluation && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="principal" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                원금 <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="number"
-                id="principal"
-                name="principal"
-                value={formData.principal}
-                onChange={handleInputChange}
-                placeholder="0"
-                min="0"
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-              />
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="principal" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  원금 <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  id="principal"
+                  name="principal"
+                  value={formData.principal}
+                  onChange={handleInputChange}
+                  placeholder="0"
+                  min="0"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                />
+              </div>
+              <div>
+                <label htmlFor="evaluationAmount" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  평가금액 <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  id="evaluationAmount"
+                  name="evaluationAmount"
+                  value={formData.evaluationAmount}
+                  onChange={handleInputChange}
+                  placeholder="0"
+                  min="0"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                />
+              </div>
             </div>
-            <div>
-              <label htmlFor="evaluationAmount" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                평가금액 <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="number"
-                id="evaluationAmount"
-                name="evaluationAmount"
-                value={formData.evaluationAmount}
-                onChange={handleInputChange}
-                placeholder="0"
-                min="0"
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-              />
-            </div>
-          </div>
+
+            {/* 실시간 수익률 표시 */}
+            {(formData.principal || formData.evaluationAmount) && (
+              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600 dark:text-gray-300">수익/손실:</span>
+                    <span className={`font-semibold ${calculateProfitLoss() >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {calculateProfitLoss() >= 0 ? '+' : ''}{calculateProfitLoss().toLocaleString()}원
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600 dark:text-gray-300">수익률:</span>
+                    <span className={`font-semibold ${parseFloat(calculateProfitRate()) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {parseFloat(calculateProfitRate()) >= 0 ? '+' : ''}{calculateProfitRate()}%
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
         )}
 
         {showOnlyAmount && (
