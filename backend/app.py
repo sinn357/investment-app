@@ -803,5 +803,26 @@ def get_portfolio():
             "message": f"포트폴리오 조회 실패: {str(e)}"
         }), 500
 
+@app.route('/api/delete-asset/<int:asset_id>', methods=['DELETE'])
+def delete_asset(asset_id):
+    """포트폴리오 자산 삭제 API"""
+    try:
+        print(f"Attempting to delete asset with ID: {asset_id}")
+
+        # 데이터베이스에서 자산 삭제
+        result = db_service.delete_asset(asset_id)
+
+        if result.get('status') == 'success':
+            return jsonify(result)
+        else:
+            return jsonify(result), 500
+
+    except Exception as e:
+        print(f"Error deleting asset: {e}")
+        return jsonify({
+            "status": "error",
+            "message": f"자산 삭제 실패: {str(e)}"
+        }), 500
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5001)

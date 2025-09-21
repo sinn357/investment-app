@@ -513,3 +513,50 @@ class PostgresDatabaseService:
                 "status": "error",
                 "message": f"자산 조회 실패: {str(e)}"
             }
+
+    def delete_asset(self, asset_id: int) -> Dict[str, Any]:
+        """자산 데이터를 데이터베이스에서 삭제"""
+        try:
+            print(f"PostgreSQL delete_asset called with ID: {asset_id}")
+            with self.get_connection() as conn:
+                print("PostgreSQL connection established for deletion")
+                with conn.cursor() as cur:
+                    # 먼저 해당 자산이 존재하는지 확인
+                    cur.execute("SELECT id, name FROM assets WHERE id = %s", (asset_id,))
+                    asset = cur.fetchone()
+
+                    if not asset:
+                        return {
+                            "status": "error",
+                            "message": f"ID {asset_id}인 자산을 찾을 수 없습니다."
+                        }
+
+                    asset_name = asset['name']
+
+                    # 자산 삭제
+                    cur.execute("DELETE FROM assets WHERE id = %s", (asset_id,))
+                    deleted_count = cur.rowcount
+                    conn.commit()
+
+                    if deleted_count > 0:
+                        print(f"Asset '{asset_name}' (ID: {asset_id}) deleted successfully")
+                        return {
+                            "status": "success",
+                            "message": f"자산 '{asset_name}'이(가) 성공적으로 삭제되었습니다.",
+                            "deleted_asset": {
+                                "id": asset_id,
+                                "name": asset_name
+                            }
+                        }
+                    else:
+                        return {
+                            "status": "error",
+                            "message": f"자산 삭제에 실패했습니다."
+                        }
+
+        except Exception as e:
+            print(f"Error deleting asset: {e}")
+            return {
+                "status": "error",
+                "message": f"자산 삭제 실패: {str(e)}"
+            }
