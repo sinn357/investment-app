@@ -53,7 +53,7 @@ export default function PortfolioDashboard() {
   const fetchPortfolioData = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:5001/api/portfolio');
+      const response = await fetch('https://investment-app-backend-x166.onrender.com/api/portfolio');
       const data = await response.json();
 
       if (data.status === 'success') {

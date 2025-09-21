@@ -89,7 +89,7 @@ export default function EnhancedPortfolioForm({ onAddItem }: EnhancedPortfolioFo
 
     // 백엔드 API로 데이터 전송
     try {
-      const response = await fetch('http://localhost:5001/api/add-asset', {
+      const response = await fetch('https://investment-app-backend-x166.onrender.com/api/add-asset', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
