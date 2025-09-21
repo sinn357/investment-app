@@ -83,10 +83,18 @@ class PostgresDatabaseService:
                         quantity NUMERIC,
                         avg_price NUMERIC,
                         eval_amount NUMERIC,
+                        principal NUMERIC,
+                        profit_loss NUMERIC DEFAULT 0,
+                        profit_rate NUMERIC DEFAULT 0,
                         date DATE,
                         note TEXT,
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     );
+
+                    -- 기존 테이블에 새 컬럼 추가 (테이블이 이미 존재하는 경우)
+                    ALTER TABLE assets ADD COLUMN IF NOT EXISTS principal NUMERIC;
+                    ALTER TABLE assets ADD COLUMN IF NOT EXISTS profit_loss NUMERIC DEFAULT 0;
+                    ALTER TABLE assets ADD COLUMN IF NOT EXISTS profit_rate NUMERIC DEFAULT 0;
 
                     -- 인덱스 생성
                     CREATE INDEX IF NOT EXISTS idx_latest_releases_indicator_id ON latest_releases(indicator_id);
@@ -367,8 +375,8 @@ class PostgresDatabaseService:
                 print("PostgreSQL connection established")
                 with conn.cursor() as cur:
                     cur.execute("""
-                        INSERT INTO assets (asset_type, name, amount, quantity, avg_price, eval_amount, date, note)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                        INSERT INTO assets (asset_type, name, amount, quantity, avg_price, eval_amount, principal, profit_loss, profit_rate, date, note)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                         RETURNING id
                     """, (
                         asset_data.get('asset_type'),
@@ -377,6 +385,9 @@ class PostgresDatabaseService:
                         asset_data.get('quantity'),
                         asset_data.get('avg_price'),
                         asset_data.get('eval_amount'),
+                        asset_data.get('principal'),
+                        asset_data.get('profit_loss', 0),
+                        asset_data.get('profit_rate', 0),
                         asset_data.get('date'),
                         asset_data.get('note')
                     ))
@@ -406,7 +417,7 @@ class PostgresDatabaseService:
             with self.get_connection() as conn:
                 with conn.cursor() as cur:
                     cur.execute("""
-                        SELECT id, asset_type, name, amount, quantity, avg_price, eval_amount, date, note, created_at
+                        SELECT id, asset_type, name, amount, quantity, avg_price, eval_amount, principal, profit_loss, profit_rate, date, note, created_at
                         FROM assets
                         ORDER BY created_at DESC
                     """)
@@ -429,6 +440,8 @@ class PostgresDatabaseService:
                     # 데이터 변환 및 계산
                     assets = []
                     total_amount = 0
+                    total_principal = 0
+                    total_profit_loss = 0
                     category_summary = {}
 
                     for row in rows:
@@ -440,17 +453,24 @@ class PostgresDatabaseService:
                             "quantity": float(row['quantity']) if row['quantity'] else None,
                             "avg_price": float(row['avg_price']) if row['avg_price'] else None,
                             "eval_amount": float(row['eval_amount']) if row['eval_amount'] else None,
+                            "principal": float(row['principal']) if row['principal'] else None,
+                            "profit_loss": float(row['profit_loss']) if row['profit_loss'] else 0,
+                            "profit_rate": float(row['profit_rate']) if row['profit_rate'] else 0,
                             "date": row['date'],
                             "note": row['note'],
                             "created_at": row['created_at'].isoformat() if row['created_at'] else None
                         }
 
-                        # 손익 계산 (현재는 평가금액 = 매수금액으로 가정)
-                        asset["profit_loss"] = 0  # 실시간 시세 연동 시 구현
-                        asset["profit_rate"] = 0   # 실시간 시세 연동 시 구현
-
                         assets.append(asset)
                         total_amount += asset["amount"]
+
+                        # 원금과 손익 합계 계산
+                        if asset["principal"]:
+                            total_principal += asset["principal"]
+                        else:
+                            total_principal += asset["amount"]  # 원금이 없으면 보유금액을 원금으로 사용
+
+                        total_profit_loss += asset["profit_loss"]
 
                         # 자산군별 합계
                         category = asset["asset_type"]
@@ -470,14 +490,19 @@ class PostgresDatabaseService:
                                 (category_summary[category]["total_amount"] / total_amount) * 100, 2
                             )
 
+                    # 총 수익률 계산
+                    total_profit_rate = 0
+                    if total_principal > 0:
+                        total_profit_rate = (total_profit_loss / total_principal) * 100
+
                     return {
                         "status": "success",
                         "data": assets,
                         "summary": {
                             "total_assets": total_amount,
-                            "total_principal": total_amount,  # 실시간 시세 연동 시 구분
-                            "total_profit_loss": 0,           # 실시간 시세 연동 시 구현
-                            "profit_rate": 0                  # 실시간 시세 연동 시 구현
+                            "total_principal": total_principal,
+                            "total_profit_loss": total_profit_loss,
+                            "profit_rate": total_profit_rate
                         },
                         "by_category": category_summary
                     }
