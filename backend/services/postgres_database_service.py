@@ -445,6 +445,14 @@ class PostgresDatabaseService:
                     category_summary = {}
 
                     for row in rows:
+                        # 원금과 평가금액 결정
+                        principal = float(row['principal']) if row['principal'] else float(row['amount']) if row['amount'] else 0
+                        eval_amount = float(row['eval_amount']) if row['eval_amount'] else float(row['amount']) if row['amount'] else 0
+
+                        # 손익과 수익률 계산
+                        profit_loss = eval_amount - principal
+                        profit_rate = (profit_loss / principal * 100) if principal > 0 else 0
+
                         asset = {
                             "id": row['id'],
                             "asset_type": row['asset_type'],
@@ -452,10 +460,10 @@ class PostgresDatabaseService:
                             "amount": float(row['amount']) if row['amount'] else 0,
                             "quantity": float(row['quantity']) if row['quantity'] else None,
                             "avg_price": float(row['avg_price']) if row['avg_price'] else None,
-                            "eval_amount": float(row['eval_amount']) if row['eval_amount'] else None,
-                            "principal": float(row['principal']) if row['principal'] else None,
-                            "profit_loss": float(row['profit_loss']) if row['profit_loss'] else 0,
-                            "profit_rate": float(row['profit_rate']) if row['profit_rate'] else 0,
+                            "eval_amount": eval_amount,
+                            "principal": principal,
+                            "profit_loss": profit_loss,
+                            "profit_rate": profit_rate,
                             "date": row['date'],
                             "note": row['note'],
                             "created_at": row['created_at'].isoformat() if row['created_at'] else None
@@ -465,11 +473,7 @@ class PostgresDatabaseService:
                         total_amount += asset["amount"]
 
                         # 원금과 손익 합계 계산
-                        if asset["principal"]:
-                            total_principal += asset["principal"]
-                        else:
-                            total_principal += asset["amount"]  # 원금이 없으면 보유금액을 원금으로 사용
-
+                        total_principal += asset["principal"]
                         total_profit_loss += asset["profit_loss"]
 
                         # 자산군별 합계
