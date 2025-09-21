@@ -66,7 +66,7 @@ export default function EnhancedPortfolioForm({ onAddItem }: EnhancedPortfolioFo
     }
 
     // 데이터 정리 및 출력
-    const submitData: any = {
+    const submitData: Record<string, unknown> = {
       assetType: assetTypes.find(type => type.value === formData.assetType)?.label || formData.assetType,
       name: formData.name,
       date: formData.date,
