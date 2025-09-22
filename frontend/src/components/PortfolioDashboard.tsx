@@ -39,6 +39,14 @@ interface PortfolioData {
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D', '#FFC658', '#FF7C7C', '#8DD1E1'];
 
+// 대분류별 색상 그룹 (소분류 차트용)
+const MAIN_CATEGORY_COLORS = {
+  '즉시현금': ['#0088FE', '#1D93FF', '#3A9FFF', '#58ABFF'],
+  '예치자산': ['#00C49F', '#1DD0AB', '#3ADBB7', '#58E6C3'],
+  '투자자산': ['#FFBB28', '#FFC53A', '#FFCF4D', '#FFD960'],
+  '대체투자': ['#FF8042', '#FF8F58', '#FF9E6E', '#FFAD84']
+};
+
 interface PortfolioDashboardProps {
   showSideInfo?: boolean;
 }
@@ -58,6 +66,7 @@ export default function PortfolioDashboard({ showSideInfo = false }: PortfolioDa
     targetDate: '2024-12-31',
     categoryGoals: {} as Record<string, number>
   });
+  const [chartViewType, setChartViewType] = useState<'main' | 'sub'>('main');
 
   useEffect(() => {
     fetchPortfolioData();
@@ -308,22 +317,68 @@ export default function PortfolioDashboard({ showSideInfo = false }: PortfolioDa
   const getPieChartData = () => {
     if (!portfolioData) return [];
 
-    return Object.entries(portfolioData.by_category).map(([category, data]) => ({
-      name: category,
-      value: data.total_amount,
-      percentage: data.percentage,
-    }));
+    if (chartViewType === 'main') {
+      // 대분류별 데이터
+      return Object.entries(portfolioData.by_category).map(([category, data]) => ({
+        name: category,
+        value: data.total_amount,
+        percentage: data.percentage,
+      }));
+    } else {
+      // 소분류별 데이터
+      const groupedAssets = getGroupedAssets();
+      const subCategoryData: Array<{name: string, value: number, percentage: number, mainCategory: string}> = [];
+
+      Object.entries(groupedAssets).forEach(([mainCategory, subCategories]) => {
+        Object.entries(subCategories).forEach(([subCategory, assets]) => {
+          const totalAmount = assets.reduce((sum, asset) => sum + asset.amount, 0);
+          const percentage = portfolioData ? (totalAmount / portfolioData.summary.total_assets) * 100 : 0;
+
+          subCategoryData.push({
+            name: `${mainCategory} > ${subCategory}`,
+            value: totalAmount,
+            percentage: percentage,
+            mainCategory: mainCategory
+          });
+        });
+      });
+
+      return subCategoryData;
+    }
   };
 
   const getBarChartData = () => {
     if (!portfolioData) return [];
 
-    return Object.entries(portfolioData.by_category).map(([category, data]) => ({
-      name: category,
-      amount: data.total_amount,
-      count: data.count,
-      percentage: data.percentage,
-    }));
+    if (chartViewType === 'main') {
+      // 대분류별 데이터
+      return Object.entries(portfolioData.by_category).map(([category, data]) => ({
+        name: category,
+        amount: data.total_amount,
+        count: data.count,
+        percentage: data.percentage,
+      }));
+    } else {
+      // 소분류별 데이터
+      const groupedAssets = getGroupedAssets();
+      const subCategoryData: Array<{name: string, amount: number, count: number, percentage: number}> = [];
+
+      Object.entries(groupedAssets).forEach(([mainCategory, subCategories]) => {
+        Object.entries(subCategories).forEach(([subCategory, assets]) => {
+          const totalAmount = assets.reduce((sum, asset) => sum + asset.amount, 0);
+          const percentage = portfolioData ? (totalAmount / portfolioData.summary.total_assets) * 100 : 0;
+
+          subCategoryData.push({
+            name: `${mainCategory} > ${subCategory}`,
+            amount: totalAmount,
+            count: assets.length,
+            percentage: percentage
+          });
+        });
+      });
+
+      return subCategoryData;
+    }
   };
 
   const getAssetFlowData = () => {
@@ -581,7 +636,33 @@ export default function PortfolioDashboard({ showSideInfo = false }: PortfolioDa
 
         {/* 자산군별 비중 도넛 차트 */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4">
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">자산군별 비중</h3>
+          <div className="flex justify-between items-center mb-3">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+              {chartViewType === 'main' ? '대분류별 비중' : '소분류별 비중'}
+            </h3>
+            <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+              <button
+                onClick={() => setChartViewType('main')}
+                className={`px-2 py-1 text-xs rounded transition-colors ${
+                  chartViewType === 'main'
+                    ? 'bg-blue-500 text-white'
+                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                }`}
+              >
+                대분류
+              </button>
+              <button
+                onClick={() => setChartViewType('sub')}
+                className={`px-2 py-1 text-xs rounded transition-colors ${
+                  chartViewType === 'sub'
+                    ? 'bg-blue-500 text-white'
+                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                }`}
+              >
+                소분류
+              </button>
+            </div>
+          </div>
           <ResponsiveContainer width="100%" height={200}>
             <PieChart>
               <Pie
@@ -593,9 +674,17 @@ export default function PortfolioDashboard({ showSideInfo = false }: PortfolioDa
                 paddingAngle={5}
                 dataKey="value"
               >
-                {pieChartData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
+                {pieChartData.map((entry, index) => {
+                  if (chartViewType === 'sub' && 'mainCategory' in entry) {
+                    // 소분류 모드: 대분류별 색상 그룹 사용
+                    const mainCategoryColors = MAIN_CATEGORY_COLORS[entry.mainCategory as keyof typeof MAIN_CATEGORY_COLORS] || COLORS;
+                    const subIndex = pieChartData.filter(item => 'mainCategory' in item && item.mainCategory === entry.mainCategory).indexOf(entry);
+                    return <Cell key={`cell-${index}`} fill={mainCategoryColors[subIndex % mainCategoryColors.length]} />;
+                  } else {
+                    // 대분류 모드: 기본 색상 사용
+                    return <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />;
+                  }
+                })}
               </Pie>
               <Tooltip formatter={(value: number) => formatCurrency(value)} />
               <Legend wrapperStyle={{ fontSize: '10px' }} />
@@ -633,7 +722,33 @@ export default function PortfolioDashboard({ showSideInfo = false }: PortfolioDa
 
         {/* 막대 차트 - 자산군별 금액 */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">자산군별 금액</h3>
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+              {chartViewType === 'main' ? '대분류별 금액' : '소분류별 금액'}
+            </h3>
+            <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+              <button
+                onClick={() => setChartViewType('main')}
+                className={`px-3 py-1 text-sm rounded transition-colors ${
+                  chartViewType === 'main'
+                    ? 'bg-blue-500 text-white'
+                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                }`}
+              >
+                대분류
+              </button>
+              <button
+                onClick={() => setChartViewType('sub')}
+                className={`px-3 py-1 text-sm rounded transition-colors ${
+                  chartViewType === 'sub'
+                    ? 'bg-blue-500 text-white'
+                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                }`}
+              >
+                소분류
+              </button>
+            </div>
+          </div>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={barChartData}>
               <CartesianGrid strokeDasharray="3 3" />
