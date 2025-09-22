@@ -67,6 +67,15 @@ export default function PortfolioDashboard({ showSideInfo = false }: PortfolioDa
     categoryGoals: {} as Record<string, number>
   });
   const [chartViewType, setChartViewType] = useState<'전체' | '대체투자' | '예치자산' | '즉시현금' | '투자자산'>('전체');
+  const [subViewType, setSubViewType] = useState<string | null>(null);
+
+  // 소분류 매핑
+  const subCategories = {
+    '즉시현금': ['현금', '입출금통장', '증권예수금'],
+    '예치자산': ['예금', '적금', 'MMF'],
+    '투자자산': ['국내주식', '해외주식', '펀드', 'ETF', '채권'],
+    '대체투자': ['암호화폐', '부동산', '원자재']
+  };
 
   useEffect(() => {
     fetchPortfolioData();
@@ -325,6 +334,22 @@ export default function PortfolioDashboard({ showSideInfo = false }: PortfolioDa
         value: data.total_amount,
         percentage: data.percentage,
       }));
+    } else if (subViewType) {
+      // 특정 소분류의 개별 자산별 데이터
+      const targetCategory = chartViewType;
+      if (!groupedAssets[targetCategory] || !groupedAssets[targetCategory][subViewType]) return [];
+
+      const subCategoryAssets = groupedAssets[targetCategory][subViewType];
+      const subTotal = subCategoryAssets.reduce((sum, asset) => sum + asset.amount, 0);
+
+      return subCategoryAssets.map((asset) => {
+        const percentage = subTotal > 0 ? (asset.amount / subTotal) * 100 : 0;
+        return {
+          name: asset.name,
+          value: asset.amount,
+          percentage: percentage
+        };
+      });
     } else {
       // 특정 대분류의 소분류별 데이터
       const targetCategory = chartViewType;
@@ -359,6 +384,23 @@ export default function PortfolioDashboard({ showSideInfo = false }: PortfolioDa
         count: data.count,
         percentage: data.percentage,
       }));
+    } else if (subViewType) {
+      // 특정 소분류의 개별 자산별 데이터
+      const targetCategory = chartViewType;
+      if (!groupedAssets[targetCategory] || !groupedAssets[targetCategory][subViewType]) return [];
+
+      const subCategoryAssets = groupedAssets[targetCategory][subViewType];
+      const subTotal = subCategoryAssets.reduce((sum, asset) => sum + asset.amount, 0);
+
+      return subCategoryAssets.map((asset) => {
+        const percentage = subTotal > 0 ? (asset.amount / subTotal) * 100 : 0;
+        return {
+          name: asset.name,
+          amount: asset.amount,
+          count: 1,
+          percentage: percentage
+        };
+      });
     } else {
       // 특정 대분류의 소분류별 데이터
       const targetCategory = chartViewType;
@@ -621,55 +663,6 @@ export default function PortfolioDashboard({ showSideInfo = false }: PortfolioDa
           )}
         </div>
 
-        {/* 자산군별 비중 도넛 차트 */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4">
-          <div className="flex justify-between items-center mb-3">
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
-              {chartViewType === '전체' ? '대분류별 비중' : `${chartViewType} 세부 구성`}
-            </h3>
-            <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1 flex-wrap gap-1">
-              {['전체', '대체투자', '예치자산', '즉시현금', '투자자산'].map((viewType) => (
-                <button
-                  key={viewType}
-                  onClick={() => setChartViewType(viewType as '전체' | '대체투자' | '예치자산' | '즉시현금' | '투자자산')}
-                  className={`px-2 py-1 text-xs rounded transition-colors ${
-                    chartViewType === viewType
-                      ? 'bg-blue-500 text-white'
-                      : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                  }`}
-                >
-                  {viewType}
-                </button>
-              ))}
-            </div>
-          </div>
-          <ResponsiveContainer width="100%" height={200}>
-            <PieChart>
-              <Pie
-                data={pieChartData}
-                cx="50%"
-                cy="50%"
-                innerRadius={40}
-                outerRadius={80}
-                paddingAngle={5}
-                dataKey="value"
-              >
-                {pieChartData.map((entry, index) => {
-                  if (chartViewType === '전체') {
-                    // 전체 모드: 기본 색상 사용
-                    return <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />;
-                  } else {
-                    // 특정 대분류 모드: 해당 대분류 색상 그룹 사용
-                    const mainCategoryColors = MAIN_CATEGORY_COLORS[chartViewType as keyof typeof MAIN_CATEGORY_COLORS] || COLORS;
-                    return <Cell key={`cell-${index}`} fill={mainCategoryColors[index % mainCategoryColors.length]} />;
-                  }
-                })}
-              </Pie>
-              <Tooltip formatter={(value: number) => formatCurrency(value)} />
-              <Legend wrapperStyle={{ fontSize: '10px' }} />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
       </div>
     );
   }
@@ -701,15 +694,24 @@ export default function PortfolioDashboard({ showSideInfo = false }: PortfolioDa
 
         {/* 자산 구성 분석 - 도넛 차트 + 막대 차트 */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-              {chartViewType === '전체' ? '자산 구성 분석' : `${chartViewType} 세부 분석`}
-            </h3>
-            <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1 flex-wrap gap-1">
+          <div className="mb-4">
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                {chartViewType === '전체' ? '자산 구성 분석' :
+                 subViewType ? `${subViewType} 상세 분석` :
+                 `${chartViewType} 세부 분석`}
+              </h3>
+            </div>
+
+            {/* 1단계: 대분류 버튼 */}
+            <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1 flex-wrap gap-1 mb-2">
               {['전체', '대체투자', '예치자산', '즉시현금', '투자자산'].map((viewType) => (
                 <button
                   key={viewType}
-                  onClick={() => setChartViewType(viewType as '전체' | '대체투자' | '예치자산' | '즉시현금' | '투자자산')}
+                  onClick={() => {
+                    setChartViewType(viewType as '전체' | '대체투자' | '예치자산' | '즉시현금' | '투자자산');
+                    setSubViewType(null); // 대분류 변경 시 소분류 초기화
+                  }}
                   className={`px-2 py-1 text-xs rounded transition-colors ${
                     chartViewType === viewType
                       ? 'bg-blue-500 text-white'
@@ -720,6 +722,35 @@ export default function PortfolioDashboard({ showSideInfo = false }: PortfolioDa
                 </button>
               ))}
             </div>
+
+            {/* 2단계: 소분류 버튼 (대분류 선택 시에만 표시) */}
+            {chartViewType !== '전체' && subCategories[chartViewType] && (
+              <div className="flex bg-gray-50 dark:bg-gray-600 rounded-lg p-1 flex-wrap gap-1">
+                <button
+                  onClick={() => setSubViewType(null)}
+                  className={`px-2 py-1 text-xs rounded transition-colors ${
+                    !subViewType
+                      ? 'bg-green-500 text-white'
+                      : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-500'
+                  }`}
+                >
+                  전체
+                </button>
+                {subCategories[chartViewType].map((subCategory) => (
+                  <button
+                    key={subCategory}
+                    onClick={() => setSubViewType(subCategory)}
+                    className={`px-2 py-1 text-xs rounded transition-colors ${
+                      subViewType === subCategory
+                        ? 'bg-green-500 text-white'
+                        : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-500'
+                    }`}
+                  >
+                    {subCategory}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* 도넛 차트와 막대 차트를 나란히 배치 */}
@@ -742,6 +773,10 @@ export default function PortfolioDashboard({ showSideInfo = false }: PortfolioDa
                       if (chartViewType === '전체') {
                         // 전체 모드: 기본 색상 사용
                         return <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />;
+                      } else if (subViewType) {
+                        // 소분류 선택 시: 개별 자산용 색상 (더 다양한 색상)
+                        const extendedColors = [...COLORS, '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F', '#BB8FCE'];
+                        return <Cell key={`cell-${index}`} fill={extendedColors[index % extendedColors.length]} />;
                       } else {
                         // 특정 대분류 모드: 해당 대분류 색상 그룹 사용
                         const mainCategoryColors = MAIN_CATEGORY_COLORS[chartViewType as keyof typeof MAIN_CATEGORY_COLORS] || COLORS;
@@ -765,13 +800,19 @@ export default function PortfolioDashboard({ showSideInfo = false }: PortfolioDa
                   <YAxis tickFormatter={(value) => `${(value / 1000000).toFixed(0)}M`} />
                   <Tooltip formatter={(value: number) => formatCurrency(value)} />
                   <Bar dataKey="amount">
-                    {barChartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={
-                        chartViewType === '전체'
-                          ? COLORS[index % COLORS.length]
-                          : (MAIN_CATEGORY_COLORS[chartViewType as keyof typeof MAIN_CATEGORY_COLORS] || COLORS)[index % COLORS.length]
-                      } />
-                    ))}
+                    {barChartData.map((entry, index) => {
+                      if (chartViewType === '전체') {
+                        return <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />;
+                      } else if (subViewType) {
+                        // 소분류 선택 시: 개별 자산용 색상 (더 다양한 색상)
+                        const extendedColors = [...COLORS, '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F', '#BB8FCE'];
+                        return <Cell key={`cell-${index}`} fill={extendedColors[index % extendedColors.length]} />;
+                      } else {
+                        // 특정 대분류 모드: 해당 대분류 색상 그룹 사용
+                        const mainCategoryColors = MAIN_CATEGORY_COLORS[chartViewType as keyof typeof MAIN_CATEGORY_COLORS] || COLORS;
+                        return <Cell key={`cell-${index}`} fill={mainCategoryColors[index % mainCategoryColors.length]} />;
+                      }
+                    })}
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
