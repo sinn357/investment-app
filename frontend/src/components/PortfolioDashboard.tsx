@@ -287,14 +287,19 @@ export default function PortfolioDashboard({ showSideInfo = false }: PortfolioDa
     if (!portfolioData) return {};
 
     const filtered = getFilteredAssets();
-    const grouped: Record<string, typeof filtered> = {};
+    const grouped: Record<string, Record<string, typeof filtered>> = {};
 
     filtered.forEach(asset => {
-      const category = asset.asset_type;
-      if (!grouped[category]) {
-        grouped[category] = [];
+      const mainCategory = asset.asset_type;
+      const subCategory = asset.sub_category || '기타';
+
+      if (!grouped[mainCategory]) {
+        grouped[mainCategory] = {};
       }
-      grouped[category].push(asset);
+      if (!grouped[mainCategory][subCategory]) {
+        grouped[mainCategory][subCategory] = [];
+      }
+      grouped[mainCategory][subCategory].push(asset);
     });
 
     return grouped;
@@ -692,107 +697,125 @@ export default function PortfolioDashboard({ showSideInfo = false }: PortfolioDa
         </div>
 
         {/* 자산군별 그룹화된 테이블 */}
-        {Object.entries(groupedAssets).map(([category, assets]) => (
-          <div key={category} className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
-            {/* 자산군 헤더 */}
-            <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4">
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold text-white">{category}</h3>
-                <div className="text-white text-sm">
-                  <span className="bg-white bg-opacity-20 px-3 py-1 rounded-full">
-                    {assets.length}개 자산 | {formatCurrency(assets.reduce((sum, asset) => sum + asset.amount, 0))}
-                  </span>
+        {Object.entries(groupedAssets).map(([category, subCategories]) => {
+          const totalAssets = Object.values(subCategories).flat();
+          const totalAmount = totalAssets.reduce((sum, asset) => sum + asset.amount, 0);
+
+          return (
+            <div key={category} className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+              {/* 대분류 헤더 */}
+              <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-semibold text-white">{category}</h3>
+                  <div className="text-white text-sm">
+                    <span className="bg-white bg-opacity-20 px-3 py-1 rounded-full">
+                      {totalAssets.length}개 자산 | {formatCurrency(totalAmount)}
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* 테이블 */}
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead className="bg-gray-50 dark:bg-gray-700">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">종목명</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">수량</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">평균가</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">원금</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">평가금액</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">손익</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">수익률</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">등록일</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">메모</th>
-                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">관리</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                  {assets.map((asset) => (
-                    <tr key={asset.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                        <div className="flex flex-col">
-                          <span>{asset.name}</span>
-                          {asset.sub_category && (
-                            <span className="text-xs text-gray-500 dark:text-gray-400">
-                              {asset.sub_category}
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300 text-right">
-                        {asset.quantity ? formatNumber(asset.quantity) : '-'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300 text-right">
-                        {asset.avg_price ? formatCurrency(asset.avg_price) : '-'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300 text-right">
-                        {formatCurrency(asset.amount)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white text-right font-medium">
-                        {formatCurrency(asset.amount)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
-                        <span className={`${asset.profit_loss >= 0 ? 'text-green-600' : 'text-red-600'} font-medium`}>
-                          {formatCurrency(asset.profit_loss)}
+              {/* 소분류별 테이블 */}
+              {Object.entries(subCategories).map(([subCategory, assets]) => {
+                const subCategoryTotal = assets.reduce((sum, asset) => sum + asset.amount, 0);
+
+                return (
+                  <div key={subCategory} className="border-t border-gray-200 dark:border-gray-700">
+                    {/* 소분류 헤더 */}
+                    <div className="bg-gray-50 dark:bg-gray-700 px-6 py-3">
+                      <div className="flex justify-between items-center">
+                        <h4 className="text-sm font-medium text-gray-900 dark:text-white">{subCategory}</h4>
+                        <span className="text-xs text-gray-600 dark:text-gray-400">
+                          {assets.length}개 | {formatCurrency(subCategoryTotal)}
                         </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
-                        <span className={`${asset.profit_rate >= 0 ? 'text-green-600' : 'text-red-600'} font-medium`}>
-                          {asset.profit_rate ? asset.profit_rate.toFixed(2) : '0.00'}%
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                        {new Date(asset.date).toLocaleDateString('ko-KR')}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-300 max-w-xs truncate">
-                        {asset.note || '-'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-center">
-                        <div className="flex justify-center gap-2">
-                          <button
-                            onClick={() => handleEditAsset(asset)}
-                            className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 transition-colors duration-200"
-                            title={`${asset.name} 수정`}
-                          >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                            </svg>
-                          </button>
-                          <button
-                            onClick={() => handleDeleteAsset(asset.id, asset.name)}
-                            className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 transition-colors duration-200"
-                            title={`${asset.name} 삭제`}
-                          >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      </div>
+                    </div>
+
+                    {/* 테이블 */}
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                        <thead className="bg-gray-100 dark:bg-gray-600">
+                          <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">종목명</th>
+                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">수량</th>
+                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">평균가</th>
+                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">원금</th>
+                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">평가금액</th>
+                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">손익</th>
+                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">수익률</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">등록일</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">메모</th>
+                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">관리</th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                          {assets.map((asset) => (
+                            <tr key={asset.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                                {asset.name}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300 text-right">
+                                {asset.quantity ? formatNumber(asset.quantity) : '-'}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300 text-right">
+                                {asset.avg_price ? formatCurrency(asset.avg_price) : '-'}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300 text-right">
+                                {formatCurrency(asset.amount)}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white text-right font-medium">
+                                {formatCurrency(asset.amount)}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
+                                <span className={`${asset.profit_loss >= 0 ? 'text-green-600' : 'text-red-600'} font-medium`}>
+                                  {formatCurrency(asset.profit_loss)}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
+                                <span className={`${asset.profit_rate >= 0 ? 'text-green-600' : 'text-red-600'} font-medium`}>
+                                  {asset.profit_rate ? asset.profit_rate.toFixed(2) : '0.00'}%
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                                {new Date(asset.date).toLocaleDateString('ko-KR')}
+                              </td>
+                              <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-300 max-w-xs truncate">
+                                {asset.note || '-'}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-center">
+                                <div className="flex justify-center gap-2">
+                                  <button
+                                    onClick={() => handleEditAsset(asset)}
+                                    className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 transition-colors duration-200"
+                                    title={`${asset.name} 수정`}
+                                  >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    </svg>
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteAsset(asset.id, asset.name)}
+                                    className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 transition-colors duration-200"
+                                    title={`${asset.name} 삭제`}
+                                  >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
-        ))}
+        );
+      })}
 
         {filteredAssets.length === 0 && (
           <div className="text-center py-8">

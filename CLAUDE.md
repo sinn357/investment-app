@@ -119,17 +119,14 @@ investment-app/
 
 ## 12) Tasks (Single Source of Truth)
 ### Active (in this session)
-- **T-044:** 포트폴리오 자산 수정 기능 오류 해결 ✅ (2025-09-22)
-  - DoD: 날짜 형식 오류 수정 + 데이터베이스 스키마 오류 해결 + 필수 필드 검증 추가
-  - Files: frontend/components/PortfolioDashboard.tsx, backend/services/postgres_database_service.py
-  - Risks: 없음 (모든 오류 해결 완료)
-
-- **T-045:** 수정 모달 필수 필드 검증 강화 ✅ (2025-09-22)
-  - DoD: 자산명/날짜 필수 입력 검증 + 명확한 한국어 오류 메시지
-  - Files: frontend/components/PortfolioDashboard.tsx
-  - Risks: 없음 (사용자 경험 개선 완료)
+- **T-053:** 2단계 카테고리 시스템 완전 구현 ✅ (2025-09-22)
+  - DoD: 소분류 데이터 전송 문제 해결 + 대분류-소분류 2단계 그룹화 테이블 + 기존 데이터 소분류 할당
+  - Files: backend/app.py, backend/services/postgres_database_service.py, frontend/src/components/PortfolioDashboard.tsx
+  - Risks: 없음 (완전한 2단계 카테고리 시스템 완성)
 
 ### Recent Done
+- **T-044:** 포트폴리오 자산 수정 기능 오류 해결 ✅ (2025-09-22)
+- **T-045:** 수정 모달 필수 필드 검증 강화 ✅ (2025-09-22)
 - **T-042:** 포트폴리오 자산 삭제 기능 구현 ✅ (2025-09-21)
 - **T-043:** 포트폴리오 자산군별 그룹화 및 손익 계산 수정 ✅ (2025-09-21)
 - **T-000:** 프로젝트 초기 구조 구축 ✅ (Flask + Next.js 기본 골격 완성)
@@ -538,6 +535,19 @@ investment-app/
   - **UX 개선**: 불필요한 서버 요청 방지로 응답 속도 향상
   - **확장성**: 향후 추가 필드 검증 로직 쉽게 확장 가능
   - **일관성**: 자산명, 날짜 등 핵심 필드에 대한 통일된 검증 규칙
+
+### ADR-028: 포트폴리오 2단계 카테고리 시스템 아키텍처
+- Date: 2025-09-22
+- Context: 단일 자산군 분류로는 세분화된 자산 관리 한계, 사용자 요구에 따른 2단계 구조 필요
+- Options: 기존 구조 유지 vs 대분류-소분류 2단계 vs 다층 구조
+- Decision: 유동성 기준 대분류 + 세부 소분류 2단계 중첩 테이블 구조
+- Consequences:
+  - **데이터 구조**: 백엔드 sub_category 필드 추가, 프론트엔드 Asset 인터페이스 확장
+  - **UI 개선**: 대분류-소분류 중첩 그룹화 테이블로 직관적 자산 관리
+  - **시각적 계층**: 대분류(파란 헤더) + 소분류(회색 헤더) + 자산 목록으로 명확한 구분
+  - **확장성**: 새로운 대분류/소분류 추가 시 자동 그룹 생성
+  - **호환성**: 기존 자산은 "기타" 소분류로 자동 처리하여 하위 호환성 보장
+  - **완전성**: CRUD 모든 작업에서 소분류 지원 (추가/수정/조회/삭제)
 
 ---
 
