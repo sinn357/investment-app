@@ -20,21 +20,16 @@ export default function EnhancedPortfolioForm({ onAddItem }: EnhancedPortfolioFo
   });
 
   const assetTypes = [
-    { value: 'cash', label: '현금' },
-    { value: 'account', label: '계좌' },
-    { value: 'securities', label: '증권' },
-    { value: 'stock', label: '주식' },
-    { value: 'fund', label: '펀드' },
-    { value: 'crypto', label: '크립토' },
-    { value: 'bond', label: '채권' },
-    { value: 'real-estate', label: '부동산' },
-    { value: 'foreign-currency', label: '외화' }
+    { value: 'immediate-cash', label: '즉시현금' },
+    { value: 'deposit-assets', label: '예치자산' },
+    { value: 'investment-assets', label: '투자자산' },
+    { value: 'alternative-investment', label: '대체투자' }
   ];
 
   // 자산군별 필드 표시 로직
-  const showQuantityAndPrice = ['stock', 'fund', 'crypto'].includes(formData.assetType);
-  const showPrincipalAndEvaluation = ['stock', 'fund', 'crypto', 'real-estate', 'bond'].includes(formData.assetType);
-  const showOnlyAmount = ['cash', 'account', 'securities', 'foreign-currency'].includes(formData.assetType);
+  const showQuantityAndPrice = ['investment-assets'].includes(formData.assetType);
+  const showPrincipalAndEvaluation = ['investment-assets', 'alternative-investment'].includes(formData.assetType);
+  const showOnlyAmount = ['immediate-cash', 'deposit-assets'].includes(formData.assetType);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -196,7 +191,7 @@ export default function EnhancedPortfolioForm({ onAddItem }: EnhancedPortfolioFo
             name="name"
             value={formData.name}
             onChange={handleInputChange}
-            placeholder="예: 삼성전자, 엔비디아, 비트코인"
+            placeholder="예: 지갑현금, KB예금, 삼성전자, 비트코인"
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
           />
         </div>
