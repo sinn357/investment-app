@@ -51,6 +51,12 @@ export default function PortfolioDashboard({ showSideInfo = false }: PortfolioDa
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
   const [editForm, setEditForm] = useState<Partial<Asset>>({});
+  const [showCategoryGoals, setShowCategoryGoals] = useState(false);
+  const [goalSettings, setGoalSettings] = useState({
+    totalGoal: 50000000,
+    targetDate: '2024-12-31',
+    categoryGoals: {} as Record<string, number>
+  });
 
   useEffect(() => {
     fetchPortfolioData();
@@ -272,8 +278,7 @@ export default function PortfolioDashboard({ showSideInfo = false }: PortfolioDa
 
   const getGoalProgressData = () => {
     const currentAmount = portfolioData?.summary.total_assets || 0;
-    const goalAmount = 50000000; // 목표 5천만원 (설정 가능하게 만들 수 있음)
-    const progressRate = Math.min((currentAmount / goalAmount) * 100, 100);
+    const progressRate = Math.min((currentAmount / goalSettings.totalGoal) * 100, 100);
 
     return [
       {
@@ -282,6 +287,32 @@ export default function PortfolioDashboard({ showSideInfo = false }: PortfolioDa
         fill: progressRate >= 100 ? '#10B981' : progressRate >= 75 ? '#3B82F6' : progressRate >= 50 ? '#F59E0B' : '#EF4444'
       }
     ];
+  };
+
+  const getCategoryGoalProgress = () => {
+    if (!portfolioData) return [];
+
+    return Object.entries(portfolioData.by_category).map(([category, data]) => {
+      const categoryGoal = goalSettings.categoryGoals[category] || 0;
+      const progressRate = categoryGoal > 0 ? Math.min((data.total_amount / categoryGoal) * 100, 100) : 0;
+      const progressColor = progressRate >= 100 ? 'bg-green-500' : progressRate >= 75 ? 'bg-blue-500' : progressRate >= 50 ? 'bg-yellow-500' : 'bg-red-500';
+
+      return {
+        category,
+        current: data.total_amount,
+        goal: categoryGoal,
+        progressRate,
+        progressColor
+      };
+    });
+  };
+
+  const getDaysUntilTarget = () => {
+    const today = new Date();
+    const targetDate = new Date(goalSettings.targetDate);
+    const diffTime = targetDate.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
   };
 
   if (loading) {
@@ -338,10 +369,11 @@ export default function PortfolioDashboard({ showSideInfo = false }: PortfolioDa
 
   // 사이드 정보 렌더링 (입력 폼 오른편)
   if (showSideInfo) {
-    const goalAmount = 50000000;
     const currentAmount = portfolioData?.summary.total_assets || 0;
-    const progressRate = Math.min((currentAmount / goalAmount) * 100, 100);
+    const progressRate = Math.min((currentAmount / goalSettings.totalGoal) * 100, 100);
     const progressColor = progressRate >= 100 ? 'bg-green-500' : progressRate >= 75 ? 'bg-blue-500' : progressRate >= 50 ? 'bg-yellow-500' : 'bg-red-500';
+    const categoryGoalProgress = getCategoryGoalProgress();
+    const daysUntilTarget = getDaysUntilTarget();
 
     return (
       <div className="space-y-6">
@@ -370,11 +402,45 @@ export default function PortfolioDashboard({ showSideInfo = false }: PortfolioDa
 
         {/* 목표 달성률 - 가로 진행바 */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4">
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">목표 달성률</h3>
+          <div className="flex justify-between items-center mb-3">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-white">목표 달성률</h3>
+            <button
+              onClick={() => setShowCategoryGoals(!showCategoryGoals)}
+              className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+            >
+              {showCategoryGoals ? '접기' : '자산군별 보기'}
+            </button>
+          </div>
+
+          {/* 목표 설정 */}
+          <div className="space-y-2 mb-4">
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">목표 금액</label>
+                <input
+                  type="number"
+                  value={goalSettings.totalGoal}
+                  onChange={(e) => setGoalSettings({...goalSettings, totalGoal: parseInt(e.target.value) || 0})}
+                  className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">목표 날짜</label>
+                <input
+                  type="date"
+                  value={goalSettings.targetDate}
+                  onChange={(e) => setGoalSettings({...goalSettings, targetDate: e.target.value})}
+                  className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* 전체 달성률 */}
           <div className="space-y-2">
             <div className="flex justify-between text-xs text-gray-600 dark:text-gray-400">
               <span>현재: {formatCurrency(currentAmount)}</span>
-              <span>목표: {formatCurrency(goalAmount)}</span>
+              <span>목표: {formatCurrency(goalSettings.totalGoal)}</span>
             </div>
             <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-4">
               <div
@@ -386,7 +452,53 @@ export default function PortfolioDashboard({ showSideInfo = false }: PortfolioDa
                 </span>
               </div>
             </div>
+            <div className="text-center">
+              <span className="text-xs text-gray-600 dark:text-gray-400">
+                {daysUntilTarget > 0 ? `D-${daysUntilTarget}일` : daysUntilTarget === 0 ? 'D-Day' : `${Math.abs(daysUntilTarget)}일 경과`}
+              </span>
+            </div>
           </div>
+
+          {/* 자산군별 달성률 (펼치기) */}
+          {showCategoryGoals && (
+            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
+              <h4 className="text-xs font-semibold text-gray-900 dark:text-white mb-3">자산군별 목표</h4>
+              <div className="space-y-3">
+                {categoryGoalProgress.map(({ category, current, goal, progressRate, progressColor }) => (
+                  <div key={category} className="space-y-1">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs font-medium text-gray-700 dark:text-gray-300">{category}</span>
+                      <input
+                        type="number"
+                        value={goalSettings.categoryGoals[category] || 0}
+                        onChange={(e) => setGoalSettings({
+                          ...goalSettings,
+                          categoryGoals: {
+                            ...goalSettings.categoryGoals,
+                            [category]: parseInt(e.target.value) || 0
+                          }
+                        })}
+                        className="w-20 px-1 py-0.5 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        placeholder="목표액"
+                      />
+                    </div>
+                    <div className="flex justify-between text-xs text-gray-600 dark:text-gray-400">
+                      <span>{formatCurrency(current)}</span>
+                      <span>{goal > 0 ? `${progressRate.toFixed(1)}%` : '-'}</span>
+                    </div>
+                    {goal > 0 && (
+                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                        <div
+                          className={`h-2 rounded-full ${progressColor} transition-all duration-500`}
+                          style={{ width: `${Math.max(progressRate, 2)}%` }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* 자산군별 비중 도넛 차트 */}
