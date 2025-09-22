@@ -518,6 +518,107 @@ class PostgresDatabaseService:
                 "message": f"자산 조회 실패: {str(e)}"
             }
 
+    def update_asset(self, asset_id: int, data: Dict[str, Any]) -> Dict[str, Any]:
+        """자산 데이터를 데이터베이스에서 수정"""
+        try:
+            print(f"PostgreSQL update_asset called with ID: {asset_id}")
+            print(f"Update data: {data}")
+
+            with self.get_connection() as conn:
+                print("PostgreSQL connection established for update")
+                with conn.cursor() as cur:
+                    # 먼저 해당 자산이 존재하는지 확인
+                    cur.execute("SELECT id, name FROM assets WHERE id = %s", (asset_id,))
+                    asset = cur.fetchone()
+
+                    if not asset:
+                        return {
+                            "status": "error",
+                            "message": f"ID {asset_id}인 자산을 찾을 수 없습니다."
+                        }
+
+                    # 업데이트할 필드들 구성
+                    update_fields = []
+                    values = []
+
+                    # 기본 필드들
+                    if 'asset_type' in data:
+                        update_fields.append("asset_type = %s")
+                        values.append(data['asset_type'])
+
+                    if 'name' in data:
+                        update_fields.append("name = %s")
+                        values.append(data['name'])
+
+                    if 'date' in data:
+                        update_fields.append("date = %s")
+                        values.append(data['date'])
+
+                    if 'note' in data:
+                        update_fields.append("note = %s")
+                        values.append(data['note'])
+
+                    # 수량과 평균가
+                    if 'quantity' in data:
+                        update_fields.append("quantity = %s")
+                        values.append(data['quantity'] if data['quantity'] else None)
+
+                    if 'avg_price' in data:
+                        update_fields.append("avg_price = %s")
+                        values.append(data['avg_price'] if data['avg_price'] else None)
+
+                    # 원금과 평가액
+                    if 'principal' in data:
+                        update_fields.append("principal = %s")
+                        values.append(data['principal'] if data['principal'] else None)
+
+                    if 'eval_amount' in data:
+                        update_fields.append("eval_amount = %s")
+                        values.append(data['eval_amount'] if data['eval_amount'] else None)
+
+                    # amount 계산 (수량 * 평균가 또는 eval_amount)
+                    if 'quantity' in data and 'avg_price' in data and data['quantity'] and data['avg_price']:
+                        amount = float(data['quantity']) * float(data['avg_price'])
+                        update_fields.append("amount = %s")
+                        values.append(amount)
+                    elif 'eval_amount' in data and data['eval_amount']:
+                        update_fields.append("amount = %s")
+                        values.append(data['eval_amount'])
+
+                    # 수정 시간 추가
+                    update_fields.append("updated_at = CURRENT_TIMESTAMP")
+
+                    # asset_id를 values 마지막에 추가
+                    values.append(asset_id)
+
+                    # SQL 쿼리 실행
+                    sql = f"UPDATE assets SET {', '.join(update_fields)} WHERE id = %s"
+                    print(f"Executing SQL: {sql}")
+                    print(f"Values: {values}")
+
+                    cur.execute(sql, values)
+
+                    if cur.rowcount > 0:
+                        conn.commit()
+                        print(f"Asset {asset_id} updated successfully")
+                        return {
+                            "status": "success",
+                            "message": f"'{asset['name']}' 자산이 성공적으로 수정되었습니다.",
+                            "updated_asset_id": asset_id
+                        }
+                    else:
+                        return {
+                            "status": "error",
+                            "message": "자산 수정에 실패했습니다."
+                        }
+
+        except Exception as e:
+            print(f"PostgreSQL update_asset error: {e}")
+            return {
+                "status": "error",
+                "message": f"데이터베이스 오류: {str(e)}"
+            }
+
     def delete_asset(self, asset_id: int) -> Dict[str, Any]:
         """자산 데이터를 데이터베이스에서 삭제"""
         try:

@@ -45,6 +45,8 @@ export default function PortfolioDashboard() {
   const [selectedCategory, setSelectedCategory] = useState<string>('전체');
   const [sortBy, setSortBy] = useState<'amount' | 'profit_rate' | 'name'>('amount');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
+  const [editForm, setEditForm] = useState<Partial<Asset>>({});
 
   useEffect(() => {
     fetchPortfolioData();
@@ -96,6 +98,65 @@ export default function PortfolioDashboard() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleEditAsset = (asset: Asset) => {
+    setEditingAsset(asset);
+    setEditForm({
+      asset_type: asset.asset_type,
+      name: asset.name,
+      quantity: asset.quantity,
+      avg_price: asset.avg_price,
+      eval_amount: asset.eval_amount,
+      date: asset.date,
+      note: asset.note
+    });
+  };
+
+  const handleUpdateAsset = async () => {
+    if (!editingAsset) return;
+
+    try {
+      setLoading(true);
+      const response = await fetch(`https://investment-app-backend-x166.onrender.com/api/update-asset/${editingAsset.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          asset_type: editForm.asset_type,
+          name: editForm.name,
+          quantity: editForm.quantity || null,
+          avg_price: editForm.avg_price || null,
+          principal: editForm.quantity && editForm.avg_price ? editForm.quantity * editForm.avg_price : editForm.eval_amount,
+          eval_amount: editForm.eval_amount || null,
+          date: editForm.date,
+          note: editForm.note || ''
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.status === 'success') {
+        alert(result.message);
+        setEditingAsset(null);
+        setEditForm({});
+        // 포트폴리오 데이터 새로고침
+        await fetchPortfolioData();
+      } else {
+        alert(`수정 실패: ${result.message}`);
+      }
+    } catch (error) {
+      console.error('Update error:', error);
+      alert('수정 중 오류가 발생했습니다.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingAsset(null);
+    setEditForm({});
   };
 
   const formatCurrency = (amount: number) => {
@@ -422,15 +483,26 @@ export default function PortfolioDashboard() {
                         {asset.note || '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center">
-                        <button
-                          onClick={() => handleDeleteAsset(asset.id, asset.name)}
-                          className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 transition-colors duration-200"
-                          title={`${asset.name} 삭제`}
-                        >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        </button>
+                        <div className="flex justify-center gap-2">
+                          <button
+                            onClick={() => handleEditAsset(asset)}
+                            className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 transition-colors duration-200"
+                            title={`${asset.name} 수정`}
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </button>
+                          <button
+                            onClick={() => handleDeleteAsset(asset.id, asset.name)}
+                            className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 transition-colors duration-200"
+                            title={`${asset.name} 삭제`}
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -446,6 +518,141 @@ export default function PortfolioDashboard() {
           </div>
         )}
       </div>
+
+      {/* 수정 모달 */}
+      {editingAsset && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              자산 수정: {editingAsset.name}
+            </h3>
+
+            <div className="space-y-4">
+              {/* 자산군 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  자산군 *
+                </label>
+                <select
+                  value={editForm.asset_type || ''}
+                  onChange={(e) => setEditForm({...editForm, asset_type: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  required
+                >
+                  <option value="">자산군 선택</option>
+                  <option value="주식">주식</option>
+                  <option value="ETF">ETF</option>
+                  <option value="현금">현금</option>
+                  <option value="펀드">펀드</option>
+                  <option value="채권">채권</option>
+                  <option value="부동산">부동산</option>
+                  <option value="원자재">원자재</option>
+                  <option value="기타">기타</option>
+                </select>
+              </div>
+
+              {/* 종목명 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  종목명 *
+                </label>
+                <input
+                  type="text"
+                  value={editForm.name || ''}
+                  onChange={(e) => setEditForm({...editForm, name: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  required
+                />
+              </div>
+
+              {/* 수량 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  수량
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={editForm.quantity || ''}
+                  onChange={(e) => setEditForm({...editForm, quantity: e.target.value ? parseFloat(e.target.value) : null})}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                />
+              </div>
+
+              {/* 평균가 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  평균가
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={editForm.avg_price || ''}
+                  onChange={(e) => setEditForm({...editForm, avg_price: e.target.value ? parseFloat(e.target.value) : null})}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                />
+              </div>
+
+              {/* 평가금액 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  평가금액
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={editForm.eval_amount || ''}
+                  onChange={(e) => setEditForm({...editForm, eval_amount: e.target.value ? parseFloat(e.target.value) : null})}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                />
+              </div>
+
+              {/* 매수일 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  매수일 *
+                </label>
+                <input
+                  type="date"
+                  value={editForm.date || ''}
+                  onChange={(e) => setEditForm({...editForm, date: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  required
+                />
+              </div>
+
+              {/* 메모 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  메모
+                </label>
+                <textarea
+                  value={editForm.note || ''}
+                  onChange={(e) => setEditForm({...editForm, note: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  rows={3}
+                />
+              </div>
+            </div>
+
+            {/* 버튼 */}
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={handleCancelEdit}
+                className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
+              >
+                취소
+              </button>
+              <button
+                onClick={handleUpdateAsset}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors"
+              >
+                수정 완료
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

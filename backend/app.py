@@ -30,7 +30,7 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app,
      origins=["https://investment-app-rust-one.vercel.app", "http://localhost:3000"],
-     methods=['GET', 'POST', 'DELETE', 'OPTIONS'],
+     methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
      allow_headers=['Content-Type', 'Authorization'])
 
 # 데이터베이스 서비스 초기화 (PostgreSQL 우선 사용)
@@ -801,6 +801,38 @@ def get_portfolio():
         return jsonify({
             "status": "error",
             "message": f"포트폴리오 조회 실패: {str(e)}"
+        }), 500
+
+@app.route('/api/update-asset/<int:asset_id>', methods=['PUT'])
+def update_asset(asset_id):
+    """포트폴리오 자산 수정 API"""
+    try:
+        data = request.get_json()
+        print(f"Attempting to update asset with ID: {asset_id}")
+        print(f"Update data: {data}")
+
+        # 필수 필드 검증
+        required_fields = ['asset_type', 'name', 'date']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({
+                    "status": "error",
+                    "message": f"필수 필드가 누락되었습니다: {field}"
+                }), 400
+
+        # 데이터베이스에서 자산 업데이트
+        result = db_service.update_asset(asset_id, data)
+
+        if result.get('status') == 'success':
+            return jsonify(result)
+        else:
+            return jsonify(result), 500
+
+    except Exception as e:
+        print(f"Error updating asset: {e}")
+        return jsonify({
+            "status": "error",
+            "message": f"자산 수정 실패: {str(e)}"
         }), 500
 
 @app.route('/api/delete-asset/<int:asset_id>', methods=['DELETE'])
