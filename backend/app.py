@@ -856,5 +856,50 @@ def delete_asset(asset_id):
             "message": f"자산 삭제 실패: {str(e)}"
         }), 500
 
+@app.route('/api/goal-settings', methods=['GET'])
+def get_goal_settings():
+    """목표 설정 조회 API"""
+    try:
+        user_id = request.args.get('user_id', 'default')
+        result = db_service.get_goal_settings(user_id)
+
+        if result.get('status') == 'success':
+            return jsonify(result)
+        else:
+            return jsonify(result), 500
+
+    except Exception as e:
+        print(f"Error getting goal settings: {e}")
+        return jsonify({
+            "status": "error",
+            "message": f"목표 설정 조회 실패: {str(e)}"
+        }), 500
+
+@app.route('/api/goal-settings', methods=['POST'])
+def save_goal_settings():
+    """목표 설정 저장 API"""
+    try:
+        data = request.get_json()
+        user_id = data.get('user_id', 'default')
+        total_goal = data.get('total_goal', 50000000)
+        target_date = data.get('target_date', '2024-12-31')
+        category_goals = data.get('category_goals', {})
+
+        print(f"Saving goal settings: user_id={user_id}, total_goal={total_goal}, target_date={target_date}")
+
+        result = db_service.save_goal_settings(user_id, total_goal, target_date, category_goals)
+
+        if result.get('status') == 'success':
+            return jsonify(result)
+        else:
+            return jsonify(result), 500
+
+    except Exception as e:
+        print(f"Error saving goal settings: {e}")
+        return jsonify({
+            "status": "error",
+            "message": f"목표 설정 저장 실패: {str(e)}"
+        }), 500
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5001)

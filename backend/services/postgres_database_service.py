@@ -91,6 +91,17 @@ class PostgresDatabaseService:
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     );
 
+                    CREATE TABLE IF NOT EXISTS goal_settings (
+                        id SERIAL PRIMARY KEY,
+                        user_id VARCHAR(50) DEFAULT 'default',
+                        total_goal NUMERIC NOT NULL DEFAULT 50000000,
+                        target_date DATE NOT NULL DEFAULT '2024-12-31',
+                        category_goals JSONB DEFAULT '{}',
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        UNIQUE(user_id)
+                    );
+
                     -- 기존 테이블에 새 컬럼 추가 (테이블이 이미 존재하는 경우)
                     ALTER TABLE assets ADD COLUMN IF NOT EXISTS principal NUMERIC;
                     ALTER TABLE assets ADD COLUMN IF NOT EXISTS profit_loss NUMERIC DEFAULT 0;
@@ -617,6 +628,78 @@ class PostgresDatabaseService:
             return {
                 "status": "error",
                 "message": f"데이터베이스 오류: {str(e)}"
+            }
+
+    def get_goal_settings(self, user_id: str = 'default') -> Dict[str, Any]:
+        """목표 설정을 데이터베이스에서 조회"""
+        try:
+            print(f"PostgreSQL get_goal_settings called for user: {user_id}")
+            with self.get_connection() as conn:
+                with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                    cur.execute("SELECT * FROM goal_settings WHERE user_id = %s", (user_id,))
+                    result = cur.fetchone()
+
+                    if result:
+                        return {
+                            "status": "success",
+                            "data": {
+                                "total_goal": float(result['total_goal']),
+                                "target_date": result['target_date'].isoformat(),
+                                "category_goals": result['category_goals'] or {}
+                            }
+                        }
+                    else:
+                        # 기본값 반환
+                        return {
+                            "status": "success",
+                            "data": {
+                                "total_goal": 50000000,
+                                "target_date": "2024-12-31",
+                                "category_goals": {}
+                            }
+                        }
+
+        except Exception as e:
+            print(f"PostgreSQL get_goal_settings error: {e}")
+            return {
+                "status": "error",
+                "message": f"목표 설정 조회 실패: {str(e)}"
+            }
+
+    def save_goal_settings(self, user_id: str, total_goal: float, target_date: str, category_goals: Dict) -> Dict[str, Any]:
+        """목표 설정을 데이터베이스에 저장"""
+        try:
+            print(f"PostgreSQL save_goal_settings called for user: {user_id}")
+            print(f"Data: total_goal={total_goal}, target_date={target_date}, category_goals={category_goals}")
+
+            with self.get_connection() as conn:
+                with conn.cursor() as cur:
+                    # UPSERT (INSERT ... ON CONFLICT UPDATE)
+                    sql = """
+                    INSERT INTO goal_settings (user_id, total_goal, target_date, category_goals, updated_at)
+                    VALUES (%s, %s, %s, %s, CURRENT_TIMESTAMP)
+                    ON CONFLICT (user_id)
+                    DO UPDATE SET
+                        total_goal = EXCLUDED.total_goal,
+                        target_date = EXCLUDED.target_date,
+                        category_goals = EXCLUDED.category_goals,
+                        updated_at = CURRENT_TIMESTAMP
+                    """
+
+                    cur.execute(sql, (user_id, total_goal, target_date, json.dumps(category_goals)))
+                    conn.commit()
+
+                    print(f"Goal settings saved successfully for user: {user_id}")
+                    return {
+                        "status": "success",
+                        "message": "목표 설정이 저장되었습니다."
+                    }
+
+        except Exception as e:
+            print(f"PostgreSQL save_goal_settings error: {e}")
+            return {
+                "status": "error",
+                "message": f"목표 설정 저장 실패: {str(e)}"
             }
 
     def delete_asset(self, asset_id: int) -> Dict[str, Any]:

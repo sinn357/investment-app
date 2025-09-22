@@ -60,6 +60,7 @@ export default function PortfolioDashboard({ showSideInfo = false }: PortfolioDa
 
   useEffect(() => {
     fetchPortfolioData();
+    fetchGoalSettings();
   }, []);
 
   const fetchPortfolioData = async () => {
@@ -167,6 +168,50 @@ export default function PortfolioDashboard({ showSideInfo = false }: PortfolioDa
   const handleCancelEdit = () => {
     setEditingAsset(null);
     setEditForm({});
+  };
+
+  const fetchGoalSettings = async () => {
+    try {
+      const response = await fetch('https://investment-app-backend-x166.onrender.com/api/goal-settings?user_id=default');
+      const data = await response.json();
+
+      if (data.status === 'success') {
+        setGoalSettings({
+          totalGoal: data.data.total_goal,
+          targetDate: data.data.target_date,
+          categoryGoals: data.data.category_goals
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching goal settings:', error);
+      // 오류 시 기본값 유지
+    }
+  };
+
+  const saveGoalSettings = async (newSettings: typeof goalSettings) => {
+    try {
+      const response = await fetch('https://investment-app-backend-x166.onrender.com/api/goal-settings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          user_id: 'default',
+          total_goal: newSettings.totalGoal,
+          target_date: newSettings.targetDate,
+          category_goals: newSettings.categoryGoals
+        }),
+      });
+
+      const result = await response.json();
+      if (result.status === 'success') {
+        console.log('Goal settings saved successfully');
+      } else {
+        console.error('Failed to save goal settings:', result.message);
+      }
+    } catch (error) {
+      console.error('Error saving goal settings:', error);
+    }
   };
 
   const formatCurrency = (amount: number) => {
@@ -420,7 +465,11 @@ export default function PortfolioDashboard({ showSideInfo = false }: PortfolioDa
                 <input
                   type="number"
                   value={goalSettings.totalGoal}
-                  onChange={(e) => setGoalSettings({...goalSettings, totalGoal: parseInt(e.target.value) || 0})}
+                  onChange={(e) => {
+                    const newSettings = {...goalSettings, totalGoal: parseInt(e.target.value) || 0};
+                    setGoalSettings(newSettings);
+                    saveGoalSettings(newSettings);
+                  }}
                   className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 />
               </div>
@@ -429,7 +478,11 @@ export default function PortfolioDashboard({ showSideInfo = false }: PortfolioDa
                 <input
                   type="date"
                   value={goalSettings.targetDate}
-                  onChange={(e) => setGoalSettings({...goalSettings, targetDate: e.target.value})}
+                  onChange={(e) => {
+                    const newSettings = {...goalSettings, targetDate: e.target.value};
+                    setGoalSettings(newSettings);
+                    saveGoalSettings(newSettings);
+                  }}
                   className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 />
               </div>
@@ -471,13 +524,17 @@ export default function PortfolioDashboard({ showSideInfo = false }: PortfolioDa
                       <input
                         type="number"
                         value={goalSettings.categoryGoals[category] || 0}
-                        onChange={(e) => setGoalSettings({
-                          ...goalSettings,
-                          categoryGoals: {
-                            ...goalSettings.categoryGoals,
-                            [category]: parseInt(e.target.value) || 0
-                          }
-                        })}
+                        onChange={(e) => {
+                          const newSettings = {
+                            ...goalSettings,
+                            categoryGoals: {
+                              ...goalSettings.categoryGoals,
+                              [category]: parseInt(e.target.value) || 0
+                            }
+                          };
+                          setGoalSettings(newSettings);
+                          saveGoalSettings(newSettings);
+                        }}
                         className="w-20 px-1 py-0.5 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                         placeholder="목표액"
                       />
