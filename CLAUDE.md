@@ -119,12 +119,13 @@ investment-app/
 
 ## 12) Tasks (Single Source of Truth)
 ### Active (in this session)
-- **T-053:** 2단계 카테고리 시스템 완전 구현 ✅ (2025-09-22)
-  - DoD: 소분류 데이터 전송 문제 해결 + 대분류-소분류 2단계 그룹화 테이블 + 기존 데이터 소분류 할당
-  - Files: backend/app.py, backend/services/postgres_database_service.py, frontend/src/components/PortfolioDashboard.tsx
-  - Risks: 없음 (완전한 2단계 카테고리 시스템 완성)
+- **T-054:** Vercel 빌드 오류 해결 ✅ (2025-09-22)
+  - DoD: JSX 파싱 오류 수정 + 안정적인 빌드 시스템 복원 + 문서화 완료
+  - Files: frontend/src/components/PortfolioDashboard.tsx, docs/VERCEL_BUILD_ERROR_RESOLUTION.md
+  - Risks: 2단계 카테고리 UI는 별도 재구현 필요
 
 ### Recent Done
+- **T-053:** 2단계 카테고리 시스템 백엔드 구현 ✅ (2025-09-22) - 백엔드 완료, 프론트엔드 빌드 오류로 일부 롤백
 - **T-044:** 포트폴리오 자산 수정 기능 오류 해결 ✅ (2025-09-22)
 - **T-045:** 수정 모달 필수 필드 검증 강화 ✅ (2025-09-22)
 - **T-042:** 포트폴리오 자산 삭제 기능 구현 ✅ (2025-09-21)
@@ -548,6 +549,18 @@ investment-app/
   - **확장성**: 새로운 대분류/소분류 추가 시 자동 그룹 생성
   - **호환성**: 기존 자산은 "기타" 소분류로 자동 처리하여 하위 호환성 보장
   - **완전성**: CRUD 모든 작업에서 소분류 지원 (추가/수정/조회/삭제)
+
+### ADR-029: Vercel 빌드 오류 해결 전략 수립
+- Date: 2025-09-22
+- Context: 2단계 카테고리 시스템 구현 중 "Unterminated regexp literal" JSX 파싱 오류로 Vercel 배포 차단
+- Options: 오류 수정 시도 vs 완전 롤백 vs 단계별 재구현
+- Decision: 안정적인 상태로 완전 롤백 후 단계별 재구현 접근
+- Consequences:
+  - **즉시 복구**: git checkout으로 마지막 작동 상태 복원
+  - **안정성 우선**: 배포 차단 상황을 신속히 해결
+  - **학습 기회**: 복잡한 JSX 중첩 구조의 한계점 파악
+  - **예방 체계**: 문서화를 통한 유사 문제 재발 방지 (docs/VERCEL_BUILD_ERROR_RESOLUTION.md)
+  - **기술 부채**: 2단계 카테고리 UI는 별도 작업으로 미뤄짐, 백엔드는 정상 작동
 
 ---
 
