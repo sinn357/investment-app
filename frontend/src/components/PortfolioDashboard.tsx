@@ -699,11 +699,11 @@ export default function PortfolioDashboard({ showSideInfo = false }: PortfolioDa
           </ResponsiveContainer>
         </div>
 
-        {/* 막대 차트 - 자산군별 금액 */}
+        {/* 자산 구성 분석 - 도넛 차트 + 막대 차트 */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-              {chartViewType === '전체' ? '대분류별 금액' : `${chartViewType} 자산 금액`}
+              {chartViewType === '전체' ? '자산 구성 분석' : `${chartViewType} 세부 분석`}
             </h3>
             <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1 flex-wrap gap-1">
               {['전체', '대체투자', '예치자산', '즉시현금', '투자자산'].map((viewType) => (
@@ -721,23 +721,62 @@ export default function PortfolioDashboard({ showSideInfo = false }: PortfolioDa
               ))}
             </div>
           </div>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={barChartData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis tickFormatter={(value) => `${(value / 1000000).toFixed(0)}M`} />
-              <Tooltip formatter={(value: number) => formatCurrency(value)} />
-              <Bar dataKey="amount">
-                {barChartData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={
-                    chartViewType === '전체'
-                      ? COLORS[index % COLORS.length]
-                      : (MAIN_CATEGORY_COLORS[chartViewType as keyof typeof MAIN_CATEGORY_COLORS] || COLORS)[index % COLORS.length]
-                  } />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+
+          {/* 도넛 차트와 막대 차트를 나란히 배치 */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* 도넛 차트 - 비중 */}
+            <div>
+              <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2 text-center">구성 비중</h4>
+              <ResponsiveContainer width="100%" height={250}>
+                <PieChart>
+                  <Pie
+                    data={pieChartData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={40}
+                    outerRadius={80}
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    {pieChartData.map((entry, index) => {
+                      if (chartViewType === '전체') {
+                        // 전체 모드: 기본 색상 사용
+                        return <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />;
+                      } else {
+                        // 특정 대분류 모드: 해당 대분류 색상 그룹 사용
+                        const mainCategoryColors = MAIN_CATEGORY_COLORS[chartViewType as keyof typeof MAIN_CATEGORY_COLORS] || COLORS;
+                        return <Cell key={`cell-${index}`} fill={mainCategoryColors[index % mainCategoryColors.length]} />;
+                      }
+                    })}
+                  </Pie>
+                  <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                  <Legend wrapperStyle={{ fontSize: '10px' }} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* 막대 차트 - 금액 */}
+            <div>
+              <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2 text-center">자산 금액</h4>
+              <ResponsiveContainer width="100%" height={250}>
+                <BarChart data={barChartData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis tickFormatter={(value) => `${(value / 1000000).toFixed(0)}M`} />
+                  <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                  <Bar dataKey="amount">
+                    {barChartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={
+                        chartViewType === '전체'
+                          ? COLORS[index % COLORS.length]
+                          : (MAIN_CATEGORY_COLORS[chartViewType as keyof typeof MAIN_CATEGORY_COLORS] || COLORS)[index % COLORS.length]
+                      } />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
         </div>
       </div>
 
