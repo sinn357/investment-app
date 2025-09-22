@@ -119,12 +119,13 @@ investment-app/
 
 ## 12) Tasks (Single Source of Truth)
 ### Active (in this session)
-- **T-054:** Vercel 빌드 오류 해결 ✅ (2025-09-22)
-  - DoD: JSX 파싱 오류 수정 + 안정적인 빌드 시스템 복원 + 문서화 완료
-  - Files: frontend/src/components/PortfolioDashboard.tsx, docs/VERCEL_BUILD_ERROR_RESOLUTION.md
-  - Risks: 2단계 카테고리 UI는 별도 재구현 필요
+- **T-055:** 2단계 카테고리 시스템 구현 🔄 (2025-09-22)
+  - DoD: 대분류>소분류 중첩 테이블 UI + 소분류 입력 필드 + JSX 파싱 오류 해결
+  - Files: frontend/src/components/PortfolioDashboard.tsx, docs/2TIER_CATEGORY_IMPLEMENTATION_ISSUE_RESOLUTION.md
+  - Risks: JSX 중첩 구조로 인한 파싱 오류 재발 가능성
 
 ### Recent Done
+- **T-054:** Vercel 빌드 오류 해결 ✅ (2025-09-22) - JSX 파싱 오류 수정 + 안정적인 빌드 시스템 복원 + 문서화 완료
 - **T-053:** 2단계 카테고리 시스템 백엔드 구현 ✅ (2025-09-22) - 백엔드 완료, 프론트엔드 빌드 오류로 일부 롤백
 - **T-044:** 포트폴리오 자산 수정 기능 오류 해결 ✅ (2025-09-22)
 - **T-045:** 수정 모달 필수 필드 검증 강화 ✅ (2025-09-22)

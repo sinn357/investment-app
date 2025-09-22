@@ -6,6 +6,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, 
 interface Asset {
   id: number;
   asset_type: string;
+  sub_category: string | null;
   name: string;
   amount: number;
   quantity: number | null;
@@ -117,6 +118,7 @@ export default function PortfolioDashboard({ showSideInfo = false }: PortfolioDa
     const formattedDate = new Date(asset.date).toISOString().split('T')[0];
     setEditForm({
       asset_type: asset.asset_type,
+      sub_category: asset.sub_category,
       name: asset.name,
       quantity: asset.quantity,
       avg_price: asset.avg_price,
@@ -149,6 +151,7 @@ export default function PortfolioDashboard({ showSideInfo = false }: PortfolioDa
         },
         body: JSON.stringify({
           asset_type: editForm.asset_type,
+          sub_category: editForm.sub_category || null,
           name: editForm.name,
           quantity: editForm.quantity || null,
           avg_price: editForm.avg_price || null,
@@ -284,14 +287,19 @@ export default function PortfolioDashboard({ showSideInfo = false }: PortfolioDa
     if (!portfolioData) return {};
 
     const filtered = getFilteredAssets();
-    const grouped: Record<string, typeof filtered> = {};
+    const grouped: Record<string, Record<string, typeof filtered>> = {};
 
     filtered.forEach(asset => {
       const category = asset.asset_type;
+      const subCategory = asset.sub_category || '기타';
+
       if (!grouped[category]) {
-        grouped[category] = [];
+        grouped[category] = {};
       }
-      grouped[category].push(asset);
+      if (!grouped[category][subCategory]) {
+        grouped[category][subCategory] = [];
+      }
+      grouped[category][subCategory].push(asset);
     });
 
     return grouped;
@@ -689,19 +697,36 @@ export default function PortfolioDashboard({ showSideInfo = false }: PortfolioDa
         </div>
 
         {/* 자산군별 그룹화된 테이블 */}
-        {Object.entries(groupedAssets).map(([category, assets]) => (
-          <div key={category} className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
-            {/* 자산군 헤더 */}
-            <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4">
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold text-white">{category}</h3>
-                <div className="text-white text-sm">
-                  <span className="bg-white bg-opacity-20 px-3 py-1 rounded-full">
-                    {assets.length}개 자산 | {formatCurrency(assets.reduce((sum, asset) => sum + asset.amount, 0))}
-                  </span>
+        {Object.entries(groupedAssets).map(([category, subCategories]) => {
+          const allAssets = Object.values(subCategories).flat();
+          return (
+            <div key={category} className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+              {/* 자산군 헤더 */}
+              <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-semibold text-white">{category}</h3>
+                  <div className="text-white text-sm">
+                    <span className="bg-white bg-opacity-20 px-3 py-1 rounded-full">
+                      {allAssets.length}개 자산 | {formatCurrency(allAssets.reduce((sum, asset) => sum + asset.amount, 0))}
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
+
+              {/* 소분류별 섹션 */}
+              {Object.entries(subCategories).map(([subCategory, assets]) => (
+                <div key={`${category}-${subCategory}`}>
+                  {/* 소분류 헤더 */}
+                  <div className="bg-gray-100 dark:bg-gray-700 px-6 py-3 border-t border-gray-200 dark:border-gray-600">
+                    <div className="flex justify-between items-center">
+                      <h4 className="text-md font-medium text-gray-800 dark:text-gray-200">{subCategory}</h4>
+                      <div className="text-gray-600 dark:text-gray-400 text-sm">
+                        <span className="bg-gray-200 dark:bg-gray-600 px-2 py-1 rounded">
+                          {assets.length}개 | {formatCurrency(assets.reduce((sum, asset) => sum + asset.amount, 0))}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
 
             {/* 테이블 */}
             <div className="overflow-x-auto">
@@ -709,6 +734,7 @@ export default function PortfolioDashboard({ showSideInfo = false }: PortfolioDa
                 <thead className="bg-gray-50 dark:bg-gray-700">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">종목명</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">소분류</th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">수량</th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">평균가</th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">원금</th>
@@ -725,6 +751,11 @@ export default function PortfolioDashboard({ showSideInfo = false }: PortfolioDa
                     <tr key={asset.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                         {asset.name}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                        <span className="px-2 py-1 text-xs bg-gray-100 dark:bg-gray-700 rounded-full">
+                          {asset.sub_category || '기타'}
+                        </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300 text-right">
                         {asset.quantity ? formatNumber(asset.quantity) : '-'}
@@ -781,8 +812,11 @@ export default function PortfolioDashboard({ showSideInfo = false }: PortfolioDa
                 </tbody>
               </table>
             </div>
-          </div>
-        ))}
+                </div>
+              ))}
+            </div>
+          );
+        })}
 
         {filteredAssets.length === 0 && (
           <div className="text-center py-8">
@@ -807,21 +841,63 @@ export default function PortfolioDashboard({ showSideInfo = false }: PortfolioDa
                 </label>
                 <select
                   value={editForm.asset_type || ''}
-                  onChange={(e) => setEditForm({...editForm, asset_type: e.target.value})}
+                  onChange={(e) => setEditForm({...editForm, asset_type: e.target.value, sub_category: null})}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   required
                 >
                   <option value="">자산군 선택</option>
-                  <option value="주식">주식</option>
-                  <option value="ETF">ETF</option>
-                  <option value="현금">현금</option>
-                  <option value="펀드">펀드</option>
-                  <option value="채권">채권</option>
-                  <option value="부동산">부동산</option>
-                  <option value="원자재">원자재</option>
-                  <option value="기타">기타</option>
+                  <option value="즉시현금">즉시현금</option>
+                  <option value="예치자산">예치자산</option>
+                  <option value="투자자산">투자자산</option>
+                  <option value="대체투자">대체투자</option>
                 </select>
               </div>
+
+              {/* 소분류 */}
+              {editForm.asset_type && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    소분류
+                  </label>
+                  <select
+                    value={editForm.sub_category || ''}
+                    onChange={(e) => setEditForm({...editForm, sub_category: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  >
+                    <option value="">소분류 선택</option>
+                    {editForm.asset_type === '즉시현금' && (
+                      <>
+                        <option value="현금">현금</option>
+                        <option value="입출금통장">입출금통장</option>
+                        <option value="증권예수금">증권예수금</option>
+                      </>
+                    )}
+                    {editForm.asset_type === '예치자산' && (
+                      <>
+                        <option value="예금">예금</option>
+                        <option value="적금">적금</option>
+                        <option value="MMF">MMF</option>
+                      </>
+                    )}
+                    {editForm.asset_type === '투자자산' && (
+                      <>
+                        <option value="국내주식">국내주식</option>
+                        <option value="해외주식">해외주식</option>
+                        <option value="펀드">펀드</option>
+                        <option value="ETF">ETF</option>
+                        <option value="채권">채권</option>
+                      </>
+                    )}
+                    {editForm.asset_type === '대체투자' && (
+                      <>
+                        <option value="암호화폐">암호화폐</option>
+                        <option value="부동산">부동산</option>
+                        <option value="원자재">원자재</option>
+                      </>
+                    )}
+                  </select>
+                </div>
+              )}
 
               {/* 종목명 */}
               <div>
