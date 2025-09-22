@@ -8,8 +8,8 @@
 - **Project:** Investment App - Economic Indicators Dashboard
 - **Repo Root:** /Users/woocheolshin/Documents/Vibecoding_1/investment-app
 - **Owner:** Partner
-- **Last Updated:** 2025-09-22 14:30 KST
-- **Session Goal (Today):** 포트폴리오 UI 개선 및 고급 목표 추적 시스템 구현 ✅ (입력 섹션 크기 축소 + 자산 수정 기능 + 목표 달성률 고도화 완료)
+- **Last Updated:** 2025-09-22 14:50 KST
+- **Session Goal (Today):** 포트폴리오 자산 수정 기능 오류 해결 ✅ (날짜 형식 + DB 스키마 + 필수 필드 검증 완료)
 
 ---
 
@@ -119,17 +119,19 @@ investment-app/
 
 ## 12) Tasks (Single Source of Truth)
 ### Active (in this session)
-- **T-042:** 포트폴리오 자산 삭제 기능 구현 ✅ (2025-09-21)
-  - DoD: 삭제 버튼 + 확인 다이얼로그 + 백엔드 DELETE API + 실시간 새로고침
-  - Files: frontend/components/PortfolioDashboard.tsx, backend/app.py, services/postgres_database_service.py
-  - Risks: 삭제 시 되돌릴 수 없음 (현재 휴지통 기능 없음)
-
-- **T-043:** 포트폴리오 자산군별 그룹화 및 손익 계산 수정 ✅ (2025-09-21)
-  - DoD: 자산군별 테이블 그룹화 + 동적 손익 계산 + 시각적 개선
+- **T-044:** 포트폴리오 자산 수정 기능 오류 해결 ✅ (2025-09-22)
+  - DoD: 날짜 형식 오류 수정 + 데이터베이스 스키마 오류 해결 + 필수 필드 검증 추가
   - Files: frontend/components/PortfolioDashboard.tsx, backend/services/postgres_database_service.py
-  - Risks: 기존 데이터의 principal 값이 null인 경우 amount로 폴백
+  - Risks: 없음 (모든 오류 해결 완료)
+
+- **T-045:** 수정 모달 필수 필드 검증 강화 ✅ (2025-09-22)
+  - DoD: 자산명/날짜 필수 입력 검증 + 명확한 한국어 오류 메시지
+  - Files: frontend/components/PortfolioDashboard.tsx
+  - Risks: 없음 (사용자 경험 개선 완료)
 
 ### Recent Done
+- **T-042:** 포트폴리오 자산 삭제 기능 구현 ✅ (2025-09-21)
+- **T-043:** 포트폴리오 자산군별 그룹화 및 손익 계산 수정 ✅ (2025-09-21)
 - **T-000:** 프로젝트 초기 구조 구축 ✅ (Flask + Next.js 기본 골격 완성)
 - **T-001:** Raw Data 섹션 UI 구현 ✅ (카드형 경제지표 대시보드 완성)
 - **T-002:** Flask API 엔드포인트 구현 ✅ (목업 데이터로 API 응답 구조 완성)
@@ -497,6 +499,30 @@ investment-app/
   - **스케일 테스트**: 소액(150만원)부터 대액(4억8천만원)까지 다양한 규모
   - **기능 검증**: 그룹화, 수정/삭제, 목표 달성률 등 모든 기능 테스트 가능
   - **시각화 검증**: 차트에서 극값과 평균값 모두 적절히 표현되는지 확인
+
+### ADR-026: 자산 수정 오류 해결 및 데이터베이스 스키마 동기화
+- Date: 2025-09-22
+- Context: 포트폴리오 자산 수정 시 날짜 형식 오류와 데이터베이스 스키마 불일치 문제 발생
+- Options: 프론트엔드 날짜 변환 vs 백엔드 파싱 vs 스키마 수정
+- Decision: 프론트엔드 ISO 날짜 변환 + 데이터베이스 updated_at 컬럼 추가
+- Consequences:
+  - **날짜 호환성**: toISOString().split('T')[0]로 YYYY-MM-DD 형식 보장
+  - **스키마 동기화**: assets 테이블에 updated_at TIMESTAMP 컬럼 추가
+  - **오류 해결**: "column does not exist" 데이터베이스 오류 완전 해결
+  - **확장성**: 향후 수정 이력 추적을 위한 updated_at 필드 활용 가능
+  - **일관성**: 모든 테이블의 timestamp 컬럼 표준화
+
+### ADR-027: 포트폴리오 수정 폼 필수 필드 검증 시스템
+- Date: 2025-09-22
+- Context: 사용자가 필수 필드를 누락했을 때 모호한 "수정 중 오류" 메시지로 UX 문제
+- Options: 서버 사이드 검증만 vs 클라이언트 검증 추가 vs HTML5 required 속성
+- Decision: 클라이언트 사이드 필수 필드 검증 + 명확한 한국어 오류 메시지
+- Consequences:
+  - **즉시 피드백**: 서버 요청 전 클라이언트에서 즉시 검증
+  - **명확한 안내**: "날짜를 기입해주세요" 등 구체적인 한국어 메시지
+  - **UX 개선**: 불필요한 서버 요청 방지로 응답 속도 향상
+  - **확장성**: 향후 추가 필드 검증 로직 쉽게 확장 가능
+  - **일관성**: 자산명, 날짜 등 핵심 필드에 대한 통일된 검증 규칙
 
 ---
 
