@@ -9,6 +9,7 @@ interface EnhancedPortfolioFormProps {
 export default function EnhancedPortfolioForm({ onAddItem }: EnhancedPortfolioFormProps) {
   const [formData, setFormData] = useState({
     assetType: '',
+    subCategory: '',
     name: '',
     amount: '',
     quantity: '',
@@ -26,6 +27,31 @@ export default function EnhancedPortfolioForm({ onAddItem }: EnhancedPortfolioFo
     { value: 'alternative-investment', label: '대체투자' }
   ];
 
+  const subCategories = {
+    'immediate-cash': [
+      { value: 'cash', label: '현금' },
+      { value: 'checking-account', label: '입출금통장' },
+      { value: 'securities-deposit', label: '증권예수금' }
+    ],
+    'deposit-assets': [
+      { value: 'savings', label: '예금' },
+      { value: 'installment-savings', label: '적금' },
+      { value: 'mmf', label: 'MMF' }
+    ],
+    'investment-assets': [
+      { value: 'domestic-stock', label: '국내주식' },
+      { value: 'foreign-stock', label: '해외주식' },
+      { value: 'fund', label: '펀드' },
+      { value: 'etf', label: 'ETF' },
+      { value: 'bond', label: '채권' }
+    ],
+    'alternative-investment': [
+      { value: 'crypto', label: '암호화폐' },
+      { value: 'real-estate', label: '부동산' },
+      { value: 'commodity', label: '원자재' }
+    ]
+  };
+
   // 자산군별 필드 표시 로직
   const showQuantityAndPrice = ['investment-assets'].includes(formData.assetType);
   const showPrincipalAndEvaluation = ['investment-assets', 'alternative-investment'].includes(formData.assetType);
@@ -33,7 +59,13 @@ export default function EnhancedPortfolioForm({ onAddItem }: EnhancedPortfolioFo
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+
+    // 대분류 변경 시 소분류 초기화
+    if (name === 'assetType') {
+      setFormData(prev => ({ ...prev, [name]: value, subCategory: '' }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
   };
 
   // 수익률 계산 함수
@@ -56,8 +88,8 @@ export default function EnhancedPortfolioForm({ onAddItem }: EnhancedPortfolioFo
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.assetType || !formData.name || !formData.date) {
-      alert('자산군, 자산명, 날짜는 필수 입력 항목입니다.');
+    if (!formData.assetType || !formData.subCategory || !formData.name || !formData.date) {
+      alert('자산군, 소분류, 자산명, 날짜는 필수 입력 항목입니다.');
       return;
     }
 
@@ -80,6 +112,7 @@ export default function EnhancedPortfolioForm({ onAddItem }: EnhancedPortfolioFo
     // 데이터 정리 및 출력
     const submitData: Record<string, unknown> = {
       assetType: assetTypes.find(type => type.value === formData.assetType)?.label || formData.assetType,
+      subCategory: subCategories[formData.assetType as keyof typeof subCategories]?.find(sub => sub.value === formData.subCategory)?.label || formData.subCategory,
       name: formData.name,
       date: formData.date,
       note: formData.note || undefined
@@ -141,6 +174,7 @@ export default function EnhancedPortfolioForm({ onAddItem }: EnhancedPortfolioFo
     // 폼 초기화
     setFormData({
       assetType: '',
+      subCategory: '',
       name: '',
       amount: '',
       quantity: '',
@@ -179,6 +213,29 @@ export default function EnhancedPortfolioForm({ onAddItem }: EnhancedPortfolioFo
             ))}
           </select>
         </div>
+
+        {/* 소분류 선택 */}
+        {formData.assetType && (
+          <div>
+            <label htmlFor="subCategory" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              소분류 <span className="text-red-500">*</span>
+            </label>
+            <select
+              id="subCategory"
+              name="subCategory"
+              value={formData.subCategory}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+            >
+              <option value="">소분류를 선택하세요</option>
+              {subCategories[formData.assetType as keyof typeof subCategories]?.map(subType => (
+                <option key={subType.value} value={subType.value}>
+                  {subType.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         {/* 자산명/종목명 */}
         <div>

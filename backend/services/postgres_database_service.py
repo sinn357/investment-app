@@ -78,6 +78,7 @@ class PostgresDatabaseService:
                     CREATE TABLE IF NOT EXISTS assets (
                         id SERIAL PRIMARY KEY,
                         asset_type VARCHAR(50),
+                        sub_category VARCHAR(50),
                         name VARCHAR(100),
                         amount NUMERIC,
                         quantity NUMERIC,
@@ -104,6 +105,7 @@ class PostgresDatabaseService:
                     );
 
                     -- 기존 테이블에 새 컬럼 추가 (테이블이 이미 존재하는 경우)
+                    ALTER TABLE assets ADD COLUMN IF NOT EXISTS sub_category VARCHAR(50);
                     ALTER TABLE assets ADD COLUMN IF NOT EXISTS principal NUMERIC;
                     ALTER TABLE assets ADD COLUMN IF NOT EXISTS profit_loss NUMERIC DEFAULT 0;
                     ALTER TABLE assets ADD COLUMN IF NOT EXISTS profit_rate NUMERIC DEFAULT 0;
@@ -388,11 +390,12 @@ class PostgresDatabaseService:
                 print("PostgreSQL connection established")
                 with conn.cursor() as cur:
                     cur.execute("""
-                        INSERT INTO assets (asset_type, name, amount, quantity, avg_price, eval_amount, principal, profit_loss, profit_rate, date, note)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        INSERT INTO assets (asset_type, sub_category, name, amount, quantity, avg_price, eval_amount, principal, profit_loss, profit_rate, date, note)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                         RETURNING id
                     """, (
                         asset_data.get('asset_type'),
+                        asset_data.get('sub_category'),
                         asset_data.get('name'),
                         asset_data.get('amount'),
                         asset_data.get('quantity'),
@@ -430,7 +433,7 @@ class PostgresDatabaseService:
             with self.get_connection() as conn:
                 with conn.cursor() as cur:
                     cur.execute("""
-                        SELECT id, asset_type, name, amount, quantity, avg_price, eval_amount, principal, profit_loss, profit_rate, date, note, created_at
+                        SELECT id, asset_type, sub_category, name, amount, quantity, avg_price, eval_amount, principal, profit_loss, profit_rate, date, note, created_at
                         FROM assets
                         ORDER BY created_at DESC
                     """)
@@ -558,6 +561,10 @@ class PostgresDatabaseService:
                     if 'asset_type' in data:
                         update_fields.append("asset_type = %s")
                         values.append(data['asset_type'])
+
+                    if 'sub_category' in data:
+                        update_fields.append("sub_category = %s")
+                        values.append(data['sub_category'])
 
                     if 'name' in data:
                         update_fields.append("name = %s")
