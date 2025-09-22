@@ -88,7 +88,8 @@ class PostgresDatabaseService:
                         profit_rate NUMERIC DEFAULT 0,
                         date DATE,
                         note TEXT,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     );
 
                     CREATE TABLE IF NOT EXISTS goal_settings (
@@ -106,6 +107,7 @@ class PostgresDatabaseService:
                     ALTER TABLE assets ADD COLUMN IF NOT EXISTS principal NUMERIC;
                     ALTER TABLE assets ADD COLUMN IF NOT EXISTS profit_loss NUMERIC DEFAULT 0;
                     ALTER TABLE assets ADD COLUMN IF NOT EXISTS profit_rate NUMERIC DEFAULT 0;
+                    ALTER TABLE assets ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
 
                     -- 인덱스 생성
                     CREATE INDEX IF NOT EXISTS idx_latest_releases_indicator_id ON latest_releases(indicator_id);
@@ -596,11 +598,12 @@ class PostgresDatabaseService:
                         update_fields.append("amount = %s")
                         values.append(data['eval_amount'])
 
-                    # 수정 시간 추가
-                    update_fields.append("updated_at = CURRENT_TIMESTAMP")
 
                     # asset_id를 values 마지막에 추가
                     values.append(asset_id)
+
+                    # 디버깅: update_fields 확인
+                    print(f"DEBUG: update_fields before SQL: {update_fields}")
 
                     # SQL 쿼리 실행
                     sql = f"UPDATE assets SET {', '.join(update_fields)} WHERE id = %s"

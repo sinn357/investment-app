@@ -113,13 +113,15 @@ export default function PortfolioDashboard({ showSideInfo = false }: PortfolioDa
 
   const handleEditAsset = (asset: Asset) => {
     setEditingAsset(asset);
+    // 날짜를 YYYY-MM-DD 형식으로 변환
+    const formattedDate = new Date(asset.date).toISOString().split('T')[0];
     setEditForm({
       asset_type: asset.asset_type,
       name: asset.name,
       quantity: asset.quantity,
       avg_price: asset.avg_price,
       eval_amount: asset.eval_amount,
-      date: asset.date,
+      date: formattedDate,
       note: asset.note
     });
   };
