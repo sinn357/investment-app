@@ -129,6 +129,17 @@ export default function PortfolioDashboard({ showSideInfo = false }: PortfolioDa
   const handleUpdateAsset = async () => {
     if (!editingAsset) return;
 
+    // 필수 필드 검증
+    if (!editForm.name || !editForm.name.trim()) {
+      alert('자산명을 입력해주세요.');
+      return;
+    }
+
+    if (!editForm.date) {
+      alert('날짜를 기입해주세요.');
+      return;
+    }
+
     try {
       setLoading(true);
       const response = await fetch(`https://investment-app-backend-x166.onrender.com/api/update-asset/${editingAsset.id}`, {
