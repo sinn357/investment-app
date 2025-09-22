@@ -472,6 +472,7 @@ class PostgresDatabaseService:
                         asset = {
                             "id": row['id'],
                             "asset_type": row['asset_type'],
+                            "sub_category": row['sub_category'],
                             "name": row['name'],
                             "amount": float(row['amount']) if row['amount'] else 0,
                             "quantity": float(row['quantity']) if row['quantity'] else None,

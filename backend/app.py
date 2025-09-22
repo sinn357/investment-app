@@ -739,6 +739,7 @@ def add_asset():
         # 데이터 변환 (프론트엔드 형식 → DB 형식)
         asset_data = {
             'asset_type': data.get('assetType'),
+            'sub_category': data.get('subCategory'),
             'name': data.get('name'),
             'amount': data.get('amount'),
             'quantity': data.get('quantity'),

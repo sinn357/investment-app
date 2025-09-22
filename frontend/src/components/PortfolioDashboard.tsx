@@ -6,6 +6,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, 
 interface Asset {
   id: number;
   asset_type: string;
+  sub_category: string;
   name: string;
   amount: number;
   quantity: number | null;
@@ -117,6 +118,7 @@ export default function PortfolioDashboard({ showSideInfo = false }: PortfolioDa
     const formattedDate = new Date(asset.date).toISOString().split('T')[0];
     setEditForm({
       asset_type: asset.asset_type,
+      sub_category: asset.sub_category,
       name: asset.name,
       quantity: asset.quantity,
       avg_price: asset.avg_price,
@@ -149,6 +151,7 @@ export default function PortfolioDashboard({ showSideInfo = false }: PortfolioDa
         },
         body: JSON.stringify({
           asset_type: editForm.asset_type,
+          sub_category: editForm.sub_category,
           name: editForm.name,
           quantity: editForm.quantity || null,
           avg_price: editForm.avg_price || null,
@@ -724,7 +727,14 @@ export default function PortfolioDashboard({ showSideInfo = false }: PortfolioDa
                   {assets.map((asset) => (
                     <tr key={asset.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                        {asset.name}
+                        <div className="flex flex-col">
+                          <span>{asset.name}</span>
+                          {asset.sub_category && (
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              {asset.sub_category}
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300 text-right">
                         {asset.quantity ? formatNumber(asset.quantity) : '-'}
@@ -821,6 +831,20 @@ export default function PortfolioDashboard({ showSideInfo = false }: PortfolioDa
                   <option value="원자재">원자재</option>
                   <option value="기타">기타</option>
                 </select>
+              </div>
+
+              {/* 소분류 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  소분류
+                </label>
+                <input
+                  type="text"
+                  value={editForm.sub_category || ''}
+                  onChange={(e) => setEditForm({...editForm, sub_category: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  placeholder="소분류 입력 (선택사항)"
+                />
               </div>
 
               {/* 종목명 */}
