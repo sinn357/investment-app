@@ -43,15 +43,23 @@ export default function PortfolioPage() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* 입력 폼 섹션 - 절반 크기 */}
-          <div>
-            <EnhancedPortfolioForm onAddItem={handleAssetAdded} />
+        <div className="space-y-8">
+          {/* 상단 섹션: 입력 폼 + 우측 정보 영역 */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* 입력 폼 섹션 */}
+            <div className="lg:col-span-1">
+              <EnhancedPortfolioForm onAddItem={handleAssetAdded} />
+            </div>
+
+            {/* 우측 정보 영역 */}
+            <div className="lg:col-span-2">
+              <PortfolioDashboard key={refreshKey} showSideInfo={true} />
+            </div>
           </div>
 
-          {/* 대시보드 섹션 - 절반 크기 */}
-          <div className="lg:col-span-2">
-            <PortfolioDashboard key={refreshKey} />
+          {/* 하단 섹션: 전체 대시보드 */}
+          <div>
+            <PortfolioDashboard key={refreshKey} showSideInfo={false} />
           </div>
         </div>
       </main>
