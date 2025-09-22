@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, LineChart, Line, RadialBarChart, RadialBar } from 'recharts';
 
 interface Asset {
   id: number;
@@ -250,6 +250,36 @@ export default function PortfolioDashboard() {
     }));
   };
 
+  const getAssetFlowData = () => {
+    // 더미 데이터 - 실제로는 백엔드에서 시계열 데이터를 받아와야 함
+    const now = new Date();
+    const data = [];
+    for (let i = 23; i >= 0; i--) {
+      const time = new Date(now.getTime() - i * 60 * 60 * 1000);
+      const baseAmount = portfolioData?.summary.total_assets || 10000000;
+      const variation = Math.sin(i * 0.5) * 500000 + Math.random() * 200000 - 100000;
+      data.push({
+        time: time.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit' }),
+        amount: Math.max(0, baseAmount + variation),
+      });
+    }
+    return data;
+  };
+
+  const getGoalProgressData = () => {
+    const currentAmount = portfolioData?.summary.total_assets || 0;
+    const goalAmount = 50000000; // 목표 5천만원 (설정 가능하게 만들 수 있음)
+    const progressRate = Math.min((currentAmount / goalAmount) * 100, 100);
+
+    return [
+      {
+        name: '달성률',
+        value: progressRate,
+        fill: progressRate >= 100 ? '#10B981' : progressRate >= 75 ? '#3B82F6' : progressRate >= 50 ? '#F59E0B' : '#EF4444'
+      }
+    ];
+  };
+
   if (loading) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
@@ -298,46 +328,88 @@ export default function PortfolioDashboard() {
   const groupedAssets = getGroupedAssets();
   const pieChartData = getPieChartData();
   const barChartData = getBarChartData();
+  const assetFlowData = getAssetFlowData();
+  const goalProgressData = getGoalProgressData();
   const categories = ['전체', ...Object.keys(portfolioData.by_category)];
 
   return (
     <div className="space-y-6">
-      {/* 요약 카드 */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg p-6">
-          <h3 className="text-sm font-medium opacity-90">총 자산</h3>
-          <p className="text-2xl font-bold">{formatCurrency(portfolioData.summary.total_assets)}</p>
+      {/* 요약 카드 - 축소 */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg p-4">
+          <h3 className="text-xs font-medium opacity-90">총 자산</h3>
+          <p className="text-lg font-bold">{formatCurrency(portfolioData.summary.total_assets)}</p>
         </div>
 
-        <div className="bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg p-6">
-          <h3 className="text-sm font-medium opacity-90">총 원금</h3>
-          <p className="text-2xl font-bold">{formatCurrency(portfolioData.summary.total_principal)}</p>
+        <div className="bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg p-4">
+          <h3 className="text-xs font-medium opacity-90">총 원금</h3>
+          <p className="text-lg font-bold">{formatCurrency(portfolioData.summary.total_principal)}</p>
         </div>
 
-        <div className="bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg p-6">
-          <h3 className="text-sm font-medium opacity-90">총 손익</h3>
-          <p className="text-2xl font-bold">{formatCurrency(portfolioData.summary.total_profit_loss)}</p>
+        <div className="bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg p-4">
+          <h3 className="text-xs font-medium opacity-90">총 손익</h3>
+          <p className="text-lg font-bold">{formatCurrency(portfolioData.summary.total_profit_loss)}</p>
         </div>
 
-        <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg p-6">
-          <h3 className="text-sm font-medium opacity-90">수익률</h3>
-          <p className="text-2xl font-bold">{portfolioData.summary.profit_rate.toFixed(2)}%</p>
+        <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg p-4">
+          <h3 className="text-xs font-medium opacity-90">수익률</h3>
+          <p className="text-lg font-bold">{portfolioData.summary.profit_rate.toFixed(2)}%</p>
         </div>
       </div>
 
-      {/* 차트 영역 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* 차트 영역 - 4개 그래프 배치 */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-4">
+        {/* 자산 흐름 선형 차트 */}
+        <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">24시간 자산 흐름</h3>
+          <ResponsiveContainer width="100%" height={200}>
+            <LineChart data={assetFlowData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="time" tick={{ fontSize: 10 }} />
+              <YAxis tickFormatter={(value) => `${(value / 1000000).toFixed(0)}M`} tick={{ fontSize: 10 }} />
+              <Tooltip formatter={(value: number) => formatCurrency(value)} />
+              <Line
+                type="monotone"
+                dataKey="amount"
+                stroke="#3B82F6"
+                strokeWidth={2}
+                dot={false}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* 목표 달성률 게이지 차트 */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">목표 달성률</h3>
+          <ResponsiveContainer width="100%" height={200}>
+            <RadialBarChart cx="50%" cy="50%" innerRadius="60%" outerRadius="90%" data={goalProgressData}>
+              <RadialBar
+                dataKey="value"
+                cornerRadius={10}
+                fill={goalProgressData[0]?.fill}
+              />
+              <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" className="text-lg font-bold fill-gray-900 dark:fill-white">
+                {goalProgressData[0]?.value.toFixed(1)}%
+              </text>
+            </RadialBarChart>
+          </ResponsiveContainer>
+          <div className="text-center mt-2">
+            <p className="text-xs text-gray-600 dark:text-gray-400">목표: 5천만원</p>
+          </div>
+        </div>
+
         {/* 도넛 차트 - 자산군별 비중 */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">자산군별 비중</h3>
-          <ResponsiveContainer width="100%" height={300}>
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">자산군별 비중</h3>
+          <ResponsiveContainer width="100%" height={200}>
             <PieChart>
               <Pie
                 data={pieChartData}
                 cx="50%"
                 cy="50%"
-                innerRadius={60}
-                outerRadius={120}
+                innerRadius={40}
+                outerRadius={80}
                 paddingAngle={5}
                 dataKey="value"
               >
@@ -346,19 +418,19 @@ export default function PortfolioDashboard() {
                 ))}
               </Pie>
               <Tooltip formatter={(value: number) => formatCurrency(value)} />
-              <Legend />
+              <Legend wrapperStyle={{ fontSize: '10px' }} />
             </PieChart>
           </ResponsiveContainer>
         </div>
 
         {/* 막대 차트 - 자산군별 금액 */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">자산군별 금액</h3>
-          <ResponsiveContainer width="100%" height={300}>
+        <div className="xl:col-span-4 lg:col-span-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">자산군별 금액</h3>
+          <ResponsiveContainer width="100%" height={200}>
             <BarChart data={barChartData}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis tickFormatter={(value) => `${(value / 1000000).toFixed(0)}M`} />
+              <XAxis dataKey="name" tick={{ fontSize: 10 }} />
+              <YAxis tickFormatter={(value) => `${(value / 1000000).toFixed(0)}M`} tick={{ fontSize: 10 }} />
               <Tooltip formatter={(value: number) => formatCurrency(value)} />
               <Bar dataKey="amount" fill="#3B82F6" />
             </BarChart>
