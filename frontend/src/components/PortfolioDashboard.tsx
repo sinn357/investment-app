@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, LineChart, Line, RadialBarChart, RadialBar } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, LineChart, Line } from 'recharts';
 
 interface Asset {
   id: number;
@@ -397,18 +397,6 @@ export default function PortfolioDashboard({ showSideInfo = false }: PortfolioDa
     return data;
   };
 
-  const getGoalProgressData = () => {
-    const currentAmount = portfolioData?.summary.total_assets || 0;
-    const progressRate = Math.min((currentAmount / goalSettings.totalGoal) * 100, 100);
-
-    return [
-      {
-        name: '달성률',
-        value: progressRate,
-        fill: progressRate >= 100 ? '#10B981' : progressRate >= 75 ? '#3B82F6' : progressRate >= 50 ? '#F59E0B' : '#EF4444'
-      }
-    ];
-  };
 
   const getCategoryGoalProgress = () => {
     if (!portfolioData) return [];
@@ -485,7 +473,6 @@ export default function PortfolioDashboard({ showSideInfo = false }: PortfolioDa
   const pieChartData = getPieChartData();
   const barChartData = getBarChartData();
   const assetFlowData = getAssetFlowData();
-  const goalProgressData = getGoalProgressData();
   const categories = ['전체', ...Object.keys(portfolioData.by_category)];
 
   // 사이드 정보 렌더링 (입력 폼 오른편)
@@ -644,7 +631,7 @@ export default function PortfolioDashboard({ showSideInfo = false }: PortfolioDa
               {['전체', '대체투자', '예치자산', '즉시현금', '투자자산'].map((viewType) => (
                 <button
                   key={viewType}
-                  onClick={() => setChartViewType(viewType as any)}
+                  onClick={() => setChartViewType(viewType as '전체' | '대체투자' | '예치자산' | '즉시현금' | '투자자산')}
                   className={`px-2 py-1 text-xs rounded transition-colors ${
                     chartViewType === viewType
                       ? 'bg-blue-500 text-white'
@@ -722,7 +709,7 @@ export default function PortfolioDashboard({ showSideInfo = false }: PortfolioDa
               {['전체', '대체투자', '예치자산', '즉시현금', '투자자산'].map((viewType) => (
                 <button
                   key={viewType}
-                  onClick={() => setChartViewType(viewType as any)}
+                  onClick={() => setChartViewType(viewType as '전체' | '대체투자' | '예치자산' | '즉시현금' | '투자자산')}
                   className={`px-2 py-1 text-xs rounded transition-colors ${
                     chartViewType === viewType
                       ? 'bg-blue-500 text-white'
