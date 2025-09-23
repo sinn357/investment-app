@@ -1252,9 +1252,8 @@ def change_password(current_user):
 def debug_user_hash(username):
     """임시 디버그: 사용자 해시 정보 확인"""
     try:
-        result = db_service.get_user_by_username(username)
-        if result and result.get('status') == 'success':
-            user = result.get('user')
+        user = db_service.get_user_by_username(username)
+        if user:
             hash_format = "unknown"
             if user['password_hash'].startswith('$2'):
                 hash_format = "bcrypt"
@@ -1265,7 +1264,7 @@ def debug_user_hash(username):
                 "username": user['username'],
                 "hash_format": hash_format,
                 "hash_prefix": user['password_hash'][:30] + "...",
-                "created_at": user.get('created_at')
+                "created_at": str(user.get('created_at'))
             })
         else:
             return jsonify({"error": "User not found"}), 404
