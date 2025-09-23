@@ -838,11 +838,47 @@ class PostgresDatabaseService:
         return password_hash.decode('utf-8')
 
     def _verify_password(self, password: str, password_hash: str) -> bool:
-        """bcrypt를 사용한 비밀번호 검증"""
+        """하이브리드 비밀번호 검증 (bcrypt + 기존 PBKDF2 호환)"""
         try:
-            return bcrypt.checkpw(password.encode('utf-8'), password_hash.encode('utf-8'))
+            # 1. bcrypt 해시 확인 (새로운 사용자)
+            if password_hash.startswith('$2'):  # bcrypt 시그니처
+                return bcrypt.checkpw(password.encode('utf-8'), password_hash.encode('utf-8'))
+
+            # 2. 기존 PBKDF2 해시 확인 (기존 사용자)
+            if ':' in password_hash:  # 기존 salt:hash 형식
+                try:
+                    salt, stored_hash = password_hash.split(':')
+                    password_hash_check = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt.encode('utf-8'), 100000)
+                    return stored_hash == password_hash_check.hex()
+                except Exception as e:
+                    print(f"PBKDF2 verification error: {e}")
+                    return False
+
+            # 3. 알 수 없는 형식
+            print(f"Unknown password hash format: {password_hash[:20]}...")
+            return False
+
         except Exception as e:
             print(f"Password verification error: {e}")
+            return False
+
+    def _upgrade_password_to_bcrypt(self, user_id: int, plain_password: str) -> bool:
+        """PBKDF2에서 bcrypt로 비밀번호 업그레이드"""
+        try:
+            new_hash = self._hash_password(plain_password)
+
+            with self.get_connection() as conn:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        "UPDATE users SET password_hash = %s WHERE id = %s",
+                        (new_hash, user_id)
+                    )
+                    conn.commit()
+                    print(f"User {user_id} password upgraded to bcrypt")
+                    return True
+
+        except Exception as e:
+            print(f"Error upgrading password: {e}")
             return False
 
     def generate_jwt_token(self, user_id: int, username: str) -> str:
@@ -952,6 +988,11 @@ class PostgresDatabaseService:
                 }
 
             if self._verify_password(password, user['password_hash']):
+                # 기존 PBKDF2 사용자의 경우 bcrypt로 자동 업그레이드
+                if ':' in user['password_hash']:  # PBKDF2 형식 감지
+                    print(f"Upgrading user {user['id']} from PBKDF2 to bcrypt")
+                    self._upgrade_password_to_bcrypt(user['id'], password)
+
                 # 로그인 성공 시 JWT 토큰 생성
                 token = self.generate_jwt_token(user['id'], user['username'])
 
