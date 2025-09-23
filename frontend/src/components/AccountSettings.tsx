@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 interface User {
   id: number;
@@ -17,6 +18,8 @@ export default function AccountSettings({ user, onLogout }: AccountSettingsProps
   const [activeTab, setActiveTab] = useState<'password' | 'delete'>('password');
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+  const [passwordChangeSuccess, setPasswordChangeSuccess] = useState(false);
+  const router = useRouter();
 
   // 비밀번호 변경 상태
   const [passwordForm, setPasswordForm] = useState({
@@ -67,6 +70,7 @@ export default function AccountSettings({ user, onLogout }: AccountSettingsProps
       if (data.status === 'success') {
         setMessage({ type: 'success', text: '비밀번호가 성공적으로 변경되었습니다.' });
         setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+        setPasswordChangeSuccess(true);
       } else {
         setMessage({ type: 'error', text: data.message || '비밀번호 변경에 실패했습니다.' });
       }
@@ -174,7 +178,20 @@ export default function AccountSettings({ user, onLogout }: AccountSettingsProps
       {activeTab === 'password' && (
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <h2 className="text-xl font-semibold text-gray-800 mb-4">비밀번호 변경</h2>
-          <form onSubmit={handlePasswordChange} className="space-y-4">
+          {passwordChangeSuccess ? (
+            <div className="text-center space-y-4">
+              <div className="text-green-600 text-lg font-medium mb-4">
+                ✅ 비밀번호가 성공적으로 변경되었습니다!
+              </div>
+              <button
+                onClick={() => router.push('/portfolio')}
+                className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                포트폴리오로 돌아가기
+              </button>
+            </div>
+          ) : (
+            <form onSubmit={handlePasswordChange} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 현재 비밀번호
@@ -221,6 +238,7 @@ export default function AccountSettings({ user, onLogout }: AccountSettingsProps
               {isLoading ? '변경 중...' : '비밀번호 변경'}
             </button>
           </form>
+          )}
         </div>
       )}
 
