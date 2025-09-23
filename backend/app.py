@@ -1036,10 +1036,11 @@ def save_goal_settings():
         total_goal = data.get('total_goal', 50000000)
         target_date = data.get('target_date', '2024-12-31')
         category_goals = data.get('category_goals', {})
+        sub_category_goals = data.get('sub_category_goals', {})
 
         print(f"Saving goal settings: user_id={user_id}, total_goal={total_goal}, target_date={target_date}")
 
-        result = db_service.save_goal_settings(user_id, total_goal, target_date, category_goals)
+        result = db_service.save_goal_settings(user_id, total_goal, target_date, category_goals, sub_category_goals)
 
         if result.get('status') == 'success':
             return jsonify(result)
