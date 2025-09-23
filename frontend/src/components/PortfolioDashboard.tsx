@@ -68,6 +68,7 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
   const [editForm, setEditForm] = useState<Partial<Asset>>({});
+  const [showSubcategoryGoals, setShowSubcategoryGoals] = useState(false);
   const [goalSettings, setGoalSettings] = useState({
     totalGoal: 50000000,
     targetDate: '2024-12-31',
@@ -723,10 +724,29 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
           </div>
         </div>
 
+        {/* 전체 목표 달성률 하단에 펼치기 버튼 */}
+        <div className="text-center">
+          <button
+            onClick={() => setShowSubcategoryGoals(!showSubcategoryGoals)}
+            className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center mx-auto gap-2"
+          >
+            <span>{showSubcategoryGoals ? '소분류별 목표 접기' : '소분류별 목표 보기'}</span>
+            <svg
+              className={`w-4 h-4 transition-transform ${showSubcategoryGoals ? 'rotate-180' : ''}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+        </div>
+
         {/* 소분류별 목표 카드들 */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4">
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">소분류별 목표 추적</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {showSubcategoryGoals && (
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">소분류별 목표 추적</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {subCategoryGoalProgress.map(({ mainCategory, subCategory, current, goal, targetDate, progressRate, progressColor, daysUntilTarget }) => {
               const goalKey = subCategory;
               return (
@@ -820,8 +840,9 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
                 </div>
               );
             })}
+            </div>
           </div>
-        </div>
+        )}
 
       </div>
     );
@@ -1034,6 +1055,13 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
         {/* 자산군별 그룹화된 테이블 */}
         {Object.entries(groupedAssets).map(([category, subCategories]) => {
           const allAssets = Object.values(subCategories).flat();
+          // 대분류별 상세 통계 계산
+          const totalAmount = allAssets.reduce((sum, asset) => sum + asset.amount, 0);
+          const totalPrincipal = allAssets.reduce((sum, asset) => sum + (asset.principal || asset.amount), 0);
+          const totalEvalAmount = allAssets.reduce((sum, asset) => sum + (asset.eval_amount || asset.amount), 0);
+          const totalProfitLoss = totalEvalAmount - totalPrincipal;
+          const profitRate = totalPrincipal > 0 ? (totalProfitLoss / totalPrincipal) * 100 : 0;
+
           return (
             <div key={category} className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
               {/* 자산군 헤더 */}
@@ -1041,24 +1069,66 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
                 <div className="flex justify-between items-center">
                   <h3 className="text-lg font-semibold text-white">{category}</h3>
                   <div className="text-white text-sm">
-                    <span className="bg-white bg-opacity-20 px-3 py-1 rounded-full">
-                      {allAssets.length}개 자산 | {formatCurrency(allAssets.reduce((sum, asset) => sum + asset.amount, 0))}
-                    </span>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      <div className="bg-blue-600 bg-opacity-30 px-3 py-2 rounded">
+                        <div className="text-xs opacity-80">자산 수</div>
+                        <div className="font-medium">{allAssets.length}개</div>
+                      </div>
+                      <div className="bg-blue-600 bg-opacity-30 px-3 py-2 rounded">
+                        <div className="text-xs opacity-80">총액</div>
+                        <div className="font-medium">{formatCurrency(totalAmount)}</div>
+                      </div>
+                      <div className="bg-blue-600 bg-opacity-30 px-3 py-2 rounded">
+                        <div className="text-xs opacity-80">원금</div>
+                        <div className="font-medium">{formatCurrency(totalPrincipal)}</div>
+                      </div>
+                      <div className="bg-blue-600 bg-opacity-30 px-3 py-2 rounded">
+                        <div className="text-xs opacity-80">손익</div>
+                        <div className={`font-medium ${totalProfitLoss >= 0 ? 'text-green-200' : 'text-red-200'}`}>
+                          {formatCurrency(totalProfitLoss)} ({profitRate.toFixed(2)}%)
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
 
               {/* 소분류별 섹션 */}
-              {Object.entries(subCategories).map(([subCategory, assets]) => (
+              {Object.entries(subCategories).map(([subCategory, assets]) => {
+                // 소분류별 상세 통계 계산
+                const subTotalAmount = assets.reduce((sum, asset) => sum + asset.amount, 0);
+                const subTotalPrincipal = assets.reduce((sum, asset) => sum + (asset.principal || asset.amount), 0);
+                const subTotalEvalAmount = assets.reduce((sum, asset) => sum + (asset.eval_amount || asset.amount), 0);
+                const subTotalProfitLoss = subTotalEvalAmount - subTotalPrincipal;
+                const subProfitRate = subTotalPrincipal > 0 ? (subTotalProfitLoss / subTotalPrincipal) * 100 : 0;
+
+                return (
                 <div key={`${category}-${subCategory}`}>
                   {/* 소분류 헤더 */}
                   <div className="bg-gray-100 dark:bg-gray-700 px-6 py-3 border-t border-gray-200 dark:border-gray-600">
                     <div className="flex justify-between items-center">
                       <h4 className="text-md font-medium text-gray-800 dark:text-gray-200">{subCategory}</h4>
                       <div className="text-gray-600 dark:text-gray-400 text-sm">
-                        <span className="bg-gray-200 dark:bg-gray-600 px-2 py-1 rounded">
-                          {assets.length}개 | {formatCurrency(assets.reduce((sum, asset) => sum + asset.amount, 0))}
-                        </span>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                          <div className="bg-gray-200 dark:bg-gray-600 px-2 py-1 rounded text-center">
+                            <div className="text-xs opacity-80">종목 수</div>
+                            <div className="font-medium">{assets.length}개</div>
+                          </div>
+                          <div className="bg-gray-200 dark:bg-gray-600 px-2 py-1 rounded text-center">
+                            <div className="text-xs opacity-80">총액</div>
+                            <div className="font-medium">{formatCurrency(subTotalAmount)}</div>
+                          </div>
+                          <div className="bg-gray-200 dark:bg-gray-600 px-2 py-1 rounded text-center">
+                            <div className="text-xs opacity-80">원금</div>
+                            <div className="font-medium">{formatCurrency(subTotalPrincipal)}</div>
+                          </div>
+                          <div className="bg-gray-200 dark:bg-gray-600 px-2 py-1 rounded text-center">
+                            <div className="text-xs opacity-80">손익</div>
+                            <div className={`font-medium ${subTotalProfitLoss >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                              {formatCurrency(subTotalProfitLoss)} ({subProfitRate.toFixed(2)}%)
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1148,7 +1218,8 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
               </table>
             </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           );
         })}
