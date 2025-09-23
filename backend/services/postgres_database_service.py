@@ -1012,3 +1012,35 @@ class PostgresDatabaseService:
         except Exception as e:
             print(f"Error getting user by ID: {e}")
             return None
+
+    def delete_user(self, username: str) -> Dict[str, Any]:
+        """사용자 계정 삭제 (CASCADE로 모든 관련 데이터도 삭제)"""
+        try:
+            with self.get_connection() as conn:
+                with conn.cursor() as cur:
+                    # 먼저 사용자 존재 확인
+                    cur.execute("SELECT id, username FROM users WHERE username = %s", (username,))
+                    user = cur.fetchone()
+
+                    if not user:
+                        return {
+                            "status": "error",
+                            "message": "존재하지 않는 사용자입니다."
+                        }
+
+                    # 사용자 삭제 (CASCADE로 assets, goal_settings도 자동 삭제)
+                    cur.execute("DELETE FROM users WHERE username = %s", (username,))
+                    conn.commit()
+
+                    return {
+                        "status": "success",
+                        "message": f"사용자 '{username}' 및 모든 관련 데이터가 삭제되었습니다.",
+                        "deleted_user_id": user['id']
+                    }
+
+        except Exception as e:
+            print(f"Error deleting user: {e}")
+            return {
+                "status": "error",
+                "message": f"사용자 삭제 실패: {str(e)}"
+            }

@@ -1057,5 +1057,31 @@ def get_user(user_id):
             "message": f"사용자 조회 실패: {str(e)}"
         }), 500
 
+@app.route('/api/admin/delete-user/<username>', methods=['DELETE'])
+def admin_delete_user(username):
+    """관리자 전용: 사용자 계정 삭제 API"""
+    try:
+        # 관리자 권한 체크 (임시로 특정 패스워드로 확인)
+        admin_password = request.headers.get('X-Admin-Password')
+        if admin_password != 'admin-delete-2025':
+            return jsonify({
+                "status": "error",
+                "message": "관리자 권한이 필요합니다."
+            }), 403
+
+        result = db_service.delete_user(username)
+
+        if result.get('status') == 'success':
+            return jsonify(result)
+        else:
+            return jsonify(result), 400
+
+    except Exception as e:
+        print(f"Error deleting user: {e}")
+        return jsonify({
+            "status": "error",
+            "message": f"사용자 삭제 실패: {str(e)}"
+        }), 500
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5001)
