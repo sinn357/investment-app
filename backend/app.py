@@ -1243,9 +1243,11 @@ def change_password(current_user):
 
     except Exception as e:
         print(f"Error changing password: {e}")
+        print(f"Error type: {type(e)}")
+        print(f"Current user data: {current_user}")
         return jsonify({
             "status": "error",
-            "message": "비밀번호 변경 실패"
+            "message": f"비밀번호 변경 실패: {str(e)}"
         }), 500
 
 @app.route('/api/debug/user/<username>')
