@@ -1295,5 +1295,23 @@ def debug_all_users():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route('/api/debug/cleanup-users', methods=['POST'])
+def cleanup_all_users():
+    """임시 디버그: 모든 사용자 계정 삭제"""
+    try:
+        with db_service.get_connection() as conn:
+            with conn.cursor() as cur:
+                # 모든 사용자 삭제 (CASCADE로 관련 데이터도 삭제)
+                cur.execute("DELETE FROM users")
+                deleted_count = cur.rowcount
+
+                return jsonify({
+                    "status": "success",
+                    "message": f"{deleted_count}개의 사용자 계정이 삭제되었습니다.",
+                    "deleted_count": deleted_count
+                })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5001)
