@@ -999,6 +999,14 @@ def register():
         result = db_service.create_user(username, password)
 
         if result.get('status') == 'success':
+            # 회원가입 성공 시 JWT 토큰 생성
+            user_id = result.get('user_id')
+            username = result.get('username')
+
+            if user_id and username:
+                token = db_service.generate_jwt_token(user_id, username)
+                result['token'] = token
+
             return jsonify(result), 201
         else:
             return jsonify(result), 400
