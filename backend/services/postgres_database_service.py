@@ -4,7 +4,9 @@ import json
 import os
 import hashlib
 import secrets
-from datetime import datetime
+import bcrypt
+import jwt
+from datetime import datetime, timedelta
 from typing import List, Dict, Optional, Any
 from urllib.parse import urlparse
 
@@ -15,6 +17,12 @@ class PostgresDatabaseService:
         self.database_url = database_url or os.getenv('DATABASE_URL')
         if not self.database_url:
             raise ValueError("DATABASE_URL environment variable is required")
+
+        # JWT 시크릿 키 설정
+        self.jwt_secret = os.getenv('JWT_SECRET', 'investment-app-secret-key-2025')
+
+        # 로그인 시도 제한을 위한 딕셔너리
+        self.login_attempts = {}
 
         # URL 파싱
         self.parsed_url = urlparse(self.database_url)
@@ -823,22 +831,66 @@ class PostgresDatabaseService:
     # === 사용자 인증 관련 메서드 ===
 
     def _hash_password(self, password: str) -> str:
-        """비밀번호를 해시화"""
-        # Salt 생성
-        salt = secrets.token_hex(16)
-        # 비밀번호와 salt를 결합하여 해시화
-        password_hash = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt.encode('utf-8'), 100000)
-        # salt와 hash를 결합하여 저장
-        return salt + ':' + password_hash.hex()
+        """bcrypt를 사용한 강력한 비밀번호 해시화"""
+        # bcrypt로 12라운드 솔트 해싱 (my-site와 동일한 보안 수준)
+        salt = bcrypt.gensalt(rounds=12)
+        password_hash = bcrypt.hashpw(password.encode('utf-8'), salt)
+        return password_hash.decode('utf-8')
 
     def _verify_password(self, password: str, password_hash: str) -> bool:
-        """비밀번호 검증"""
+        """bcrypt를 사용한 비밀번호 검증"""
         try:
-            salt, stored_hash = password_hash.split(':')
-            password_hash_check = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt.encode('utf-8'), 100000)
-            return stored_hash == password_hash_check.hex()
-        except:
+            return bcrypt.checkpw(password.encode('utf-8'), password_hash.encode('utf-8'))
+        except Exception as e:
+            print(f"Password verification error: {e}")
             return False
+
+    def generate_jwt_token(self, user_id: int, username: str) -> str:
+        """JWT 토큰 생성"""
+        payload = {
+            'user_id': user_id,
+            'username': username,
+            'iat': datetime.utcnow(),
+            'exp': datetime.utcnow() + timedelta(hours=24)
+        }
+        return jwt.encode(payload, self.jwt_secret, algorithm='HS256')
+
+    def verify_jwt_token(self, token: str) -> Dict[str, Any]:
+        """JWT 토큰 검증"""
+        try:
+            payload = jwt.decode(token, self.jwt_secret, algorithms=['HS256'])
+            return {
+                'status': 'success',
+                'user_id': payload['user_id'],
+                'username': payload['username']
+            }
+        except jwt.ExpiredSignatureError:
+            return {'status': 'error', 'message': '토큰이 만료되었습니다.'}
+        except jwt.InvalidTokenError:
+            return {'status': 'error', 'message': '유효하지 않은 토큰입니다.'}
+
+    def check_rate_limit(self, username: str) -> bool:
+        """브루트포스 방지: 로그인 시도 제한 체크"""
+        current_time = datetime.now()
+        if username in self.login_attempts:
+            attempts, last_attempt = self.login_attempts[username]
+            # 5분이 지나면 초기화
+            if (current_time - last_attempt).seconds > 300:
+                del self.login_attempts[username]
+                return True
+            # 5회 이상 실패 시 차단
+            if attempts >= 5:
+                return False
+        return True
+
+    def record_failed_attempt(self, username: str):
+        """실패한 로그인 시도 기록"""
+        current_time = datetime.now()
+        if username in self.login_attempts:
+            attempts, _ = self.login_attempts[username]
+            self.login_attempts[username] = (attempts + 1, current_time)
+        else:
+            self.login_attempts[username] = (1, current_time)
 
     def create_user(self, username: str, password: str) -> Dict[str, Any]:
         """새 사용자 생성"""
@@ -876,23 +928,47 @@ class PostgresDatabaseService:
             }
 
     def authenticate_user(self, username: str, password: str) -> Dict[str, Any]:
-        """사용자 인증"""
+        """강화된 사용자 인증 (JWT + 브루트포스 방지)"""
         try:
-            user = self.get_user_by_username(username)
+            # 브루트포스 방지 체크
+            if not self.check_rate_limit(username):
+                return {
+                    "status": "error",
+                    "message": "너무 많은 로그인 시도입니다. 5분 후 다시 시도해주세요."
+                }
+
+            # 입력 검증
+            if not username or len(username.strip()) == 0:
+                return {"status": "error", "message": "사용자명을 입력해주세요."}
+            if not password or len(password) < 4:
+                return {"status": "error", "message": "비밀번호는 4자 이상이어야 합니다."}
+
+            user = self.get_user_by_username(username.strip())
             if not user:
+                self.record_failed_attempt(username)
                 return {
                     "status": "error",
                     "message": "존재하지 않는 사용자명입니다."
                 }
 
             if self._verify_password(password, user['password_hash']):
+                # 로그인 성공 시 JWT 토큰 생성
+                token = self.generate_jwt_token(user['id'], user['username'])
+
+                # 성공 시 실패 기록 초기화
+                if username in self.login_attempts:
+                    del self.login_attempts[username]
+
                 return {
                     "status": "success",
                     "message": "로그인 성공",
                     "user_id": user['id'],
-                    "username": user['username']
+                    "username": user['username'],
+                    "token": token
                 }
             else:
+                # 실패 기록
+                self.record_failed_attempt(username)
                 return {
                     "status": "error",
                     "message": "비밀번호가 일치하지 않습니다."

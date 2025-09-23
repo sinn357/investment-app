@@ -1,6 +1,7 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, make_response
 from flask_cors import CORS
 import os
+import functools
 from dotenv import load_dotenv
 from crawlers.investing_crawler import get_ism_manufacturing_pmi, parse_history_table, fetch_html
 from crawlers.ism_non_manufacturing import get_ism_non_manufacturing_pmi
@@ -31,7 +32,8 @@ app = Flask(__name__)
 CORS(app,
      origins=["https://investment-app-rust-one.vercel.app", "http://localhost:3000"],
      methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-     allow_headers=['Content-Type', 'Authorization'])
+     allow_headers=['Content-Type', 'Authorization'],
+     supports_credentials=True)
 
 # 데이터베이스 서비스 초기화 (PostgreSQL 우선 사용)
 try:
@@ -45,6 +47,44 @@ try:
 except Exception as e:
     print(f"PostgreSQL connection failed, falling back to SQLite: {e}")
     db_service = DatabaseService()
+
+# JWT 토큰 검증 데코레이터
+def token_required(f):
+    @functools.wraps(f)
+    def decorated(*args, **kwargs):
+        token = None
+
+        # Authorization 헤더에서 토큰 추출
+        if 'Authorization' in request.headers:
+            auth_header = request.headers['Authorization']
+            try:
+                token = auth_header.split(" ")[1]  # "Bearer <token>"
+            except IndexError:
+                return jsonify({'status': 'error', 'message': 'Invalid token format'}), 401
+
+        if not token:
+            return jsonify({'status': 'error', 'message': 'Token is missing'}), 401
+
+        try:
+            # JWT 토큰 검증
+            current_user = db_service.verify_jwt_token(token)
+            if current_user['status'] != 'success':
+                return jsonify(current_user), 401
+        except Exception as e:
+            print(f"Token verification error: {e}")
+            return jsonify({'status': 'error', 'message': 'Token is invalid'}), 401
+
+        return f(current_user, *args, **kwargs)
+    return decorated
+
+# 보안 헤더 추가
+@app.after_request
+def after_request(response):
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'DENY'
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+    response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+    return response
 
 # 업데이트 상태 추적 (전역 변수)
 update_status = {
