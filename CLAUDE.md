@@ -8,8 +8,8 @@
 - **Project:** Investment App - Economic Indicators Dashboard
 - **Repo Root:** /Users/woocheolshin/Documents/Vibecoding_1/investment-app
 - **Owner:** Partner
-- **Last Updated:** 2025-09-23 19:15 KST
-- **Session Goal (Today):** 🔄 엔터프라이즈 보안 업그레이드 및 기존 사용자 호환성 문제 해결 (bcrypt 해싱, JWT 토큰, 하이브리드 비밀번호 검증)
+- **Last Updated:** 2025-09-23 20:45 KST
+- **Session Goal (Today):** ✅ 계정 관리 웹 UI 시스템 완전 구현 (비밀번호 변경/계정 삭제 웹 인터페이스, JWT 버그 수정, 양방향 네비게이션, 문서화)
 
 ---
 
@@ -133,9 +133,8 @@ investment-app/
   - 다음 단계: 새 사용자(testuser) 로그인 테스트로 bcrypt 구현 검증 필요
 
 ### Recent Done
+- **T-057:** 계정 관리 웹 UI 시스템 완전 구현 ✅ (2025-09-23) - 비밀번호 변경/계정 삭제 웹 인터페이스, JWT 토큰 버그 수정, 양방향 네비게이션, 포괄적 문서화 완료
 - **T-056:** 사용자별 데이터 분리 로직 완전 구현 ✅ (2025-09-23) - 사용자 인증 시스템 + 포트폴리오 데이터 완전 분리 + PostgreSQL 스키마 업데이트 완료
-
-### Recent Done
 - **T-055:** 사용자 인증 시스템 백엔드+프론트엔드 구현 ✅ (2025-09-23) - PostgreSQL users 테이블, PBKDF2 암호화, 로그인/회원가입 API, AuthForm 컴포넌트, portfolio 페이지 인증 통합 완료
 - **T-054:** 2단계 카테고리 시스템 완전 구현 ✅ (2025-09-22) - 소분류 표시/입력/중첩 UI 모든 기능 완료, GitHub/Render 배포 완료
 - **T-054:** Vercel 빌드 오류 해결 ✅ (2025-09-22) - JSX 파싱 오류 수정 + 안정적인 빌드 시스템 복원 + 문서화 완료
@@ -598,6 +597,24 @@ investment-app/
 - Consequences:
   - **사용자 인증**: PBKDF2 해시 + salt로 비밀번호 보안 강화
   - **데이터 격리**: 모든 포트폴리오 API에 user_id 필터링 적용
+  - **세션 관리**: localStorage 기반 사용자 정보 + JWT 토큰 저장
+  - **API 보안**: Authorization 헤더 기반 인증 확인
+  - **확장성**: 향후 추가 기능도 user_id 기반 자동 분리 적용
+
+### ADR-032: 계정 관리 웹 UI 시스템 아키텍처
+- Date: 2025-09-23
+- Context: 사용자가 웹사이트에서 직접 비밀번호 변경, 계정 삭제 등을 할 수 있는 완전한 인터페이스 필요
+- Options: 단순 API만 제공 vs 완전한 웹 UI vs 외부 서비스 연동
+- Decision: React TypeScript 기반 완전한 웹 계정 관리 시스템 구현
+- Consequences:
+  - **완전한 웹 인터페이스**: /settings 페이지에서 모든 계정 관리 작업 가능
+  - **탭 기반 UI**: 비밀번호 변경/계정 삭제 분리된 탭으로 직관적 구성
+  - **안전장치 시스템**: 현재 비밀번호 확인, "계정 삭제" 문구 입력 등 다중 검증
+  - **성공 상태 처리**: 비밀번호 변경 후 성공 화면 + "포트폴리오로 돌아가기" 버튼
+  - **양방향 네비게이션**: 포트폴리오 ↔ 계정설정 자유로운 이동
+  - **JWT 토큰 버그 수정**: 회원가입 API에서 JWT 토큰 생성 누락 문제 해결
+  - **CORS 완전 해결**: preflight 요청 처리로 크로스 오리진 문제 완전 해결
+  - **사용자 경험**: 즉시 피드백, 명확한 오류 메시지, 일관된 디자인
   - **권한 검증**: CRUD 작업 시 사용자별 접근 권한 엄격 제어
   - **스키마 확장**: assets 테이블에 user_id 외래키 추가, 기존 데이터 마이그레이션
   - **프론트엔드 통합**: AuthForm 컴포넌트 + localStorage 세션 관리

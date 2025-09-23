@@ -19,11 +19,7 @@ export default function SettingsPage() {
     const savedUser = localStorage.getItem('portfolio_user');
     const savedToken = localStorage.getItem('auth_token');
 
-    console.log('Settings page - savedUser:', savedUser);
-    console.log('Settings page - savedToken:', savedToken);
-
     if (!savedUser || !savedToken) {
-      console.log('Settings page - Redirecting to portfolio due to missing data');
       router.push('/portfolio');
       return;
     }
