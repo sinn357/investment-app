@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Navigation from '@/components/Navigation';
 import EnhancedPortfolioForm from '@/components/EnhancedPortfolioForm';
 import PortfolioDashboard from '@/components/PortfolioDashboard';
@@ -29,6 +30,7 @@ interface User {
 export default function PortfolioPage() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [user, setUser] = useState<User | null>(null);
+  const router = useRouter();
 
   // 로컬 스토리지에서 사용자 정보 로드 (토큰 포함)
   useEffect(() => {
@@ -98,12 +100,12 @@ export default function PortfolioPage() {
               <div className="text-sm text-gray-600 dark:text-gray-400">
                 <span className="font-medium text-gray-900 dark:text-white">{user.username}</span>님
               </div>
-              <a
-                href="/settings"
+              <button
+                onClick={() => router.push('/settings')}
                 className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
               >
                 계정 설정
-              </a>
+              </button>
               <button
                 onClick={handleLogout}
                 className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
