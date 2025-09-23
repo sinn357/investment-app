@@ -1044,7 +1044,7 @@ class PostgresDatabaseService:
             with self.get_connection() as conn:
                 with conn.cursor() as cur:
                     cur.execute(
-                        "SELECT id, username, created_at FROM users WHERE id = %s",
+                        "SELECT id, username, password_hash, created_at FROM users WHERE id = %s",
                         (user_id,)
                     )
                     user = cur.fetchone()
