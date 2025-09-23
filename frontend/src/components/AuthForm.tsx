@@ -27,7 +27,7 @@ export default function AuthForm({ onLogin }: AuthFormProps) {
 
     try {
       const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}${endpoint}`, {
+      const response = await fetch(`https://investment-app-backend-x166.onrender.com${endpoint}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
