@@ -68,11 +68,11 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
   const [editForm, setEditForm] = useState<Partial<Asset>>({});
-  const [showCategoryGoals, setShowCategoryGoals] = useState(false);
   const [goalSettings, setGoalSettings] = useState({
     totalGoal: 50000000,
     targetDate: '2024-12-31',
-    categoryGoals: {} as Record<string, number>
+    categoryGoals: {} as Record<string, number>,
+    subCategoryGoals: {} as Record<string, { amount: number; targetDate: string }>
   });
   const [chartViewType, setChartViewType] = useState<'전체' | '대체투자' | '예치자산' | '즉시현금' | '투자자산'>('전체');
   const [subViewType, setSubViewType] = useState<string | null>(null);
@@ -240,7 +240,8 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
         setGoalSettings({
           totalGoal: data.data.total_goal,
           targetDate: data.data.target_date,
-          categoryGoals: data.data.category_goals
+          categoryGoals: data.data.category_goals || {},
+          subCategoryGoals: data.data.sub_category_goals || {}
         });
       }
     } catch (error) {
@@ -265,7 +266,8 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
           user_id: user.id,
           total_goal: newSettings.totalGoal,
           target_date: newSettings.targetDate,
-          category_goals: newSettings.categoryGoals
+          category_goals: newSettings.categoryGoals,
+          sub_category_goals: newSettings.subCategoryGoals
         }),
       });
 
@@ -490,6 +492,60 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
     });
   };
 
+  const getSubCategoryGoalProgress = () => {
+    if (!portfolioData) return [];
+
+    const subCategoryProgress: Array<{
+      mainCategory: string;
+      subCategory: string;
+      current: number;
+      goal: number;
+      targetDate: string;
+      progressRate: number;
+      progressColor: string;
+      daysUntilTarget: number;
+    }> = [];
+
+    // 모든 대분류별로 소분류 진행률 계산
+    Object.keys(subCategories).forEach(mainCategory => {
+      subCategories[mainCategory as keyof typeof subCategories].forEach(subCategory => {
+        // 해당 소분류의 자산들 필터링
+        const subCategoryAssets = portfolioData.data.filter(asset =>
+          asset.asset_type === mainCategory &&
+          (asset.sub_category === subCategory || (!asset.sub_category && subCategory === '기타'))
+        );
+
+        const current = subCategoryAssets.reduce((sum, asset) => sum + asset.amount, 0);
+        const goalData = goalSettings.subCategoryGoals[subCategory];
+        const goal = goalData?.amount || 0;
+        const targetDate = goalData?.targetDate || goalSettings.targetDate;
+
+        const progressRate = goal > 0 ? Math.min((current / goal) * 100, 100) : 0;
+        const progressColor = progressRate >= 100 ? 'bg-green-500' : progressRate >= 75 ? 'bg-blue-500' : progressRate >= 50 ? 'bg-yellow-500' : 'bg-red-500';
+
+        // D-Day 계산
+        const today = new Date();
+        const target = new Date(targetDate);
+        const diffTime = target.getTime() - today.getTime();
+        const daysUntilTarget = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        subCategoryProgress.push({
+          mainCategory,
+          subCategory,
+          current,
+          goal,
+          targetDate,
+          progressRate,
+          progressColor,
+          daysUntilTarget
+        });
+      });
+    });
+
+    // 현재 금액이 있는 소분류만 필터링하거나 목표가 설정된 소분류 표시
+    return subCategoryProgress.filter(item => item.current > 0 || item.goal > 0);
+  };
+
   const getDaysUntilTarget = () => {
     const today = new Date();
     const targetDate = new Date(goalSettings.targetDate);
@@ -555,6 +611,7 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
     const progressRate = Math.min((currentAmount / goalSettings.totalGoal) * 100, 100);
     const progressColor = progressRate >= 100 ? 'bg-green-500' : progressRate >= 75 ? 'bg-blue-500' : progressRate >= 50 ? 'bg-yellow-500' : 'bg-red-500';
     const categoryGoalProgress = getCategoryGoalProgress();
+    const subCategoryGoalProgress = getSubCategoryGoalProgress();
     const daysUntilTarget = getDaysUntilTarget();
 
     // 투자자산과 대체투자만 계산 (즉시현금, 예치자산 제외)
@@ -606,17 +663,9 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
           </div>
         </div>
 
-        {/* 목표 달성률 - 가로 진행바 */}
+        {/* 전체 목표 달성률 */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4">
-          <div className="flex justify-between items-center mb-3">
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-white">목표 달성률</h3>
-            <button
-              onClick={() => setShowCategoryGoals(!showCategoryGoals)}
-              className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
-            >
-              {showCategoryGoals ? '접기' : '자산군별 보기'}
-            </button>
-          </div>
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">전체 목표 달성률</h3>
 
           {/* 목표 설정 */}
           <div className="space-y-2 mb-4">
@@ -672,51 +721,106 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
               </span>
             </div>
           </div>
+        </div>
 
-          {/* 자산군별 달성률 (펼치기) */}
-          {showCategoryGoals && (
-            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
-              <h4 className="text-xs font-semibold text-gray-900 dark:text-white mb-3">자산군별 목표</h4>
-              <div className="space-y-3">
-                {categoryGoalProgress.map(({ category, current, goal, progressRate, progressColor }) => (
-                  <div key={category} className="space-y-1">
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs font-medium text-gray-700 dark:text-gray-300">{category}</span>
+        {/* 소분류별 목표 카드들 */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">소분류별 목표 추적</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {subCategoryGoalProgress.map(({ mainCategory, subCategory, current, goal, targetDate, progressRate, progressColor, daysUntilTarget }) => {
+              const goalKey = subCategory;
+              return (
+                <div key={`${mainCategory}-${subCategory}`} className="border border-gray-200 dark:border-gray-600 rounded-lg p-3 space-y-3">
+                  {/* 소분류 제목 */}
+                  <div className="text-center">
+                    <h4 className="text-sm font-medium text-gray-900 dark:text-white">{subCategory}</h4>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{mainCategory}</p>
+                  </div>
+
+                  {/* 목표 입력 */}
+                  <div className="space-y-2">
+                    <div>
+                      <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">목표 금액</label>
                       <input
                         type="number"
-                        value={goalSettings.categoryGoals[category] || 0}
+                        value={goalSettings.subCategoryGoals[goalKey]?.amount || 0}
                         onChange={(e) => {
                           const newSettings = {
                             ...goalSettings,
-                            categoryGoals: {
-                              ...goalSettings.categoryGoals,
-                              [category]: parseInt(e.target.value) || 0
+                            subCategoryGoals: {
+                              ...goalSettings.subCategoryGoals,
+                              [goalKey]: {
+                                amount: parseInt(e.target.value) || 0,
+                                targetDate: goalSettings.subCategoryGoals[goalKey]?.targetDate || goalSettings.targetDate
+                              }
                             }
                           };
                           setGoalSettings(newSettings);
                           saveGoalSettings(newSettings);
                         }}
-                        className="w-20 px-1 py-0.5 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                         placeholder="목표액"
                       />
                     </div>
+                    <div>
+                      <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">목표 날짜</label>
+                      <input
+                        type="date"
+                        value={goalSettings.subCategoryGoals[goalKey]?.targetDate || goalSettings.targetDate}
+                        onChange={(e) => {
+                          const newSettings = {
+                            ...goalSettings,
+                            subCategoryGoals: {
+                              ...goalSettings.subCategoryGoals,
+                              [goalKey]: {
+                                amount: goalSettings.subCategoryGoals[goalKey]?.amount || 0,
+                                targetDate: e.target.value
+                              }
+                            }
+                          };
+                          setGoalSettings(newSettings);
+                          saveGoalSettings(newSettings);
+                        }}
+                        className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      />
+                    </div>
+                  </div>
+
+                  {/* 현재 상태 */}
+                  <div className="space-y-1">
                     <div className="flex justify-between text-xs text-gray-600 dark:text-gray-400">
-                      <span>{formatCurrency(current)}</span>
+                      <span>현재: {formatCurrency(current)}</span>
                       <span>{goal > 0 ? `${progressRate.toFixed(1)}%` : '-'}</span>
                     </div>
-                    {goal > 0 && (
-                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                        <div
-                          className={`h-2 rounded-full ${progressColor} transition-all duration-500`}
-                          style={{ width: `${Math.max(progressRate, 2)}%` }}
-                        />
-                      </div>
-                    )}
+                    <div className="text-center text-xs text-gray-600 dark:text-gray-400">
+                      목표: {formatCurrency(goal)}
+                    </div>
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
+
+                  {/* 진행률 게이지 */}
+                  {goal > 0 && (
+                    <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-3">
+                      <div
+                        className={`h-3 rounded-full ${progressColor} transition-all duration-500 flex items-center justify-center`}
+                        style={{ width: `${Math.max(progressRate, 5)}%` }}
+                      >
+                        <span className="text-xs font-semibold text-white">
+                          {progressRate.toFixed(1)}%
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* D-Day */}
+                  <div className="text-center">
+                    <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                      {daysUntilTarget > 0 ? `D-${daysUntilTarget}` : daysUntilTarget === 0 ? 'D-Day' : `+${Math.abs(daysUntilTarget)}`}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
 
       </div>
