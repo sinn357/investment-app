@@ -1271,5 +1271,29 @@ def debug_user_hash(username):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route('/api/debug/users')
+def debug_all_users():
+    """임시 디버그: 모든 사용자 목록 조회"""
+    try:
+        with db_service.get_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT id, username, created_at FROM users ORDER BY created_at DESC")
+                users = cur.fetchall()
+
+                user_list = []
+                for user in users:
+                    user_list.append({
+                        "id": user['id'],
+                        "username": user['username'],
+                        "created_at": str(user['created_at'])
+                    })
+
+                return jsonify({
+                    "total_users": len(user_list),
+                    "users": user_list
+                })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5001)
