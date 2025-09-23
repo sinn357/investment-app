@@ -132,9 +132,19 @@ class PostgresDatabaseService:
                     CREATE INDEX IF NOT EXISTS idx_crawl_info_indicator_id ON crawl_info(indicator_id);
                     """
 
+                    print("Executing PostgreSQL schema initialization...")
                     cur.execute(schema_sql)
                     conn.commit()
                     print("PostgreSQL database initialized successfully")
+
+                    # user_id 컬럼 존재 여부 확인
+                    cur.execute("""
+                        SELECT column_name
+                        FROM information_schema.columns
+                        WHERE table_name = 'assets' AND column_name = 'user_id'
+                    """)
+                    user_id_column = cur.fetchone()
+                    print(f"user_id column exists in assets table: {user_id_column is not None}")
         except Exception as e:
             print(f"Database initialization failed: {e}")
             raise e
