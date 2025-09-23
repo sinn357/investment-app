@@ -2,11 +2,17 @@
 
 import { useState } from 'react';
 
-interface EnhancedPortfolioFormProps {
-  onAddItem: () => void;
+interface User {
+  id: number;
+  username: string;
 }
 
-export default function EnhancedPortfolioForm({ onAddItem }: EnhancedPortfolioFormProps) {
+interface EnhancedPortfolioFormProps {
+  onAddItem: () => void;
+  user: User;
+}
+
+export default function EnhancedPortfolioForm({ onAddItem, user }: EnhancedPortfolioFormProps) {
   const [formData, setFormData] = useState({
     assetType: '',
     subCategory: '',
@@ -115,7 +121,8 @@ export default function EnhancedPortfolioForm({ onAddItem }: EnhancedPortfolioFo
       subCategory: subCategories[formData.assetType as keyof typeof subCategories]?.find(sub => sub.value === formData.subCategory)?.label || formData.subCategory,
       name: formData.name,
       date: formData.date,
-      note: formData.note || undefined
+      note: formData.note || undefined,
+      user_id: user.id
     };
 
     if (showQuantityAndPrice) {

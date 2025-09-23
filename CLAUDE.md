@@ -9,7 +9,7 @@
 - **Repo Root:** /Users/woocheolshin/Documents/Vibecoding_1/investment-app
 - **Owner:** Partner
 - **Last Updated:** 2025-09-22 15:25 KST
-- **Session Goal (Today):** 2단계 카테고리 시스템 구현 ⚠️ (대분류-소분류 체계 구축, 소분류 데이터 전송 문제 해결 필요)
+- **Session Goal (Today):** 사용자 인증 시스템 완전 구현 (비밀번호 기반 계정 생성, 사용자별 데이터 분리)
 
 ---
 
@@ -119,10 +119,15 @@ investment-app/
 
 ## 12) Tasks (Single Source of Truth)
 ### Active (in this session)
-(세션 완료 - 모든 작업 완료됨)
+- **T-056:** 사용자별 데이터 분리 로직 완전 구현 🔄 (2025-09-23)
+  - DoD: EnhancedPortfolioForm과 PortfolioDashboard에 user_id 연동 + API 호출에 user_id 포함
+  - Files: frontend/src/components/EnhancedPortfolioForm.tsx, frontend/src/components/PortfolioDashboard.tsx
+  - Risks: 컴포넌트 인터페이스 변경으로 인한 TypeScript 오류 가능성
+  - Progress: EnhancedPortfolioForm 수정 중 (user prop 추가 및 API 호출에 user_id 포함 작업)
 
 ### Recent Done
-- **T-055:** 2단계 카테고리 시스템 완전 구현 ✅ (2025-09-22) - 소분류 표시/입력/중첩 UI 모든 기능 완료, GitHub/Render 배포 완료
+- **T-055:** 사용자 인증 시스템 백엔드+프론트엔드 구현 ✅ (2025-09-23) - PostgreSQL users 테이블, PBKDF2 암호화, 로그인/회원가입 API, AuthForm 컴포넌트, portfolio 페이지 인증 통합 완료
+- **T-054:** 2단계 카테고리 시스템 완전 구현 ✅ (2025-09-22) - 소분류 표시/입력/중첩 UI 모든 기능 완료, GitHub/Render 배포 완료
 - **T-054:** Vercel 빌드 오류 해결 ✅ (2025-09-22) - JSX 파싱 오류 수정 + 안정적인 빌드 시스템 복원 + 문서화 완료
 - **T-053:** 2단계 카테고리 시스템 백엔드 구현 ✅ (2025-09-22) - 백엔드 완료, 프론트엔드 빌드 오류로 일부 롤백
 - **T-044:** 포트폴리오 자산 수정 기능 오류 해결 ✅ (2025-09-22)

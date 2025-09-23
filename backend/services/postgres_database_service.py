@@ -2,6 +2,8 @@ import psycopg2
 import psycopg2.extras
 import json
 import os
+import hashlib
+import secrets
 from datetime import datetime
 from typing import List, Dict, Optional, Any
 from urllib.parse import urlparse
@@ -75,8 +77,16 @@ class PostgresDatabaseService:
                         data_count INTEGER DEFAULT 0
                     );
 
+                    CREATE TABLE IF NOT EXISTS users (
+                        id SERIAL PRIMARY KEY,
+                        username VARCHAR(50) UNIQUE NOT NULL,
+                        password_hash VARCHAR(255) NOT NULL,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    );
+
                     CREATE TABLE IF NOT EXISTS assets (
                         id SERIAL PRIMARY KEY,
+                        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
                         asset_type VARCHAR(50),
                         sub_category VARCHAR(50),
                         name VARCHAR(100),
@@ -95,7 +105,7 @@ class PostgresDatabaseService:
 
                     CREATE TABLE IF NOT EXISTS goal_settings (
                         id SERIAL PRIMARY KEY,
-                        user_id VARCHAR(50) DEFAULT 'default',
+                        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
                         total_goal NUMERIC NOT NULL DEFAULT 50000000,
                         target_date DATE NOT NULL DEFAULT '2024-12-31',
                         category_goals JSONB DEFAULT '{}',
@@ -390,10 +400,11 @@ class PostgresDatabaseService:
                 print("PostgreSQL connection established")
                 with conn.cursor() as cur:
                     cur.execute("""
-                        INSERT INTO assets (asset_type, sub_category, name, amount, quantity, avg_price, eval_amount, principal, profit_loss, profit_rate, date, note)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        INSERT INTO assets (user_id, asset_type, sub_category, name, amount, quantity, avg_price, eval_amount, principal, profit_loss, profit_rate, date, note)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                         RETURNING id
                     """, (
+                        asset_data.get('user_id'),
                         asset_data.get('asset_type'),
                         asset_data.get('sub_category'),
                         asset_data.get('name'),
@@ -427,16 +438,25 @@ class PostgresDatabaseService:
                 "message": f"자산 저장 실패: {str(e)}"
             }
 
-    def get_all_assets(self) -> Dict[str, Any]:
-        """모든 자산 데이터 조회 (포트폴리오 대시보드용)"""
+    def get_all_assets(self, user_id: int = None) -> Dict[str, Any]:
+        """사용자별 자산 데이터 조회 (포트폴리오 대시보드용)"""
         try:
             with self.get_connection() as conn:
                 with conn.cursor() as cur:
-                    cur.execute("""
-                        SELECT id, asset_type, sub_category, name, amount, quantity, avg_price, eval_amount, principal, profit_loss, profit_rate, date, note, created_at
-                        FROM assets
-                        ORDER BY created_at DESC
-                    """)
+                    if user_id:
+                        cur.execute("""
+                            SELECT id, asset_type, sub_category, name, amount, quantity, avg_price, eval_amount, principal, profit_loss, profit_rate, date, note, created_at
+                            FROM assets
+                            WHERE user_id = %s
+                            ORDER BY created_at DESC
+                        """, (user_id,))
+                    else:
+                        # 하위 호환성을 위해 user_id가 없으면 모든 자산 조회 (기존 동작)
+                        cur.execute("""
+                            SELECT id, asset_type, sub_category, name, amount, quantity, avg_price, eval_amount, principal, profit_loss, profit_rate, date, note, created_at
+                            FROM assets
+                            ORDER BY created_at DESC
+                        """)
 
                     rows = cur.fetchall()
 
@@ -536,22 +556,31 @@ class PostgresDatabaseService:
             }
 
     def update_asset(self, asset_id: int, data: Dict[str, Any]) -> Dict[str, Any]:
-        """자산 데이터를 데이터베이스에서 수정"""
+        """자산 데이터를 데이터베이스에서 수정 (user_id 검증 포함)"""
         try:
             print(f"PostgreSQL update_asset called with ID: {asset_id}")
             print(f"Update data: {data}")
 
+            user_id = data.get('user_id')
+            print(f"User ID for update: {user_id}")
+
             with self.get_connection() as conn:
                 print("PostgreSQL connection established for update")
                 with conn.cursor() as cur:
-                    # 먼저 해당 자산이 존재하는지 확인
-                    cur.execute("SELECT id, name FROM assets WHERE id = %s", (asset_id,))
+                    # 사용자별 자산 존재 여부 확인
+                    if user_id:
+                        cur.execute("SELECT id, name FROM assets WHERE id = %s AND user_id = %s", (asset_id, user_id))
+                    else:
+                        # 하위 호환성: user_id가 없으면 기존 동작
+                        cur.execute("SELECT id, name FROM assets WHERE id = %s", (asset_id,))
+
                     asset = cur.fetchone()
 
                     if not asset:
+                        message = f"ID {asset_id}인 자산을 찾을 수 없거나 접근 권한이 없습니다." if user_id else f"ID {asset_id}인 자산을 찾을 수 없습니다."
                         return {
                             "status": "error",
-                            "message": f"ID {asset_id}인 자산을 찾을 수 없습니다."
+                            "message": message
                         }
 
                     # 업데이트할 필드들 구성
@@ -606,6 +635,8 @@ class PostgresDatabaseService:
                         update_fields.append("amount = %s")
                         values.append(data['eval_amount'])
 
+                    # updated_at 필드 추가
+                    update_fields.append("updated_at = CURRENT_TIMESTAMP")
 
                     # asset_id를 values 마지막에 추가
                     values.append(asset_id)
@@ -613,8 +644,13 @@ class PostgresDatabaseService:
                     # 디버깅: update_fields 확인
                     print(f"DEBUG: update_fields before SQL: {update_fields}")
 
-                    # SQL 쿼리 실행
-                    sql = f"UPDATE assets SET {', '.join(update_fields)} WHERE id = %s"
+                    # SQL 쿼리 실행 (user_id 조건 추가)
+                    if user_id:
+                        sql = f"UPDATE assets SET {', '.join(update_fields)} WHERE id = %s AND user_id = %s"
+                        values.append(user_id)
+                    else:
+                        sql = f"UPDATE assets SET {', '.join(update_fields)} WHERE id = %s"
+
                     print(f"Executing SQL: {sql}")
                     print(f"Values: {values}")
 
@@ -713,32 +749,42 @@ class PostgresDatabaseService:
                 "message": f"목표 설정 저장 실패: {str(e)}"
             }
 
-    def delete_asset(self, asset_id: int) -> Dict[str, Any]:
-        """자산 데이터를 데이터베이스에서 삭제"""
+    def delete_asset(self, asset_id: int, user_id: str = None) -> Dict[str, Any]:
+        """자산 데이터를 데이터베이스에서 삭제 (user_id 검증 포함)"""
         try:
-            print(f"PostgreSQL delete_asset called with ID: {asset_id}")
+            print(f"PostgreSQL delete_asset called with ID: {asset_id}, user_id: {user_id}")
             with self.get_connection() as conn:
                 print("PostgreSQL connection established for deletion")
                 with conn.cursor() as cur:
-                    # 먼저 해당 자산이 존재하는지 확인
-                    cur.execute("SELECT id, name FROM assets WHERE id = %s", (asset_id,))
+                    # 사용자별 자산 존재 여부 확인
+                    if user_id:
+                        cur.execute("SELECT id, name FROM assets WHERE id = %s AND user_id = %s", (asset_id, user_id))
+                    else:
+                        # 하위 호환성: user_id가 없으면 기존 동작
+                        cur.execute("SELECT id, name FROM assets WHERE id = %s", (asset_id,))
+
                     asset = cur.fetchone()
 
                     if not asset:
+                        message = f"ID {asset_id}인 자산을 찾을 수 없거나 접근 권한이 없습니다." if user_id else f"ID {asset_id}인 자산을 찾을 수 없습니다."
                         return {
                             "status": "error",
-                            "message": f"ID {asset_id}인 자산을 찾을 수 없습니다."
+                            "message": message
                         }
 
                     asset_name = asset['name']
 
-                    # 자산 삭제
-                    cur.execute("DELETE FROM assets WHERE id = %s", (asset_id,))
+                    # 사용자별 자산 삭제
+                    if user_id:
+                        cur.execute("DELETE FROM assets WHERE id = %s AND user_id = %s", (asset_id, user_id))
+                    else:
+                        cur.execute("DELETE FROM assets WHERE id = %s", (asset_id,))
+
                     deleted_count = cur.rowcount
                     conn.commit()
 
                     if deleted_count > 0:
-                        print(f"Asset '{asset_name}' (ID: {asset_id}) deleted successfully")
+                        print(f"Asset '{asset_name}' (ID: {asset_id}) deleted successfully for user: {user_id}")
                         return {
                             "status": "success",
                             "message": f"자산 '{asset_name}'이(가) 성공적으로 삭제되었습니다.",
@@ -759,3 +805,120 @@ class PostgresDatabaseService:
                 "status": "error",
                 "message": f"자산 삭제 실패: {str(e)}"
             }
+
+    # === 사용자 인증 관련 메서드 ===
+
+    def _hash_password(self, password: str) -> str:
+        """비밀번호를 해시화"""
+        # Salt 생성
+        salt = secrets.token_hex(16)
+        # 비밀번호와 salt를 결합하여 해시화
+        password_hash = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt.encode('utf-8'), 100000)
+        # salt와 hash를 결합하여 저장
+        return salt + ':' + password_hash.hex()
+
+    def _verify_password(self, password: str, password_hash: str) -> bool:
+        """비밀번호 검증"""
+        try:
+            salt, stored_hash = password_hash.split(':')
+            password_hash_check = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt.encode('utf-8'), 100000)
+            return stored_hash == password_hash_check.hex()
+        except:
+            return False
+
+    def create_user(self, username: str, password: str) -> Dict[str, Any]:
+        """새 사용자 생성"""
+        try:
+            # 사용자명 중복 체크
+            if self.get_user_by_username(username):
+                return {
+                    "status": "error",
+                    "message": "이미 존재하는 사용자명입니다."
+                }
+
+            password_hash = self._hash_password(password)
+
+            with self.get_connection() as conn:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        "INSERT INTO users (username, password_hash) VALUES (%s, %s) RETURNING id",
+                        (username, password_hash)
+                    )
+                    user_id = cur.fetchone()['id']
+                    conn.commit()
+
+                    return {
+                        "status": "success",
+                        "message": "사용자가 성공적으로 생성되었습니다.",
+                        "user_id": user_id,
+                        "username": username
+                    }
+
+        except Exception as e:
+            print(f"Error creating user: {e}")
+            return {
+                "status": "error",
+                "message": f"사용자 생성 실패: {str(e)}"
+            }
+
+    def authenticate_user(self, username: str, password: str) -> Dict[str, Any]:
+        """사용자 인증"""
+        try:
+            user = self.get_user_by_username(username)
+            if not user:
+                return {
+                    "status": "error",
+                    "message": "존재하지 않는 사용자명입니다."
+                }
+
+            if self._verify_password(password, user['password_hash']):
+                return {
+                    "status": "success",
+                    "message": "로그인 성공",
+                    "user_id": user['id'],
+                    "username": user['username']
+                }
+            else:
+                return {
+                    "status": "error",
+                    "message": "비밀번호가 일치하지 않습니다."
+                }
+
+        except Exception as e:
+            print(f"Error authenticating user: {e}")
+            return {
+                "status": "error",
+                "message": f"로그인 실패: {str(e)}"
+            }
+
+    def get_user_by_username(self, username: str) -> Optional[Dict[str, Any]]:
+        """사용자명으로 사용자 조회"""
+        try:
+            with self.get_connection() as conn:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        "SELECT id, username, password_hash, created_at FROM users WHERE username = %s",
+                        (username,)
+                    )
+                    user = cur.fetchone()
+                    return dict(user) if user else None
+
+        except Exception as e:
+            print(f"Error getting user by username: {e}")
+            return None
+
+    def get_user_by_id(self, user_id: int) -> Optional[Dict[str, Any]]:
+        """사용자 ID로 사용자 조회"""
+        try:
+            with self.get_connection() as conn:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        "SELECT id, username, created_at FROM users WHERE id = %s",
+                        (user_id,)
+                    )
+                    user = cur.fetchone()
+                    return dict(user) if user else None
+
+        except Exception as e:
+            print(f"Error getting user by ID: {e}")
+            return None

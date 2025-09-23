@@ -728,7 +728,7 @@ def add_asset():
             }), 400
 
         # 필수 필드 검증
-        required_fields = ['assetType', 'name', 'date']
+        required_fields = ['assetType', 'name', 'date', 'user_id']
         for field in required_fields:
             if field not in data or not data[field]:
                 return jsonify({
@@ -738,6 +738,7 @@ def add_asset():
 
         # 데이터 변환 (프론트엔드 형식 → DB 형식)
         asset_data = {
+            'user_id': data.get('user_id'),
             'asset_type': data.get('assetType'),
             'sub_category': data.get('subCategory'),
             'name': data.get('name'),
@@ -787,10 +788,16 @@ def test_db():
 
 @app.route('/api/portfolio', methods=['GET'])
 def get_portfolio():
-    """포트폴리오 전체 데이터 조회 API"""
+    """사용자별 포트폴리오 데이터 조회 API"""
     try:
-        # PostgreSQL에서 모든 자산 데이터 조회
-        result = db_service.get_all_assets()
+        # 쿼리 파라미터에서 user_id 가져오기
+        user_id = request.args.get('user_id')
+
+        if user_id:
+            user_id = int(user_id)
+
+        # PostgreSQL에서 사용자별 자산 데이터 조회
+        result = db_service.get_all_assets(user_id)
 
         if result.get('status') == 'success':
             return jsonify(result)
@@ -842,8 +849,16 @@ def delete_asset(asset_id):
     try:
         print(f"Attempting to delete asset with ID: {asset_id}")
 
-        # 데이터베이스에서 자산 삭제
-        result = db_service.delete_asset(asset_id)
+        # 쿼리 파라미터에서 user_id 가져오기
+        user_id = request.args.get('user_id')
+        if not user_id:
+            return jsonify({
+                "status": "error",
+                "message": "user_id is required"
+            }), 400
+
+        # 데이터베이스에서 자산 삭제 (user_id 검증 포함)
+        result = db_service.delete_asset(asset_id, user_id)
 
         if result.get('status') == 'success':
             return jsonify(result)
@@ -900,6 +915,106 @@ def save_goal_settings():
         return jsonify({
             "status": "error",
             "message": f"목표 설정 저장 실패: {str(e)}"
+        }), 500
+
+# === 사용자 인증 API ===
+
+@app.route('/api/auth/register', methods=['POST'])
+def register():
+    """회원가입 API"""
+    try:
+        data = request.get_json()
+        username = data.get('username', '').strip()
+        password = data.get('password', '')
+
+        # 입력 검증
+        if not username or not password:
+            return jsonify({
+                "status": "error",
+                "message": "사용자명과 비밀번호를 모두 입력해주세요."
+            }), 400
+
+        if len(username) < 3:
+            return jsonify({
+                "status": "error",
+                "message": "사용자명은 3글자 이상이어야 합니다."
+            }), 400
+
+        if len(password) < 4:
+            return jsonify({
+                "status": "error",
+                "message": "비밀번호는 4글자 이상이어야 합니다."
+            }), 400
+
+        result = db_service.create_user(username, password)
+
+        if result.get('status') == 'success':
+            return jsonify(result), 201
+        else:
+            return jsonify(result), 400
+
+    except Exception as e:
+        print(f"Error registering user: {e}")
+        return jsonify({
+            "status": "error",
+            "message": f"회원가입 실패: {str(e)}"
+        }), 500
+
+@app.route('/api/auth/login', methods=['POST'])
+def login():
+    """로그인 API"""
+    try:
+        data = request.get_json()
+        username = data.get('username', '').strip()
+        password = data.get('password', '')
+
+        # 입력 검증
+        if not username or not password:
+            return jsonify({
+                "status": "error",
+                "message": "사용자명과 비밀번호를 모두 입력해주세요."
+            }), 400
+
+        result = db_service.authenticate_user(username, password)
+
+        if result.get('status') == 'success':
+            return jsonify(result)
+        else:
+            return jsonify(result), 401
+
+    except Exception as e:
+        print(f"Error logging in user: {e}")
+        return jsonify({
+            "status": "error",
+            "message": f"로그인 실패: {str(e)}"
+        }), 500
+
+@app.route('/api/auth/user/<int:user_id>', methods=['GET'])
+def get_user(user_id):
+    """사용자 정보 조회 API"""
+    try:
+        user = db_service.get_user_by_id(user_id)
+
+        if user:
+            return jsonify({
+                "status": "success",
+                "user": {
+                    "id": user['id'],
+                    "username": user['username'],
+                    "created_at": user['created_at'].isoformat() if user['created_at'] else None
+                }
+            })
+        else:
+            return jsonify({
+                "status": "error",
+                "message": "사용자를 찾을 수 없습니다."
+            }), 404
+
+    except Exception as e:
+        print(f"Error getting user: {e}")
+        return jsonify({
+            "status": "error",
+            "message": f"사용자 조회 실패: {str(e)}"
         }), 500
 
 if __name__ == '__main__':

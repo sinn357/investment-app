@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, LineChart, Line } from 'recharts';
 
 interface Asset {
@@ -47,11 +47,17 @@ const MAIN_CATEGORY_COLORS = {
   '대체투자': ['#FF8042', '#FF8F58', '#FF9E6E', '#FFAD84']
 };
 
-interface PortfolioDashboardProps {
-  showSideInfo?: boolean;
+interface User {
+  id: number;
+  username: string;
 }
 
-export default function PortfolioDashboard({ showSideInfo = false }: PortfolioDashboardProps) {
+interface PortfolioDashboardProps {
+  showSideInfo?: boolean;
+  user: User;
+}
+
+export default function PortfolioDashboard({ showSideInfo = false, user }: PortfolioDashboardProps) {
   const [portfolioData, setPortfolioData] = useState<PortfolioData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -77,15 +83,10 @@ export default function PortfolioDashboard({ showSideInfo = false }: PortfolioDa
     '대체투자': ['암호화폐', '부동산', '원자재']
   };
 
-  useEffect(() => {
-    fetchPortfolioData();
-    fetchGoalSettings();
-  }, []);
-
-  const fetchPortfolioData = async () => {
+  const fetchPortfolioData = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch('https://investment-app-backend-x166.onrender.com/api/portfolio');
+      const response = await fetch(`https://investment-app-backend-x166.onrender.com/api/portfolio?user_id=${user.id}`);
       const data = await response.json();
 
       if (data.status === 'success') {
@@ -100,7 +101,7 @@ export default function PortfolioDashboard({ showSideInfo = false }: PortfolioDa
     } finally {
       setLoading(false);
     }
-  };
+  }, [user.id]);
 
   const handleDeleteAsset = async (assetId: number, assetName: string) => {
     if (!window.confirm(`정말로 '${assetName}' 자산을 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.`)) {
@@ -109,7 +110,7 @@ export default function PortfolioDashboard({ showSideInfo = false }: PortfolioDa
 
     try {
       setLoading(true);
-      const response = await fetch(`https://investment-app-backend-x166.onrender.com/api/delete-asset/${assetId}`, {
+      const response = await fetch(`https://investment-app-backend-x166.onrender.com/api/delete-asset/${assetId}?user_id=${user.id}`, {
         method: 'DELETE'
       });
 
@@ -176,7 +177,8 @@ export default function PortfolioDashboard({ showSideInfo = false }: PortfolioDa
           principal: editForm.quantity && editForm.avg_price ? editForm.quantity * editForm.avg_price : editForm.eval_amount,
           eval_amount: editForm.eval_amount || null,
           date: editForm.date,
-          note: editForm.note || ''
+          note: editForm.note || '',
+          user_id: user.id
         }),
       });
 
@@ -204,9 +206,9 @@ export default function PortfolioDashboard({ showSideInfo = false }: PortfolioDa
     setEditForm({});
   };
 
-  const fetchGoalSettings = async () => {
+  const fetchGoalSettings = useCallback(async () => {
     try {
-      const response = await fetch('https://investment-app-backend-x166.onrender.com/api/goal-settings?user_id=default');
+      const response = await fetch(`https://investment-app-backend-x166.onrender.com/api/goal-settings?user_id=${user.id}`);
       const data = await response.json();
 
       if (data.status === 'success') {
@@ -220,7 +222,12 @@ export default function PortfolioDashboard({ showSideInfo = false }: PortfolioDa
       console.error('Error fetching goal settings:', error);
       // 오류 시 기본값 유지
     }
-  };
+  }, [user.id]);
+
+  useEffect(() => {
+    fetchPortfolioData();
+    fetchGoalSettings();
+  }, [fetchPortfolioData, fetchGoalSettings]); // 함수들과 user.id 변경 시 데이터 새로고침
 
   const saveGoalSettings = async (newSettings: typeof goalSettings) => {
     try {
@@ -230,7 +237,7 @@ export default function PortfolioDashboard({ showSideInfo = false }: PortfolioDa
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          user_id: 'default',
+          user_id: user.id,
           total_goal: newSettings.totalGoal,
           target_date: newSettings.targetDate,
           category_goals: newSettings.categoryGoals
