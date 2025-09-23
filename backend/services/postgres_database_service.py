@@ -115,11 +115,15 @@ class PostgresDatabaseService:
                     );
 
                     -- 기존 테이블에 새 컬럼 추가 (테이블이 이미 존재하는 경우)
+                    ALTER TABLE assets ADD COLUMN IF NOT EXISTS user_id INTEGER;
                     ALTER TABLE assets ADD COLUMN IF NOT EXISTS sub_category VARCHAR(50);
                     ALTER TABLE assets ADD COLUMN IF NOT EXISTS principal NUMERIC;
                     ALTER TABLE assets ADD COLUMN IF NOT EXISTS profit_loss NUMERIC DEFAULT 0;
                     ALTER TABLE assets ADD COLUMN IF NOT EXISTS profit_rate NUMERIC DEFAULT 0;
                     ALTER TABLE assets ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+
+                    -- 기존 assets 데이터에 기본 user_id 설정 (NULL인 경우에만)
+                    UPDATE assets SET user_id = 1 WHERE user_id IS NULL;
 
                     -- 인덱스 생성
                     CREATE INDEX IF NOT EXISTS idx_latest_releases_indicator_id ON latest_releases(indicator_id);
