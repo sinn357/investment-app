@@ -1044,3 +1044,98 @@ class PostgresDatabaseService:
                 "status": "error",
                 "message": f"사용자 삭제 실패: {str(e)}"
             }
+
+    def generate_reset_token(self, user_id: int) -> str:
+        """비밀번호 재설정 토큰 생성 (짧은 만료 시간)"""
+        payload = {
+            'user_id': user_id,
+            'purpose': 'password_reset',
+            'iat': datetime.utcnow(),
+            'exp': datetime.utcnow() + timedelta(minutes=30)  # 30분 만료
+        }
+        return jwt.encode(payload, self.jwt_secret, algorithm='HS256')
+
+    def verify_reset_token(self, token: str) -> Dict[str, Any]:
+        """비밀번호 재설정 토큰 검증"""
+        try:
+            payload = jwt.decode(token, self.jwt_secret, algorithms=['HS256'])
+
+            if payload.get('purpose') != 'password_reset':
+                return {'status': 'error', 'message': '유효하지 않은 토큰 목적입니다.'}
+
+            return {
+                'status': 'success',
+                'user_id': payload['user_id']
+            }
+        except jwt.ExpiredSignatureError:
+            return {'status': 'error', 'message': '재설정 토큰이 만료되었습니다. 다시 요청해주세요.'}
+        except jwt.InvalidTokenError:
+            return {'status': 'error', 'message': '유효하지 않은 재설정 토큰입니다.'}
+
+    def update_user_password(self, user_id: int, new_password: str) -> Dict[str, Any]:
+        """사용자 비밀번호 업데이트"""
+        try:
+            if len(new_password) < 4:
+                return {
+                    "status": "error",
+                    "message": "비밀번호는 4자 이상이어야 합니다."
+                }
+
+            # 새 비밀번호 해시화
+            new_hash = self._hash_password(new_password)
+
+            with self.get_connection() as conn:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        "UPDATE users SET password_hash = %s WHERE id = %s",
+                        (new_hash, user_id)
+                    )
+
+                    if cur.rowcount == 0:
+                        return {
+                            "status": "error",
+                            "message": "사용자를 찾을 수 없습니다."
+                        }
+
+                    conn.commit()
+
+                    return {
+                        "status": "success",
+                        "message": "비밀번호가 성공적으로 변경되었습니다."
+                    }
+
+        except Exception as e:
+            print(f"Error updating password: {e}")
+            return {
+                "status": "error",
+                "message": f"비밀번호 변경 실패: {str(e)}"
+            }
+
+    def create_password_reset_request(self, username: str) -> Dict[str, Any]:
+        """비밀번호 재설정 요청 생성"""
+        try:
+            user = self.get_user_by_username(username)
+            if not user:
+                # 보안상 사용자가 존재하지 않아도 성공 메시지 반환
+                return {
+                    "status": "success",
+                    "message": "해당 사용자명으로 재설정 링크가 발송되었습니다. (존재하는 경우)"
+                }
+
+            # 재설정 토큰 생성
+            reset_token = self.generate_reset_token(user['id'])
+
+            return {
+                "status": "success",
+                "message": "비밀번호 재설정 토큰이 생성되었습니다.",
+                "reset_token": reset_token,
+                "user_id": user['id'],
+                "expires_in": "30분"
+            }
+
+        except Exception as e:
+            print(f"Error creating password reset request: {e}")
+            return {
+                "status": "error",
+                "message": "비밀번호 재설정 요청 처리 실패"
+            }

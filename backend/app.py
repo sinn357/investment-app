@@ -1083,5 +1083,170 @@ def admin_delete_user(username):
             "message": f"사용자 삭제 실패: {str(e)}"
         }), 500
 
+@app.route('/api/auth/delete-account', methods=['DELETE'])
+@token_required
+def delete_own_account(current_user):
+    """사용자 자신의 계정 삭제 API"""
+    try:
+        data = request.get_json()
+        password = data.get('password', '')
+
+        if not password:
+            return jsonify({
+                "status": "error",
+                "message": "비밀번호를 입력해주세요."
+            }), 400
+
+        # 현재 사용자 정보 확인
+        user = db_service.get_user_by_id(current_user['user_id'])
+        if not user:
+            return jsonify({
+                "status": "error",
+                "message": "사용자를 찾을 수 없습니다."
+            }), 404
+
+        # 비밀번호 확인
+        if not db_service._verify_password(password, user['password_hash']):
+            return jsonify({
+                "status": "error",
+                "message": "비밀번호가 일치하지 않습니다."
+            }), 401
+
+        # 계정 삭제
+        result = db_service.delete_user(user['username'])
+
+        if result.get('status') == 'success':
+            return jsonify({
+                "status": "success",
+                "message": "계정이 성공적으로 삭제되었습니다. 모든 데이터가 영구 삭제됩니다."
+            })
+        else:
+            return jsonify(result), 500
+
+    except Exception as e:
+        print(f"Error deleting own account: {e}")
+        return jsonify({
+            "status": "error",
+            "message": f"계정 삭제 실패: {str(e)}"
+        }), 500
+
+@app.route('/api/auth/request-password-reset', methods=['POST'])
+def request_password_reset():
+    """비밀번호 재설정 요청 API"""
+    try:
+        data = request.get_json()
+        username = data.get('username', '').strip()
+
+        if not username:
+            return jsonify({
+                "status": "error",
+                "message": "사용자명을 입력해주세요."
+            }), 400
+
+        result = db_service.create_password_reset_request(username)
+
+        if result.get('status') == 'success':
+            return jsonify({
+                "status": "success",
+                "message": result.get('message'),
+                "reset_token": result.get('reset_token'),  # 실제 운영에서는 이메일로 전송
+                "expires_in": result.get('expires_in')
+            })
+        else:
+            return jsonify(result), 400
+
+    except Exception as e:
+        print(f"Error requesting password reset: {e}")
+        return jsonify({
+            "status": "error",
+            "message": "비밀번호 재설정 요청 실패"
+        }), 500
+
+@app.route('/api/auth/reset-password', methods=['POST'])
+def reset_password():
+    """비밀번호 재설정 실행 API"""
+    try:
+        data = request.get_json()
+        reset_token = data.get('reset_token', '')
+        new_password = data.get('new_password', '')
+
+        if not reset_token or not new_password:
+            return jsonify({
+                "status": "error",
+                "message": "재설정 토큰과 새 비밀번호를 모두 입력해주세요."
+            }), 400
+
+        # 토큰 검증
+        token_result = db_service.verify_reset_token(reset_token)
+        if token_result.get('status') != 'success':
+            return jsonify(token_result), 401
+
+        # 비밀번호 업데이트
+        user_id = token_result.get('user_id')
+        update_result = db_service.update_user_password(user_id, new_password)
+
+        if update_result.get('status') == 'success':
+            return jsonify({
+                "status": "success",
+                "message": "비밀번호가 성공적으로 재설정되었습니다. 새 비밀번호로 로그인해주세요."
+            })
+        else:
+            return jsonify(update_result), 400
+
+    except Exception as e:
+        print(f"Error resetting password: {e}")
+        return jsonify({
+            "status": "error",
+            "message": "비밀번호 재설정 실패"
+        }), 500
+
+@app.route('/api/auth/change-password', methods=['PUT'])
+@token_required
+def change_password(current_user):
+    """로그인된 사용자의 비밀번호 변경 API"""
+    try:
+        data = request.get_json()
+        current_password = data.get('current_password', '')
+        new_password = data.get('new_password', '')
+
+        if not current_password or not new_password:
+            return jsonify({
+                "status": "error",
+                "message": "현재 비밀번호와 새 비밀번호를 모두 입력해주세요."
+            }), 400
+
+        # 현재 사용자 정보 확인
+        user = db_service.get_user_by_id(current_user['user_id'])
+        if not user:
+            return jsonify({
+                "status": "error",
+                "message": "사용자를 찾을 수 없습니다."
+            }), 404
+
+        # 현재 비밀번호 확인
+        if not db_service._verify_password(current_password, user['password_hash']):
+            return jsonify({
+                "status": "error",
+                "message": "현재 비밀번호가 일치하지 않습니다."
+            }), 401
+
+        # 새 비밀번호로 업데이트
+        update_result = db_service.update_user_password(current_user['user_id'], new_password)
+
+        if update_result.get('status') == 'success':
+            return jsonify({
+                "status": "success",
+                "message": "비밀번호가 성공적으로 변경되었습니다."
+            })
+        else:
+            return jsonify(update_result), 400
+
+    except Exception as e:
+        print(f"Error changing password: {e}")
+        return jsonify({
+            "status": "error",
+            "message": "비밀번호 변경 실패"
+        }), 500
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5001)
