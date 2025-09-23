@@ -98,6 +98,12 @@ export default function PortfolioPage() {
               <div className="text-sm text-gray-600 dark:text-gray-400">
                 <span className="font-medium text-gray-900 dark:text-white">{user.username}</span>님
               </div>
+              <a
+                href="/settings"
+                className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              >
+                계정 설정
+              </a>
               <button
                 onClick={handleLogout}
                 className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
