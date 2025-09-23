@@ -60,7 +60,7 @@ export default function EnhancedPortfolioForm({ onAddItem, user }: EnhancedPortf
   };
 
   // 자산군별 필드 표시 로직
-  const showQuantityAndPrice = ['investment-assets'].includes(formData.assetType);
+  const showQuantityAndPrice = ['investment-assets', 'alternative-investment'].includes(formData.assetType);
   const showPrincipalAndEvaluation = ['investment-assets', 'alternative-investment'].includes(formData.assetType);
   const showOnlyAmount = ['immediate-cash', 'deposit-assets'].includes(formData.assetType);
 
@@ -71,7 +71,28 @@ export default function EnhancedPortfolioForm({ onAddItem, user }: EnhancedPortf
     if (name === 'assetType') {
       setFormData(prev => ({ ...prev, [name]: value, subCategory: '' }));
     } else {
-      setFormData(prev => ({ ...prev, [name]: value }));
+      setFormData(prev => {
+        const newData = { ...prev, [name]: value };
+
+        // 수량 또는 평균가가 변경될 때 원금 자동 계산 (사용자가 원금을 직접 입력하지 않은 경우만)
+        if ((name === 'quantity' || name === 'avgPrice') && showPrincipalAndEvaluation) {
+          const quantity = parseFloat(name === 'quantity' ? value : newData.quantity) || 0;
+          const avgPrice = parseFloat(name === 'avgPrice' ? value : newData.avgPrice) || 0;
+
+          // 수량과 평균가가 모두 있고, 원금이 비어있거나 기존 계산값과 같은 경우에만 자동 계산
+          if (quantity > 0 && avgPrice > 0) {
+            const calculatedPrincipal = quantity * avgPrice;
+            const currentPrincipal = parseFloat(newData.principal) || 0;
+
+            // 원금이 비어있거나, 기존 계산값과 동일한 경우에만 업데이트
+            if (!newData.principal || Math.abs(currentPrincipal - (parseFloat(prev.quantity || '0') * parseFloat(prev.avgPrice || '0'))) < 0.01) {
+              newData.principal = calculatedPrincipal.toString();
+            }
+          }
+        }
+
+        return newData;
+      });
     }
   };
 

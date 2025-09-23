@@ -12,6 +12,7 @@ interface Asset {
   quantity: number | null;
   avg_price: number | null;
   eval_amount: number | null;
+  principal: number | null;
   date: string;
   note: string;
   created_at: string;
@@ -153,6 +154,7 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
       name: asset.name,
       quantity: asset.quantity,
       avg_price: asset.avg_price,
+      principal: asset.principal,
       eval_amount: asset.eval_amount,
       date: formattedDate,
       note: asset.note
@@ -186,7 +188,7 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
           name: editForm.name,
           quantity: editForm.quantity || null,
           avg_price: editForm.avg_price || null,
-          principal: editForm.quantity && editForm.avg_price ? editForm.quantity * editForm.avg_price : editForm.eval_amount,
+          principal: editForm.principal || null,
           eval_amount: editForm.eval_amount || null,
           date: editForm.date,
           note: editForm.note || '',
@@ -555,28 +557,52 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
     const categoryGoalProgress = getCategoryGoalProgress();
     const daysUntilTarget = getDaysUntilTarget();
 
+    // 투자자산과 대체투자만 계산 (즉시현금, 예치자산 제외)
+    const investmentAssets = portfolioData?.data.filter(asset =>
+      asset.asset_type === '투자자산' || asset.asset_type === '대체투자'
+    ) || [];
+
+    const totalInvestmentPrincipal = investmentAssets.reduce((sum, asset) =>
+      sum + (asset.principal || asset.amount), 0
+    );
+
+    const totalInvestmentCash = investmentAssets.reduce((sum, asset) =>
+      sum + (asset.eval_amount || asset.amount), 0
+    );
+
     return (
       <div className="space-y-6">
-        {/* 요약 카드 - 작은 크기 */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg p-3">
-            <h3 className="text-xs font-medium opacity-90">총 자산</h3>
-            <p className="text-sm font-bold">{formatCurrency(portfolioData.summary.total_assets)}</p>
+        {/* 요약 카드 - 5개 블록 */}
+        <div className="grid grid-cols-1 gap-3">
+          {/* 첫 번째 줄: 총 자산, 총 투자원금 */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg p-3">
+              <h3 className="text-xs font-medium opacity-90">총 자산</h3>
+              <p className="text-sm font-bold">{formatCurrency(portfolioData.summary.total_assets)}</p>
+            </div>
+
+            <div className="bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg p-3">
+              <h3 className="text-xs font-medium opacity-90">총 투자원금</h3>
+              <p className="text-sm font-bold">{formatCurrency(totalInvestmentPrincipal)}</p>
+            </div>
           </div>
 
-          <div className="bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg p-3">
-            <h3 className="text-xs font-medium opacity-90">총 원금</h3>
-            <p className="text-sm font-bold">{formatCurrency(portfolioData.summary.total_principal)}</p>
-          </div>
+          {/* 두 번째 줄: 투자현금, 총 손익, 수익률 */}
+          <div className="grid grid-cols-3 gap-3">
+            <div className="bg-gradient-to-r from-cyan-500 to-cyan-600 text-white rounded-lg p-3">
+              <h3 className="text-xs font-medium opacity-90">투자현금</h3>
+              <p className="text-sm font-bold">{formatCurrency(totalInvestmentCash)}</p>
+            </div>
 
-          <div className="bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg p-3">
-            <h3 className="text-xs font-medium opacity-90">총 손익</h3>
-            <p className="text-sm font-bold">{formatCurrency(portfolioData.summary.total_profit_loss)}</p>
-          </div>
+            <div className="bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg p-3">
+              <h3 className="text-xs font-medium opacity-90">총 손익</h3>
+              <p className="text-sm font-bold">{formatCurrency(portfolioData.summary.total_profit_loss)}</p>
+            </div>
 
-          <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg p-3">
-            <h3 className="text-xs font-medium opacity-90">수익률</h3>
-            <p className="text-sm font-bold">{portfolioData.summary.profit_rate.toFixed(2)}%</p>
+            <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg p-3">
+              <h3 className="text-xs font-medium opacity-90">수익률</h3>
+              <p className="text-sm font-bold">{portfolioData.summary.profit_rate.toFixed(2)}%</p>
+            </div>
           </div>
         </div>
 
@@ -969,10 +995,10 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
                         {asset.avg_price ? formatCurrency(asset.avg_price) : '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300 text-right">
-                        {formatCurrency(asset.amount)}
+                        {formatCurrency(asset.principal || asset.amount)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white text-right font-medium">
-                        {formatCurrency(asset.amount)}
+                        {formatCurrency(asset.eval_amount || asset.amount)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
                         <span className={`${asset.profit_loss >= 0 ? 'text-green-600' : 'text-red-600'} font-medium`}>
@@ -1142,6 +1168,20 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
                   step="0.01"
                   value={editForm.avg_price || ''}
                   onChange={(e) => setEditForm({...editForm, avg_price: e.target.value ? parseFloat(e.target.value) : null})}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                />
+              </div>
+
+              {/* 원금 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  원금
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={editForm.principal || ''}
+                  onChange={(e) => setEditForm({...editForm, principal: e.target.value ? parseFloat(e.target.value) : null})}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 />
               </div>
