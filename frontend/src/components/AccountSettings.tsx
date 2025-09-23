@@ -133,8 +133,18 @@ export default function AccountSettings({ user, onLogout }: AccountSettingsProps
     <div className="max-w-4xl mx-auto p-6">
       {/* 헤더 */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-800 mb-2">계정 설정</h1>
-        <p className="text-gray-600">사용자: <span className="font-semibold">{user.username}</span></p>
+        <div className="flex justify-between items-center mb-4">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-800 mb-2">계정 설정</h1>
+            <p className="text-gray-600">사용자: <span className="font-semibold">{user.username}</span></p>
+          </div>
+          <button
+            onClick={() => router.push('/portfolio')}
+            className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+          >
+            포트폴리오로 돌아가기
+          </button>
+        </div>
       </div>
 
       {/* 탭 네비게이션 */}
