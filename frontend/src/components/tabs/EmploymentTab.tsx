@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import EconomicIndicatorCard from '@/components/EconomicIndicatorCard';
-import DataSection from '@/components/DataSection';
 import UpdateButton from '@/components/UpdateButton';
 
 interface IndicatorData {
@@ -10,9 +9,15 @@ interface IndicatorData {
     actual: string;
     forecast: string;
     previous: string;
+    release_date: string;
+    time: string;
     surprise?: number;
   };
-  next_release: string;
+  next_release: {
+    release_date: string;
+    forecast: string;
+    previous: string;
+  } | string;
 }
 
 const BACKEND_URL = 'https://investment-app-backend-x166.onrender.com';
@@ -81,21 +86,24 @@ export default function EmploymentTab() {
             </p>
           )}
         </div>
-        <UpdateButton onUpdate={handleUpdate} />
+        <UpdateButton onUpdateComplete={handleUpdate} />
       </div>
 
       {/* 지표 카드들 */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
         {unemploymentData && (
           <EconomicIndicatorCard
-            title="실업률"
-            actual={unemploymentData.latest_release.actual}
-            forecast={unemploymentData.latest_release.forecast}
-            previous={unemploymentData.latest_release.previous}
-            surprise={unemploymentData.latest_release.surprise}
-            nextRelease={unemploymentData.next_release}
-            badge="🔴"
-            description="실업자 수가 경제활동인구에서 차지하는 비율"
+            indicator={{
+              name: "실업률",
+              latestDate: unemploymentData.latest_release.release_date,
+              nextDate: typeof unemploymentData.next_release === 'string'
+                ? unemploymentData.next_release
+                : unemploymentData.next_release?.release_date || "미정",
+              actual: parseFloat(unemploymentData.latest_release.actual?.replace('%', '') || '0'),
+              forecast: parseFloat(unemploymentData.latest_release.forecast?.replace('%', '') || '0'),
+              previous: parseFloat(unemploymentData.latest_release.previous?.replace('%', '') || '0'),
+              surprise: unemploymentData.latest_release.surprise || null
+            }}
           />
         )}
 
@@ -121,17 +129,20 @@ export default function EmploymentTab() {
 
       {/* 데이터 섹션 */}
       <div className="space-y-8">
-        <DataSection
-          title="고용지표 상세 데이터"
-          tabs={[
-            {
-              id: 'unemployment-rate',
-              name: '실업률',
-              endpoint: '/api/history-table/unemployment-rate',
-              description: '월별 실업률 변화 추이'
-            }
-          ]}
-        />
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+          <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+            고용지표 상세 데이터
+          </h3>
+          <p className="text-gray-600 dark:text-gray-400 mb-4">
+            실업률 히스토리 데이터와 차트는 향후 업데이트에서 제공될 예정입니다.
+          </p>
+          <div className="inline-flex items-center px-4 py-2 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-lg">
+            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            곧 출시 예정
+          </div>
+        </div>
       </div>
     </div>
   );
