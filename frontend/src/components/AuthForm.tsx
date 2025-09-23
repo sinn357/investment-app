@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 
 interface AuthFormProps {
-  onLogin: (user: { id: number; username: string }) => void;
+  onLogin: (user: { id: number; username: string; token?: string }) => void;
 }
 
 interface LoginData {
@@ -38,10 +38,16 @@ export default function AuthForm({ onLogin }: AuthFormProps) {
       const data = await response.json();
 
       if (data.status === 'success') {
+        // JWT 토큰을 localStorage에 안전하게 저장
+        if (data.token) {
+          localStorage.setItem('auth_token', data.token);
+        }
+
         // 로그인 성공 시 사용자 정보 전달
         onLogin({
           id: data.user_id,
-          username: data.username
+          username: data.username,
+          token: data.token
         });
       } else {
         setError(data.message || '오류가 발생했습니다.');

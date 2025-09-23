@@ -1248,5 +1248,29 @@ def change_password(current_user):
             "message": "비밀번호 변경 실패"
         }), 500
 
+@app.route('/api/debug/user/<username>')
+def debug_user_hash(username):
+    """임시 디버그: 사용자 해시 정보 확인"""
+    try:
+        result = db_service.get_user_by_username(username)
+        if result and result.get('status') == 'success':
+            user = result.get('user')
+            hash_format = "unknown"
+            if user['password_hash'].startswith('$2'):
+                hash_format = "bcrypt"
+            elif ':' in user['password_hash']:
+                hash_format = "pbkdf2"
+
+            return jsonify({
+                "username": user['username'],
+                "hash_format": hash_format,
+                "hash_prefix": user['password_hash'][:30] + "...",
+                "created_at": user.get('created_at')
+            })
+        else:
+            return jsonify({"error": "User not found"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5001)

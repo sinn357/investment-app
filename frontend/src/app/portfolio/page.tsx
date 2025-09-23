@@ -23,21 +23,30 @@ export interface PortfolioItem {
 interface User {
   id: number;
   username: string;
+  token?: string;
 }
 
 export default function PortfolioPage() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [user, setUser] = useState<User | null>(null);
 
-  // 로컬 스토리지에서 사용자 정보 로드
+  // 로컬 스토리지에서 사용자 정보 로드 (토큰 포함)
   useEffect(() => {
     const savedUser = localStorage.getItem('portfolio_user');
+    const savedToken = localStorage.getItem('auth_token');
+
     if (savedUser) {
       try {
-        setUser(JSON.parse(savedUser));
+        const userData = JSON.parse(savedUser);
+        // 저장된 토큰이 있으면 추가
+        if (savedToken) {
+          userData.token = savedToken;
+        }
+        setUser(userData);
       } catch (error) {
         console.error('Error parsing saved user data:', error);
         localStorage.removeItem('portfolio_user');
+        localStorage.removeItem('auth_token');
       }
     }
   }, []);
@@ -46,11 +55,17 @@ export default function PortfolioPage() {
     setUser(userData);
     // 로컬 스토리지에 사용자 정보 저장
     localStorage.setItem('portfolio_user', JSON.stringify(userData));
+    // 토큰이 있으면 별도 저장
+    if (userData.token) {
+      localStorage.setItem('auth_token', userData.token);
+    }
   };
 
   const handleLogout = () => {
     setUser(null);
+    // 모든 인증 관련 데이터 삭제
     localStorage.removeItem('portfolio_user');
+    localStorage.removeItem('auth_token');
     setRefreshKey(prev => prev + 1); // 대시보드 초기화
   };
 

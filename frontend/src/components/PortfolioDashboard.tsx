@@ -50,6 +50,7 @@ const MAIN_CATEGORY_COLORS = {
 interface User {
   id: number;
   username: string;
+  token?: string;
 }
 
 interface PortfolioDashboardProps {
@@ -86,7 +87,18 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
   const fetchPortfolioData = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch(`https://investment-app-backend-x166.onrender.com/api/portfolio?user_id=${user.id}`);
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json'
+      };
+
+      // JWT 토큰이 있으면 Authorization 헤더에 추가
+      if (user.token) {
+        headers['Authorization'] = `Bearer ${user.token}`;
+      }
+
+      const response = await fetch(`https://investment-app-backend-x166.onrender.com/api/portfolio?user_id=${user.id}`, {
+        headers
+      });
       const data = await response.json();
 
       if (data.status === 'success') {
@@ -208,7 +220,18 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
 
   const fetchGoalSettings = useCallback(async () => {
     try {
-      const response = await fetch(`https://investment-app-backend-x166.onrender.com/api/goal-settings?user_id=${user.id}`);
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json'
+      };
+
+      // JWT 토큰이 있으면 Authorization 헤더에 추가
+      if (user.token) {
+        headers['Authorization'] = `Bearer ${user.token}`;
+      }
+
+      const response = await fetch(`https://investment-app-backend-x166.onrender.com/api/goal-settings?user_id=${user.id}`, {
+        headers
+      });
       const data = await response.json();
 
       if (data.status === 'success') {

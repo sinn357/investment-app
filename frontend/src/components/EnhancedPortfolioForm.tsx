@@ -5,6 +5,7 @@ import { useState } from 'react';
 interface User {
   id: number;
   username: string;
+  token?: string;
 }
 
 interface EnhancedPortfolioFormProps {
@@ -155,11 +156,18 @@ export default function EnhancedPortfolioForm({ onAddItem, user }: EnhancedPortf
 
     // 백엔드 API로 데이터 전송
     try {
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      };
+
+      // JWT 토큰이 있으면 Authorization 헤더에 추가
+      if (user.token) {
+        headers['Authorization'] = `Bearer ${user.token}`;
+      }
+
       const response = await fetch('https://investment-app-backend-x166.onrender.com/api/add-asset', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify(submitData),
       });
 
