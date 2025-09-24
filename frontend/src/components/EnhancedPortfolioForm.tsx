@@ -24,7 +24,25 @@ export default function EnhancedPortfolioForm({ onAddItem, user }: EnhancedPortf
     principal: '',
     evaluationAmount: '',
     date: '',
-    note: ''
+    note: '',
+    // 부동산 전용 필드
+    areaPyeong: '',
+    acquisitionTax: '',
+    rentalIncome: '',
+    // 예금/적금 전용 필드
+    maturityDate: '',
+    interestRate: '',
+    earlyWithdrawalFee: '',
+    // MMF/CMA 전용 필드
+    currentYield: '',
+    annualYield: '',
+    minimumBalance: '',
+    withdrawalFee: '',
+    // 주식/ETF 전용 필드
+    dividendRate: '',
+    // 펀드 전용 필드
+    nav: '',
+    managementFee: ''
   });
 
   const assetTypes = [
@@ -63,6 +81,64 @@ export default function EnhancedPortfolioForm({ onAddItem, user }: EnhancedPortf
   const showQuantityAndPrice = ['investment-assets', 'alternative-investment'].includes(formData.assetType);
   const showPrincipalAndEvaluation = ['investment-assets', 'alternative-investment'].includes(formData.assetType);
   const showOnlyAmount = ['immediate-cash', 'deposit-assets'].includes(formData.assetType);
+
+  // 소분류별 전용 필드 표시 로직
+  const getSubCategorySpecificFields = () => {
+    const subCat = formData.subCategory;
+
+    switch (subCat) {
+      // 부동산
+      case 'real-estate':
+        return ['areaPyeong', 'acquisitionTax', 'rentalIncome'];
+
+      // 예금/적금
+      case 'savings':
+      case 'installment-savings':
+        return ['maturityDate', 'interestRate', 'earlyWithdrawalFee'];
+
+      // MMF
+      case 'mmf':
+        return ['currentYield', 'annualYield', 'minimumBalance', 'withdrawalFee'];
+
+      // 입출금통장, 증권예수금 - 연이율만
+      case 'checking-account':
+      case 'securities-deposit':
+        return ['interestRate'];
+
+      // 주식/ETF - 배당율
+      case 'domestic-stock':
+      case 'foreign-stock':
+      case 'etf':
+        return ['dividendRate'];
+
+      // 펀드 - 기준가격, 운용보수
+      case 'fund':
+        return ['nav', 'managementFee'];
+
+      default:
+        return [];
+    }
+  };
+
+  // 필드 라벨과 설명 매핑
+  const getFieldConfig = (fieldName: string) => {
+    const configs: Record<string, { label: string; placeholder: string; step?: string; type?: string }> = {
+      areaPyeong: { label: '면적(평)', placeholder: '25.5', step: '0.1' },
+      acquisitionTax: { label: '취득세', placeholder: '15000000' },
+      rentalIncome: { label: '임대수익(월세)', placeholder: '2000000' },
+      maturityDate: { label: '만기일', placeholder: '', type: 'date' },
+      interestRate: { label: '연이율(%)', placeholder: '3.5', step: '0.01' },
+      earlyWithdrawalFee: { label: '중도해지수수료', placeholder: '50000' },
+      currentYield: { label: '현재수익률(%)', placeholder: '2.8', step: '0.01' },
+      annualYield: { label: '연환산수익률(%)', placeholder: '3.2', step: '0.01' },
+      minimumBalance: { label: '최소유지잔고', placeholder: '1000000' },
+      withdrawalFee: { label: '출금수수료', placeholder: '1000' },
+      dividendRate: { label: '배당율(%)', placeholder: '2.5', step: '0.01' },
+      nav: { label: '기준가격', placeholder: '10500' },
+      managementFee: { label: '운용보수(%)', placeholder: '0.8', step: '0.01' }
+    };
+    return configs[fieldName] || { label: fieldName, placeholder: '' };
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -147,6 +223,22 @@ export default function EnhancedPortfolioForm({ onAddItem, user }: EnhancedPortf
       user_id: user.id
     };
 
+    // 소분류별 전용 필드들 추가
+    const specificFields = getSubCategorySpecificFields();
+    specificFields.forEach(fieldName => {
+      const value = formData[fieldName as keyof typeof formData];
+      if (value) {
+        // 백엔드에서 기대하는 snake_case 형태로 변환
+        const backendFieldName = fieldName
+          .replace(/([A-Z])/g, '_$1')
+          .toLowerCase()
+          .replace(/^_/, '');
+
+        // 날짜 필드는 그대로, 나머지는 숫자로 변환
+        submitData[backendFieldName] = fieldName.includes('Date') ? value : Number(value);
+      }
+    });
+
     if (showQuantityAndPrice) {
       submitData.quantity = Number(formData.quantity);
       submitData.avgPrice = Number(formData.avgPrice);
@@ -218,7 +310,25 @@ export default function EnhancedPortfolioForm({ onAddItem, user }: EnhancedPortf
       principal: '',
       evaluationAmount: '',
       date: '',
-      note: ''
+      note: '',
+      // 부동산 전용 필드
+      areaPyeong: '',
+      acquisitionTax: '',
+      rentalIncome: '',
+      // 예금/적금 전용 필드
+      maturityDate: '',
+      interestRate: '',
+      earlyWithdrawalFee: '',
+      // MMF/CMA 전용 필드
+      currentYield: '',
+      annualYield: '',
+      minimumBalance: '',
+      withdrawalFee: '',
+      // 주식/ETF 전용 필드
+      dividendRate: '',
+      // 펀드 전용 필드
+      nav: '',
+      managementFee: ''
     });
   };
 
@@ -408,6 +518,38 @@ export default function EnhancedPortfolioForm({ onAddItem, user }: EnhancedPortf
             <p className="text-sm text-blue-800 dark:text-blue-300">
               총 보유금액: {(Number(formData.quantity) * Number(formData.avgPrice)).toLocaleString()}원
             </p>
+          </div>
+        )}
+
+        {/* 소분류별 전용 필드들 */}
+        {formData.subCategory && getSubCategorySpecificFields().length > 0 && (
+          <div className="border-t pt-6">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+              {subCategories[formData.assetType as keyof typeof subCategories]?.find(sub => sub.value === formData.subCategory)?.label} 전용 정보
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {getSubCategorySpecificFields().map((fieldName) => {
+                const config = getFieldConfig(fieldName);
+                return (
+                  <div key={fieldName}>
+                    <label htmlFor={fieldName} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      {config.label}
+                    </label>
+                    <input
+                      type={config.type || "number"}
+                      id={fieldName}
+                      name={fieldName}
+                      value={formData[fieldName as keyof typeof formData]}
+                      onChange={handleInputChange}
+                      placeholder={config.placeholder}
+                      step={config.step}
+                      min="0"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                    />
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
 
