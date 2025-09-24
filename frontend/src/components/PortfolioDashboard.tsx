@@ -804,49 +804,65 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
   };
 
   const getAssetFlowData = () => {
-    if (historyData.length === 0) {
-      // 히스토리 데이터가 없으면 현재 포트폴리오 기준으로 더미 데이터 생성
-      const now = new Date();
-      const data = [];
-      const baseAmount = portfolioData?.summary.total_eval_amount || portfolioData?.summary.total_assets || 10000000;
-
-      // 시간 범위에 따른 데이터 포인트 수 조정
-      const dataPoints = timeRange === 'annual' ? 12 : timeRange === 'monthly' ? 30 : 24;
-      const timeUnit = timeRange === 'annual' ? 30 * 24 * 60 * 60 * 1000 : timeRange === 'monthly' ? 24 * 60 * 60 * 1000 : 60 * 60 * 1000;
-
-      for (let i = dataPoints - 1; i >= 0; i--) {
-        const time = new Date(now.getTime() - i * timeUnit);
-        const variation = Math.sin(i * 0.5) * (baseAmount * 0.05) + Math.random() * (baseAmount * 0.02) - (baseAmount * 0.01);
-        data.push({
-          time: timeRange === 'annual'
-            ? time.toLocaleDateString('ko-KR', { year: 'numeric', month: 'short' })
-            : timeRange === 'monthly'
-            ? time.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })
-            : time.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit' }),
-          amount: Math.max(baseAmount * 0.1, baseAmount + variation),
-          total_principal: Math.max(baseAmount * 0.1, baseAmount + variation * 0.8),
-          total_eval_amount: Math.max(baseAmount * 0.1, baseAmount + variation),
-        });
-      }
-      return data;
+    // 포트폴리오 자산들을 등록일 기준으로 정렬하여 실제 자산흐름 생성
+    if (!portfolioData?.data || portfolioData.data.length === 0) {
+      return [];
     }
 
-    // 실제 히스토리 데이터 변환
-    return historyData.map(entry => ({
-      time: new Date(entry.timestamp).toLocaleDateString('ko-KR',
-        timeRange === 'annual'
-          ? { year: 'numeric', month: 'short' }
+    // 자산들을 등록일 기준으로 정렬
+    const sortedAssets = [...portfolioData.data].sort((a, b) =>
+      new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
+
+    const data = [];
+    let cumulativePrincipal = 0;
+    let cumulativeEvalAmount = 0;
+
+    // 각 자산의 등록일을 기준으로 누적 자산흐름 생성
+    sortedAssets.forEach((asset, index) => {
+      const assetDate = new Date(asset.date);
+      cumulativePrincipal += asset.principal || asset.amount || 0;
+      cumulativeEvalAmount += asset.eval_amount || asset.amount || 0;
+
+      data.push({
+        time: timeRange === 'annual'
+          ? assetDate.toLocaleDateString('ko-KR', { year: 'numeric', month: 'short' })
           : timeRange === 'monthly'
-          ? { month: 'short', day: 'numeric' }
-          : { month: 'short', day: 'numeric', hour: '2-digit' }
-      ),
-      amount: entry.total_eval_amount || entry.total_assets,
-      total_principal: entry.total_principal,
-      total_eval_amount: entry.total_eval_amount,
-      change_type: entry.change_type,
-      asset_name: entry.asset_name,
-      notes: entry.notes,
-    }));
+          ? assetDate.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })
+          : assetDate.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' }),
+        amount: cumulativeEvalAmount,
+        total_principal: cumulativePrincipal,
+        total_eval_amount: cumulativeEvalAmount,
+        asset_name: asset.name,
+        change_type: 'add'
+      });
+    });
+
+    // 히스토리 데이터가 있으면 추가로 반영
+    if (historyData.length > 0) {
+      const historyItems = historyData.map(entry => ({
+        time: new Date(entry.timestamp).toLocaleDateString('ko-KR',
+          timeRange === 'annual'
+            ? { year: 'numeric', month: 'short' }
+            : timeRange === 'monthly'
+            ? { month: 'short', day: 'numeric' }
+            : { month: 'short', day: 'numeric', hour: '2-digit' }
+        ),
+        amount: entry.total_eval_amount || entry.total_assets,
+        total_principal: entry.total_principal,
+        total_eval_amount: entry.total_eval_amount,
+        change_type: entry.change_type,
+        asset_name: entry.asset_name,
+        notes: entry.notes,
+      }));
+
+      // 자산 등록 데이터와 히스토리 데이터 합치기
+      return [...data, ...historyItems].sort((a, b) =>
+        new Date(a.time).getTime() - new Date(b.time).getTime()
+      );
+    }
+
+    return data;
   };
 
   const navigateTime = (direction: 'prev' | 'next') => {
@@ -1357,7 +1373,7 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
           {/* 데이터 요약 정보 */}
           <div className="mt-4 flex justify-between text-sm text-gray-600 dark:text-gray-400">
             <div>
-              {historyData.length > 0 ? `총 ${historyData.length}건의 변경사항` : '실제 데이터가 없어 시뮬레이션 표시'}
+              {assetFlowData.length > 0 ? `총 ${assetFlowData.length}건의 자산 등록/변경` : '자산 데이터가 없습니다'}
             </div>
             <div>
               {timeRange === 'annual' ? '연간 추이' : timeRange === 'monthly' ? '월간 추이' : '실시간 추적'}
