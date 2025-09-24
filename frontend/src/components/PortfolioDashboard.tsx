@@ -131,7 +131,7 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
     } finally {
       setLoading(false);
     }
-  }, [user.id]);
+  }, [user.id, user.token]);
 
   const handleDeleteAsset = async (assetId: number, assetName: string) => {
     if (!window.confirm(`정말로 '${assetName}' 자산을 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.`)) {
@@ -265,7 +265,7 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
       console.error('Error fetching goal settings:', error);
       // 오류 시 기본값 유지
     }
-  }, [user.id]);
+  }, [user.id, user.token]);
 
   useEffect(() => {
     fetchPortfolioData();
@@ -477,7 +477,16 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
   };
 
   // 포트폴리오 히스토리 상태 및 함수들
-  const [historyData, setHistoryData] = useState<any[]>([]);
+  const [historyData, setHistoryData] = useState<Array<{
+    timestamp: string;
+    total_assets: number;
+    total_principal: number;
+    total_eval_amount: number;
+    change_type: string;
+    change_amount: number;
+    asset_name?: string;
+    notes?: string;
+  }>>([]);
   const [timeRange, setTimeRange] = useState<'annual' | 'monthly' | 'daily'>('daily');
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -587,23 +596,6 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
   };
 
 
-  const getCategoryGoalProgress = () => {
-    if (!portfolioData) return [];
-
-    return Object.entries(portfolioData.by_category).map(([category, data]) => {
-      const categoryGoal = goalSettings.categoryGoals[category] || 0;
-      const progressRate = categoryGoal > 0 ? Math.min((data.total_amount / categoryGoal) * 100, 100) : 0;
-      const progressColor = progressRate >= 100 ? 'bg-green-500' : progressRate >= 75 ? 'bg-blue-500' : progressRate >= 50 ? 'bg-yellow-500' : 'bg-red-500';
-
-      return {
-        category,
-        current: data.total_amount,
-        goal: categoryGoal,
-        progressRate,
-        progressColor
-      };
-    });
-  };
 
   const getSubCategoryGoalProgress = () => {
     if (!portfolioData) return [];
@@ -858,7 +850,7 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4">
             <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">소분류별 목표 추적</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {subCategoryGoalProgress.map(({ mainCategory, subCategory, current, goal, targetDate, progressRate, progressColor, daysUntilTarget }) => {
+            {subCategoryGoalProgress.map(({ mainCategory, subCategory, current, goal, progressRate, progressColor, daysUntilTarget }) => {
               const goalKey = subCategory;
               return (
                 <div key={`${mainCategory}-${subCategory}`} className="border border-gray-200 dark:border-gray-600 rounded-lg p-3 space-y-3">

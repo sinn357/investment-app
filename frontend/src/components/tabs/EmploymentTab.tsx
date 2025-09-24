@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import EconomicIndicatorCard from '@/components/EconomicIndicatorCard';
 import UpdateButton from '@/components/UpdateButton';
 
@@ -39,12 +39,12 @@ export default function EmploymentTab() {
     }
   };
 
-  const loadAllData = async () => {
+  const loadAllData = useCallback(async () => {
     setLoading(true);
     await fetchUnemploymentData();
     setLoading(false);
     setLastUpdated(new Date().toLocaleString('ko-KR'));
-  };
+  }, []);
 
   const handleUpdate = async () => {
     await loadAllData();
@@ -52,7 +52,7 @@ export default function EmploymentTab() {
 
   useEffect(() => {
     loadAllData();
-  }, []);
+  }, [loadAllData]);
 
   if (loading) {
     return (
