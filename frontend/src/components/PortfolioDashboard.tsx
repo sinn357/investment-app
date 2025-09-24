@@ -492,6 +492,10 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
 
+  // 접기/펼치기 상태 관리 (디폴트는 모두 펼쳐짐)
+  const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
+  const [expandedSubCategories, setExpandedSubCategories] = useState<Record<string, boolean>>({});
+
   const fetchPortfolioHistory = async (range: 'annual' | 'monthly' | 'daily', start?: string, end?: string) => {
     if (!localStorage.getItem('userId')) return;
 
@@ -524,6 +528,61 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
   useEffect(() => {
     fetchPortfolioHistory(timeRange);
   }, [timeRange]);
+
+  // 포트폴리오 데이터 로드 시 모든 항목을 펼친 상태로 초기화
+  useEffect(() => {
+    if (portfolioData) {
+      const groupedAssets = getGroupedAssets();
+      const categoryExpanded: Record<string, boolean> = {};
+      const subCategoryExpanded: Record<string, boolean> = {};
+
+      Object.keys(groupedAssets).forEach(category => {
+        categoryExpanded[category] = true; // 대분류 모두 펼침
+        Object.keys(groupedAssets[category]).forEach(subCategory => {
+          subCategoryExpanded[`${category}-${subCategory}`] = true; // 소분류 모두 펼침
+        });
+      });
+
+      setExpandedCategories(categoryExpanded);
+      setExpandedSubCategories(subCategoryExpanded);
+    }
+  }, [portfolioData]);
+
+  // 대분류 접기/펼치기 토글
+  const toggleCategory = (category: string) => {
+    setExpandedCategories(prev => ({
+      ...prev,
+      [category]: !prev[category]
+    }));
+  };
+
+  // 소분류 접기/펼치기 토글
+  const toggleSubCategory = (category: string, subCategory: string) => {
+    const key = `${category}-${subCategory}`;
+    setExpandedSubCategories(prev => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
+  };
+
+  // 모든 항목 펼치기/접기
+  const toggleAllExpanded = () => {
+    const groupedAssets = getGroupedAssets();
+    const allExpanded = Object.keys(expandedCategories).every(key => expandedCategories[key]);
+
+    const categoryExpanded: Record<string, boolean> = {};
+    const subCategoryExpanded: Record<string, boolean> = {};
+
+    Object.keys(groupedAssets).forEach(category => {
+      categoryExpanded[category] = !allExpanded; // 전체 상태 반전
+      Object.keys(groupedAssets[category]).forEach(subCategory => {
+        subCategoryExpanded[`${category}-${subCategory}`] = !allExpanded;
+      });
+    });
+
+    setExpandedCategories(categoryExpanded);
+    setExpandedSubCategories(subCategoryExpanded);
+  };
 
   const getAssetFlowData = () => {
     if (historyData.length === 0) {
@@ -1227,11 +1286,20 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
               title="새로고침"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
             </button>
+            <button
+              onClick={toggleAllExpanded}
+              className="flex items-center gap-2 px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-md transition-colors"
+              title="전체 접기/펼치기"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 8V4m0 0h4M4 4l4 4m8-4v4m0-4h-4m4 0l-4 4M4 16v4m0 0h4m-4 0l4-4m8 4l-4-4m4 0v-4m0 4h-4" />
+              </svg>
+              {Object.keys(expandedCategories).every(key => expandedCategories[key]) ? '모두 접기' : '모두 펼치기'}
+            </button>
           </div>
-
           <div className="flex flex-col sm:flex-row gap-4">
             {/* 자산군 필터 */}
             <select
@@ -1280,7 +1348,20 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
               {/* 자산군 헤더 */}
               <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4">
                 <div className="flex justify-between items-center">
-                  <h3 className="text-lg font-semibold text-white">{category}</h3>
+                  <div className="flex items-center space-x-3">
+                    <h3 className="text-lg font-semibold text-white">{category}</h3>
+                    <button
+                      onClick={() => toggleCategory(category)}
+                      className="text-white hover:text-blue-200 transition-colors p-1"
+                    >
+                      <svg
+                        className={`w-5 h-5 transform transition-transform ${expandedCategories[category] ? 'rotate-180' : ''}`}
+                        fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                  </div>
                   <div className="text-white text-sm">
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                       <div className="bg-blue-600 bg-opacity-30 px-3 py-2 rounded">
@@ -1306,8 +1387,11 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
                 </div>
               </div>
 
-              {/* 소분류별 섹션 */}
-              {Object.entries(subCategories).map(([subCategory, assets]) => {
+              {/* 대분류 내용 (접기/펼치기) */}
+              {expandedCategories[category] && (
+                <div>
+                  {/* 소분류별 섹션 */}
+                  {Object.entries(subCategories).map(([subCategory, assets]) => {
                 // 소분류별 상세 통계 계산
                 const subTotalPrincipal = assets.reduce((sum, asset) => sum + (asset.principal || asset.amount), 0);
                 const subTotalEvalAmount = assets.reduce((sum, asset) => sum + (asset.eval_amount || asset.amount), 0);
@@ -1319,7 +1403,20 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
                   {/* 소분류 헤더 */}
                   <div className="bg-gray-100 dark:bg-gray-700 px-6 py-3 border-t border-gray-200 dark:border-gray-600">
                     <div className="flex justify-between items-center">
-                      <h4 className="text-md font-medium text-gray-800 dark:text-gray-200">{subCategory}</h4>
+                      <div className="flex items-center space-x-2">
+                        <h4 className="text-md font-medium text-gray-800 dark:text-gray-200">{subCategory}</h4>
+                        <button
+                          onClick={() => toggleSubCategory(category, subCategory)}
+                          className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors p-1"
+                        >
+                          <svg
+                            className={`w-4 h-4 transform transition-transform ${expandedSubCategories[`${category}-${subCategory}`] ? 'rotate-180' : ''}`}
+                            fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </button>
+                      </div>
                       <div className="text-gray-600 dark:text-gray-400 text-sm">
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                           <div className="bg-gray-200 dark:bg-gray-600 px-2 py-1 rounded text-center">
@@ -1345,8 +1442,9 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
                     </div>
                   </div>
 
-            {/* 테이블 */}
-            <div className="overflow-x-auto">
+                  {/* 소분류 테이블 (접기/펼치기) */}
+                  {expandedSubCategories[`${category}-${subCategory}`] && (
+                    <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead className="bg-gray-50 dark:bg-gray-700">
                   <tr>
@@ -1428,10 +1526,13 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
                   ))}
                 </tbody>
               </table>
-            </div>
+                    </div>
+                  )}
                 </div>
                 );
               })}
+                </div>
+              )}
             </div>
           );
         })}
