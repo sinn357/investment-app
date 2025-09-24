@@ -24,6 +24,11 @@ const BACKEND_URL = 'https://investment-app-backend-x166.onrender.com';
 
 export default function EmploymentTab() {
   const [unemploymentData, setUnemploymentData] = useState<IndicatorData | null>(null);
+  const [nonfarmPayrollsData, setNonfarmPayrollsData] = useState<IndicatorData | null>(null);
+  const [initialJoblessClaimsData, setInitialJoblessClaimsData] = useState<IndicatorData | null>(null);
+  const [averageHourlyEarningsData, setAverageHourlyEarningsData] = useState<IndicatorData | null>(null);
+  const [averageHourlyEarnings1777Data, setAverageHourlyEarnings1777Data] = useState<IndicatorData | null>(null);
+  const [participationRateData, setParticipationRateData] = useState<IndicatorData | null>(null);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<string>('');
 
@@ -39,9 +44,76 @@ export default function EmploymentTab() {
     }
   };
 
+  const fetchNonfarmPayrollsData = async () => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/rawdata/nonfarm-payrolls`);
+      const result = await response.json();
+      if (result.status === 'success') {
+        setNonfarmPayrollsData(result.data);
+      }
+    } catch (error) {
+      console.error('비농업 고용 데이터 로드 실패:', error);
+    }
+  };
+
+  const fetchInitialJoblessClaimsData = async () => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/rawdata/initial-jobless-claims`);
+      const result = await response.json();
+      if (result.status === 'success') {
+        setInitialJoblessClaimsData(result.data);
+      }
+    } catch (error) {
+      console.error('신규 실업급여 신청 데이터 로드 실패:', error);
+    }
+  };
+
+  const fetchAverageHourlyEarningsData = async () => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/rawdata/average-hourly-earnings`);
+      const result = await response.json();
+      if (result.status === 'success') {
+        setAverageHourlyEarningsData(result.data);
+      }
+    } catch (error) {
+      console.error('평균시간당임금 데이터 로드 실패:', error);
+    }
+  };
+
+  const fetchAverageHourlyEarnings1777Data = async () => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/rawdata/average-hourly-earnings-1777`);
+      const result = await response.json();
+      if (result.status === 'success') {
+        setAverageHourlyEarnings1777Data(result.data);
+      }
+    } catch (error) {
+      console.error('평균시간당임금(YoY) 데이터 로드 실패:', error);
+    }
+  };
+
+  const fetchParticipationRateData = async () => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/rawdata/participation-rate`);
+      const result = await response.json();
+      if (result.status === 'success') {
+        setParticipationRateData(result.data);
+      }
+    } catch (error) {
+      console.error('경제활동참가율 데이터 로드 실패:', error);
+    }
+  };
+
   const loadAllData = useCallback(async () => {
     setLoading(true);
-    await fetchUnemploymentData();
+    await Promise.all([
+      fetchUnemploymentData(),
+      fetchNonfarmPayrollsData(),
+      fetchInitialJoblessClaimsData(),
+      fetchAverageHourlyEarningsData(),
+      fetchAverageHourlyEarnings1777Data(),
+      fetchParticipationRateData()
+    ]);
     setLoading(false);
     setLastUpdated(new Date().toLocaleString('ko-KR'));
   }, []);
@@ -58,7 +130,7 @@ export default function EmploymentTab() {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[1].map((i) => (
+          {[1, 2, 3, 4, 5, 6].map((i) => (
             <div key={i} className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 animate-pulse">
               <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-4"></div>
               <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-2"></div>
@@ -91,6 +163,7 @@ export default function EmploymentTab() {
 
       {/* 지표 카드들 */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        {/* 실업률 */}
         {unemploymentData && (
           <EconomicIndicatorCard
             indicator={{
@@ -107,24 +180,90 @@ export default function EmploymentTab() {
           />
         )}
 
-        {/* 준비 중인 지표 카드 */}
-        <div className="bg-gray-50 dark:bg-gray-800 rounded-lg shadow-lg p-6 border-2 border-dashed border-gray-300 dark:border-gray-600">
-          <div className="text-center">
-            <div className="text-4xl mb-3">⏳</div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-              추가 고용지표
-            </h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-              비농업 고용, 신규 실업급여 신청 등
-            </p>
-            <div className="inline-flex items-center px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-sm">
-              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              준비 중
-            </div>
-          </div>
-        </div>
+        {/* 비농업 고용 */}
+        {nonfarmPayrollsData && (
+          <EconomicIndicatorCard
+            indicator={{
+              name: "비농업 고용",
+              latestDate: nonfarmPayrollsData.latest_release.release_date,
+              nextDate: typeof nonfarmPayrollsData.next_release === 'string'
+                ? nonfarmPayrollsData.next_release
+                : nonfarmPayrollsData.next_release?.release_date || "미정",
+              actual: parseFloat(nonfarmPayrollsData.latest_release.actual?.replace('K', '') || '0'),
+              forecast: parseFloat(nonfarmPayrollsData.latest_release.forecast?.replace('K', '') || '0'),
+              previous: parseFloat(nonfarmPayrollsData.latest_release.previous?.replace('K', '') || '0'),
+              surprise: nonfarmPayrollsData.latest_release.surprise || null
+            }}
+          />
+        )}
+
+        {/* 신규 실업급여 신청 */}
+        {initialJoblessClaimsData && (
+          <EconomicIndicatorCard
+            indicator={{
+              name: "신규 실업급여 신청",
+              latestDate: initialJoblessClaimsData.latest_release.release_date,
+              nextDate: typeof initialJoblessClaimsData.next_release === 'string'
+                ? initialJoblessClaimsData.next_release
+                : initialJoblessClaimsData.next_release?.release_date || "미정",
+              actual: parseFloat(initialJoblessClaimsData.latest_release.actual?.replace('K', '') || '0'),
+              forecast: parseFloat(initialJoblessClaimsData.latest_release.forecast?.replace('K', '') || '0'),
+              previous: parseFloat(initialJoblessClaimsData.latest_release.previous?.replace('K', '') || '0'),
+              surprise: initialJoblessClaimsData.latest_release.surprise || null
+            }}
+          />
+        )}
+
+        {/* 평균시간당임금 */}
+        {averageHourlyEarningsData && (
+          <EconomicIndicatorCard
+            indicator={{
+              name: "평균시간당임금",
+              latestDate: averageHourlyEarningsData.latest_release.release_date,
+              nextDate: typeof averageHourlyEarningsData.next_release === 'string'
+                ? averageHourlyEarningsData.next_release
+                : averageHourlyEarningsData.next_release?.release_date || "미정",
+              actual: parseFloat(averageHourlyEarningsData.latest_release.actual?.replace('$', '') || '0'),
+              forecast: parseFloat(averageHourlyEarningsData.latest_release.forecast?.replace('$', '') || '0'),
+              previous: parseFloat(averageHourlyEarningsData.latest_release.previous?.replace('$', '') || '0'),
+              surprise: averageHourlyEarningsData.latest_release.surprise || null
+            }}
+          />
+        )}
+
+        {/* 평균시간당임금 (YoY) */}
+        {averageHourlyEarnings1777Data && (
+          <EconomicIndicatorCard
+            indicator={{
+              name: "평균시간당임금 (YoY)",
+              latestDate: averageHourlyEarnings1777Data.latest_release.release_date,
+              nextDate: typeof averageHourlyEarnings1777Data.next_release === 'string'
+                ? averageHourlyEarnings1777Data.next_release
+                : averageHourlyEarnings1777Data.next_release?.release_date || "미정",
+              actual: parseFloat(averageHourlyEarnings1777Data.latest_release.actual?.replace('%', '') || '0'),
+              forecast: parseFloat(averageHourlyEarnings1777Data.latest_release.forecast?.replace('%', '') || '0'),
+              previous: parseFloat(averageHourlyEarnings1777Data.latest_release.previous?.replace('%', '') || '0'),
+              surprise: averageHourlyEarnings1777Data.latest_release.surprise || null
+            }}
+          />
+        )}
+
+        {/* 경제활동참가율 */}
+        {participationRateData && (
+          <EconomicIndicatorCard
+            indicator={{
+              name: "경제활동참가율",
+              latestDate: participationRateData.latest_release.release_date,
+              nextDate: typeof participationRateData.next_release === 'string'
+                ? participationRateData.next_release
+                : participationRateData.next_release?.release_date || "미정",
+              actual: parseFloat(participationRateData.latest_release.actual?.replace('%', '') || '0'),
+              forecast: parseFloat(participationRateData.latest_release.forecast?.replace('%', '') || '0'),
+              previous: parseFloat(participationRateData.latest_release.previous?.replace('%', '') || '0'),
+              surprise: participationRateData.latest_release.surprise || null
+            }}
+          />
+        )}
       </div>
 
       {/* 데이터 섹션 */}

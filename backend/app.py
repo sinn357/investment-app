@@ -15,6 +15,9 @@ from crawlers.cb_consumer_confidence import get_cb_consumer_confidence_data
 from crawlers.michigan_consumer_sentiment import get_michigan_consumer_sentiment_data
 from crawlers.unemployment_rate import get_unemployment_rate
 from crawlers.nonfarm_payrolls import get_nonfarm_payrolls
+from crawlers.initial_jobless_claims import get_initial_jobless_claims
+from crawlers.average_hourly_earnings import get_average_hourly_earnings, get_average_hourly_earnings_1777
+from crawlers.participation_rate import get_participation_rate
 from services.database_service import DatabaseService
 from services.crawler_service import CrawlerService
 import threading
@@ -633,6 +636,172 @@ def get_nonfarm_payrolls_history():
                     "source": "investing.com"
                 })
         return jsonify({"status": "error", "message": "Failed to fetch Nonfarm Payrolls history data"})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+
+# ========== 새로운 고용지표 API 엔드포인트 ==========
+
+@app.route('/api/rawdata/initial-jobless-claims')
+def get_initial_jobless_claims_rawdata():
+    """Initial Jobless Claims Raw Data API 엔드포인트"""
+    try:
+        data = get_initial_jobless_claims()
+        if "error" in data:
+            return jsonify({
+                "status": "error",
+                "message": data["error"]
+            }), 500
+        return jsonify({
+            "status": "success",
+            "data": data,
+            "source": "investing.com",
+            "indicator": "Initial Jobless Claims"
+        })
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": f"Internal server error: {str(e)}"
+        }), 500
+
+@app.route('/api/history-table/initial-jobless-claims')
+def get_initial_jobless_claims_history():
+    """Initial Jobless Claims History Table API 엔드포인트"""
+    try:
+        url = "https://www.investing.com/economic-calendar/initial-jobless-claims-294"
+        html_content = fetch_html(url)
+        if html_content:
+            history_data = parse_history_table(html_content)
+            if history_data:
+                return jsonify({
+                    "status": "success",
+                    "data": history_data,
+                    "indicator": "Initial Jobless Claims",
+                    "source": "investing.com"
+                })
+        return jsonify({"status": "error", "message": "Failed to fetch Initial Jobless Claims history data"})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+
+@app.route('/api/rawdata/average-hourly-earnings')
+def get_average_hourly_earnings_rawdata():
+    """Average Hourly Earnings Raw Data API 엔드포인트"""
+    try:
+        data = get_average_hourly_earnings()
+        if "error" in data:
+            return jsonify({
+                "status": "error",
+                "message": data["error"]
+            }), 500
+        return jsonify({
+            "status": "success",
+            "data": data,
+            "source": "investing.com",
+            "indicator": "Average Hourly Earnings"
+        })
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": f"Internal server error: {str(e)}"
+        }), 500
+
+@app.route('/api/history-table/average-hourly-earnings')
+def get_average_hourly_earnings_history():
+    """Average Hourly Earnings History Table API 엔드포인트"""
+    try:
+        url = "https://www.investing.com/economic-calendar/average-hourly-earnings-8"
+        html_content = fetch_html(url)
+        if html_content:
+            history_data = parse_history_table(html_content)
+            if history_data:
+                return jsonify({
+                    "status": "success",
+                    "data": history_data,
+                    "indicator": "Average Hourly Earnings",
+                    "source": "investing.com"
+                })
+        return jsonify({"status": "error", "message": "Failed to fetch Average Hourly Earnings history data"})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+
+@app.route('/api/rawdata/average-hourly-earnings-1777')
+def get_average_hourly_earnings_1777_rawdata():
+    """Average Hourly Earnings (1777) Raw Data API 엔드포인트"""
+    try:
+        data = get_average_hourly_earnings_1777()
+        if "error" in data:
+            return jsonify({
+                "status": "error",
+                "message": data["error"]
+            }), 500
+        return jsonify({
+            "status": "success",
+            "data": data,
+            "source": "investing.com",
+            "indicator": "Average Hourly Earnings (YoY)"
+        })
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": f"Internal server error: {str(e)}"
+        }), 500
+
+@app.route('/api/history-table/average-hourly-earnings-1777')
+def get_average_hourly_earnings_1777_history():
+    """Average Hourly Earnings (1777) History Table API 엔드포인트"""
+    try:
+        url = "https://www.investing.com/economic-calendar/average-hourly-earnings-1777"
+        html_content = fetch_html(url)
+        if html_content:
+            history_data = parse_history_table(html_content)
+            if history_data:
+                return jsonify({
+                    "status": "success",
+                    "data": history_data,
+                    "indicator": "Average Hourly Earnings (YoY)",
+                    "source": "investing.com"
+                })
+        return jsonify({"status": "error", "message": "Failed to fetch Average Hourly Earnings (1777) history data"})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+
+@app.route('/api/rawdata/participation-rate')
+def get_participation_rate_rawdata():
+    """Participation Rate Raw Data API 엔드포인트"""
+    try:
+        data = get_participation_rate()
+        if "error" in data:
+            return jsonify({
+                "status": "error",
+                "message": data["error"]
+            }), 500
+        return jsonify({
+            "status": "success",
+            "data": data,
+            "source": "investing.com",
+            "indicator": "Participation Rate"
+        })
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": f"Internal server error: {str(e)}"
+        }), 500
+
+@app.route('/api/history-table/participation-rate')
+def get_participation_rate_history():
+    """Participation Rate History Table API 엔드포인트"""
+    try:
+        url = "https://www.investing.com/economic-calendar/participation-rate-1581"
+        html_content = fetch_html(url)
+        if html_content:
+            history_data = parse_history_table(html_content)
+            if history_data:
+                return jsonify({
+                    "status": "success",
+                    "data": history_data,
+                    "indicator": "Participation Rate",
+                    "source": "investing.com"
+                })
+        return jsonify({"status": "error", "message": "Failed to fetch Participation Rate history data"})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
 
