@@ -895,6 +895,32 @@ def add_asset():
         print(f"Save result: {result}")
 
         if result.get('status') == 'success':
+            # 포트폴리오 이력 추가 - 자산 추가
+            try:
+                # 현재 포트폴리오 총액 계산
+                portfolio_data = db_service.get_all_assets(data.get('user_id'))
+                if portfolio_data.get('status') == 'success':
+                    assets = portfolio_data.get('data', [])
+                    total_assets = sum(asset.get('amount', 0) for asset in assets)
+                    total_principal = sum(asset.get('principal', asset.get('amount', 0)) for asset in assets)
+                    total_eval_amount = sum(asset.get('eval_amount', asset.get('amount', 0)) for asset in assets)
+
+                    # 히스토리 저장
+                    change_amount = data.get('amount', 0)
+                    db_service.save_portfolio_history(
+                        user_id=data.get('user_id'),
+                        change_type='add',
+                        total_assets=total_assets,
+                        total_principal=total_principal,
+                        total_eval_amount=total_eval_amount,
+                        asset_name=data.get('name'),
+                        change_amount=change_amount,
+                        notes=f"자산 추가: {data.get('name')}"
+                    )
+            except Exception as history_error:
+                print(f"Failed to save portfolio history: {history_error}")
+                # 히스토리 저장 실패해도 메인 작업은 성공으로 처리
+
             return jsonify(result)
         else:
             return jsonify(result), 500
@@ -968,6 +994,33 @@ def update_asset(asset_id):
         result = db_service.update_asset(asset_id, data)
 
         if result.get('status') == 'success':
+            # 포트폴리오 이력 추가 - 자산 수정
+            try:
+                user_id = data.get('user_id')  # user_id는 update data에 포함되어야 함
+                if user_id:
+                    # 현재 포트폴리오 총액 계산
+                    portfolio_data = db_service.get_all_assets(user_id)
+                    if portfolio_data.get('status') == 'success':
+                        assets = portfolio_data.get('data', [])
+                        total_assets = sum(asset.get('amount', 0) for asset in assets)
+                        total_principal = sum(asset.get('principal', asset.get('amount', 0)) for asset in assets)
+                        total_eval_amount = sum(asset.get('eval_amount', asset.get('amount', 0)) for asset in assets)
+
+                        # 히스토리 저장
+                        db_service.save_portfolio_history(
+                            user_id=user_id,
+                            change_type='update',
+                            total_assets=total_assets,
+                            total_principal=total_principal,
+                            total_eval_amount=total_eval_amount,
+                            asset_id=asset_id,
+                            asset_name=data.get('name'),
+                            notes=f"자산 수정: {data.get('name')}"
+                        )
+            except Exception as history_error:
+                print(f"Failed to save portfolio history: {history_error}")
+                # 히스토리 저장 실패해도 메인 작업은 성공으로 처리
+
             return jsonify(result)
         else:
             return jsonify(result), 500
@@ -993,10 +1046,48 @@ def delete_asset(asset_id):
                 "message": "user_id is required"
             }), 400
 
+        # 삭제 전 자산 정보 조회 (히스토리용)
+        asset_info = None
+        try:
+            assets_data = db_service.get_all_assets(user_id)
+            if assets_data.get('status') == 'success':
+                assets = assets_data.get('data', [])
+                asset_info = next((asset for asset in assets if asset.get('id') == asset_id), None)
+        except Exception as e:
+            print(f"Failed to get asset info before deletion: {e}")
+
         # 데이터베이스에서 자산 삭제 (user_id 검증 포함)
         result = db_service.delete_asset(asset_id, user_id)
 
         if result.get('status') == 'success':
+            # 포트폴리오 이력 추가 - 자산 삭제
+            try:
+                # 현재 포트폴리오 총액 계산 (삭제 후)
+                portfolio_data = db_service.get_all_assets(user_id)
+                if portfolio_data.get('status') == 'success':
+                    assets = portfolio_data.get('data', [])
+                    total_assets = sum(asset.get('amount', 0) for asset in assets)
+                    total_principal = sum(asset.get('principal', asset.get('amount', 0)) for asset in assets)
+                    total_eval_amount = sum(asset.get('eval_amount', asset.get('amount', 0)) for asset in assets)
+
+                    # 히스토리 저장
+                    asset_name = asset_info.get('name', f'ID {asset_id}') if asset_info else f'ID {asset_id}'
+                    change_amount = -(asset_info.get('amount', 0)) if asset_info else 0  # 음수로 표시
+                    db_service.save_portfolio_history(
+                        user_id=user_id,
+                        change_type='delete',
+                        total_assets=total_assets,
+                        total_principal=total_principal,
+                        total_eval_amount=total_eval_amount,
+                        asset_id=asset_id,
+                        asset_name=asset_name,
+                        change_amount=change_amount,
+                        notes=f"자산 삭제: {asset_name}"
+                    )
+            except Exception as history_error:
+                print(f"Failed to save portfolio history: {history_error}")
+                # 히스토리 저장 실패해도 메인 작업은 성공으로 처리
+
             return jsonify(result)
         else:
             return jsonify(result), 500
@@ -1401,6 +1492,42 @@ def debug_all_users():
                 })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+@app.route('/api/portfolio-history', methods=['GET'])
+def get_portfolio_history():
+    """포트폴리오 이력 조회 API"""
+    try:
+        user_id = request.args.get('user_id')
+        if not user_id:
+            return jsonify({"status": "error", "message": "user_id required"}), 400
+
+        time_range = request.args.get('time_range', 'daily')  # annual, monthly, daily
+        start_date = request.args.get('start_date')
+        end_date = request.args.get('end_date')
+
+        result = db_service.get_portfolio_history(user_id, time_range, start_date, end_date)
+        return jsonify(result)
+
+    except Exception as e:
+        print(f"Error getting portfolio history: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/api/portfolio-history/summary', methods=['POST'])
+def create_daily_summary():
+    """일일 포트폴리오 요약 생성 API"""
+    try:
+        data = request.get_json()
+        user_id = data.get('user_id')
+
+        if not user_id:
+            return jsonify({"status": "error", "message": "user_id required"}), 400
+
+        result = db_service.create_daily_summary(user_id)
+        return jsonify(result)
+
+    except Exception as e:
+        print(f"Error creating daily summary: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route('/api/debug/cleanup-users', methods=['POST'])
 def cleanup_all_users():

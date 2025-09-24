@@ -1,5 +1,6 @@
 import psycopg2
 import psycopg2.extras
+from psycopg2.extras import RealDictCursor
 import json
 import os
 import hashlib
@@ -121,6 +122,21 @@ class PostgresDatabaseService:
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                         UNIQUE(user_id)
+                    );
+
+                    CREATE TABLE IF NOT EXISTS portfolio_history (
+                        id SERIAL PRIMARY KEY,
+                        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+                        timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        total_assets NUMERIC DEFAULT 0,
+                        total_principal NUMERIC DEFAULT 0,
+                        total_eval_amount NUMERIC DEFAULT 0,
+                        change_type VARCHAR(20), -- 'add', 'update', 'delete'
+                        change_amount NUMERIC DEFAULT 0,
+                        asset_id INTEGER,
+                        asset_name VARCHAR(100),
+                        notes TEXT,
+                        is_daily_summary BOOLEAN DEFAULT FALSE
                     );
 
                     -- 기존 테이블에 새 컬럼 추가 (테이블이 이미 존재하는 경우)
@@ -1206,3 +1222,134 @@ class PostgresDatabaseService:
                 "status": "error",
                 "message": "비밀번호 재설정 요청 처리 실패"
             }
+
+    def save_portfolio_history(self, user_id: str, change_type: str, total_assets: float = 0, total_principal: float = 0, total_eval_amount: float = 0, asset_id: int = None, asset_name: str = None, change_amount: float = 0, notes: str = None) -> Dict[str, Any]:
+        """포트폴리오 변경사항을 이력에 저장"""
+        try:
+            with self.get_connection() as conn:
+                with conn.cursor() as cur:
+                    cur.execute("""
+                        INSERT INTO portfolio_history
+                        (user_id, change_type, total_assets, total_principal, total_eval_amount, asset_id, asset_name, change_amount, notes)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    """, (user_id, change_type, total_assets, total_principal, total_eval_amount, asset_id, asset_name, change_amount, notes))
+
+                    conn.commit()
+                    return {"status": "success", "message": "Portfolio history saved"}
+
+        except Exception as e:
+            print(f"Error saving portfolio history: {e}")
+            return {"status": "error", "message": f"Failed to save history: {str(e)}"}
+
+    def get_portfolio_history(self, user_id: str, time_range: str = 'daily', start_date: str = None, end_date: str = None) -> Dict[str, Any]:
+        """포트폴리오 이력을 조회 (시간 범위별)"""
+        try:
+            with self.get_connection() as conn:
+                with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                    # 시간 범위에 따른 쿼리 조건 설정
+                    if time_range == 'annual':
+                        # 연간: 월별 마지막 일의 데이터
+                        query = """
+                            SELECT DISTINCT ON (DATE_TRUNC('month', timestamp))
+                                timestamp, total_assets, total_principal, total_eval_amount,
+                                change_type, change_amount, asset_name
+                            FROM portfolio_history
+                            WHERE user_id = %s
+                        """
+                        if start_date:
+                            query += " AND timestamp >= %s"
+                        if end_date:
+                            query += " AND timestamp <= %s"
+                        query += " ORDER BY DATE_TRUNC('month', timestamp), timestamp DESC"
+
+                    elif time_range == 'monthly':
+                        # 월간: 일별 마지막 데이터
+                        query = """
+                            SELECT DISTINCT ON (DATE(timestamp))
+                                timestamp, total_assets, total_principal, total_eval_amount,
+                                change_type, change_amount, asset_name
+                            FROM portfolio_history
+                            WHERE user_id = %s
+                        """
+                        if start_date:
+                            query += " AND timestamp >= %s"
+                        if end_date:
+                            query += " AND timestamp <= %s"
+                        query += " ORDER BY DATE(timestamp), timestamp DESC"
+
+                    else:  # daily
+                        # 일간: 모든 변경사항
+                        query = """
+                            SELECT timestamp, total_assets, total_principal, total_eval_amount,
+                                   change_type, change_amount, asset_name, notes
+                            FROM portfolio_history
+                            WHERE user_id = %s
+                        """
+                        if start_date:
+                            query += " AND timestamp >= %s"
+                        if end_date:
+                            query += " AND timestamp <= %s"
+                        query += " ORDER BY timestamp DESC"
+
+                    # 파라미터 설정
+                    params = [user_id]
+                    if start_date:
+                        params.append(start_date)
+                    if end_date:
+                        params.append(end_date)
+
+                    cur.execute(query, params)
+                    results = cur.fetchall()
+
+                    # 딕셔너리로 변환
+                    history_data = []
+                    for row in results:
+                        history_data.append({
+                            'timestamp': row['timestamp'].isoformat() if row['timestamp'] else None,
+                            'total_assets': float(row['total_assets']) if row['total_assets'] else 0,
+                            'total_principal': float(row['total_principal']) if row['total_principal'] else 0,
+                            'total_eval_amount': float(row['total_eval_amount']) if row['total_eval_amount'] else 0,
+                            'change_type': row['change_type'],
+                            'change_amount': float(row['change_amount']) if row['change_amount'] else 0,
+                            'asset_name': row['asset_name'],
+                            'notes': row.get('notes', '')
+                        })
+
+                    return {
+                        "status": "success",
+                        "data": history_data,
+                        "time_range": time_range,
+                        "count": len(history_data)
+                    }
+
+        except Exception as e:
+            print(f"Error getting portfolio history: {e}")
+            return {"status": "error", "message": f"Failed to get history: {str(e)}"}
+
+    def create_daily_summary(self, user_id: str) -> Dict[str, Any]:
+        """일일 포트폴리오 요약 생성 (스마트 샘플링)"""
+        try:
+            # 현재 포트폴리오 총액 계산
+            assets_data = self.get_all_assets(user_id)
+            if assets_data.get("status") != "success":
+                return {"status": "error", "message": "Failed to get current assets"}
+
+            total_assets = sum(asset.get('amount', 0) for asset in assets_data.get('data', []))
+            total_principal = sum(asset.get('principal', asset.get('amount', 0)) for asset in assets_data.get('data', []))
+            total_eval_amount = sum(asset.get('eval_amount', asset.get('amount', 0)) for asset in assets_data.get('data', []))
+
+            with self.get_connection() as conn:
+                with conn.cursor() as cur:
+                    # 일일 요약 저장
+                    cur.execute("""
+                        INSERT INTO portfolio_history
+                        (user_id, change_type, total_assets, total_principal, total_eval_amount, is_daily_summary, notes)
+                        VALUES (%s, 'daily_summary', %s, %s, %s, true, 'Auto-generated daily summary')
+                    """, (user_id, total_assets, total_principal, total_eval_amount))
+
+                    conn.commit()
+                    return {"status": "success", "message": "Daily summary created"}
+
+        except Exception as e:
+            print(f"Error creating daily summary: {e}")
+            return {"status": "error", "message": f"Failed to create summary: {str(e)}"}

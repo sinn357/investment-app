@@ -476,20 +476,114 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
     }
   };
 
-  const getAssetFlowData = () => {
-    // 더미 데이터 - 실제로는 백엔드에서 시계열 데이터를 받아와야 함
-    const now = new Date();
-    const data = [];
-    for (let i = 23; i >= 0; i--) {
-      const time = new Date(now.getTime() - i * 60 * 60 * 1000);
-      const baseAmount = portfolioData?.summary.total_assets || 10000000;
-      const variation = Math.sin(i * 0.5) * 500000 + Math.random() * 200000 - 100000;
-      data.push({
-        time: time.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit' }),
-        amount: Math.max(0, baseAmount + variation),
-      });
+  // 포트폴리오 히스토리 상태 및 함수들
+  const [historyData, setHistoryData] = useState<any[]>([]);
+  const [timeRange, setTimeRange] = useState<'annual' | 'monthly' | 'daily'>('daily');
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [currentDate, setCurrentDate] = useState(new Date());
+
+  const fetchPortfolioHistory = async (range: 'annual' | 'monthly' | 'daily', start?: string, end?: string) => {
+    if (!localStorage.getItem('userId')) return;
+
+    setIsLoadingHistory(true);
+    try {
+      const userId = localStorage.getItem('userId');
+      let url = `http://localhost:5001/api/portfolio-history?user_id=${userId}&time_range=${range}`;
+
+      if (start) url += `&start_date=${start}`;
+      if (end) url += `&end_date=${end}`;
+
+      const response = await fetch(url);
+      const data = await response.json();
+
+      if (data.status === 'success') {
+        setHistoryData(data.data || []);
+      } else {
+        console.error('Failed to fetch portfolio history:', data.message);
+        setHistoryData([]);
+      }
+    } catch (error) {
+      console.error('Error fetching portfolio history:', error);
+      setHistoryData([]);
+    } finally {
+      setIsLoadingHistory(false);
     }
-    return data;
+  };
+
+  // 컴포넌트 마운트 시 및 timeRange 변경 시 데이터 가져오기
+  useEffect(() => {
+    fetchPortfolioHistory(timeRange);
+  }, [timeRange]);
+
+  const getAssetFlowData = () => {
+    if (historyData.length === 0) {
+      // 히스토리 데이터가 없으면 현재 포트폴리오 기준으로 더미 데이터 생성
+      const now = new Date();
+      const data = [];
+      const baseAmount = portfolioData?.summary.total_eval_amount || portfolioData?.summary.total_assets || 10000000;
+
+      // 시간 범위에 따른 데이터 포인트 수 조정
+      const dataPoints = timeRange === 'annual' ? 12 : timeRange === 'monthly' ? 30 : 24;
+      const timeUnit = timeRange === 'annual' ? 30 * 24 * 60 * 60 * 1000 : timeRange === 'monthly' ? 24 * 60 * 60 * 1000 : 60 * 60 * 1000;
+
+      for (let i = dataPoints - 1; i >= 0; i--) {
+        const time = new Date(now.getTime() - i * timeUnit);
+        const variation = Math.sin(i * 0.5) * (baseAmount * 0.05) + Math.random() * (baseAmount * 0.02) - (baseAmount * 0.01);
+        data.push({
+          time: timeRange === 'annual'
+            ? time.toLocaleDateString('ko-KR', { year: 'numeric', month: 'short' })
+            : timeRange === 'monthly'
+            ? time.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })
+            : time.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit' }),
+          amount: Math.max(baseAmount * 0.1, baseAmount + variation),
+          total_principal: Math.max(baseAmount * 0.1, baseAmount + variation * 0.8),
+          total_eval_amount: Math.max(baseAmount * 0.1, baseAmount + variation),
+        });
+      }
+      return data;
+    }
+
+    // 실제 히스토리 데이터 변환
+    return historyData.map(entry => ({
+      time: new Date(entry.timestamp).toLocaleDateString('ko-KR',
+        timeRange === 'annual'
+          ? { year: 'numeric', month: 'short' }
+          : timeRange === 'monthly'
+          ? { month: 'short', day: 'numeric' }
+          : { month: 'short', day: 'numeric', hour: '2-digit' }
+      ),
+      amount: entry.total_eval_amount || entry.total_assets,
+      total_principal: entry.total_principal,
+      total_eval_amount: entry.total_eval_amount,
+      change_type: entry.change_type,
+      asset_name: entry.asset_name,
+      notes: entry.notes,
+    }));
+  };
+
+  const navigateTime = (direction: 'prev' | 'next') => {
+    const newDate = new Date(currentDate);
+    if (timeRange === 'annual') {
+      newDate.setFullYear(newDate.getFullYear() + (direction === 'next' ? 1 : -1));
+    } else if (timeRange === 'monthly') {
+      newDate.setMonth(newDate.getMonth() + (direction === 'next' ? 1 : -1));
+    } else {
+      newDate.setDate(newDate.getDate() + (direction === 'next' ? 1 : -1));
+    }
+    setCurrentDate(newDate);
+
+    // 날짜 범위 설정하여 새로운 데이터 가져오기
+    if (timeRange !== 'daily') {
+      const start = timeRange === 'annual'
+        ? `${newDate.getFullYear()}-01-01`
+        : `${newDate.getFullYear()}-${String(newDate.getMonth() + 1).padStart(2, '0')}-01`;
+
+      const end = timeRange === 'annual'
+        ? `${newDate.getFullYear()}-12-31`
+        : `${newDate.getFullYear()}-${String(newDate.getMonth() + 1).padStart(2, '0')}-${new Date(newDate.getFullYear(), newDate.getMonth() + 1, 0).getDate()}`;
+
+      fetchPortfolioHistory(timeRange, start, end);
+    }
   };
 
 
@@ -870,24 +964,134 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
 
       {/* 차트 영역 - 2개 그래프 배치 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* 자산 흐름 선형 차트 */}
+        {/* 실시간 자산 흐름 추적 차트 */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">24시간 자산 흐름</h3>
+          {/* 헤더: 제목 + 설명 아이콘 */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-2">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                포트폴리오 자산 흐름
+              </h3>
+              <div className="group relative">
+                <svg className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-help" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                </svg>
+                {/* 설명 툴팁 */}
+                <div className="invisible group-hover:visible absolute z-10 w-64 px-3 py-2 text-sm text-white bg-gray-900 rounded-lg shadow-lg -top-2 left-6">
+                  <div className="mb-1 font-medium">자산 흐름 추적</div>
+                  <div className="text-xs text-gray-300">
+                    • <span className="font-medium">연간</span>: 월별 마지막 일 데이터<br/>
+                    • <span className="font-medium">월간</span>: 일별 마지막 데이터<br/>
+                    • <span className="font-medium">일간</span>: 실시간 변경사항<br/>
+                    자산 추가/수정/삭제 시 자동 추적됩니다.
+                  </div>
+                  <div className="absolute w-2 h-2 bg-gray-900 transform rotate-45 -left-1 top-4"></div>
+                </div>
+              </div>
+            </div>
+            {isLoadingHistory && (
+              <div className="text-sm text-gray-500">
+                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-gray-500 inline" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                데이터 로딩 중...
+              </div>
+            )}
+          </div>
+
+          {/* 시간 범위 탭 */}
+          <div className="mb-4">
+            <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+              {(['annual', 'monthly', 'daily'] as const).map((range) => (
+                <button
+                  key={range}
+                  onClick={() => setTimeRange(range)}
+                  className={`flex-1 px-3 py-1.5 text-sm rounded transition-colors ${
+                    timeRange === range
+                      ? 'bg-blue-500 text-white'
+                      : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  {range === 'annual' ? '연간' : range === 'monthly' ? '월간' : '일간'}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* 히스토리 네비게이션 (월간/일간에서만 표시) */}
+          {timeRange !== 'daily' && (
+            <div className="flex items-center justify-between mb-4">
+              <button
+                onClick={() => navigateTime('prev')}
+                className="flex items-center px-3 py-1.5 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+              >
+                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+                </svg>
+                이전
+              </button>
+              <div className="font-medium text-gray-900 dark:text-white">
+                {timeRange === 'annual'
+                  ? `${currentDate.getFullYear()}년`
+                  : `${currentDate.getFullYear()}년 ${currentDate.getMonth() + 1}월`}
+              </div>
+              <button
+                onClick={() => navigateTime('next')}
+                className="flex items-center px-3 py-1.5 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+              >
+                다음
+                <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
+          )}
+
+          {/* 차트 */}
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={assetFlowData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="time" />
               <YAxis tickFormatter={(value) => `${(value / 1000000).toFixed(0)}M`} />
-              <Tooltip formatter={(value: number) => formatCurrency(value)} />
+              <Tooltip
+                formatter={(value: number, name: string) => [
+                  formatCurrency(value),
+                  name === 'amount' ? '현재가치' : name === 'total_principal' ? '원금' : name
+                ]}
+                labelFormatter={(label) => `시점: ${label}`}
+              />
               <Line
-                type="monotone"
+                type="step"
                 dataKey="amount"
                 stroke="#3B82F6"
                 strokeWidth={2}
-                dot={false}
+                dot={timeRange === 'daily'}
+                name="현재가치"
               />
+              {historyData.length > 0 && (
+                <Line
+                  type="step"
+                  dataKey="total_principal"
+                  stroke="#10B981"
+                  strokeWidth={1}
+                  strokeDasharray="5 5"
+                  dot={false}
+                  name="원금"
+                />
+              )}
             </LineChart>
           </ResponsiveContainer>
+
+          {/* 데이터 요약 정보 */}
+          <div className="mt-4 flex justify-between text-sm text-gray-600 dark:text-gray-400">
+            <div>
+              {historyData.length > 0 ? `총 ${historyData.length}건의 변경사항` : '실제 데이터가 없어 시뮬레이션 표시'}
+            </div>
+            <div>
+              {timeRange === 'annual' ? '연간 추이' : timeRange === 'monthly' ? '월간 추이' : '실시간 추적'}
+            </div>
+          </div>
         </div>
 
         {/* 자산 구성 분석 - 도넛 차트 + 막대 차트 */}
