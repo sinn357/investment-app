@@ -8,8 +8,8 @@
 - **Project:** Investment App - Economic Indicators Dashboard
 - **Repo Root:** /Users/woocheolshin/Documents/Vibecoding_1/investment-app
 - **Owner:** Partner
-- **Last Updated:** 2025-09-23 23:15 KST
-- **Session Goal (Today):** ✅ 경제지표 6개 탭 시스템 구현 완료 (탭 네비게이션 UI + 고용지표 탭 + 실업률 크롤링 + GitHub/Render 배포)
+- **Last Updated:** 2025-09-24 14:40 KST
+- **Session Goal (Today):** ✅ 포트폴리오 데이터 표시 정확성 개선 완료 (원금/현재가치 구분 + 차트 데이터 일치성 + 목표 추적 정확성)
 
 ---
 
@@ -119,9 +119,10 @@ investment-app/
 
 ## 12) Tasks (Single Source of Truth)
 ### Active (in this session)
-- **세션 완료**: 소분류별 목표 추적 시스템 완전 구현 + 포트폴리오 UI 개선 작업이 완료되었습니다.
+- **세션 완료**: 포트폴리오 데이터 표시 정확성 개선 작업이 완료되었습니다.
 
 ### Recent Done
+- **T-064:** 포트폴리오 데이터 표시 정확성 개선 ✅ (2025-09-24) - 수정 모달 숫자 입력 필드 0 시작 버그 수정 + EditFormData 인터페이스 추가 + 원금/현재가치 구분 표시 + 차트 데이터 일치성 보장 + 목표 추적 정확성 개선
 - **T-063:** 포트폴리오 UI 개선 및 상세 통계 시스템 구현 ✅ (2025-09-24) - 소분류 목표 펼치기/접기 + 대분류/소분류별 상세 통계(원금, 총액, 손익, 수익률) + 가시성 문제 해결 + 색상 구분 시스템
 - **T-062:** 소분류별 목표 추적 시스템 완전 구현 ✅ (2025-09-24) - 14개 소분류별 개별 목표 카드 + 목표금액/날짜/게이지/D-Day 표시 + PostgreSQL 백엔드 지원 + API 테스트 완료
 - **T-061:** 소분류별 목표 시스템 기반 구조 구현 ✅ (2025-09-24) - getSubCategoryGoalProgress 함수 + subCategories 객체 + 백엔드 API 확장 (sub_category_goals JSONB)
@@ -641,6 +642,20 @@ investment-app/
   - **UX 개선**: 반응형 탭 네비게이션으로 데스크톱/모바일 모두 최적화
   - **데이터 분리**: 탭별 독립적 데이터 로딩으로 성능 향상
   - **미래 확장**: 각 탭별 3-5개 지표 추가로 총 20+ 지표 지원 예정
+
+### ADR-034: 포트폴리오 데이터 표시 정확성 개선 아키텍처
+- Date: 2025-09-24
+- Context: 포트폴리오에서 원금/현재가치 구분 모호, 차트와 상세 데이터 불일치, 목표 추적 부정확성 문제 발생
+- Options: 프론트엔드 계산만 수정 vs 백엔드 데이터 구조 확장 vs 완전한 데이터 아키텍처 재설계
+- Decision: 백엔드 API 확장 + 프론트엔드 타입 안전성 강화 + 원금/현재가치 명확한 구분 표시
+- Consequences:
+  - **백엔드 확장**: PostgreSQL 서비스에 total_principal, total_eval_amount, principal_percentage, eval_percentage 필드 추가
+  - **타입 안전성**: EditFormData 인터페이스로 수정 폼 전용 타입 정의, 문자열 입력 → 제출 시 숫자 변환
+  - **데이터 일치성**: 차트 데이터와 포트폴리오 상세가 동일한 계산 로직 사용하여 완전 일치 보장
+  - **사용자 경험**: "총액" → "현재가치", "자산 금액" → "투자 원금" 명확한 용어 사용
+  - **목표 추적**: 소분류별 목표는 현재가치(eval_amount), 전체 목표는 총자산 기준으로 정확성 향상
+  - **입력 개선**: 0으로 시작하는 소수점 값 입력 가능 (0.5, 0.001 등)
+  - **호환성**: fallback 로직으로 기존 데이터와 새 데이터 모두 지원
 
 ---
 

@@ -34,8 +34,12 @@ interface EditFormData {
 
 interface CategorySummary {
   total_amount: number;
+  total_principal?: number;
+  total_eval_amount?: number;
   count: number;
   percentage: number;
+  principal_percentage?: number;
+  eval_percentage?: number;
 }
 
 interface PortfolioData {
@@ -625,7 +629,6 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
     const currentAmount = portfolioData?.summary.total_assets || 0;
     const progressRate = Math.min((currentAmount / goalSettings.totalGoal) * 100, 100);
     const progressColor = progressRate >= 100 ? 'bg-green-500' : progressRate >= 75 ? 'bg-blue-500' : progressRate >= 50 ? 'bg-yellow-500' : 'bg-red-500';
-    const categoryGoalProgress = getCategoryGoalProgress();
     const subCategoryGoalProgress = getSubCategoryGoalProgress();
     const daysUntilTarget = getDaysUntilTarget();
 
@@ -1070,7 +1073,6 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
         {Object.entries(groupedAssets).map(([category, subCategories]) => {
           const allAssets = Object.values(subCategories).flat();
           // 대분류별 상세 통계 계산
-          const totalAmount = allAssets.reduce((sum, asset) => sum + asset.amount, 0);
           const totalPrincipal = allAssets.reduce((sum, asset) => sum + (asset.principal || asset.amount), 0);
           const totalEvalAmount = allAssets.reduce((sum, asset) => sum + (asset.eval_amount || asset.amount), 0);
           const totalProfitLoss = totalEvalAmount - totalPrincipal;
@@ -1110,7 +1112,6 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
               {/* 소분류별 섹션 */}
               {Object.entries(subCategories).map(([subCategory, assets]) => {
                 // 소분류별 상세 통계 계산
-                const subTotalAmount = assets.reduce((sum, asset) => sum + asset.amount, 0);
                 const subTotalPrincipal = assets.reduce((sum, asset) => sum + (asset.principal || asset.amount), 0);
                 const subTotalEvalAmount = assets.reduce((sum, asset) => sum + (asset.eval_amount || asset.amount), 0);
                 const subTotalProfitLoss = subTotalEvalAmount - subTotalPrincipal;
