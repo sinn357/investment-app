@@ -464,7 +464,7 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
     return filtered;
   };
 
-  const getGroupedAssets = () => {
+  const getGroupedAssets = useCallback(() => {
     if (!portfolioData) return {};
 
     const filtered = getFilteredAssets();
@@ -484,7 +484,7 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
     });
 
     return grouped;
-  };
+  }, [portfolioData, searchTerm, sortBy, sortOrder, filterAssetType]);
 
   const getPieChartData = () => {
     if (!portfolioData) return [];
@@ -657,7 +657,7 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
       setExpandedCategories(categoryExpanded);
       setExpandedSubCategories(subCategoryExpanded);
     }
-  }, [portfolioData]);
+  }, [portfolioData, getGroupedAssets]);
 
   // 대분류 접기/펼치기 토글
   const toggleCategory = (category: string) => {
@@ -1615,7 +1615,7 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
                       {/* 소분류별 맞춤 컬럼들 */}
                       {getSubCategoryColumns(asset.sub_category).map((col) => (
                         <td key={col.key} className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300 text-right">
-                          {asset[col.key as keyof Asset] ? col.format(asset[col.key as keyof Asset] as any) : '-'}
+                          {asset[col.key as keyof Asset] ? col.format(asset[col.key as keyof Asset] as number) : '-'}
                         </td>
                       ))}
 
