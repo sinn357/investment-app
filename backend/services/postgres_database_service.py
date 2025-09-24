@@ -611,7 +611,21 @@ class PostgresDatabaseService:
                             "profit_rate": profit_rate,
                             "date": row['date'],
                             "note": row['note'],
-                            "created_at": row['created_at'].isoformat() if row['created_at'] else None
+                            "created_at": row['created_at'].isoformat() if row['created_at'] else None,
+                            # 소분류별 전용 필드들 추가
+                            "area_pyeong": float(row['area_pyeong']) if row['area_pyeong'] else None,
+                            "acquisition_tax": float(row['acquisition_tax']) if row['acquisition_tax'] else None,
+                            "rental_income": float(row['rental_income']) if row['rental_income'] else None,
+                            "maturity_date": row['maturity_date'],
+                            "interest_rate": float(row['interest_rate']) if row['interest_rate'] else None,
+                            "early_withdrawal_fee": float(row['early_withdrawal_fee']) if row['early_withdrawal_fee'] else None,
+                            "current_yield": float(row['current_yield']) if row['current_yield'] else None,
+                            "annual_yield": float(row['annual_yield']) if row['annual_yield'] else None,
+                            "minimum_balance": float(row['minimum_balance']) if row['minimum_balance'] else None,
+                            "withdrawal_fee": float(row['withdrawal_fee']) if row['withdrawal_fee'] else None,
+                            "dividend_rate": float(row['dividend_rate']) if row['dividend_rate'] else None,
+                            "nav": float(row['nav']) if row['nav'] else None,
+                            "management_fee": float(row['management_fee']) if row['management_fee'] else None
                         }
 
                         assets.append(asset)
