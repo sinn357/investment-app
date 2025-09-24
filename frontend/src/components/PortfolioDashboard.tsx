@@ -2026,7 +2026,7 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
                             type={config.type || "number"}
                             id={fieldName}
                             name={fieldName}
-                            value={(editForm as any)[fieldName] || ''}
+                            value={editForm[fieldName as keyof typeof editForm] || ''}
                             onChange={(e) => setEditForm({...editForm, [fieldName]: e.target.value === '' ? null : e.target.value})}
                             placeholder={config.placeholder}
                             step={config.step}
