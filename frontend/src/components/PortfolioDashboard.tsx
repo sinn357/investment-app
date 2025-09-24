@@ -244,15 +244,21 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
       }
     }
 
-    if (editForm.asset_type === '투자자산' || editForm.asset_type === '대체투자') {
-      if (!editForm.quantity || !editForm.avg_price) {
-        alert('보유수량과 매수평균가를 입력해주세요.');
-        return;
-      }
-      if (!editForm.principal || !editForm.eval_amount) {
-        alert('원금과 평가금액을 입력해주세요.');
-        return;
-      }
+    // 수량/평균가 검증 - 부동산, 원자재는 제외
+    const needsQuantityPrice = editForm.asset_type === '투자자산' ||
+      (editForm.asset_type === '대체투자' && !['부동산', '원자재'].includes(editForm.sub_category || ''));
+
+    if (needsQuantityPrice && (!editForm.quantity || !editForm.avg_price)) {
+      alert('보유수량과 매수평균가를 입력해주세요.');
+      return;
+    }
+
+    // 원금/평가금액 검증 - 투자자산과 대체투자는 모두 필요
+    const needsPrincipalEval = editForm.asset_type === '투자자산' || editForm.asset_type === '대체투자';
+
+    if (needsPrincipalEval && (!editForm.principal || !editForm.eval_amount)) {
+      alert('원금과 평가금액을 입력해주세요.');
+      return;
     }
 
     try {
@@ -433,7 +439,7 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
   // 소분류별로 수량×평균가 표시 여부 결정
   const shouldShowQuantityPrice = (subCategory: string | null) => {
     const subCat = subCategory?.toLowerCase();
-    return ['국내주식', '해외주식', 'etf', '펀드', '암호화폐', '원자재'].includes(subCat || '');
+    return ['국내주식', '해외주식', 'etf', '펀드', '암호화폐'].includes(subCat || '');
   };
 
   // 날짜 컬럼 라벨 결정
@@ -1816,8 +1822,9 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
                 </div>
               )}
 
-              {/* 투자자산/대체투자: 수량+평균가 */}
-              {(editForm.asset_type === '투자자산' || editForm.asset_type === '대체투자') && (
+              {/* 투자자산/대체투자: 수량+평균가 (부동산, 원자재 제외) */}
+              {(editForm.asset_type === '투자자산' ||
+                (editForm.asset_type === '대체투자' && !['부동산', '원자재'].includes(editForm.sub_category || ''))) && (
                 <>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -1848,7 +1855,12 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
                     </div>
                   </div>
 
-                  {/* 원금/평가금액 */}
+                </>
+              )}
+
+              {/* 원금/평가금액 - 투자자산과 대체투자 */}
+              {(editForm.asset_type === '투자자산' || editForm.asset_type === '대체투자') && (
+                <>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
