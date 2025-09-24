@@ -22,6 +22,16 @@ interface IndicatorData {
 
 const BACKEND_URL = 'https://investment-app-backend-x166.onrender.com';
 
+// 안전한 숫자 파싱 함수
+const safeParseNumber = (value: any, suffix: string = ''): number => {
+  if (value === null || value === undefined) return 0;
+  if (typeof value === 'number') return value;
+  if (typeof value === 'string') {
+    return parseFloat(value.replace(suffix, '')) || 0;
+  }
+  return 0;
+};
+
 export default function EmploymentTab() {
   const [unemploymentData, setUnemploymentData] = useState<IndicatorData | null>(null);
   const [nonfarmPayrollsData, setNonfarmPayrollsData] = useState<IndicatorData | null>(null);
@@ -173,9 +183,9 @@ export default function EmploymentTab() {
               nextDate: typeof unemploymentData.next_release === 'string'
                 ? unemploymentData.next_release
                 : unemploymentData.next_release?.release_date || "미정",
-              actual: parseFloat(unemploymentData.latest_release.actual?.replace('%', '') || '0'),
-              forecast: parseFloat(unemploymentData.latest_release.forecast?.replace('%', '') || '0'),
-              previous: parseFloat(unemploymentData.latest_release.previous?.replace('%', '') || '0'),
+              actual: safeParseNumber(unemploymentData.latest_release.actual, '%'),
+              forecast: safeParseNumber(unemploymentData.latest_release.forecast, '%'),
+              previous: safeParseNumber(unemploymentData.latest_release.previous, '%'),
               surprise: unemploymentData.latest_release.surprise || null
             }}
           />
@@ -190,9 +200,9 @@ export default function EmploymentTab() {
               nextDate: typeof nonfarmPayrollsData.next_release === 'string'
                 ? nonfarmPayrollsData.next_release
                 : nonfarmPayrollsData.next_release?.release_date || "미정",
-              actual: parseFloat(nonfarmPayrollsData.latest_release.actual?.replace('K', '') || '0'),
-              forecast: parseFloat(nonfarmPayrollsData.latest_release.forecast?.replace('K', '') || '0'),
-              previous: parseFloat(nonfarmPayrollsData.latest_release.previous?.replace('K', '') || '0'),
+              actual: safeParseNumber(nonfarmPayrollsData.latest_release.actual, 'K'),
+              forecast: safeParseNumber(nonfarmPayrollsData.latest_release.forecast, 'K'),
+              previous: safeParseNumber(nonfarmPayrollsData.latest_release.previous, 'K'),
               surprise: nonfarmPayrollsData.latest_release.surprise || null
             }}
           />
@@ -207,9 +217,9 @@ export default function EmploymentTab() {
               nextDate: typeof initialJoblessClaimsData.next_release === 'string'
                 ? initialJoblessClaimsData.next_release
                 : initialJoblessClaimsData.next_release?.release_date || "미정",
-              actual: parseFloat(initialJoblessClaimsData.latest_release.actual?.replace('K', '') || '0'),
-              forecast: parseFloat(initialJoblessClaimsData.latest_release.forecast?.replace('K', '') || '0'),
-              previous: parseFloat(initialJoblessClaimsData.latest_release.previous?.replace('K', '') || '0'),
+              actual: safeParseNumber(initialJoblessClaimsData.latest_release.actual, 'K'),
+              forecast: safeParseNumber(initialJoblessClaimsData.latest_release.forecast, 'K'),
+              previous: safeParseNumber(initialJoblessClaimsData.latest_release.previous, 'K'),
               surprise: initialJoblessClaimsData.latest_release.surprise || null
             }}
           />
@@ -224,9 +234,9 @@ export default function EmploymentTab() {
               nextDate: typeof averageHourlyEarningsData.next_release === 'string'
                 ? averageHourlyEarningsData.next_release
                 : averageHourlyEarningsData.next_release?.release_date || "미정",
-              actual: parseFloat(averageHourlyEarningsData.latest_release.actual?.replace('$', '') || '0'),
-              forecast: parseFloat(averageHourlyEarningsData.latest_release.forecast?.replace('$', '') || '0'),
-              previous: parseFloat(averageHourlyEarningsData.latest_release.previous?.replace('$', '') || '0'),
+              actual: safeParseNumber(averageHourlyEarningsData.latest_release.actual, '$'),
+              forecast: safeParseNumber(averageHourlyEarningsData.latest_release.forecast, '$'),
+              previous: safeParseNumber(averageHourlyEarningsData.latest_release.previous, '$'),
               surprise: averageHourlyEarningsData.latest_release.surprise || null
             }}
           />
@@ -241,9 +251,9 @@ export default function EmploymentTab() {
               nextDate: typeof averageHourlyEarnings1777Data.next_release === 'string'
                 ? averageHourlyEarnings1777Data.next_release
                 : averageHourlyEarnings1777Data.next_release?.release_date || "미정",
-              actual: parseFloat(averageHourlyEarnings1777Data.latest_release.actual?.replace('%', '') || '0'),
-              forecast: parseFloat(averageHourlyEarnings1777Data.latest_release.forecast?.replace('%', '') || '0'),
-              previous: parseFloat(averageHourlyEarnings1777Data.latest_release.previous?.replace('%', '') || '0'),
+              actual: safeParseNumber(averageHourlyEarnings1777Data.latest_release.actual, '%'),
+              forecast: safeParseNumber(averageHourlyEarnings1777Data.latest_release.forecast, '%'),
+              previous: safeParseNumber(averageHourlyEarnings1777Data.latest_release.previous, '%'),
               surprise: averageHourlyEarnings1777Data.latest_release.surprise || null
             }}
           />
@@ -258,9 +268,9 @@ export default function EmploymentTab() {
               nextDate: typeof participationRateData.next_release === 'string'
                 ? participationRateData.next_release
                 : participationRateData.next_release?.release_date || "미정",
-              actual: parseFloat(participationRateData.latest_release.actual?.replace('%', '') || '0'),
-              forecast: parseFloat(participationRateData.latest_release.forecast?.replace('%', '') || '0'),
-              previous: parseFloat(participationRateData.latest_release.previous?.replace('%', '') || '0'),
+              actual: safeParseNumber(participationRateData.latest_release.actual, '%'),
+              forecast: safeParseNumber(participationRateData.latest_release.forecast, '%'),
+              previous: safeParseNumber(participationRateData.latest_release.previous, '%'),
               surprise: participationRateData.latest_release.surprise || null
             }}
           />
