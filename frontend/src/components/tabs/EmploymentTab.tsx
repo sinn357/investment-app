@@ -23,7 +23,7 @@ interface IndicatorData {
 const BACKEND_URL = 'https://investment-app-backend-x166.onrender.com';
 
 // 안전한 숫자 파싱 함수
-const safeParseNumber = (value: any, suffix: string = ''): number => {
+const safeParseNumber = (value: string | number | null | undefined, suffix: string = ''): number => {
   if (value === null || value === undefined) return 0;
   if (typeof value === 'number') return value;
   if (typeof value === 'string') {
