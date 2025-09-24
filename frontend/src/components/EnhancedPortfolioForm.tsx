@@ -78,8 +78,20 @@ export default function EnhancedPortfolioForm({ onAddItem, user }: EnhancedPortf
   };
 
   // 자산군별 필드 표시 로직
-  const showQuantityAndPrice = ['investment-assets', 'alternative-investment'].includes(formData.assetType);
-  const showPrincipalAndEvaluation = ['investment-assets', 'alternative-investment'].includes(formData.assetType);
+  const showQuantityAndPrice = (() => {
+    if (formData.assetType === 'investment-assets') return true;
+    if (formData.assetType === 'alternative-investment') {
+      // 부동산, 원자재는 수량/평균가 대신 원금/평가금액만 사용
+      return !['real-estate', 'commodity'].includes(formData.subCategory);
+    }
+    return false;
+  })();
+
+  const showPrincipalAndEvaluation = (() => {
+    if (formData.assetType === 'investment-assets') return true;
+    if (formData.assetType === 'alternative-investment') return true;
+    return false;
+  })();
   const showOnlyAmount = ['immediate-cash', 'deposit-assets'].includes(formData.assetType);
 
   // 소분류별 전용 필드 표시 로직
@@ -203,7 +215,11 @@ export default function EnhancedPortfolioForm({ onAddItem, user }: EnhancedPortf
       return;
     }
 
-    if (showPrincipalAndEvaluation && (!formData.principal || !formData.evaluationAmount)) {
+    // 원금/평가금액 검증 - 부동산/원자재는 수량 없이도 원금/평가금액 필요
+    const needsPrincipalAndEvaluation = showPrincipalAndEvaluation ||
+      (formData.assetType === 'alternative-investment' && ['real-estate', 'commodity'].includes(formData.subCategory));
+
+    if (needsPrincipalAndEvaluation && (!formData.principal || !formData.evaluationAmount)) {
       alert('원금과 평가금액을 입력해주세요.');
       return;
     }
@@ -253,7 +269,8 @@ export default function EnhancedPortfolioForm({ onAddItem, user }: EnhancedPortf
           ? ((Number(formData.evaluationAmount) - Number(formData.principal)) / Number(formData.principal) * 100)
           : 0;
       }
-    } else if (showPrincipalAndEvaluation) {
+    } else if (showPrincipalAndEvaluation ||
+               (formData.assetType === 'alternative-investment' && ['real-estate', 'commodity'].includes(formData.subCategory))) {
       submitData.principal = Number(formData.principal);
       submitData.evaluationAmount = Number(formData.evaluationAmount);
       submitData.amount = Number(formData.evaluationAmount);
@@ -437,7 +454,8 @@ export default function EnhancedPortfolioForm({ onAddItem, user }: EnhancedPortf
           </div>
         )}
 
-        {showPrincipalAndEvaluation && (
+        {(showPrincipalAndEvaluation ||
+          (formData.assetType === 'alternative-investment' && ['real-estate', 'commodity'].includes(formData.subCategory))) && (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
