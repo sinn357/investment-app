@@ -47,6 +47,7 @@ interface EditFormData {
   asset_type?: string;
   sub_category?: string | null;
   name?: string;
+  amount?: string | null;
   quantity?: string | null;
   avg_price?: string | null;
   eval_amount?: string | null;
@@ -216,6 +217,7 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
       asset_type: asset.asset_type,
       sub_category: asset.sub_category,
       name: asset.name,
+      amount: asset.amount?.toString() || '',
       quantity: asset.quantity?.toString() || '',
       avg_price: asset.avg_price?.toString() || '',
       principal: asset.principal?.toString() || '',
@@ -228,15 +230,29 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
   const handleUpdateAsset = async () => {
     if (!editingAsset) return;
 
-    // 필수 필드 검증
-    if (!editForm.name || !editForm.name.trim()) {
-      alert('자산명을 입력해주세요.');
+    // 공통 필수 필드 검증
+    if (!editForm.asset_type || !editForm.name || !editForm.name.trim() || !editForm.date) {
+      alert('자산군, 자산명, 날짜는 필수 입력 항목입니다.');
       return;
     }
 
-    if (!editForm.date) {
-      alert('날짜를 기입해주세요.');
-      return;
+    // 자산군별 필수 필드 검증
+    if (editForm.asset_type === '즉시현금' || editForm.asset_type === '예치자산') {
+      if (!editForm.amount) {
+        alert('보유금액을 입력해주세요.');
+        return;
+      }
+    }
+
+    if (editForm.asset_type === '투자자산' || editForm.asset_type === '대체투자') {
+      if (!editForm.quantity || !editForm.avg_price) {
+        alert('보유수량과 매수평균가를 입력해주세요.');
+        return;
+      }
+      if (!editForm.principal || !editForm.eval_amount) {
+        alert('원금과 평가금액을 입력해주세요.');
+        return;
+      }
     }
 
     try {
@@ -250,6 +266,7 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
           asset_type: editForm.asset_type,
           sub_category: editForm.sub_category || null,
           name: editForm.name,
+          amount: editForm.amount ? parseFloat(editForm.amount as string) : null,
           quantity: editForm.quantity ? parseFloat(editForm.quantity as string) : null,
           avg_price: editForm.avg_price ? parseFloat(editForm.avg_price as string) : null,
           principal: editForm.principal ? parseFloat(editForm.principal as string) : null,
@@ -1768,10 +1785,10 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
                 </div>
               )}
 
-              {/* 종목명 */}
+              {/* 자산명/종목명 */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  종목명 *
+                  자산명/종목명 *
                 </label>
                 <input
                   type="text"
@@ -1782,66 +1799,113 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
                 />
               </div>
 
-              {/* 수량 */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  수량
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={editForm.quantity || ''}
-                  onChange={(e) => setEditForm({...editForm, quantity: e.target.value === '' ? null : e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                />
-              </div>
+              {/* 즉시현금/예치자산: 보유금액만 */}
+              {(editForm.asset_type === '즉시현금' || editForm.asset_type === '예치자산') && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    보유금액 *
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={editForm.amount || ''}
+                    onChange={(e) => setEditForm({...editForm, amount: e.target.value === '' ? null : e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    required
+                  />
+                </div>
+              )}
 
-              {/* 평균가 */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  평균가
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={editForm.avg_price || ''}
-                  onChange={(e) => setEditForm({...editForm, avg_price: e.target.value === '' ? null : e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                />
-              </div>
+              {/* 투자자산/대체투자: 수량+평균가 */}
+              {(editForm.asset_type === '투자자산' || editForm.asset_type === '대체투자') && (
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        보유수량 *
+                      </label>
+                      <input
+                        type="number"
+                        step="0.001"
+                        value={editForm.quantity || ''}
+                        onChange={(e) => setEditForm({...editForm, quantity: e.target.value === '' ? null : e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        매수평균가 *
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={editForm.avg_price || ''}
+                        onChange={(e) => setEditForm({...editForm, avg_price: e.target.value === '' ? null : e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        required
+                      />
+                    </div>
+                  </div>
 
-              {/* 원금 */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  원금
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={editForm.principal || ''}
-                  onChange={(e) => setEditForm({...editForm, principal: e.target.value === '' ? null : e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                />
-              </div>
+                  {/* 원금/평가금액 */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        원금 *
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={editForm.principal || ''}
+                        onChange={(e) => setEditForm({...editForm, principal: e.target.value === '' ? null : e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        평가금액 *
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={editForm.eval_amount || ''}
+                        onChange={(e) => setEditForm({...editForm, eval_amount: e.target.value === '' ? null : e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        required
+                      />
+                    </div>
+                  </div>
 
-              {/* 평가금액 */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  평가금액
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={editForm.eval_amount || ''}
-                  onChange={(e) => setEditForm({...editForm, eval_amount: e.target.value === '' ? null : e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                />
-              </div>
+                  {/* 실시간 수익률 표시 */}
+                  {(editForm.principal && editForm.eval_amount) && (
+                    <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-gray-600 dark:text-gray-300">수익/손실:</span>
+                          <span className={`font-semibold ${(parseFloat(editForm.eval_amount as string) - parseFloat(editForm.principal as string)) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {(parseFloat(editForm.eval_amount as string) - parseFloat(editForm.principal as string)) >= 0 ? '+' : ''}
+                            {(parseFloat(editForm.eval_amount as string) - parseFloat(editForm.principal as string)).toLocaleString()}원
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600 dark:text-gray-300">수익률:</span>
+                          <span className={`font-semibold ${((parseFloat(editForm.eval_amount as string) - parseFloat(editForm.principal as string)) / parseFloat(editForm.principal as string) * 100) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {((parseFloat(editForm.eval_amount as string) - parseFloat(editForm.principal as string)) / parseFloat(editForm.principal as string) * 100) >= 0 ? '+' : ''}
+                            {((parseFloat(editForm.eval_amount as string) - parseFloat(editForm.principal as string)) / parseFloat(editForm.principal as string) * 100).toFixed(2)}%
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
 
-              {/* 매수일 */}
+              {/* 날짜 입력 */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  매수일 *
+                  {(editForm.asset_type === '투자자산' || editForm.asset_type === '대체투자') ? '매수일' : '등록일'} *
                 </label>
                 <input
                   type="date"
