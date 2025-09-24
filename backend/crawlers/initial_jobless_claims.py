@@ -4,7 +4,7 @@ Initial Jobless Claims 크롤링 모듈
 investing.com에서 Initial Jobless Claims 데이터를 크롤링하는 함수들을 포함합니다.
 """
 
-from .common import fetch_html, parse_history_table, extract_raw_data
+from .investing_crawler import fetch_html, parse_history_table, extract_raw_data
 
 def get_initial_jobless_claims():
     """
