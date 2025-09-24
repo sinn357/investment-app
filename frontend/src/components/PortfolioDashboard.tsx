@@ -223,7 +223,21 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
       principal: asset.principal?.toString() || '',
       eval_amount: asset.eval_amount?.toString() || '',
       date: formattedDate,
-      note: asset.note
+      note: asset.note,
+      // 소분류별 전용 필드
+      area_pyeong: asset.area_pyeong?.toString() || '',
+      acquisition_tax: asset.acquisition_tax?.toString() || '',
+      rental_income: asset.rental_income?.toString() || '',
+      maturity_date: asset.maturity_date || '',
+      interest_rate: asset.interest_rate?.toString() || '',
+      early_withdrawal_fee: asset.early_withdrawal_fee?.toString() || '',
+      current_yield: asset.current_yield?.toString() || '',
+      annual_yield: asset.annual_yield?.toString() || '',
+      minimum_balance: asset.minimum_balance?.toString() || '',
+      withdrawal_fee: asset.withdrawal_fee?.toString() || '',
+      dividend_rate: asset.dividend_rate?.toString() || '',
+      nav: asset.nav?.toString() || '',
+      management_fee: asset.management_fee?.toString() || ''
     });
   };
 
@@ -279,7 +293,21 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
           eval_amount: editForm.eval_amount ? parseFloat(editForm.eval_amount as string) : null,
           date: editForm.date,
           note: editForm.note || '',
-          user_id: user.id
+          user_id: user.id,
+          // 소분류별 전용 필드
+          area_pyeong: editForm.area_pyeong ? parseFloat(editForm.area_pyeong as string) : null,
+          acquisition_tax: editForm.acquisition_tax ? parseFloat(editForm.acquisition_tax as string) : null,
+          rental_income: editForm.rental_income ? parseFloat(editForm.rental_income as string) : null,
+          maturity_date: editForm.maturity_date || null,
+          interest_rate: editForm.interest_rate ? parseFloat(editForm.interest_rate as string) : null,
+          early_withdrawal_fee: editForm.early_withdrawal_fee ? parseFloat(editForm.early_withdrawal_fee as string) : null,
+          current_yield: editForm.current_yield ? parseFloat(editForm.current_yield as string) : null,
+          annual_yield: editForm.annual_yield ? parseFloat(editForm.annual_yield as string) : null,
+          minimum_balance: editForm.minimum_balance ? parseFloat(editForm.minimum_balance as string) : null,
+          withdrawal_fee: editForm.withdrawal_fee ? parseFloat(editForm.withdrawal_fee as string) : null,
+          dividend_rate: editForm.dividend_rate ? parseFloat(editForm.dividend_rate as string) : null,
+          nav: editForm.nav ? parseFloat(editForm.nav as string) : null,
+          management_fee: editForm.management_fee ? parseFloat(editForm.management_fee as string) : null
         }),
       });
 
@@ -449,6 +477,58 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
       return '개설일자';
     }
     return '매수일자';
+  };
+
+  // 소분류별 전용 필드 반환
+  const getEditSubCategorySpecificFields = (subCategory: string | null) => {
+    const subCat = subCategory?.toLowerCase();
+    switch (subCat) {
+      // 부동산
+      case '부동산':
+        return ['area_pyeong', 'acquisition_tax', 'rental_income'];
+      // 예금/적금
+      case '예금':
+      case '적금':
+        return ['maturity_date', 'interest_rate', 'early_withdrawal_fee'];
+      // MMF
+      case 'mmf':
+        return ['current_yield', 'annual_yield', 'minimum_balance', 'withdrawal_fee'];
+      // 입출금통장, 증권예수금 - 연이율만
+      case '입출금통장':
+      case '증권예수금':
+        return ['interest_rate'];
+      // 주식/ETF - 배당율
+      case '국내주식':
+      case '해외주식':
+      case 'etf':
+        return ['dividend_rate'];
+      // 펀드 - 기준가격, 운용보수
+      case '펀드':
+        return ['nav', 'management_fee'];
+      // 암호화폐, 원자재, 채권, 현금 등은 전용 필드 없음
+      default:
+        return [];
+    }
+  };
+
+  // 필드 설정 정보 반환
+  const getEditFieldConfig = (fieldName: string) => {
+    const configs: Record<string, { label: string; placeholder: string; step?: string; type?: string }> = {
+      area_pyeong: { label: '면적(평)', placeholder: '25.5', step: '0.1' },
+      acquisition_tax: { label: '취득세', placeholder: '15000000' },
+      rental_income: { label: '임대수익(월세)', placeholder: '2000000' },
+      maturity_date: { label: '만기일', placeholder: '', type: 'date' },
+      interest_rate: { label: '연이율(%)', placeholder: '3.5', step: '0.01' },
+      early_withdrawal_fee: { label: '중도해지수수료', placeholder: '50000' },
+      current_yield: { label: '현재수익률(%)', placeholder: '2.8', step: '0.01' },
+      annual_yield: { label: '연환산수익률(%)', placeholder: '3.2', step: '0.01' },
+      minimum_balance: { label: '최소유지잔고', placeholder: '1000000' },
+      withdrawal_fee: { label: '출금수수료', placeholder: '1000' },
+      dividend_rate: { label: '배당율(%)', placeholder: '2.5', step: '0.01' },
+      nav: { label: '기준가격', placeholder: '10500' },
+      management_fee: { label: '운용보수(%)', placeholder: '0.8', step: '0.01' }
+    };
+    return configs[fieldName] || { label: fieldName, placeholder: '' };
   };
 
   const getFilteredAssets = () => {
@@ -1927,6 +2007,38 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
                   required
                 />
               </div>
+
+              {/* 소분류별 전용 필드 */}
+              {editForm.sub_category && getEditSubCategorySpecificFields(editForm.sub_category).length > 0 && (
+                <div className="border-t pt-6">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+                    {editForm.sub_category} 전용 정보
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {getEditSubCategorySpecificFields(editForm.sub_category).map((fieldName) => {
+                      const config = getEditFieldConfig(fieldName);
+                      return (
+                        <div key={fieldName}>
+                          <label htmlFor={fieldName} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            {config.label}
+                          </label>
+                          <input
+                            type={config.type || "number"}
+                            id={fieldName}
+                            name={fieldName}
+                            value={(editForm as any)[fieldName] || ''}
+                            onChange={(e) => setEditForm({...editForm, [fieldName]: e.target.value === '' ? null : e.target.value})}
+                            placeholder={config.placeholder}
+                            step={config.step}
+                            min="0"
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               {/* 메모 */}
               <div>
