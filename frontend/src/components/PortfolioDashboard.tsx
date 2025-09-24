@@ -48,6 +48,7 @@ interface PortfolioData {
   summary: {
     total_assets: number;
     total_principal: number;
+    total_eval_amount?: number;
     total_profit_loss: number;
     profit_rate: number;
   };
