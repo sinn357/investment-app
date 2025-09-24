@@ -490,6 +490,7 @@ class PostgresDatabaseService:
                             "data": [],
                             "summary": {
                                 "total_assets": 0,
+                                "total_eval_amount": 0,
                                 "total_principal": 0,
                                 "total_profit_loss": 0,
                                 "profit_rate": 0
@@ -500,6 +501,7 @@ class PostgresDatabaseService:
                     # 데이터 변환 및 계산
                     assets = []
                     total_amount = 0
+                    total_eval_amount = 0
                     total_principal = 0
                     total_profit_loss = 0
                     category_summary = {}
@@ -532,6 +534,7 @@ class PostgresDatabaseService:
 
                         assets.append(asset)
                         total_amount += asset["amount"]
+                        total_eval_amount += asset["eval_amount"]
 
                         # 원금과 손익 합계 계산
                         total_principal += asset["principal"]
@@ -542,10 +545,16 @@ class PostgresDatabaseService:
                         if category not in category_summary:
                             category_summary[category] = {
                                 "total_amount": 0,
+                                "total_principal": 0,
+                                "total_eval_amount": 0,
                                 "count": 0,
-                                "percentage": 0
+                                "percentage": 0,
+                                "principal_percentage": 0,
+                                "eval_percentage": 0
                             }
                         category_summary[category]["total_amount"] += asset["amount"]
+                        category_summary[category]["total_principal"] += asset["principal"]
+                        category_summary[category]["total_eval_amount"] += asset["eval_amount"]
                         category_summary[category]["count"] += 1
 
                     # 자산군별 비중 계산
@@ -553,6 +562,14 @@ class PostgresDatabaseService:
                         if total_amount > 0:
                             category_summary[category]["percentage"] = round(
                                 (category_summary[category]["total_amount"] / total_amount) * 100, 2
+                            )
+                        if total_principal > 0:
+                            category_summary[category]["principal_percentage"] = round(
+                                (category_summary[category]["total_principal"] / total_principal) * 100, 2
+                            )
+                        if total_eval_amount > 0:
+                            category_summary[category]["eval_percentage"] = round(
+                                (category_summary[category]["total_eval_amount"] / total_eval_amount) * 100, 2
                             )
 
                     # 총 수익률 계산
@@ -565,6 +582,7 @@ class PostgresDatabaseService:
                         "data": assets,
                         "summary": {
                             "total_assets": total_amount,
+                            "total_eval_amount": total_eval_amount,
                             "total_principal": total_principal,
                             "total_profit_loss": total_profit_loss,
                             "profit_rate": total_profit_rate

@@ -20,6 +20,18 @@ interface Asset {
   profit_rate: number;
 }
 
+interface EditFormData {
+  asset_type?: string;
+  sub_category?: string | null;
+  name?: string;
+  quantity?: string | null;
+  avg_price?: string | null;
+  eval_amount?: string | null;
+  principal?: string | null;
+  date?: string;
+  note?: string;
+}
+
 interface CategorySummary {
   total_amount: number;
   count: number;
@@ -67,7 +79,7 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
   const [sortBy, setSortBy] = useState<'amount' | 'profit_rate' | 'name'>('amount');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
-  const [editForm, setEditForm] = useState<Partial<Asset>>({});
+  const [editForm, setEditForm] = useState<EditFormData>({});
   const [showSubcategoryGoals, setShowSubcategoryGoals] = useState(false);
   const [goalSettings, setGoalSettings] = useState({
     totalGoal: 50000000,
@@ -153,10 +165,10 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
       asset_type: asset.asset_type,
       sub_category: asset.sub_category,
       name: asset.name,
-      quantity: asset.quantity,
-      avg_price: asset.avg_price,
-      principal: asset.principal,
-      eval_amount: asset.eval_amount,
+      quantity: asset.quantity?.toString() || '',
+      avg_price: asset.avg_price?.toString() || '',
+      principal: asset.principal?.toString() || '',
+      eval_amount: asset.eval_amount?.toString() || '',
       date: formattedDate,
       note: asset.note
     });
@@ -187,10 +199,10 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
           asset_type: editForm.asset_type,
           sub_category: editForm.sub_category || null,
           name: editForm.name,
-          quantity: editForm.quantity || null,
-          avg_price: editForm.avg_price || null,
-          principal: editForm.principal || null,
-          eval_amount: editForm.eval_amount || null,
+          quantity: editForm.quantity ? parseFloat(editForm.quantity as string) : null,
+          avg_price: editForm.avg_price ? parseFloat(editForm.avg_price as string) : null,
+          principal: editForm.principal ? parseFloat(editForm.principal as string) : null,
+          eval_amount: editForm.eval_amount ? parseFloat(editForm.eval_amount as string) : null,
           date: editForm.date,
           note: editForm.note || '',
           user_id: user.id
@@ -366,8 +378,8 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
       // 대분류별 데이터
       return Object.entries(portfolioData.by_category).map(([category, data]) => ({
         name: category,
-        value: data.total_amount,
-        percentage: data.percentage,
+        value: data.total_principal || data.total_amount,
+        percentage: data.principal_percentage || data.percentage,
       }));
     } else if (subViewType) {
       // 특정 소분류의 개별 자산별 데이터
@@ -375,13 +387,14 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
       if (!groupedAssets[targetCategory] || !groupedAssets[targetCategory][subViewType]) return [];
 
       const subCategoryAssets = groupedAssets[targetCategory][subViewType];
-      const subTotal = subCategoryAssets.reduce((sum, asset) => sum + asset.amount, 0);
+      const subTotal = subCategoryAssets.reduce((sum, asset) => sum + (asset.principal || asset.amount), 0);
 
       return subCategoryAssets.map((asset) => {
-        const percentage = subTotal > 0 ? (asset.amount / subTotal) * 100 : 0;
+        const principal = asset.principal || asset.amount;
+        const percentage = subTotal > 0 ? (principal / subTotal) * 100 : 0;
         return {
           name: asset.name,
-          value: asset.amount,
+          value: principal,
           percentage: percentage
         };
       });
@@ -391,10 +404,10 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
       if (!groupedAssets[targetCategory]) return [];
 
       const categoryAssets = groupedAssets[targetCategory];
-      const categoryTotal = Object.values(categoryAssets).flat().reduce((sum, asset) => sum + asset.amount, 0);
+      const categoryTotal = Object.values(categoryAssets).flat().reduce((sum, asset) => sum + (asset.principal || asset.amount), 0);
 
       return Object.entries(categoryAssets).map(([subCategory, assets]) => {
-        const totalAmount = assets.reduce((sum, asset) => sum + asset.amount, 0);
+        const totalAmount = assets.reduce((sum, asset) => sum + (asset.principal || asset.amount), 0);
         const percentage = categoryTotal > 0 ? (totalAmount / categoryTotal) * 100 : 0;
 
         return {
@@ -415,9 +428,9 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
       // 대분류별 데이터
       return Object.entries(portfolioData.by_category).map(([category, data]) => ({
         name: category,
-        amount: data.total_amount,
+        amount: data.total_principal || data.total_amount,
         count: data.count,
-        percentage: data.percentage,
+        percentage: data.principal_percentage || data.percentage,
       }));
     } else if (subViewType) {
       // 특정 소분류의 개별 자산별 데이터
@@ -425,13 +438,14 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
       if (!groupedAssets[targetCategory] || !groupedAssets[targetCategory][subViewType]) return [];
 
       const subCategoryAssets = groupedAssets[targetCategory][subViewType];
-      const subTotal = subCategoryAssets.reduce((sum, asset) => sum + asset.amount, 0);
+      const subTotal = subCategoryAssets.reduce((sum, asset) => sum + (asset.principal || asset.amount), 0);
 
       return subCategoryAssets.map((asset) => {
-        const percentage = subTotal > 0 ? (asset.amount / subTotal) * 100 : 0;
+        const principal = asset.principal || asset.amount;
+        const percentage = subTotal > 0 ? (principal / subTotal) * 100 : 0;
         return {
           name: asset.name,
-          amount: asset.amount,
+          amount: principal,
           count: 1,
           percentage: percentage
         };
@@ -442,10 +456,10 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
       if (!groupedAssets[targetCategory]) return [];
 
       const categoryAssets = groupedAssets[targetCategory];
-      const categoryTotal = Object.values(categoryAssets).flat().reduce((sum, asset) => sum + asset.amount, 0);
+      const categoryTotal = Object.values(categoryAssets).flat().reduce((sum, asset) => sum + (asset.principal || asset.amount), 0);
 
       return Object.entries(categoryAssets).map(([subCategory, assets]) => {
-        const totalAmount = assets.reduce((sum, asset) => sum + asset.amount, 0);
+        const totalAmount = assets.reduce((sum, asset) => sum + (asset.principal || asset.amount), 0);
         const percentage = categoryTotal > 0 ? (totalAmount / categoryTotal) * 100 : 0;
 
         return {
@@ -516,7 +530,7 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
           (asset.sub_category === subCategory || (!asset.sub_category && subCategory === '기타'))
         );
 
-        const current = subCategoryAssets.reduce((sum, asset) => sum + asset.amount, 0);
+        const current = subCategoryAssets.reduce((sum, asset) => sum + (asset.eval_amount || asset.amount), 0);
         const goalData = goalSettings.subCategoryGoals[subCategory];
         const goal = goalData?.amount || 0;
         const targetDate = goalData?.targetDate || goalSettings.targetDate;
@@ -971,9 +985,9 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
               </ResponsiveContainer>
             </div>
 
-            {/* 막대 차트 - 금액 */}
+            {/* 막대 차트 - 원금 */}
             <div>
-              <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2 text-center">자산 금액</h4>
+              <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2 text-center">투자 원금</h4>
               <ResponsiveContainer width="100%" height={250}>
                 <BarChart data={barChartData}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -1075,8 +1089,8 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
                         <div className="font-medium">{allAssets.length}개</div>
                       </div>
                       <div className="bg-blue-600 bg-opacity-30 px-3 py-2 rounded">
-                        <div className="text-xs opacity-80">총액</div>
-                        <div className="font-medium">{formatCurrency(totalAmount)}</div>
+                        <div className="text-xs opacity-80">현재가치</div>
+                        <div className="font-medium">{formatCurrency(totalEvalAmount)}</div>
                       </div>
                       <div className="bg-blue-600 bg-opacity-30 px-3 py-2 rounded">
                         <div className="text-xs opacity-80">원금</div>
@@ -1115,8 +1129,8 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
                             <div className="font-medium">{assets.length}개</div>
                           </div>
                           <div className="bg-gray-200 dark:bg-gray-600 px-2 py-1 rounded text-center">
-                            <div className="text-xs opacity-80">총액</div>
-                            <div className="font-medium">{formatCurrency(subTotalAmount)}</div>
+                            <div className="text-xs opacity-80">현재가치</div>
+                            <div className="font-medium">{formatCurrency(subTotalEvalAmount)}</div>
                           </div>
                           <div className="bg-gray-200 dark:bg-gray-600 px-2 py-1 rounded text-center">
                             <div className="text-xs opacity-80">원금</div>
@@ -1328,7 +1342,7 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
                   type="number"
                   step="0.01"
                   value={editForm.quantity || ''}
-                  onChange={(e) => setEditForm({...editForm, quantity: e.target.value ? parseFloat(e.target.value) : null})}
+                  onChange={(e) => setEditForm({...editForm, quantity: e.target.value === '' ? null : e.target.value})}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 />
               </div>
@@ -1342,7 +1356,7 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
                   type="number"
                   step="0.01"
                   value={editForm.avg_price || ''}
-                  onChange={(e) => setEditForm({...editForm, avg_price: e.target.value ? parseFloat(e.target.value) : null})}
+                  onChange={(e) => setEditForm({...editForm, avg_price: e.target.value === '' ? null : e.target.value})}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 />
               </div>
@@ -1356,7 +1370,7 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
                   type="number"
                   step="0.01"
                   value={editForm.principal || ''}
-                  onChange={(e) => setEditForm({...editForm, principal: e.target.value ? parseFloat(e.target.value) : null})}
+                  onChange={(e) => setEditForm({...editForm, principal: e.target.value === '' ? null : e.target.value})}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 />
               </div>
@@ -1370,7 +1384,7 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
                   type="number"
                   step="0.01"
                   value={editForm.eval_amount || ''}
-                  onChange={(e) => setEditForm({...editForm, eval_amount: e.target.value ? parseFloat(e.target.value) : null})}
+                  onChange={(e) => setEditForm({...editForm, eval_amount: e.target.value === '' ? null : e.target.value})}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 />
               </div>
