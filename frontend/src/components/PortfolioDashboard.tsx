@@ -814,7 +814,14 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
       new Date(a.date).getTime() - new Date(b.date).getTime()
     );
 
-    const data = [];
+    const data: Array<{
+      time: string;
+      amount: number;
+      total_principal: number;
+      total_eval_amount: number;
+      asset_name: string;
+      change_type: string;
+    }> = [];
     let cumulativePrincipal = 0;
     let cumulativeEvalAmount = 0;
 
