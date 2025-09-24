@@ -18,6 +18,29 @@ interface Asset {
   created_at: string;
   profit_loss: number;
   profit_rate: number;
+
+  // 부동산 전용 필드
+  area_pyeong?: number;
+  acquisition_tax?: number;
+  rental_income?: number;
+
+  // 예금/적금 전용 필드
+  maturity_date?: string;
+  interest_rate?: number;
+  early_withdrawal_fee?: number;
+
+  // MMF/CMA 전용 필드
+  current_yield?: number;
+  annual_yield?: number;
+  minimum_balance?: number;
+  withdrawal_fee?: number;
+
+  // 주식/ETF 전용 필드
+  dividend_rate?: number;
+
+  // 펀드 전용 필드
+  nav?: number;
+  management_fee?: number;
 }
 
 interface EditFormData {
@@ -30,6 +53,29 @@ interface EditFormData {
   principal?: string | null;
   date?: string;
   note?: string;
+
+  // 부동산 전용 필드
+  area_pyeong?: string | null;
+  acquisition_tax?: string | null;
+  rental_income?: string | null;
+
+  // 예금/적금 전용 필드
+  maturity_date?: string | null;
+  interest_rate?: string | null;
+  early_withdrawal_fee?: string | null;
+
+  // MMF/CMA 전용 필드
+  current_yield?: string | null;
+  annual_yield?: string | null;
+  minimum_balance?: string | null;
+  withdrawal_fee?: string | null;
+
+  // 주식/ETF 전용 필드
+  dividend_rate?: string | null;
+
+  // 펀드 전용 필드
+  nav?: string | null;
+  management_fee?: string | null;
 }
 
 interface CategorySummary {
@@ -310,6 +356,71 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
 
   const formatNumber = (num: number) => {
     return new Intl.NumberFormat('ko-KR').format(num);
+  };
+
+  // 소분류별 맞춤 컬럼 정의
+  const getSubCategoryColumns = (subCategory: string | null) => {
+    const subCat = subCategory?.toLowerCase();
+
+    switch (subCat) {
+      case '부동산':
+        return [
+          { key: 'area_pyeong', label: '면적(평)', format: (val: number) => `${formatNumber(val)}평` },
+          { key: 'acquisition_tax', label: '취득세', format: formatCurrency },
+          { key: 'rental_income', label: '임대수익(월)', format: formatCurrency }
+        ];
+      case '예금':
+      case '적금':
+        return [
+          { key: 'maturity_date', label: '만기일', format: (val: string) => new Date(val).toLocaleDateString('ko-KR') },
+          { key: 'interest_rate', label: '연이율', format: (val: number) => `${val}%` },
+          { key: 'early_withdrawal_fee', label: '중도해지수수료', format: formatCurrency }
+        ];
+      case 'mmf':
+      case 'cma':
+        return [
+          { key: 'current_yield', label: '현재수익률', format: (val: number) => `${val}%` },
+          { key: 'annual_yield', label: '연환산수익률', format: (val: number) => `${val}%` },
+          { key: 'minimum_balance', label: '최소유지잔고', format: formatCurrency },
+          { key: 'withdrawal_fee', label: '출금수수료', format: formatCurrency }
+        ];
+      case '국내주식':
+      case '해외주식':
+      case 'etf':
+        return [
+          { key: 'dividend_rate', label: '배당율', format: (val: number) => `${val}%` }
+        ];
+      case '펀드':
+        return [
+          { key: 'nav', label: '기준가격', format: formatCurrency },
+          { key: 'management_fee', label: '운용보수', format: (val: number) => `${val}%` }
+        ];
+      case '현금':
+      case '입출금통장':
+      case '증권예수금':
+        return [
+          { key: 'interest_rate', label: '연이율', format: (val: number) => `${val}%` }
+        ];
+      case '암호화폐':
+      case '원자재':
+      default:
+        return [];
+    }
+  };
+
+  // 소분류별로 수량×평균가 표시 여부 결정
+  const shouldShowQuantityPrice = (subCategory: string | null) => {
+    const subCat = subCategory?.toLowerCase();
+    return ['국내주식', '해외주식', 'etf', '펀드', '암호화폐', '원자재'].includes(subCat || '');
+  };
+
+  // 날짜 컬럼 라벨 결정
+  const getDateLabel = (subCategory: string | null) => {
+    const subCat = subCategory?.toLowerCase();
+    if (['예금', '적금', 'mmf', 'cma', '현금', '입출금통장', '증권예수금', '부동산'].includes(subCat || '')) {
+      return '개설일자';
+    }
+    return '매수일자';
   };
 
   const getFilteredAssets = () => {
@@ -1449,14 +1560,24 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
                 <thead className="bg-gray-50 dark:bg-gray-700">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">종목명</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">소분류</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">수량</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">평균가</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">원금</th>
+                    {/* 수량×평균가는 투자자산만 표시 */}
+                    {shouldShowQuantityPrice(subCategory) && (
+                      <>
+                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">수량</th>
+                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">평균가</th>
+                      </>
+                    )}
+                    {/* 소분류별 맞춤 컬럼들 */}
+                    {getSubCategoryColumns(subCategory).map((col) => (
+                      <th key={col.key} className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        {col.label}
+                      </th>
+                    ))}
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">평가금액</th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">원금</th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">손익</th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">수익률</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">등록일</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">{getDateLabel(subCategory)}</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">메모</th>
                     <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">관리</th>
                   </tr>
@@ -1465,24 +1586,44 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
                   {assets.map((asset) => (
                     <tr key={asset.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                        {asset.name}
+                        <div className="flex items-center gap-2">
+                          {/* 등록일 툴팁 아이콘 */}
+                          <div className="group relative">
+                            <svg className="w-4 h-4 text-gray-400 cursor-help" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                            </svg>
+                            <div className="invisible group-hover:visible absolute bottom-full left-0 mb-2 px-2 py-1 text-xs bg-gray-800 text-white rounded shadow-lg whitespace-nowrap z-10">
+                              등록일: {new Date(asset.created_at).toLocaleDateString('ko-KR')}
+                            </div>
+                          </div>
+                          {asset.name}
+                        </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                        <span className="px-2 py-1 text-xs bg-gray-100 dark:bg-gray-700 rounded-full">
-                          {asset.sub_category || '기타'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300 text-right">
-                        {asset.quantity ? formatNumber(asset.quantity) : '-'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300 text-right">
-                        {asset.avg_price ? formatCurrency(asset.avg_price) : '-'}
+
+                      {/* 수량×평균가는 투자자산만 표시 */}
+                      {shouldShowQuantityPrice(asset.sub_category) && (
+                        <>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300 text-right">
+                            {asset.quantity ? formatNumber(asset.quantity) : '-'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300 text-right">
+                            {asset.avg_price ? formatCurrency(asset.avg_price) : '-'}
+                          </td>
+                        </>
+                      )}
+
+                      {/* 소분류별 맞춤 컬럼들 */}
+                      {getSubCategoryColumns(asset.sub_category).map((col) => (
+                        <td key={col.key} className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300 text-right">
+                          {asset[col.key as keyof Asset] ? col.format(asset[col.key as keyof Asset] as any) : '-'}
+                        </td>
+                      ))}
+
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white text-right font-medium">
+                        {formatCurrency(asset.eval_amount || asset.amount)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300 text-right">
                         {formatCurrency(asset.principal || asset.amount)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white text-right font-medium">
-                        {formatCurrency(asset.eval_amount || asset.amount)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
                         <span className={`${asset.profit_loss >= 0 ? 'text-green-600' : 'text-red-600'} font-medium`}>

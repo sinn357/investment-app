@@ -109,7 +109,30 @@ class PostgresDatabaseService:
                         date DATE,
                         note TEXT,
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+                        -- 부동산 전용 필드
+                        area_pyeong NUMERIC, -- 면적(평수)
+                        acquisition_tax NUMERIC, -- 취득세
+                        rental_income NUMERIC, -- 임대수익(월세)
+
+                        -- 예금/적금 전용 필드
+                        maturity_date DATE, -- 만기일
+                        interest_rate NUMERIC, -- 연이율(%)
+                        early_withdrawal_fee NUMERIC, -- 중도해지수수료
+
+                        -- MMF/CMA 전용 필드
+                        current_yield NUMERIC, -- 현재수익률(%)
+                        annual_yield NUMERIC, -- 연환산수익률(%)
+                        minimum_balance NUMERIC, -- 최소유지잔고
+                        withdrawal_fee NUMERIC, -- 출금수수료
+
+                        -- 주식/ETF 전용 필드
+                        dividend_rate NUMERIC, -- 배당율(%)
+
+                        -- 펀드 전용 필드
+                        nav NUMERIC, -- 기준가격
+                        management_fee NUMERIC -- 운용보수(%)
                     );
 
                     CREATE TABLE IF NOT EXISTS goal_settings (
@@ -147,6 +170,21 @@ class PostgresDatabaseService:
                     ALTER TABLE assets ADD COLUMN IF NOT EXISTS profit_loss NUMERIC DEFAULT 0;
                     ALTER TABLE assets ADD COLUMN IF NOT EXISTS profit_rate NUMERIC DEFAULT 0;
                     ALTER TABLE assets ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+
+                    -- 소분류별 전용 필드 추가
+                    ALTER TABLE assets ADD COLUMN IF NOT EXISTS area_pyeong NUMERIC;
+                    ALTER TABLE assets ADD COLUMN IF NOT EXISTS acquisition_tax NUMERIC;
+                    ALTER TABLE assets ADD COLUMN IF NOT EXISTS rental_income NUMERIC;
+                    ALTER TABLE assets ADD COLUMN IF NOT EXISTS maturity_date DATE;
+                    ALTER TABLE assets ADD COLUMN IF NOT EXISTS interest_rate NUMERIC;
+                    ALTER TABLE assets ADD COLUMN IF NOT EXISTS early_withdrawal_fee NUMERIC;
+                    ALTER TABLE assets ADD COLUMN IF NOT EXISTS current_yield NUMERIC;
+                    ALTER TABLE assets ADD COLUMN IF NOT EXISTS annual_yield NUMERIC;
+                    ALTER TABLE assets ADD COLUMN IF NOT EXISTS minimum_balance NUMERIC;
+                    ALTER TABLE assets ADD COLUMN IF NOT EXISTS withdrawal_fee NUMERIC;
+                    ALTER TABLE assets ADD COLUMN IF NOT EXISTS dividend_rate NUMERIC;
+                    ALTER TABLE assets ADD COLUMN IF NOT EXISTS nav NUMERIC;
+                    ALTER TABLE assets ADD COLUMN IF NOT EXISTS management_fee NUMERIC;
 
                     -- 기존 assets 데이터에 기본 user_id 설정 (NULL인 경우에만)
                     UPDATE assets SET user_id = 1 WHERE user_id IS NULL;
@@ -440,8 +478,14 @@ class PostgresDatabaseService:
                 print("PostgreSQL connection established")
                 with conn.cursor() as cur:
                     cur.execute("""
-                        INSERT INTO assets (user_id, asset_type, sub_category, name, amount, quantity, avg_price, eval_amount, principal, profit_loss, profit_rate, date, note)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        INSERT INTO assets (
+                            user_id, asset_type, sub_category, name, amount, quantity, avg_price,
+                            eval_amount, principal, profit_loss, profit_rate, date, note,
+                            area_pyeong, acquisition_tax, rental_income, maturity_date, interest_rate,
+                            early_withdrawal_fee, current_yield, annual_yield, minimum_balance,
+                            withdrawal_fee, dividend_rate, nav, management_fee
+                        )
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                         RETURNING id
                     """, (
                         asset_data.get('user_id'),
@@ -456,7 +500,25 @@ class PostgresDatabaseService:
                         asset_data.get('profit_loss', 0),
                         asset_data.get('profit_rate', 0),
                         asset_data.get('date'),
-                        asset_data.get('note')
+                        asset_data.get('note'),
+                        # 부동산 필드
+                        asset_data.get('area_pyeong'),
+                        asset_data.get('acquisition_tax'),
+                        asset_data.get('rental_income'),
+                        # 예금/적금 필드
+                        asset_data.get('maturity_date'),
+                        asset_data.get('interest_rate'),
+                        asset_data.get('early_withdrawal_fee'),
+                        # MMF/CMA 필드
+                        asset_data.get('current_yield'),
+                        asset_data.get('annual_yield'),
+                        asset_data.get('minimum_balance'),
+                        asset_data.get('withdrawal_fee'),
+                        # 주식/ETF 필드
+                        asset_data.get('dividend_rate'),
+                        # 펀드 필드
+                        asset_data.get('nav'),
+                        asset_data.get('management_fee')
                     ))
 
                     result = cur.fetchone()
@@ -485,7 +547,9 @@ class PostgresDatabaseService:
                 with conn.cursor() as cur:
                     if user_id:
                         cur.execute("""
-                            SELECT id, asset_type, sub_category, name, amount, quantity, avg_price, eval_amount, principal, profit_loss, profit_rate, date, note, created_at
+                            SELECT id, asset_type, sub_category, name, amount, quantity, avg_price, eval_amount, principal, profit_loss, profit_rate, date, note, created_at,
+                                   area_pyeong, acquisition_tax, rental_income, maturity_date, interest_rate, early_withdrawal_fee,
+                                   current_yield, annual_yield, minimum_balance, withdrawal_fee, dividend_rate, nav, management_fee
                             FROM assets
                             WHERE user_id = %s
                             ORDER BY created_at DESC
@@ -493,7 +557,9 @@ class PostgresDatabaseService:
                     else:
                         # 하위 호환성을 위해 user_id가 없으면 모든 자산 조회 (기존 동작)
                         cur.execute("""
-                            SELECT id, asset_type, sub_category, name, amount, quantity, avg_price, eval_amount, principal, profit_loss, profit_rate, date, note, created_at
+                            SELECT id, asset_type, sub_category, name, amount, quantity, avg_price, eval_amount, principal, profit_loss, profit_rate, date, note, created_at,
+                                   area_pyeong, acquisition_tax, rental_income, maturity_date, interest_rate, early_withdrawal_fee,
+                                   current_yield, annual_yield, minimum_balance, withdrawal_fee, dividend_rate, nav, management_fee
                             FROM assets
                             ORDER BY created_at DESC
                         """)
@@ -683,6 +749,56 @@ class PostgresDatabaseService:
                     if 'eval_amount' in data:
                         update_fields.append("eval_amount = %s")
                         values.append(data['eval_amount'] if data['eval_amount'] else None)
+
+                    # 소분류별 전용 필드들
+                    # 부동산 필드
+                    if 'area_pyeong' in data:
+                        update_fields.append("area_pyeong = %s")
+                        values.append(data['area_pyeong'] if data['area_pyeong'] else None)
+                    if 'acquisition_tax' in data:
+                        update_fields.append("acquisition_tax = %s")
+                        values.append(data['acquisition_tax'] if data['acquisition_tax'] else None)
+                    if 'rental_income' in data:
+                        update_fields.append("rental_income = %s")
+                        values.append(data['rental_income'] if data['rental_income'] else None)
+
+                    # 예금/적금 필드
+                    if 'maturity_date' in data:
+                        update_fields.append("maturity_date = %s")
+                        values.append(data['maturity_date'] if data['maturity_date'] else None)
+                    if 'interest_rate' in data:
+                        update_fields.append("interest_rate = %s")
+                        values.append(data['interest_rate'] if data['interest_rate'] else None)
+                    if 'early_withdrawal_fee' in data:
+                        update_fields.append("early_withdrawal_fee = %s")
+                        values.append(data['early_withdrawal_fee'] if data['early_withdrawal_fee'] else None)
+
+                    # MMF/CMA 필드
+                    if 'current_yield' in data:
+                        update_fields.append("current_yield = %s")
+                        values.append(data['current_yield'] if data['current_yield'] else None)
+                    if 'annual_yield' in data:
+                        update_fields.append("annual_yield = %s")
+                        values.append(data['annual_yield'] if data['annual_yield'] else None)
+                    if 'minimum_balance' in data:
+                        update_fields.append("minimum_balance = %s")
+                        values.append(data['minimum_balance'] if data['minimum_balance'] else None)
+                    if 'withdrawal_fee' in data:
+                        update_fields.append("withdrawal_fee = %s")
+                        values.append(data['withdrawal_fee'] if data['withdrawal_fee'] else None)
+
+                    # 주식/ETF 필드
+                    if 'dividend_rate' in data:
+                        update_fields.append("dividend_rate = %s")
+                        values.append(data['dividend_rate'] if data['dividend_rate'] else None)
+
+                    # 펀드 필드
+                    if 'nav' in data:
+                        update_fields.append("nav = %s")
+                        values.append(data['nav'] if data['nav'] else None)
+                    if 'management_fee' in data:
+                        update_fields.append("management_fee = %s")
+                        values.append(data['management_fee'] if data['management_fee'] else None)
 
                     # amount 계산 (수량 * 평균가 또는 eval_amount)
                     if 'quantity' in data and 'avg_price' in data and data['quantity'] and data['avg_price']:

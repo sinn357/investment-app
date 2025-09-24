@@ -883,7 +883,27 @@ def add_asset():
             'avg_price': data.get('avgPrice'),
             'eval_amount': data.get('evaluationAmount'),
             'date': data.get('date'),
-            'note': data.get('note')
+            'note': data.get('note'),
+
+            # 소분류별 전용 필드들
+            # 부동산 필드
+            'area_pyeong': data.get('area_pyeong'),
+            'acquisition_tax': data.get('acquisition_tax'),
+            'rental_income': data.get('rental_income'),
+            # 예금/적금 필드
+            'maturity_date': data.get('maturity_date'),
+            'interest_rate': data.get('interest_rate'),
+            'early_withdrawal_fee': data.get('early_withdrawal_fee'),
+            # MMF/CMA 필드
+            'current_yield': data.get('current_yield'),
+            'annual_yield': data.get('annual_yield'),
+            'minimum_balance': data.get('minimum_balance'),
+            'withdrawal_fee': data.get('withdrawal_fee'),
+            # 주식/ETF 필드
+            'dividend_rate': data.get('dividend_rate'),
+            # 펀드 필드
+            'nav': data.get('nav'),
+            'management_fee': data.get('management_fee')
         }
 
         # 데이터베이스에 저장
