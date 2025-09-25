@@ -123,6 +123,66 @@ export const THRESHOLD_CONFIGS: Record<string, ThresholdConfig> = {
     baseline: 0,
     secondaryBaseline: 2.0,
     unit: 'percentage'
+  },
+  // 고용지표
+  'unemployment-rate': {
+    indicatorId: 'unemployment-rate',
+    good: { max: 4.0 }, // 실업률은 낮을수록 좋음 (역방향)
+    neutral: { min: 4.0, max: 6.0 },
+    warning: { min: 6.0, max: 8.0 },
+    bad: { min: 8.0 },
+    baseline: 5.0,
+    secondaryBaseline: 4.0,
+    unit: 'percentage'
+  },
+  'nonfarm-payrolls': {
+    indicatorId: 'nonfarm-payrolls',
+    good: { min: 200 }, // 20만명 이상
+    neutral: { min: 100, max: 200 }, // 10-20만명
+    warning: { min: 0, max: 100 }, // 0-10만명
+    bad: { max: 0 }, // 0명 미만 (일자리 감소)
+    baseline: 150,
+    secondaryBaseline: 200,
+    unit: 'number'
+  },
+  'initial-jobless-claims': {
+    indicatorId: 'initial-jobless-claims',
+    good: { max: 350 }, // 35만명 미만 (낮을수록 좋음)
+    neutral: { min: 350, max: 450 }, // 35-45만명
+    warning: { min: 450, max: 600 }, // 45-60만명
+    bad: { min: 600 }, // 60만명 이상
+    baseline: 400,
+    secondaryBaseline: 350,
+    unit: 'number'
+  },
+  'average-hourly-earnings': {
+    indicatorId: 'average-hourly-earnings',
+    good: { min: 0.3 }, // 0.3% 이상
+    neutral: { min: 0.1, max: 0.3 }, // 0.1-0.3%
+    warning: { min: 0, max: 0.1 }, // 0-0.1%
+    bad: { max: 0 }, // 0% 미만
+    baseline: 0.2,
+    unit: 'percentage'
+  },
+  'average-hourly-earnings-1777': {
+    indicatorId: 'average-hourly-earnings-1777',
+    good: { min: 3.0 }, // 연간 3% 이상
+    neutral: { min: 2.0, max: 3.0 }, // 연간 2-3%
+    warning: { min: 1.0, max: 2.0 }, // 연간 1-2%
+    bad: { max: 1.0 }, // 연간 1% 미만
+    baseline: 2.5,
+    secondaryBaseline: 3.0,
+    unit: 'percentage'
+  },
+  'participation-rate': {
+    indicatorId: 'participation-rate',
+    good: { min: 63.5 }, // 63.5% 이상
+    neutral: { min: 62.5, max: 63.5 }, // 62.5-63.5%
+    warning: { min: 61.5, max: 62.5 }, // 61.5-62.5%
+    bad: { max: 61.5 }, // 61.5% 미만
+    baseline: 63.0,
+    secondaryBaseline: 63.5,
+    unit: 'percentage'
   }
 };
 
@@ -322,6 +382,79 @@ export const INDICATOR_INFO: Record<string, IndicatorInfo> = {
     },
     referenceLines: ['0%선: 침체/성장 분기점', '2.0%선: 안정 성장 기준'],
     economicMeaning: '경제 전체의 최종 성과 측정, 모든 지표의 종합 결과'
+  },
+  // 고용지표
+  'unemployment-rate': {
+    description: '실업률 - 경제활동인구 대비 실업자 비율 (역방향 지표)',
+    category: '고용 계열 (노동시장)',
+    thresholds: {
+      good: '4.0% 미만 - 완전고용 수준',
+      neutral: '4.0%~6.0% - 보통',
+      warning: '6.0%~8.0% - 높은 실업',
+      bad: '8.0% 이상 - 심각한 실업'
+    },
+    referenceLines: ['5.0%선: 자연실업률', '4.0%선: 완전고용 기준'],
+    economicMeaning: '낮을수록 좋은 지표, 4% 미만이면 완전고용 달성'
+  },
+  'nonfarm-payrolls': {
+    description: '비농업 고용 증가 - 월간 일자리 창출 수 (천명)',
+    category: '고용 계열 (노동시장)',
+    thresholds: {
+      good: '200천명 이상 - 강한 고용 증가',
+      neutral: '100~200천명 - 보통 증가',
+      warning: '0~100천명 - 약한 증가',
+      bad: '0천명 미만 - 일자리 감소'
+    },
+    referenceLines: ['150천명선: 평균 기준', '200천명선: 강한 증가 기준'],
+    economicMeaning: '매월 새로 창출되는 일자리 수, 경기 판단의 핵심 지표'
+  },
+  'initial-jobless-claims': {
+    description: '신규 실업급여 신청 - 주간 신규 실업자 수 (천명, 역방향)',
+    category: '고용 계열 (노동시장)',
+    thresholds: {
+      good: '350천명 미만 - 안정적 고용',
+      neutral: '350~450천명 - 보통',
+      warning: '450~600천명 - 고용 불안',
+      bad: '600천명 이상 - 심각한 실업'
+    },
+    referenceLines: ['400천명선: 평균 기준', '350천명선: 안정 기준'],
+    economicMeaning: '낮을수록 좋은 지표, 고용시장 안정성의 실시간 측정'
+  },
+  'average-hourly-earnings': {
+    description: '평균시간당임금 (월간) - 임금 인상률 측정',
+    category: '고용 계열 (임금/인플레이션)',
+    thresholds: {
+      good: '0.3% 이상 - 강한 임금 상승',
+      neutral: '0.1%~0.3% - 보통 상승',
+      warning: '0%~0.1% - 약한 상승',
+      bad: '0% 미만 - 임금 하락'
+    },
+    referenceLines: ['0.2%선: 평균 임금 증가율'],
+    economicMeaning: '소비력 증대와 인플레이션 압력을 동시에 측정'
+  },
+  'average-hourly-earnings-1777': {
+    description: '평균시간당임금 (연간) - 임금 인상률 연간 변화율',
+    category: '고용 계열 (임금/인플레이션)',
+    thresholds: {
+      good: '3.0% 이상 - 강한 연간 임금 상승',
+      neutral: '2.0%~3.0% - 보통 상승',
+      warning: '1.0%~2.0% - 약한 상승',
+      bad: '1.0% 미만 - 실질임금 감소'
+    },
+    referenceLines: ['2.5%선: 평균 기준', '3.0%선: 강한 상승 기준'],
+    economicMeaning: '인플레이션 대비 실질 임금 증가 여부 판단'
+  },
+  'participation-rate': {
+    description: '경제활동참가율 - 생산가능인구 대비 경제활동인구 비율',
+    category: '고용 계열 (노동시장)',
+    thresholds: {
+      good: '63.5% 이상 - 높은 참여도',
+      neutral: '62.5%~63.5% - 보통',
+      warning: '61.5%~62.5% - 낮은 참여도',
+      bad: '61.5% 미만 - 매우 낮은 참여도'
+    },
+    referenceLines: ['63.0%선: 평균 기준', '63.5%선: 높은 참여 기준'],
+    economicMeaning: '노동시장 활력도 측정, 구직포기자 증가 시 하락'
   }
 };
 

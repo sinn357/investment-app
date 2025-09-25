@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import EconomicIndicatorCard from '@/components/EconomicIndicatorCard';
 import UpdateButton from '@/components/UpdateButton';
+import EmploymentDataSection from '@/components/EmploymentDataSection';
 
 interface IndicatorData {
   latest_release: {
@@ -41,7 +42,6 @@ export default function EmploymentTab() {
   const [participationRateData, setParticipationRateData] = useState<IndicatorData | null>(null);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<string>('');
-  const [activeIndicatorTab, setActiveIndicatorTab] = useState('unemployment-rate');
 
   const fetchUnemploymentData = async () => {
     try {
@@ -278,62 +278,7 @@ export default function EmploymentTab() {
       </div>
 
       {/* 데이터 섹션 */}
-      <div className="space-y-8">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
-            <div>
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white">고용지표 상세 데이터</h3>
-              <p className="text-gray-600 dark:text-gray-400 mt-1">
-                각 지표의 히스토리 데이터와 차트를 확인할 수 있습니다
-              </p>
-            </div>
-          </div>
-
-          {/* 탭 네비게이션 */}
-          <div className="border-b border-gray-200 dark:border-gray-700 mb-6">
-            <nav className="-mb-px flex space-x-8 overflow-x-auto">
-              {[
-                { id: 'unemployment-rate', name: '실업률', korean: '실업률' },
-                { id: 'nonfarm-payrolls', name: 'Nonfarm Payrolls', korean: '비농업고용' },
-                { id: 'initial-jobless-claims', name: 'Initial Jobless Claims', korean: '신규실업급여' },
-                { id: 'average-hourly-earnings', name: 'Average Hourly Earnings', korean: '평균시급' },
-                { id: 'average-hourly-earnings-1777', name: 'Average Hourly Earnings (YoY)', korean: '평균시급YoY' },
-                { id: 'participation-rate', name: 'Participation Rate', korean: '경제활동참가율' }
-              ].map((tab) => (
-                <button
-                  key={tab.id}
-                  className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm ${
-                    activeIndicatorTab === tab.id
-                      ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
-                  }`}
-                  onClick={() => setActiveIndicatorTab(tab.id)}
-                >
-                  <span className="hidden sm:inline">{tab.name}</span>
-                  <span className="sm:hidden">{tab.korean}</span>
-                </button>
-              ))}
-            </nav>
-          </div>
-
-          {/* 준비 중 메시지 */}
-          <div className="text-center py-12">
-            <div className="text-4xl mb-4">📊</div>
-            <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-              히스토리 데이터 및 차트
-            </h4>
-            <p className="text-gray-600 dark:text-gray-400 mb-4">
-              {activeIndicatorTab}에 대한 상세 히스토리 테이블과 차트는 향후 업데이트에서 제공될 예정입니다.
-            </p>
-            <div className="inline-flex items-center px-4 py-2 bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 rounded-lg">
-              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              개발 예정
-            </div>
-          </div>
-        </div>
-      </div>
+      <EmploymentDataSection />
     </div>
   );
 }

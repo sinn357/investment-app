@@ -80,6 +80,7 @@ export default function DataCharts({ data, indicatorName }: DataChartsProps) {
 
   // 지표 ID 매핑 함수 (name에서 indicator ID 추출)
   const getIndicatorId = (name: string): string => {
+    // 경기지표
     if (name.includes('ISM Manufacturing PMI')) return 'ism-manufacturing';
     if (name.includes('ISM Non-Manufacturing PMI')) return 'ism-non-manufacturing';
     if (name.includes('S&P Global Composite PMI')) return 'sp-global-composite';
@@ -90,6 +91,15 @@ export default function DataCharts({ data, indicatorName }: DataChartsProps) {
     if (name.includes('Retail Sales YoY')) return 'retail-sales-yoy';
     if (name.includes('Retail Sales')) return 'retail-sales';
     if (name.includes('GDP')) return 'gdp';
+
+    // 고용지표
+    if (name.includes('실업률')) return 'unemployment-rate';
+    if (name.includes('비농업 고용') || name.includes('Nonfarm Payrolls')) return 'nonfarm-payrolls';
+    if (name.includes('신규 실업급여 신청') || name.includes('Initial Jobless Claims')) return 'initial-jobless-claims';
+    if (name.includes('평균시간당임금 (YoY)') || name.includes('Average Hourly Earnings (YoY)')) return 'average-hourly-earnings-1777';
+    if (name.includes('평균시간당임금') || name.includes('Average Hourly Earnings')) return 'average-hourly-earnings';
+    if (name.includes('경제활동참가율') || name.includes('Participation Rate')) return 'participation-rate';
+
     return 'unknown';
   };
 
