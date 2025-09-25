@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, LineChart, Line } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 
 interface Expense {
   id: number;
@@ -46,23 +46,23 @@ interface ExpenseData {
   by_category: CategorySummary[];
 }
 
-interface Budget {
-  id: number;
-  category: string;
-  subcategory: string;
-  monthly_budget: number;
-  year: number;
-  month: number;
-}
+// interface Budget {
+//   id: number;
+//   category: string;
+//   subcategory: string;
+//   monthly_budget: number;
+//   year: number;
+//   month: number;
+// }
 
-interface BudgetProgress {
-  category: string;
-  subcategory: string;
-  monthly_budget: number;
-  actual_expense: number;
-  progress_percentage: number;
-  remaining_budget: number;
-}
+// interface BudgetProgress {
+//   category: string;
+//   subcategory: string;
+//   monthly_budget: number;
+//   actual_expense: number;
+//   progress_percentage: number;
+//   remaining_budget: number;
+// }
 
 // 카테고리 정의 (포트폴리오의 자산 분류와 동일한 패턴)
 const expenseCategories: Record<string, string[]> = {
@@ -206,9 +206,9 @@ export default function ExpenseManagementDashboard() {
       // 대시보드 새로고침
       setRefreshKey(prev => prev + 1);
       setIsFormVisible(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error submitting expense:', error);
-      alert(error.message || '거래내역 저장에 실패했습니다.');
+      alert(error instanceof Error ? error.message : '거래내역 저장에 실패했습니다.');
     }
   };
 
@@ -232,9 +232,9 @@ export default function ExpenseManagementDashboard() {
       const result = await response.json();
       alert(result.message || '거래내역이 삭제되었습니다.');
       setRefreshKey(prev => prev + 1);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error deleting expense:', error);
-      alert(error.message || '거래내역 삭제에 실패했습니다.');
+      alert(error instanceof Error ? error.message : '거래내역 삭제에 실패했습니다.');
     }
   };
 
@@ -279,9 +279,9 @@ export default function ExpenseManagementDashboard() {
       setEditExpense(null);
       setEditFormData({});
       setRefreshKey(prev => prev + 1);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error updating expense:', error);
-      alert(error.message || '거래내역 수정에 실패했습니다.');
+      alert(error instanceof Error ? error.message : '거래내역 수정에 실패했습니다.');
     }
   };
 
@@ -317,7 +317,7 @@ export default function ExpenseManagementDashboard() {
 
   // 정렬된 거래내역
   const sortedExpenses = [...filteredExpenses].sort((a, b) => {
-    let aValue: any, bValue: any;
+    let aValue: string | number, bValue: string | number;
 
     switch (sortBy) {
       case 'amount':
@@ -532,7 +532,7 @@ export default function ExpenseManagementDashboard() {
                     cy="50%"
                     outerRadius={80}
                     fill="#8884d8"
-                    label={({ name, percentage }) => `${percentage}%`}
+                    label={({ percentage }) => `${percentage}%`}
                   >
                     {pieData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
