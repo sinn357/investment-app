@@ -19,7 +19,11 @@ interface TabData {
   error?: string;
 }
 
-export default function EmploymentDataSection() {
+interface EmploymentDataSectionProps {
+  refreshTrigger?: number;
+}
+
+export default function EmploymentDataSection({ refreshTrigger }: EmploymentDataSectionProps) {
   const [activeTab, setActiveTab] = useState('unemployment-rate');
   const [tabsData, setTabsData] = useState<TabData[]>([
     {
@@ -129,6 +133,18 @@ export default function EmploymentDataSection() {
     fetchHistoryData(activeTab);
   }, []);
 
+  // refreshTrigger 변경 시 모든 탭 데이터 업데이트
+  useEffect(() => {
+    if (refreshTrigger && refreshTrigger > 0) {
+      // 모든 탭 데이터를 실시간 크롤링 API로 업데이트
+      const updateAllTabs = async () => {
+        const promises = tabsData.map(tab => updateData(tab.id));
+        await Promise.all(promises);
+      };
+      updateAllTabs();
+    }
+  }, [refreshTrigger]);
+
   // 탭 변경 시 해당 탭 데이터 로드 (아직 로드되지 않은 경우만)
   const handleTabChange = (tabId: string) => {
     setActiveTab(tabId);
@@ -214,27 +230,10 @@ export default function EmploymentDataSection() {
         {/* 탭 콘텐츠 */}
         {currentTabData && (
           <div>
-            <div className="flex justify-between items-center mb-4">
+            <div className="mb-4">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                 {currentTabData.name} - 히스토리 데이터
               </h3>
-              <button
-                onClick={() => updateData(activeTab)}
-                disabled={currentTabData.loading}
-                className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {currentTabData.loading ? (
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                ) : (
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                )}
-                실시간 업데이트
-              </button>
             </div>
 
             {currentTabData.error ? (

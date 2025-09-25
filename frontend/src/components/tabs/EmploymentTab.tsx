@@ -42,6 +42,7 @@ export default function EmploymentTab() {
   const [participationRateData, setParticipationRateData] = useState<IndicatorData | null>(null);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<string>('');
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const fetchUnemploymentData = async () => {
     try {
@@ -131,6 +132,8 @@ export default function EmploymentTab() {
 
   const handleUpdate = async () => {
     await loadAllData();
+    // EmploymentDataSection의 데이터도 업데이트하도록 트리거
+    setRefreshTrigger(prev => prev + 1);
   };
 
   useEffect(() => {
@@ -278,7 +281,7 @@ export default function EmploymentTab() {
       </div>
 
       {/* 데이터 섹션 */}
-      <EmploymentDataSection />
+      <EmploymentDataSection refreshTrigger={refreshTrigger} />
     </div>
   );
 }
