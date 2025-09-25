@@ -7,6 +7,7 @@ class CrawlerService:
 
     # 지표별 URL 매핑
     INDICATOR_URLS = {
+        # 경기지표
         'ism-manufacturing': 'https://www.investing.com/economic-calendar/ism-manufacturing-pmi-173',
         'ism-non-manufacturing': 'https://www.investing.com/economic-calendar/ism-non-manufacturing-pmi-176',
         'sp-global-composite': 'https://www.investing.com/economic-calendar/s-p-global-composite-pmi-1492',
@@ -16,7 +17,14 @@ class CrawlerService:
         'retail-sales-yoy': 'https://www.investing.com/economic-calendar/retail-sales-1878',
         'gdp': 'https://www.investing.com/economic-calendar/gdp-375',
         'cb-consumer-confidence': 'https://www.investing.com/economic-calendar/cb-consumer-confidence-48',
-        'michigan-consumer-sentiment': 'https://www.investing.com/economic-calendar/michigan-consumer-sentiment-320'
+        'michigan-consumer-sentiment': 'https://www.investing.com/economic-calendar/michigan-consumer-sentiment-320',
+        # 고용지표
+        'unemployment-rate': 'https://www.investing.com/economic-calendar/unemployment-rate-300',
+        'nonfarm-payrolls': 'https://www.investing.com/economic-calendar/nonfarm-payrolls-227',
+        'initial-jobless-claims': 'https://www.investing.com/economic-calendar/initial-jobless-claims-294',
+        'average-hourly-earnings': 'https://www.investing.com/economic-calendar/average-hourly-earnings-297',
+        'average-hourly-earnings-1777': 'https://www.investing.com/economic-calendar/average-hourly-earnings-1777',
+        'participation-rate': 'https://www.investing.com/economic-calendar/participation-rate-1581'
     }
 
     @classmethod
