@@ -1,0 +1,56 @@
+name: Keep Render Service Alive
+
+on:
+  schedule:
+    # 매 28분마다 실행 (슬립 전 2분 여유)
+    - cron: '*/28 * * * *'
+  workflow_dispatch: # 수동 실행 가능
+
+jobs:
+  keep-alive:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check KST Time
+        id: time-check
+        run: |
+          CURRENT_HOUR_KST=$(TZ=Asia/Seoul date '+%H')
+          echo "KST Hour: $CURRENT_HOUR_KST"
+
+          # 활성 시간대 체크 (KST 10:00-04:00)
+          if [[ $CURRENT_HOUR_KST -ge 10 || $CURRENT_HOUR_KST -lt 4 ]]; then
+            echo "should_ping=true" >> $GITHUB_OUTPUT
+          else
+            echo "should_ping=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Ping Render Service
+        if: steps.time-check.outputs.should_ping == 'true'
+        run: |
+          echo "🚀 Pinging Render service at $(TZ=Asia/Seoul date)"
+
+          # 헬스체크 엔드포인트 호출
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://investment-app-backend-x166.onrender.com/api/health || echo "000")
+
+          if [ "$HTTP_STATUS" = "200" ]; then
+            echo "✅ Ping successful - Status: $HTTP_STATUS"
+          else
+            echo "❌ Ping failed - Status: $HTTP_STATUS"
+
+            # 루트 경로도 시도
+            HTTP_STATUS_ROOT=$(curl -s -o /dev/null -w "%{http_code}" https://investment-app-backend-x166.onrender.com/ || echo "000")
+
+            if [ "$HTTP_STATUS_ROOT" = "200" ]; then
+              echo "✅ Root path ping successful - Status: $HTTP_STATUS_ROOT"
+            else
+              echo "❌ Both endpoints failed - API: $HTTP_STATUS, Root: $HTTP_STATUS_ROOT"
+            fi
+
+            # 실패해도 workflow는 성공으로 처리 (일시적 오류 허용)
+            exit 0
+          fi
+
+      - name: Skip Ping (Sleep Hours)
+        if: steps.time-check.outputs.should_ping == 'false'
+        run: |
+          echo "😴 현재 비활성 시간대 (KST 04:00~10:00) - Ping 스킵"
+          echo "다음 활성 시간: 오전 10:00 KST"

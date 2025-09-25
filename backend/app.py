@@ -3,6 +3,7 @@ from flask_cors import CORS
 import os
 import functools
 from dotenv import load_dotenv
+from datetime import datetime
 from crawlers.investing_crawler import get_ism_manufacturing_pmi, parse_history_table, fetch_html
 from crawlers.ism_non_manufacturing import get_ism_non_manufacturing_pmi
 from crawlers.sp_global_composite import get_sp_global_composite_pmi
@@ -127,7 +128,39 @@ except Exception as e:
 
 @app.route('/')
 def health_check():
-    return jsonify({"status": "healthy", "service": "investment-app-backend"})
+    """GitHub Actions용 헬스체크 엔드포인트 (루트 경로)"""
+    try:
+        # DB 연결 확인
+        db_status = "connected" if db_service else "disconnected"
+
+        # 간단한 DB 쿼리로 실제 연결 테스트
+        if db_service:
+            try:
+                with db_service.get_connection() as conn:
+                    with conn.cursor() as cur:
+                        cur.execute("SELECT 1")
+                        cur.fetchone()
+                db_status = "healthy"
+            except Exception as db_error:
+                db_status = f"error: {str(db_error)}"
+
+        return jsonify({
+            "status": "healthy",
+            "timestamp": datetime.now().isoformat(),
+            "database": db_status,
+            "service": "investment-app-backend"
+        })
+    except Exception as e:
+        return jsonify({
+            "status": "unhealthy",
+            "error": str(e),
+            "timestamp": datetime.now().isoformat()
+        }), 500
+
+@app.route('/api/health', methods=['GET'])
+def api_health_check():
+    """GitHub Actions용 헬스체크 엔드포인트 (/api/health)"""
+    return health_check()
 
 @app.route('/api/economic-indicators')
 def get_economic_indicators():
@@ -1721,6 +1754,263 @@ def create_daily_summary():
     except Exception as e:
         print(f"Error creating daily summary: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
+
+# ========== 가계부/지출관리 API 엔드포인트 ==========
+
+@app.route('/api/expenses', methods=['POST'])
+def add_expense():
+    """거래내역 추가 API (포트폴리오 add_asset 패턴과 동일)"""
+    try:
+        # JWT 토큰에서 사용자 확인
+        auth_header = request.headers.get('Authorization')
+        if not auth_header:
+            return jsonify({"status": "error", "message": "인증이 필요합니다."}), 401
+
+        try:
+            token = auth_header.split(' ')[1]
+            user_data = db_service.verify_jwt_token(token)
+            if not user_data:
+                return jsonify({"status": "error", "message": "유효하지 않은 토큰입니다."}), 401
+            user_id = user_data['user_id']
+        except:
+            return jsonify({"status": "error", "message": "토큰 검증에 실패했습니다."}), 401
+
+        expense_data = request.get_json()
+
+        # 필수 필드 검증
+        required_fields = ['transaction_type', 'amount', 'category', 'subcategory', 'transaction_date']
+        for field in required_fields:
+            if field not in expense_data or not expense_data[field]:
+                return jsonify({
+                    "status": "error",
+                    "message": f"필수 필드가 누락되었습니다: {field}"
+                }), 400
+
+        # 거래내역 저장
+        result = db_service.add_expense(user_id, expense_data)
+
+        if result["status"] == "success":
+            return jsonify(result), 201
+        else:
+            return jsonify(result), 500
+
+    except Exception as e:
+        print(f"Error in add_expense: {e}")
+        return jsonify({
+            "status": "error",
+            "message": f"거래내역 추가 중 오류가 발생했습니다: {str(e)}"
+        }), 500
+
+@app.route('/api/expenses', methods=['GET'])
+def get_expenses():
+    """거래내역 조회 API (필터링 지원)"""
+    try:
+        # 쿼리 파라미터에서 user_id 가져오기 (포트폴리오 패턴과 동일)
+        user_id = request.args.get('user_id')
+
+        if user_id:
+            user_id = int(user_id)
+        else:
+            # user_id가 없으면 기본값 사용 (포트폴리오와 동일한 패턴)
+            user_id = 1
+
+        # 쿼리 파라미터에서 필터링 옵션 추출
+        filters = {}
+        if request.args.get('start_date'):
+            filters['start_date'] = request.args.get('start_date')
+        if request.args.get('end_date'):
+            filters['end_date'] = request.args.get('end_date')
+        if request.args.get('category'):
+            filters['category'] = request.args.get('category')
+        if request.args.get('transaction_type'):
+            filters['transaction_type'] = request.args.get('transaction_type')
+
+        result = db_service.get_all_expenses(user_id, filters)
+        return jsonify(result)
+
+    except Exception as e:
+        print(f"Error in get_expenses: {e}")
+        return jsonify({
+            "status": "error",
+            "message": f"거래내역 조회 중 오류가 발생했습니다: {str(e)}"
+        }), 500
+
+@app.route('/api/expenses/<int:expense_id>', methods=['PUT'])
+def update_expense(expense_id):
+    """거래내역 수정 API"""
+    try:
+        # JWT 토큰에서 사용자 확인
+        auth_header = request.headers.get('Authorization')
+        if not auth_header:
+            return jsonify({"status": "error", "message": "인증이 필요합니다."}), 401
+
+        try:
+            token = auth_header.split(' ')[1]
+            user_data = db_service.verify_jwt_token(token)
+            if not user_data:
+                return jsonify({"status": "error", "message": "유효하지 않은 토큰입니다."}), 401
+            user_id = user_data['user_id']
+        except:
+            return jsonify({"status": "error", "message": "토큰 검증에 실패했습니다."}), 401
+
+        expense_data = request.get_json()
+        result = db_service.update_expense(expense_id, expense_data, user_id)
+
+        if result["status"] == "success":
+            return jsonify(result)
+        else:
+            return jsonify(result), 400
+
+    except Exception as e:
+        print(f"Error in update_expense: {e}")
+        return jsonify({
+            "status": "error",
+            "message": f"거래내역 수정 중 오류가 발생했습니다: {str(e)}"
+        }), 500
+
+@app.route('/api/expenses/<int:expense_id>', methods=['DELETE'])
+def delete_expense(expense_id):
+    """거래내역 삭제 API"""
+    try:
+        # JWT 토큰에서 사용자 확인
+        auth_header = request.headers.get('Authorization')
+        if not auth_header:
+            return jsonify({"status": "error", "message": "인증이 필요합니다."}), 401
+
+        try:
+            token = auth_header.split(' ')[1]
+            user_data = db_service.verify_jwt_token(token)
+            if not user_data:
+                return jsonify({"status": "error", "message": "유효하지 않은 토큰입니다."}), 401
+            user_id = user_data['user_id']
+        except:
+            return jsonify({"status": "error", "message": "토큰 검증에 실패했습니다."}), 401
+
+        result = db_service.delete_expense(expense_id, user_id)
+
+        if result["status"] == "success":
+            return jsonify(result)
+        else:
+            return jsonify(result), 400
+
+    except Exception as e:
+        print(f"Error in delete_expense: {e}")
+        return jsonify({
+            "status": "error",
+            "message": f"거래내역 삭제 중 오류가 발생했습니다: {str(e)}"
+        }), 500
+
+@app.route('/api/budgets', methods=['POST'])
+def set_budget():
+    """예산 설정 API"""
+    try:
+        # JWT 토큰에서 사용자 확인
+        auth_header = request.headers.get('Authorization')
+        if not auth_header:
+            return jsonify({"status": "error", "message": "인증이 필요합니다."}), 401
+
+        try:
+            token = auth_header.split(' ')[1]
+            user_data = db_service.verify_jwt_token(token)
+            if not user_data:
+                return jsonify({"status": "error", "message": "유효하지 않은 토큰입니다."}), 401
+            user_id = user_data['user_id']
+        except:
+            return jsonify({"status": "error", "message": "토큰 검증에 실패했습니다."}), 401
+
+        budget_data = request.get_json()
+
+        # 필수 필드 검증
+        required_fields = ['category', 'monthly_budget', 'year', 'month']
+        for field in required_fields:
+            if field not in budget_data:
+                return jsonify({
+                    "status": "error",
+                    "message": f"필수 필드가 누락되었습니다: {field}"
+                }), 400
+
+        result = db_service.set_budget(user_id, budget_data)
+
+        if result["status"] == "success":
+            return jsonify(result), 201
+        else:
+            return jsonify(result), 500
+
+    except Exception as e:
+        print(f"Error in set_budget: {e}")
+        return jsonify({
+            "status": "error",
+            "message": f"예산 설정 중 오류가 발생했습니다: {str(e)}"
+        }), 500
+
+@app.route('/api/budgets', methods=['GET'])
+def get_budgets():
+    """예산 조회 API"""
+    try:
+        # JWT 토큰에서 사용자 확인
+        auth_header = request.headers.get('Authorization')
+        if not auth_header:
+            return jsonify({"status": "error", "message": "인증이 필요합니다."}), 401
+
+        try:
+            token = auth_header.split(' ')[1]
+            user_data = db_service.verify_jwt_token(token)
+            if not user_data:
+                return jsonify({"status": "error", "message": "유효하지 않은 토큰입니다."}), 401
+            user_id = user_data['user_id']
+        except:
+            return jsonify({"status": "error", "message": "토큰 검증에 실패했습니다."}), 401
+
+        year = request.args.get('year', type=int)
+        month = request.args.get('month', type=int)
+
+        result = db_service.get_budgets(user_id, year, month)
+        return jsonify(result)
+
+    except Exception as e:
+        print(f"Error in get_budgets: {e}")
+        return jsonify({
+            "status": "error",
+            "message": f"예산 조회 중 오류가 발생했습니다: {str(e)}"
+        }), 500
+
+@app.route('/api/budgets/progress', methods=['GET'])
+def get_budget_progress():
+    """예산 진행률 조회 API"""
+    try:
+        # JWT 토큰에서 사용자 확인
+        auth_header = request.headers.get('Authorization')
+        if not auth_header:
+            return jsonify({"status": "error", "message": "인증이 필요합니다."}), 401
+
+        try:
+            token = auth_header.split(' ')[1]
+            user_data = db_service.verify_jwt_token(token)
+            if not user_data:
+                return jsonify({"status": "error", "message": "유효하지 않은 토큰입니다."}), 401
+            user_id = user_data['user_id']
+        except:
+            return jsonify({"status": "error", "message": "토큰 검증에 실패했습니다."}), 401
+
+        year = request.args.get('year', type=int)
+        month = request.args.get('month', type=int)
+
+        if not year or not month:
+            return jsonify({
+                "status": "error",
+                "message": "year와 month 파라미터가 필요합니다."
+            }), 400
+
+        result = db_service.get_budget_progress(user_id, year, month)
+        return jsonify(result)
+
+    except Exception as e:
+        print(f"Error in get_budget_progress: {e}")
+        return jsonify({
+            "status": "error",
+            "message": f"예산 진행률 조회 중 오류가 발생했습니다: {str(e)}"
+        }), 500
+
 
 @app.route('/api/debug/cleanup-users', methods=['POST'])
 def cleanup_all_users():
