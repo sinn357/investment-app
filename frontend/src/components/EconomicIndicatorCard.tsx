@@ -48,6 +48,15 @@ export default function EconomicIndicatorCard({ indicator }: EconomicIndicatorCa
     if (name.includes('Retail Sales YoY')) return 'retail-sales-yoy';
     if (name.includes('Retail Sales')) return 'retail-sales';
     if (name.includes('GDP')) return 'gdp';
+
+    // 고용지표
+    if (name.includes('실업률')) return 'unemployment-rate';
+    if (name.includes('비농업 고용')) return 'nonfarm-payrolls';
+    if (name.includes('신규 실업급여 신청')) return 'initial-jobless-claims';
+    if (name.includes('평균시간당임금 (YoY)')) return 'average-hourly-earnings-1777';
+    if (name.includes('평균시간당임금')) return 'average-hourly-earnings';
+    if (name.includes('경제활동참가율')) return 'participation-rate';
+
     return 'unknown';
   };
 
@@ -352,8 +361,19 @@ export default function EconomicIndicatorCard({ indicator }: EconomicIndicatorCa
 
   const getSurpriseColor = (surprise: number | null) => {
     if (surprise === null) return 'text-gray-500';
-    if (surprise > 0) return 'text-green-600'; // Positive surprise = actual better than forecast = GREEN
-    if (surprise < 0) return 'text-red-600';   // Negative surprise = actual worse than forecast = RED
+
+    const indicatorId = getIndicatorId(indicator.name);
+
+    // 실업률과 신규 실업급여 신청은 낮을수록 좋음 (역방향 지표)
+    if (indicatorId === 'unemployment-rate' || indicatorId === 'initial-jobless-claims') {
+      if (surprise > 0) return 'text-red-600';   // 실제가 예상보다 높음 = 나쁜 소식 = RED
+      if (surprise < 0) return 'text-green-600'; // 실제가 예상보다 낮음 = 좋은 소식 = GREEN
+    } else {
+      // 나머지 지표들은 높을수록 좋음 (정방향 지표)
+      if (surprise > 0) return 'text-green-600'; // 실제가 예상보다 높음 = 좋은 소식 = GREEN
+      if (surprise < 0) return 'text-red-600';   // 실제가 예상보다 낮음 = 나쁜 소식 = RED
+    }
+
     return 'text-gray-500';
   };
 
