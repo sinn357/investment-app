@@ -329,8 +329,8 @@ export default function ExpenseManagementDashboard() {
         bValue = b.category;
         break;
       default:
-        aValue = new Date(a.transaction_date);
-        bValue = new Date(b.transaction_date);
+        aValue = new Date(a.transaction_date).getTime();
+        bValue = new Date(b.transaction_date).getTime();
     }
 
     if (sortOrder === 'asc') {
