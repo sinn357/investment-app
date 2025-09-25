@@ -9,7 +9,8 @@ export default function Navigation() {
   const navItems = [
     { href: '/', label: '홈', icon: 'home' },
     { href: '/indicators', label: '경제지표', icon: 'chart' },
-    { href: '/portfolio', label: '포트폴리오', icon: 'portfolio' }
+    { href: '/portfolio', label: '포트폴리오', icon: 'portfolio' },
+    { href: '/expenses', label: '가계부', icon: 'expenses' }
   ];
 
   const getIcon = (iconType: string) => {
@@ -30,6 +31,12 @@ export default function Navigation() {
         return (
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+          </svg>
+        );
+      case 'expenses':
+        return (
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
           </svg>
         );
       default:
