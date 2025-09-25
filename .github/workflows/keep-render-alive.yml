@@ -1,51 +1,45 @@
-name: Keep Render Service Alive
+  name: Keep Render Service Alive
 
-on:
-  schedule:
-    - cron: '*/25 * * * *'
-  workflow_dispatch:
+  on:
+    schedule:
+      - cron: '*/25 * * * *'
+    workflow_dispatch:
 
-jobs:
-  keep-alive:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check KST Time
-        id: time-check
-        run: |
-          CURRENT_HOUR_KST=$(TZ=Asia/Seoul date '+%H')
-          echo "KST Hour: $CURRENT_HOUR_KST"
-
-          if [[ $CURRENT_HOUR_KST -ge 10 || $CURRENT_HOUR_KST -lt 4 ]]; then
-            echo "should_ping=true" >> $GITHUB_OUTPUT
-          else
-            echo "should_ping=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Ping Render Service
-        if: steps.time-check.outputs.should_ping == 'true'
-        run: |
-          echo "🚀 Pinging Render service at $(TZ=Asia/Seoul date)"
-
-          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://investment-app-backend-x166.onrender.com/api/health || echo "000")
-
-          if [ "$HTTP_STATUS" = "200" ]; then
-            echo "✅ Ping successful - Status: $HTTP_STATUS"
-          else
-            echo "❌ Ping failed - Status: $HTTP_STATUS"
-
-            HTTP_STATUS_ROOT=$(curl -s -o /dev/null -w "%{http_code}" https://investment-app-backend-x166.onrender.com/ || echo "000")
-
-            if [ "$HTTP_STATUS_ROOT" = "200" ]; then
-              echo "✅ Root path ping successful - Status: $HTTP_STATUS_ROOT"
+  jobs:
+    keep-alive:
+      runs-on: ubuntu-latest
+      steps:
+        - name: Check KST Time
+          id: time-check
+          run: |
+            CURRENT_HOUR_KST=$(TZ=Asia/Seoul date '+%H')
+            echo "KST Hour: $CURRENT_HOUR_KST"
+            if [[ $CURRENT_HOUR_KST -ge 10 || $CURRENT_HOUR_KST -lt 4 ]]; then
+              echo "should_ping=true" >> $GITHUB_OUTPUT
             else
-              echo "❌ Both endpoints failed - API: $HTTP_STATUS, Root: $HTTP_STATUS_ROOT"
+              echo "should_ping=false" >> $GITHUB_OUTPUT
             fi
 
-            exit 0
-          fi
+        - name: Ping Render Service
+          if: steps.time-check.outputs.should_ping == 'true'
+          run: |
+            echo "Pinging Render service at $(TZ=Asia/Seoul date)"
+            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://investment-app-backend-x166.onrender.com/api/health || echo "000")
+            if [ "$HTTP_STATUS" = "200" ]; then
+              echo "Ping successful - Status: $HTTP_STATUS"
+            else
+              echo "Ping failed - Status: $HTTP_STATUS"
+              HTTP_STATUS_ROOT=$(curl -s -o /dev/null -w "%{http_code}" https://investment-app-backend-x166.onrender.com/ || echo "000")
+              if [ "$HTTP_STATUS_ROOT" = "200" ]; then
+                echo "Root path ping successful - Status: $HTTP_STATUS_ROOT"
+              else
+                echo "Both endpoints failed - API: $HTTP_STATUS, Root: $HTTP_STATUS_ROOT"
+              fi
+              exit 0
+            fi
 
-      - name: Skip Ping (Sleep Hours)
-        if: steps.time-check.outputs.should_ping == 'false'
-        run: |
-          echo "😴 현재 비활성 시간대 (KST 04:00~10:00) - Ping 스킵"
-          echo "다음 활성 시간: 오전 10:00 KST"
+        - name: Skip Ping (Sleep Hours)
+          if: steps.time-check.outputs.should_ping == 'false'
+          run: |
+            echo "Currently in sleep hours (KST 04:00-10:00) - Ping skipped"
+            echo "Next active time: 10:00 AM KST"
