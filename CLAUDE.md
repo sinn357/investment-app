@@ -8,8 +8,8 @@
 - **Project:** Investment App - Economic Indicators Dashboard
 - **Repo Root:** /Users/woocheolshin/Documents/Vibecoding_1/investment-app
 - **Owner:** Partner
-- **Last Updated:** 2025-09-24 14:40 KST
-- **Session Goal (Today):** ✅ 포트폴리오 데이터 표시 정확성 개선 완료 (원금/현재가치 구분 + 차트 데이터 일치성 + 목표 추적 정확성)
+- **Last Updated:** 2025-09-25 16:30 KST
+- **Session Goal (Today):** ✅ Render Keep-Alive 시스템 완전 구현 완료 (GitHub Actions 25분 주기 자동 ping + 시간대 최적화 + 가계부 API 인증 일관성 해결)
 
 ---
 
@@ -122,6 +122,8 @@ investment-app/
 - **세션 완료**: 고용지표 6개 지표 완전 구현 시스템이 완료되었습니다.
 
 ### Recent Done
+- **T-074:** Render Keep-Alive 시스템 완전 구현 ✅ (2025-09-25) - GitHub Actions 기반 25분 주기 자동 ping + KST 시간대 최적화 (10:00-04:00 활성) + 백엔드 헬스체크 엔드포인트 + 폴백 로직으로 견고한 오류 처리 + 월 60분 사용으로 비용 효율적
+- **T-073:** 가계부 시스템 API 인증 일관성 해결 ✅ (2025-09-25) - 포트폴리오 패턴과 동일하게 JWT 대신 user_id 쿼리 파라미터 사용 + 거래내역 로딩 오류 완전 해결 + ExpenseManagementDashboard 정상 작동
 - **T-072:** 고용지표 시스템 TypeScript 오류 수정 완료 ✅ (2025-09-24) - safeParseNumber 함수 타입 안전성 강화 + @typescript-eslint/no-explicit-any 규칙 준수 + Vercel 빌드 성공
 - **T-071:** 고용지표 JavaScript 런타임 오류 수정 ✅ (2025-09-24) - d.replace is not a function 오류 해결 + 숫자/문자열 혼합 데이터 안전 파싱 + 6개 지표 카드 표시 완료
 - **T-070:** Render 배포 오류 수정 완료 ✅ (2025-09-24) - ModuleNotFoundError crawlers.common 해결 + 크롤러 import 경로 수정 (.common → .investing_crawler) + 백엔드 정상 배포
@@ -692,6 +694,33 @@ investment-app/
   - **오류 해결**: Render 배포 오류 (크롤러 import) + JavaScript 런타임 오류 (타입 불일치) + TypeScript ESLint 오류 (any 타입) 모두 해결
   - **완전한 시스템**: 실업률, 비농업고용, 신규실업급여신청, 평균시간당임금, 평균시간당임금YoY, 경제활동참가율 모든 지표 정상 작동
   - **확장성**: 향후 금리지표, 무역지표, 물가지표, 정책지표 탭 추가 시 동일한 패턴 적용 가능
+
+### ADR-037: Render Keep-Alive 시스템 아키텍처 설계
+- Date: 2025-09-25
+- Context: Render 무료 플랜의 30분 자동 슬립 모드로 인한 사용자 경험 저하 문제 해결 필요
+- Options: 외부 cron 서비스 vs GitHub Actions vs 별도 서버 운영 vs Render 유료 전환
+- Decision: GitHub Actions 기반 스마트 Keep-Alive 시스템 구축
+- Consequences:
+  - **비용 효율성**: GitHub Actions 무료 한도 내에서 월 60분만 사용 (2,000분 중 3% 사용)
+  - **시간대 최적화**: KST 10:00-04:00 활성 시간대만 ping으로 불필요한 야간 실행 제거
+  - **견고한 오류 처리**: /api/health 실패 시 루트 경로(/) 폴백 + 일시적 오류 허용
+  - **완전 자동화**: 25분 주기 자동 실행으로 슬립 모드 원천 차단 (5분 안전 여유)
+  - **모니터링 용이성**: GitHub Actions 로그로 ping 성공/실패 실시간 추적 가능
+  - **확장성**: workflow_dispatch로 수동 실행 지원 + 향후 알림 시스템 연동 가능
+  - **백엔드 헬스체크**: /api/health 엔드포인트로 DB 상태 포함한 완전한 서비스 상태 확인
+
+### ADR-038: 가계부 시스템 API 인증 일관성 표준화
+- Date: 2025-09-25
+- Context: 가계부(ExpenseManagementDashboard) 시스템과 기존 포트폴리오 시스템 간 인증 방식 불일치 문제
+- Options: 가계부를 JWT 토큰으로 통일 vs 포트폴리오를 JWT로 변경 vs 가계부를 user_id 패턴으로 변경
+- Decision: 가계부 API를 포트폴리오와 동일한 user_id 쿼리 파라미터 패턴으로 통일
+- Consequences:
+  - **일관성 확보**: 모든 API 엔드포인트가 동일한 인증 패턴 사용으로 혼란 제거
+  - **개발 효율성**: 프론트엔드에서 인증 토큰 관리 없이 간단한 user_id만으로 API 호출 가능
+  - **즉시 해결**: "거래내역을 불러오는데 실패했습니다" 오류 완전 해결
+  - **사용자 경험**: 별도 로그인 없이 바로 가계부 기능 사용 가능
+  - **기술 부채 감소**: JWT 토큰과 user_id 혼재 상황 해결로 코드 복잡성 감소
+  - **확장성**: 향후 새로운 기능 추가 시 통일된 인증 패턴 적용으로 일관성 유지
 
 ---
 

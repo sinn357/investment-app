@@ -189,11 +189,45 @@ class PostgresDatabaseService:
                     -- 기존 assets 데이터에 기본 user_id 설정 (NULL인 경우에만)
                     UPDATE assets SET user_id = 1 WHERE user_id IS NULL;
 
+                    -- 가계부/지출관리 테이블 생성
+                    CREATE TABLE IF NOT EXISTS expenses (
+                        id SERIAL PRIMARY KEY,
+                        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+                        transaction_type VARCHAR(10) NOT NULL CHECK (transaction_type IN ('수입', '지출')),
+                        amount NUMERIC NOT NULL CHECK (amount > 0),
+                        category VARCHAR(50) NOT NULL,
+                        subcategory VARCHAR(50) NOT NULL,
+                        description TEXT,
+                        payment_method VARCHAR(30) DEFAULT '현금',
+                        transaction_date DATE NOT NULL,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    );
+
+                    CREATE TABLE IF NOT EXISTS budgets (
+                        id SERIAL PRIMARY KEY,
+                        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+                        category VARCHAR(50) NOT NULL,
+                        subcategory VARCHAR(50),
+                        monthly_budget NUMERIC NOT NULL CHECK (monthly_budget >= 0),
+                        year INTEGER NOT NULL,
+                        month INTEGER NOT NULL,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        UNIQUE(user_id, category, subcategory, year, month)
+                    );
+
                     -- 인덱스 생성
                     CREATE INDEX IF NOT EXISTS idx_latest_releases_indicator_id ON latest_releases(indicator_id);
                     CREATE INDEX IF NOT EXISTS idx_next_releases_indicator_id ON next_releases(indicator_id);
                     CREATE INDEX IF NOT EXISTS idx_history_data_indicator_id ON history_data(indicator_id);
                     CREATE INDEX IF NOT EXISTS idx_crawl_info_indicator_id ON crawl_info(indicator_id);
+
+                    -- 가계부 테이블 인덱스 (성능 최적화)
+                    CREATE INDEX IF NOT EXISTS idx_expenses_user_date ON expenses(user_id, transaction_date DESC);
+                    CREATE INDEX IF NOT EXISTS idx_expenses_user_category ON expenses(user_id, category, subcategory);
+                    CREATE INDEX IF NOT EXISTS idx_expenses_date_type ON expenses(transaction_date, transaction_type);
+                    CREATE INDEX IF NOT EXISTS idx_budgets_user_period ON budgets(user_id, year, month);
                     """
 
                     print("Executing PostgreSQL schema initialization...")
@@ -1483,3 +1517,425 @@ class PostgresDatabaseService:
         except Exception as e:
             print(f"Error creating daily summary: {e}")
             return {"status": "error", "message": f"Failed to create summary: {str(e)}"}
+
+    # ======== 가계부/지출관리 시스템 메서드들 ========
+
+    def add_expense(self, user_id: int, expense_data: Dict[str, Any]) -> Dict[str, Any]:
+        """거래내역 추가 (포트폴리오 save_asset 패턴과 동일)"""
+        try:
+            with self.get_connection() as conn:
+                with conn.cursor() as cur:
+                    sql = """
+                    INSERT INTO expenses
+                    (user_id, transaction_type, amount, category, subcategory, description, payment_method, transaction_date)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                    RETURNING id
+                    """
+
+                    cur.execute(sql, (
+                        user_id,
+                        expense_data['transaction_type'],
+                        expense_data['amount'],
+                        expense_data['category'],
+                        expense_data['subcategory'],
+                        expense_data.get('description', ''),
+                        expense_data.get('payment_method', '현금'),
+                        expense_data['transaction_date']
+                    ))
+
+                    result = cur.fetchone()
+                    expense_id = result['id']
+                    conn.commit()
+
+                    print(f"Expense {expense_id} added successfully")
+                    return {
+                        "status": "success",
+                        "message": "거래내역이 성공적으로 저장되었습니다.",
+                        "expense_id": expense_id
+                    }
+
+        except Exception as e:
+            print(f"PostgreSQL add_expense error: {e}")
+            return {
+                "status": "error",
+                "message": f"거래내역 저장 중 오류가 발생했습니다: {str(e)}"
+            }
+
+    def get_all_expenses(self, user_id: int, filters: Dict[str, Any] = None) -> Dict[str, Any]:
+        """모든 거래내역 조회 (포트폴리오 get_all_assets 패턴과 동일)"""
+        try:
+            with self.get_connection() as conn:
+                with conn.cursor() as cur:
+                    # 기본 쿼리
+                    base_sql = """
+                    SELECT id, transaction_type, amount, category, subcategory,
+                           description, payment_method, transaction_date,
+                           created_at, updated_at
+                    FROM expenses
+                    WHERE user_id = %s
+                    """
+
+                    params = [user_id]
+
+                    # 필터링 조건 추가
+                    if filters:
+                        if filters.get('start_date'):
+                            base_sql += " AND transaction_date >= %s"
+                            params.append(filters['start_date'])
+                        if filters.get('end_date'):
+                            base_sql += " AND transaction_date <= %s"
+                            params.append(filters['end_date'])
+                        if filters.get('category'):
+                            base_sql += " AND category = %s"
+                            params.append(filters['category'])
+                        if filters.get('transaction_type'):
+                            base_sql += " AND transaction_type = %s"
+                            params.append(filters['transaction_type'])
+
+                    base_sql += " ORDER BY transaction_date DESC, id DESC"
+
+                    cur.execute(base_sql, params)
+                    expenses = [dict(row) for row in cur.fetchall()]
+
+                    # 요약 통계 계산
+                    summary_sql = """
+                    SELECT
+                        SUM(CASE WHEN transaction_type = '수입' THEN amount ELSE 0 END) as total_income,
+                        SUM(CASE WHEN transaction_type = '지출' THEN amount ELSE 0 END) as total_expense,
+                        COUNT(*) as total_transactions
+                    FROM expenses
+                    WHERE user_id = %s
+                    """
+
+                    summary_params = [user_id]
+
+                    # 필터 조건을 요약에도 적용
+                    if filters:
+                        if filters.get('start_date'):
+                            summary_sql += " AND transaction_date >= %s"
+                            summary_params.append(filters['start_date'])
+                        if filters.get('end_date'):
+                            summary_sql += " AND transaction_date <= %s"
+                            summary_params.append(filters['end_date'])
+
+                    cur.execute(summary_sql, summary_params)
+                    summary_row = cur.fetchone()
+
+                    total_income = float(summary_row['total_income'] or 0)
+                    total_expense = float(summary_row['total_expense'] or 0)
+                    net_amount = total_income - total_expense
+
+                    # 카테고리별 집계
+                    category_sql = """
+                    SELECT
+                        category,
+                        subcategory,
+                        transaction_type,
+                        SUM(amount) as total_amount,
+                        COUNT(*) as transaction_count
+                    FROM expenses
+                    WHERE user_id = %s
+                    """
+
+                    category_params = [user_id]
+                    if filters:
+                        if filters.get('start_date'):
+                            category_sql += " AND transaction_date >= %s"
+                            category_params.append(filters['start_date'])
+                        if filters.get('end_date'):
+                            category_sql += " AND transaction_date <= %s"
+                            category_params.append(filters['end_date'])
+
+                    category_sql += " GROUP BY category, subcategory, transaction_type ORDER BY total_amount DESC"
+
+                    cur.execute(category_sql, category_params)
+                    categories = [dict(row) for row in cur.fetchall()]
+
+                    return {
+                        "status": "success",
+                        "data": expenses,
+                        "summary": {
+                            "total_income": total_income,
+                            "total_expense": total_expense,
+                            "net_amount": net_amount,
+                            "total_transactions": summary_row['total_transactions'] or 0
+                        },
+                        "by_category": categories
+                    }
+
+        except Exception as e:
+            print(f"PostgreSQL get_all_expenses error: {e}")
+            return {
+                "status": "error",
+                "message": f"거래내역 조회 중 오류가 발생했습니다: {str(e)}",
+                "data": [],
+                "summary": {},
+                "by_category": []
+            }
+
+    def update_expense(self, expense_id: int, expense_data: Dict[str, Any], user_id: int = None) -> Dict[str, Any]:
+        """거래내역 수정 (포트폴리오 update_asset 패턴과 동일)"""
+        try:
+            with self.get_connection() as conn:
+                with conn.cursor() as cur:
+                    # 기존 거래내역 조회
+                    cur.execute("SELECT * FROM expenses WHERE id = %s", (expense_id,))
+                    expense = cur.fetchone()
+
+                    if not expense:
+                        return {
+                            "status": "error",
+                            "message": "해당 거래내역을 찾을 수 없습니다."
+                        }
+
+                    expense = dict(expense)
+
+                    # 수정할 필드들 구성
+                    update_fields = []
+                    values = []
+
+                    if 'transaction_type' in expense_data:
+                        update_fields.append("transaction_type = %s")
+                        values.append(expense_data['transaction_type'])
+
+                    if 'amount' in expense_data:
+                        update_fields.append("amount = %s")
+                        values.append(expense_data['amount'])
+
+                    if 'category' in expense_data:
+                        update_fields.append("category = %s")
+                        values.append(expense_data['category'])
+
+                    if 'subcategory' in expense_data:
+                        update_fields.append("subcategory = %s")
+                        values.append(expense_data['subcategory'])
+
+                    if 'description' in expense_data:
+                        update_fields.append("description = %s")
+                        values.append(expense_data['description'])
+
+                    if 'payment_method' in expense_data:
+                        update_fields.append("payment_method = %s")
+                        values.append(expense_data['payment_method'])
+
+                    if 'transaction_date' in expense_data:
+                        update_fields.append("transaction_date = %s")
+                        values.append(expense_data['transaction_date'])
+
+                    # updated_at 필드 추가
+                    update_fields.append("updated_at = CURRENT_TIMESTAMP")
+
+                    # expense_id를 values 마지막에 추가
+                    values.append(expense_id)
+
+                    # SQL 쿼리 실행 (user_id 조건 추가)
+                    if user_id:
+                        sql = f"UPDATE expenses SET {', '.join(update_fields)} WHERE id = %s AND user_id = %s"
+                        values.append(user_id)
+                    else:
+                        sql = f"UPDATE expenses SET {', '.join(update_fields)} WHERE id = %s"
+
+                    cur.execute(sql, values)
+
+                    if cur.rowcount > 0:
+                        conn.commit()
+                        return {
+                            "status": "success",
+                            "message": "거래내역이 성공적으로 수정되었습니다.",
+                            "updated_expense_id": expense_id
+                        }
+                    else:
+                        return {
+                            "status": "error",
+                            "message": "거래내역 수정에 실패했습니다."
+                        }
+
+        except Exception as e:
+            print(f"PostgreSQL update_expense error: {e}")
+            return {
+                "status": "error",
+                "message": f"거래내역 수정 중 오류가 발생했습니다: {str(e)}"
+            }
+
+    def delete_expense(self, expense_id: int, user_id: int = None) -> Dict[str, Any]:
+        """거래내역 삭제 (포트폴리오 delete_asset 패턴과 동일)"""
+        try:
+            with self.get_connection() as conn:
+                with conn.cursor() as cur:
+                    # 기존 거래내역 조회
+                    cur.execute("SELECT * FROM expenses WHERE id = %s", (expense_id,))
+                    expense = cur.fetchone()
+
+                    if not expense:
+                        return {
+                            "status": "error",
+                            "message": "해당 거래내역을 찾을 수 없습니다."
+                        }
+
+                    expense = dict(expense)
+
+                    # 삭제 쿼리 실행 (user_id 조건 추가)
+                    if user_id:
+                        cur.execute("DELETE FROM expenses WHERE id = %s AND user_id = %s", (expense_id, user_id))
+                    else:
+                        cur.execute("DELETE FROM expenses WHERE id = %s", (expense_id,))
+
+                    if cur.rowcount > 0:
+                        conn.commit()
+                        return {
+                            "status": "success",
+                            "message": f"'{expense['description'] or '거래내역'}'이 성공적으로 삭제되었습니다."
+                        }
+                    else:
+                        return {
+                            "status": "error",
+                            "message": "거래내역 삭제에 실패했습니다."
+                        }
+
+        except Exception as e:
+            print(f"PostgreSQL delete_expense error: {e}")
+            return {
+                "status": "error",
+                "message": f"거래내역 삭제 중 오류가 발생했습니다: {str(e)}"
+            }
+
+    def set_budget(self, user_id: int, budget_data: Dict[str, Any]) -> Dict[str, Any]:
+        """예산 설정 (UPSERT 방식)"""
+        try:
+            with self.get_connection() as conn:
+                with conn.cursor() as cur:
+                    sql = """
+                    INSERT INTO budgets
+                    (user_id, category, subcategory, monthly_budget, year, month)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                    ON CONFLICT (user_id, category, subcategory, year, month)
+                    DO UPDATE SET
+                        monthly_budget = EXCLUDED.monthly_budget,
+                        updated_at = CURRENT_TIMESTAMP
+                    RETURNING id
+                    """
+
+                    cur.execute(sql, (
+                        user_id,
+                        budget_data['category'],
+                        budget_data.get('subcategory', ''),
+                        budget_data['monthly_budget'],
+                        budget_data['year'],
+                        budget_data['month']
+                    ))
+
+                    result = cur.fetchone()
+                    budget_id = result['id']
+                    conn.commit()
+
+                    return {
+                        "status": "success",
+                        "message": "예산이 성공적으로 설정되었습니다.",
+                        "budget_id": budget_id
+                    }
+
+        except Exception as e:
+            print(f"PostgreSQL set_budget error: {e}")
+            return {
+                "status": "error",
+                "message": f"예산 설정 중 오류가 발생했습니다: {str(e)}"
+            }
+
+    def get_budgets(self, user_id: int, year: int = None, month: int = None) -> Dict[str, Any]:
+        """예산 조회"""
+        try:
+            with self.get_connection() as conn:
+                with conn.cursor() as cur:
+                    sql = "SELECT * FROM budgets WHERE user_id = %s"
+                    params = [user_id]
+
+                    if year:
+                        sql += " AND year = %s"
+                        params.append(year)
+
+                    if month:
+                        sql += " AND month = %s"
+                        params.append(month)
+
+                    sql += " ORDER BY category, subcategory"
+
+                    cur.execute(sql, params)
+                    budgets = [dict(row) for row in cur.fetchall()]
+
+                    return {
+                        "status": "success",
+                        "data": budgets
+                    }
+
+        except Exception as e:
+            print(f"PostgreSQL get_budgets error: {e}")
+            return {
+                "status": "error",
+                "message": f"예산 조회 중 오류가 발생했습니다: {str(e)}",
+                "data": []
+            }
+
+    def get_budget_progress(self, user_id: int, year: int, month: int) -> Dict[str, Any]:
+        """예산 진행률 조회 (예산 vs 실제 지출 비교)"""
+        try:
+            with self.get_connection() as conn:
+                with conn.cursor() as cur:
+                    # 예산과 실제 지출을 조인해서 조회
+                    sql = """
+                    SELECT
+                        b.category,
+                        b.subcategory,
+                        b.monthly_budget,
+                        COALESCE(e.actual_expense, 0) as actual_expense,
+                        ROUND(
+                            CASE
+                                WHEN b.monthly_budget > 0
+                                THEN (COALESCE(e.actual_expense, 0) / b.monthly_budget * 100)
+                                ELSE 0
+                            END, 2
+                        ) as progress_percentage,
+                        (b.monthly_budget - COALESCE(e.actual_expense, 0)) as remaining_budget
+                    FROM budgets b
+                    LEFT JOIN (
+                        SELECT
+                            category,
+                            subcategory,
+                            SUM(amount) as actual_expense
+                        FROM expenses
+                        WHERE user_id = %s
+                        AND transaction_type = '지출'
+                        AND EXTRACT(YEAR FROM transaction_date) = %s
+                        AND EXTRACT(MONTH FROM transaction_date) = %s
+                        GROUP BY category, subcategory
+                    ) e ON b.category = e.category AND b.subcategory = e.subcategory
+                    WHERE b.user_id = %s AND b.year = %s AND b.month = %s
+                    ORDER BY progress_percentage DESC
+                    """
+
+                    cur.execute(sql, (user_id, year, month, user_id, year, month))
+                    progress_data = [dict(row) for row in cur.fetchall()]
+
+                    # 전체 예산 vs 전체 지출 요약
+                    total_budget = sum(item['monthly_budget'] for item in progress_data)
+                    total_expense = sum(item['actual_expense'] for item in progress_data)
+                    total_progress = round((total_expense / total_budget * 100) if total_budget > 0 else 0, 2)
+
+                    return {
+                        "status": "success",
+                        "data": progress_data,
+                        "summary": {
+                            "total_budget": total_budget,
+                            "total_expense": total_expense,
+                            "total_remaining": total_budget - total_expense,
+                            "total_progress": total_progress
+                        }
+                    }
+
+        except Exception as e:
+            print(f"PostgreSQL get_budget_progress error: {e}")
+            return {
+                "status": "error",
+                "message": f"예산 진행률 조회 중 오류가 발생했습니다: {str(e)}",
+                "data": [],
+                "summary": {}
+            }
