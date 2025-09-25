@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface User {
   id: number;
@@ -11,9 +11,17 @@ interface User {
 interface EnhancedPortfolioFormProps {
   onAddItem: () => void;
   user: User;
+  onExpandedChange?: (expanded: boolean) => void;
 }
 
-export default function EnhancedPortfolioForm({ onAddItem, user }: EnhancedPortfolioFormProps) {
+export default function EnhancedPortfolioForm({ onAddItem, user, onExpandedChange }: EnhancedPortfolioFormProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  // 접기/펼치기 상태 변경을 상위 컴포넌트에 알림
+  useEffect(() => {
+    onExpandedChange?.(isExpanded);
+  }, [isExpanded, onExpandedChange]);
+
   const [formData, setFormData] = useState({
     assetType: '',
     subCategory: '',
@@ -351,11 +359,28 @@ export default function EnhancedPortfolioForm({ onAddItem, user }: EnhancedPortf
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-      <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
-        새 자산 추가
-      </h2>
+      {/* 접기/펼치기 헤더 */}
+      <button
+        type="button"
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="w-full flex justify-between items-center text-xl font-semibold text-gray-900 dark:text-white mb-6 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+      >
+        <span>새 자산 추가</span>
+        <svg
+          className={`w-5 h-5 transform transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      {/* 폼 내용 - 애니메이션과 함께 조건부 렌더링 */}
+      <div className={`transition-all duration-300 ease-in-out overflow-hidden ${
+        isExpanded ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'
+      }`}>
+        <form onSubmit={handleSubmit} className="space-y-6 pt-2">
         {/* 자산군 선택 */}
         <div>
           <label htmlFor="assetType" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -609,7 +634,8 @@ export default function EnhancedPortfolioForm({ onAddItem, user }: EnhancedPortf
         >
           포트폴리오에 추가
         </button>
-      </form>
+        </form>
+      </div>
     </div>
   );
 }

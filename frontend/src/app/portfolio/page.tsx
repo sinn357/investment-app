@@ -30,6 +30,7 @@ interface User {
 export default function PortfolioPage() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [user, setUser] = useState<User | null>(null);
+  const [isFormExpanded, setIsFormExpanded] = useState(false);
   const router = useRouter();
 
   // 로컬 스토리지에서 사용자 정보 로드 (토큰 포함)
@@ -76,6 +77,10 @@ export default function PortfolioPage() {
     setRefreshKey(prev => prev + 1);
   };
 
+  const handleFormExpandedChange = (expanded: boolean) => {
+    setIsFormExpanded(expanded);
+  };
+
   // 로그인하지 않은 경우 인증 폼 표시
   if (!user) {
     return <AuthForm onLogin={handleLogin} />;
@@ -120,14 +125,20 @@ export default function PortfolioPage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="space-y-8">
           {/* 상단 섹션: 입력 폼 + 우측 정보 영역 */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className={`grid grid-cols-1 gap-6 ${
+            isFormExpanded ? 'lg:grid-cols-3' : 'lg:grid-cols-4'
+          }`}>
             {/* 입력 폼 섹션 */}
-            <div className="lg:col-span-1">
-              <EnhancedPortfolioForm user={user} onAddItem={handleAssetAdded} />
+            <div className={isFormExpanded ? 'lg:col-span-1' : 'lg:col-span-1'}>
+              <EnhancedPortfolioForm
+                user={user}
+                onAddItem={handleAssetAdded}
+                onExpandedChange={handleFormExpandedChange}
+              />
             </div>
 
             {/* 우측 정보 영역 */}
-            <div className="lg:col-span-2">
+            <div className={isFormExpanded ? 'lg:col-span-2' : 'lg:col-span-3'}>
               <PortfolioDashboard key={`${refreshKey}-${user.id}`} user={user} showSideInfo={true} />
             </div>
           </div>
