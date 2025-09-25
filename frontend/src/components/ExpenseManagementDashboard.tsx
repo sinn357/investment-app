@@ -114,7 +114,7 @@ export default function ExpenseManagementDashboard() {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
   // API URL 설정
-  const API_BASE_URL = 'http://localhost:5001';
+  const API_BASE_URL = 'https://investment-app-backend-x166.onrender.com';
 
   // 인증 토큰 가져오기
   const getAuthToken = () => {
