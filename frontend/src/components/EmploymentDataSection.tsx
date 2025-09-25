@@ -188,8 +188,8 @@ export default function EmploymentDataSection({ refreshTrigger }: EmploymentData
 
     if (actualNum === null || forecastNum === null) return 'text-gray-500 dark:text-gray-400';
 
-    // 실업률, 신규 실업급여 신청, 비농업 고용은 낮을수록 좋음 (역방향)
-    if (activeTab === 'unemployment-rate' || activeTab === 'initial-jobless-claims' || activeTab === 'nonfarm-payrolls') {
+    // 실업률, 신규 실업급여 신청은 낮을수록 좋음 (역방향)
+    if (activeTab === 'unemployment-rate' || activeTab === 'initial-jobless-claims') {
       return actualNum < forecastNum
         ? 'text-green-600 dark:text-green-400'
         : 'text-red-600 dark:text-red-400';

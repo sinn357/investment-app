@@ -364,8 +364,8 @@ export default function EconomicIndicatorCard({ indicator }: EconomicIndicatorCa
 
     const indicatorId = getIndicatorId(indicator.name);
 
-    // 실업률, 신규 실업급여 신청, 비농업 고용은 낮을수록 좋음 (역방향 지표)
-    if (indicatorId === 'unemployment-rate' || indicatorId === 'initial-jobless-claims' || indicatorId === 'nonfarm-payrolls') {
+    // 실업률, 신규 실업급여 신청은 낮을수록 좋음 (역방향 지표)
+    if (indicatorId === 'unemployment-rate' || indicatorId === 'initial-jobless-claims') {
       if (surprise > 0) return 'text-red-600';   // 실제가 예상보다 높음 = 나쁜 소식 = RED
       if (surprise < 0) return 'text-green-600'; // 실제가 예상보다 낮음 = 좋은 소식 = GREEN
     } else {
