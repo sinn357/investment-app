@@ -189,7 +189,11 @@ export default function EmploymentTab() {
               actual: safeParseNumber(unemploymentData.latest_release.actual, '%'),
               forecast: safeParseNumber(unemploymentData.latest_release.forecast, '%'),
               previous: safeParseNumber(unemploymentData.latest_release.previous, '%'),
-              surprise: unemploymentData.latest_release.surprise || null
+              surprise: (() => {
+                const actualNum = safeParseNumber(unemploymentData.latest_release.actual, '%');
+                const forecastNum = safeParseNumber(unemploymentData.latest_release.forecast, '%');
+                return actualNum && forecastNum ? Math.round((actualNum - forecastNum) * 100) / 100 : null;
+              })()
             }}
           />
         )}
@@ -206,7 +210,11 @@ export default function EmploymentTab() {
               actual: safeParseNumber(nonfarmPayrollsData.latest_release.actual, 'K'),
               forecast: safeParseNumber(nonfarmPayrollsData.latest_release.forecast, 'K'),
               previous: safeParseNumber(nonfarmPayrollsData.latest_release.previous, 'K'),
-              surprise: nonfarmPayrollsData.latest_release.surprise || null
+              surprise: (() => {
+                const actualNum = safeParseNumber(nonfarmPayrollsData.latest_release.actual, 'K');
+                const forecastNum = safeParseNumber(nonfarmPayrollsData.latest_release.forecast, 'K');
+                return actualNum && forecastNum ? Math.round((actualNum - forecastNum) * 100) / 100 : null;
+              })()
             }}
           />
         )}
@@ -223,7 +231,11 @@ export default function EmploymentTab() {
               actual: safeParseNumber(initialJoblessClaimsData.latest_release.actual, 'K'),
               forecast: safeParseNumber(initialJoblessClaimsData.latest_release.forecast, 'K'),
               previous: safeParseNumber(initialJoblessClaimsData.latest_release.previous, 'K'),
-              surprise: initialJoblessClaimsData.latest_release.surprise || null
+              surprise: (() => {
+                const actualNum = safeParseNumber(initialJoblessClaimsData.latest_release.actual, 'K');
+                const forecastNum = safeParseNumber(initialJoblessClaimsData.latest_release.forecast, 'K');
+                return actualNum && forecastNum ? Math.round((actualNum - forecastNum) * 100) / 100 : null;
+              })()
             }}
           />
         )}
@@ -257,7 +269,11 @@ export default function EmploymentTab() {
               actual: safeParseNumber(averageHourlyEarnings1777Data.latest_release.actual, '%'),
               forecast: safeParseNumber(averageHourlyEarnings1777Data.latest_release.forecast, '%'),
               previous: safeParseNumber(averageHourlyEarnings1777Data.latest_release.previous, '%'),
-              surprise: averageHourlyEarnings1777Data.latest_release.surprise || null
+              surprise: (() => {
+                const actualNum = safeParseNumber(averageHourlyEarnings1777Data.latest_release.actual, '%');
+                const forecastNum = safeParseNumber(averageHourlyEarnings1777Data.latest_release.forecast, '%');
+                return actualNum && forecastNum ? Math.round((actualNum - forecastNum) * 100) / 100 : null;
+              })()
             }}
           />
         )}
@@ -274,7 +290,11 @@ export default function EmploymentTab() {
               actual: safeParseNumber(participationRateData.latest_release.actual, '%'),
               forecast: safeParseNumber(participationRateData.latest_release.forecast, '%'),
               previous: safeParseNumber(participationRateData.latest_release.previous, '%'),
-              surprise: participationRateData.latest_release.surprise || null
+              surprise: (() => {
+                const actualNum = safeParseNumber(participationRateData.latest_release.actual, '%');
+                const forecastNum = safeParseNumber(participationRateData.latest_release.forecast, '%');
+                return actualNum && forecastNum ? Math.round((actualNum - forecastNum) * 100) / 100 : null;
+              })()
             }}
           />
         )}
