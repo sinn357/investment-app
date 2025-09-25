@@ -8,8 +8,8 @@
 - **Project:** Investment App - Economic Indicators Dashboard
 - **Repo Root:** /Users/woocheolshin/Documents/Vibecoding_1/investment-app
 - **Owner:** Partner
-- **Last Updated:** 2025-09-25 16:30 KST
-- **Session Goal (Today):** ✅ Render Keep-Alive 시스템 완전 구현 완료 (GitHub Actions 25분 주기 자동 ping + 시간대 최적화 + 가계부 API 인증 일관성 해결)
+- **Last Updated:** 2025-09-25 22:15 KST
+- **Session Goal (Today):** ✅ K 단위 데이터 처리 시스템 완전 구현 완료 (비농업고용/신규실업급여신청 K 단위 처리 + 역방향 지표 색상 로직 + 프로덕션 배포 + 시스템 안정성 검증)
 
 ---
 
@@ -122,6 +122,9 @@ investment-app/
 - **세션 완료**: 고용지표 6개 지표 완전 구현 시스템이 완료되었습니다.
 
 ### Recent Done
+- **T-077:** 고용지표 시스템 안정성 검증 및 문제 해결 ✅ (2025-09-25) - 비농업고용 404 오류 분석 후 정상 작동 확인 + API 응답 검증 + CORS 설정 확인 + 브라우저 캐시 이슈 해결 가이드 제공
+- **T-076:** 고용지표 역방향 색상 로직 완전 수정 ✅ (2025-09-25) - EconomicIndicatorCard에 고용지표 ID 매핑 추가 + getSurpriseColor 함수에 역방향 지표 처리 로직 구현 + 실업률/신규실업급여신청 올바른 색상 표시 (실제 < 예상 = 초록색)
+- **T-075:** K 단위 데이터 처리 시스템 완전 구현 ✅ (2025-09-25) - 백엔드 크롤러에서 K 단위 문자열 보존 + 프론트엔드 파싱 함수 확장 + 차트 숫자 변환 + 테이블 원본 표시 + 프로덕션 배포 완료 + 비농업고용/신규실업급여신청 "22K", "218K" 정상 표시
 - **T-074:** Render Keep-Alive 시스템 완전 구현 ✅ (2025-09-25) - GitHub Actions 기반 25분 주기 자동 ping + KST 시간대 최적화 (10:00-04:00 활성) + 백엔드 헬스체크 엔드포인트 + 폴백 로직으로 견고한 오류 처리 + 월 60분 사용으로 비용 효율적
 - **T-073:** 가계부 시스템 API 인증 일관성 해결 ✅ (2025-09-25) - 포트폴리오 패턴과 동일하게 JWT 대신 user_id 쿼리 파라미터 사용 + 거래내역 로딩 오류 완전 해결 + ExpenseManagementDashboard 정상 작동
 - **T-072:** 고용지표 시스템 TypeScript 오류 수정 완료 ✅ (2025-09-24) - safeParseNumber 함수 타입 안전성 강화 + @typescript-eslint/no-explicit-any 규칙 준수 + Vercel 빌드 성공
@@ -695,7 +698,33 @@ investment-app/
   - **완전한 시스템**: 실업률, 비농업고용, 신규실업급여신청, 평균시간당임금, 평균시간당임금YoY, 경제활동참가율 모든 지표 정상 작동
   - **확장성**: 향후 금리지표, 무역지표, 물가지표, 정책지표 탭 추가 시 동일한 패턴 적용 가능
 
-### ADR-037: Render Keep-Alive 시스템 아키텍처 설계
+### ADR-037: K 단위 데이터 처리 시스템 아키텍처
+- Date: 2025-09-25
+- Context: 비농업고용, 신규실업급여신청 등에서 K(천 단위) 표시가 필요하며, 기존 % 처리와 동일한 방식 요구
+- Options: K 단위를 숫자로 변환 vs % 처리와 동일한 문자열 보존 vs 별도 단위 필드 추가
+- Decision: % 데이터와 동일한 방식으로 K 단위 문자열 보존하되 차트에서만 숫자 변환
+- Consequences:
+  - **백엔드 크롤러**: parse_numeric_value() 함수에 K 단위 조건 추가하여 "22K", "218K" 문자열 보존
+  - **프론트엔드 파싱**: parseChartValue(), parsePercentValue() 함수에 K 단위 처리 로직 추가
+  - **데이터 표시**: Raw Data/History Table에서 "218K" 원본 표시, 차트에서 218 숫자 변환
+  - **색상 로직**: K 값을 숫자로 파싱하여 예측 대비 실적 비교 정상 작동
+  - **일관성**: % 처리(4.2% → 4.2)와 K 처리(218K → 218) 동일한 패턴으로 확장성 확보
+  - **호환성**: 기존 숫자 데이터와 새로운 K 단위 데이터 모두 지원하는 하위 호환성 유지
+
+### ADR-038: 고용지표 역방향 색상 로직 시스템
+- Date: 2025-09-25
+- Context: 실업률, 신규실업급여신청은 "낮을수록 좋은" 역방향 지표로 기존 "높을수록 좋은" 색상 로직과 반대 처리 필요
+- Options: 모든 지표 동일 처리 vs 지표별 개별 색상 로직 vs 정방향/역방향 구분 처리
+- Decision: 지표 ID 기반으로 정방향/역방향을 구분하여 색상 로직 적용
+- Consequences:
+  - **지표 분류**: unemployment-rate, initial-jobless-claims는 역방향 지표로 분류
+  - **색상 로직**: 역방향 지표에서 실제 < 예상 = 좋은 소식 = 초록색, 실제 > 예상 = 나쁜 소식 = 빨간색
+  - **적용 범위**: EconomicIndicatorCard.getSurpriseColor() + EmploymentDataSection.getColorForValue() 일관된 처리
+  - **확장성**: 새로운 역방향 지표 추가 시 지표 ID 목록에만 추가하면 자동 적용
+  - **사용자 경험**: 신규실업급여신청 218K < 233K → 실업급여 신청 감소 → 좋은 소식 → 초록색으로 직관적 표시
+  - **데이터 정확성**: K 단위 파싱과 결합하여 "218K" vs "233K" 올바른 숫자 비교 및 색상 표시
+
+### ADR-039: Render Keep-Alive 시스템 아키텍처 설계
 - Date: 2025-09-25
 - Context: Render 무료 플랜의 30분 자동 슬립 모드로 인한 사용자 경험 저하 문제 해결 필요
 - Options: 외부 cron 서비스 vs GitHub Actions vs 별도 서버 운영 vs Render 유료 전환
