@@ -167,9 +167,17 @@ export default function EmploymentDataSection({ refreshTrigger }: EmploymentData
   const parsePercentValue = (value: string | number | null): number | null => {
     if (value === null || value === undefined) return null;
     if (typeof value === 'number') return value;
-    if (typeof value === 'string' && value.includes('%')) {
-      const numericValue = parseFloat(value.replace('%', ''));
-      return isNaN(numericValue) ? null : numericValue;
+    if (typeof value === 'string') {
+      // Handle percentage values
+      if (value.includes('%')) {
+        const numericValue = parseFloat(value.replace('%', ''));
+        return isNaN(numericValue) ? null : numericValue;
+      }
+      // Handle K (thousands) values
+      if (value.includes('K')) {
+        const numericValue = parseFloat(value.replace('K', ''));
+        return isNaN(numericValue) ? null : numericValue;
+      }
     }
     return parseFloat(String(value)) || null;
   };

@@ -17,13 +17,21 @@ interface DataChartsProps {
 }
 
 export default function DataCharts({ data, indicatorName }: DataChartsProps) {
-  // Helper function to convert value (number or string with %) to number for chart
+  // Helper function to convert value (number or string with % or K) to number for chart
   const parseChartValue = (value: string | number | null): number | null => {
     if (value === null || value === undefined) return null;
     if (typeof value === 'number') return value;
-    if (typeof value === 'string' && value.includes('%')) {
-      const numericValue = parseFloat(value.replace('%', ''));
-      return isNaN(numericValue) ? null : numericValue;
+    if (typeof value === 'string') {
+      // Handle percentage values
+      if (value.includes('%')) {
+        const numericValue = parseFloat(value.replace('%', ''));
+        return isNaN(numericValue) ? null : numericValue;
+      }
+      // Handle K (thousands) values
+      if (value.includes('K')) {
+        const numericValue = parseFloat(value.replace('K', ''));
+        return isNaN(numericValue) ? null : numericValue;
+      }
     }
     return parseFloat(value) || null;
   };
@@ -152,9 +160,9 @@ export default function DataCharts({ data, indicatorName }: DataChartsProps) {
 
   const formatTooltip = (value: number, name: string, payload?: { payload?: { originalValue: string | number } }) => {
     if (name === 'actual' && payload?.payload) {
-      // 원본 값(% 포함)이 있으면 그것을 표시, 없으면 숫자값으로 표시
+      // 원본 값(%, K 포함)이 있으면 그것을 표시, 없으면 숫자값으로 표시
       const originalValue = payload.payload.originalValue;
-      if (typeof originalValue === 'string' && originalValue.includes('%')) {
+      if (typeof originalValue === 'string' && (originalValue.includes('%') || originalValue.includes('K'))) {
         return [originalValue, 'Actual'];
       }
       return [value?.toFixed(1), 'Actual'];

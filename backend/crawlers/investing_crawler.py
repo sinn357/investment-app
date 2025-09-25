@@ -82,8 +82,8 @@ def parse_numeric_value(value_str: str):
 
     value_str = value_str.strip()
 
-    # If value contains %, return as string with % symbol
-    if '%' in value_str:
+    # If value contains % or K, return as string with the symbol
+    if '%' in value_str or 'K' in value_str:
         return value_str
 
     try:
