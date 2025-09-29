@@ -36,7 +36,9 @@ export default function EnhancedPortfolioForm({ onAddItem, user, onExpandedChang
     // 부동산 전용 필드
     areaPyeong: '',
     acquisitionTax: '',
+    rentType: 'monthly', // 'monthly' | 'jeonse'
     rentalIncome: '',
+    jeonseDeposit: '',
     // 예금/적금 전용 필드
     maturityDate: '',
     interestRate: '',
@@ -109,7 +111,11 @@ export default function EnhancedPortfolioForm({ onAddItem, user, onExpandedChang
     switch (subCat) {
       // 부동산
       case 'real-estate':
-        return ['areaPyeong', 'acquisitionTax', 'rentalIncome'];
+        if (formData.rentType === 'monthly') {
+          return ['areaPyeong', 'acquisitionTax', 'rentType', 'rentalIncome'];
+        } else {
+          return ['areaPyeong', 'acquisitionTax', 'rentType', 'jeonseDeposit'];
+        }
 
       // 예금/적금
       case 'savings':
@@ -145,7 +151,9 @@ export default function EnhancedPortfolioForm({ onAddItem, user, onExpandedChang
     const configs: Record<string, { label: string; placeholder: string; step?: string; type?: string }> = {
       areaPyeong: { label: '면적(평)', placeholder: '25.5', step: '0.1' },
       acquisitionTax: { label: '취득세', placeholder: '15000000' },
-      rentalIncome: { label: '임대수익(월세)', placeholder: '2000000' },
+      rentType: { label: '임대 유형', placeholder: '', type: 'select' },
+      rentalIncome: { label: '월세 수입', placeholder: '2000000' },
+      jeonseDeposit: { label: '전세보증금', placeholder: '500000000' },
       maturityDate: { label: '만기일', placeholder: '', type: 'date' },
       interestRate: { label: '연이율(%)', placeholder: '3.5', step: '0.01' },
       earlyWithdrawalFee: { label: '중도해지수수료', placeholder: '50000' },
@@ -166,6 +174,14 @@ export default function EnhancedPortfolioForm({ onAddItem, user, onExpandedChang
     // 대분류 변경 시 소분류 초기화
     if (name === 'assetType') {
       setFormData(prev => ({ ...prev, [name]: value, subCategory: '' }));
+    } else if (name === 'rentType') {
+      // 임대 유형 변경 시 관련 필드 초기화
+      setFormData(prev => ({
+        ...prev,
+        [name]: value,
+        rentalIncome: '', // 월세 수입 초기화
+        jeonseDeposit: '' // 전세보증금 초기화
+      }));
     } else {
       setFormData(prev => {
         const newData = { ...prev, [name]: value };
@@ -578,17 +594,30 @@ export default function EnhancedPortfolioForm({ onAddItem, user, onExpandedChang
                     <label htmlFor={fieldName} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       {config.label}
                     </label>
-                    <input
-                      type={config.type || "number"}
-                      id={fieldName}
-                      name={fieldName}
-                      value={formData[fieldName as keyof typeof formData]}
-                      onChange={handleInputChange}
-                      placeholder={config.placeholder}
-                      step={config.step}
-                      min="0"
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                    />
+                    {fieldName === 'rentType' ? (
+                      <select
+                        id={fieldName}
+                        name={fieldName}
+                        value={formData[fieldName as keyof typeof formData]}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                      >
+                        <option value="monthly">월세</option>
+                        <option value="jeonse">전세</option>
+                      </select>
+                    ) : (
+                      <input
+                        type={config.type || "number"}
+                        id={fieldName}
+                        name={fieldName}
+                        value={formData[fieldName as keyof typeof formData]}
+                        onChange={handleInputChange}
+                        placeholder={config.placeholder}
+                        step={config.step}
+                        min="0"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                      />
+                    )}
                   </div>
                 );
               })}

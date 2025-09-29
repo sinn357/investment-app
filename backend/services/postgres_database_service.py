@@ -114,7 +114,9 @@ class PostgresDatabaseService:
                         -- 부동산 전용 필드
                         area_pyeong NUMERIC, -- 면적(평수)
                         acquisition_tax NUMERIC, -- 취득세
+                        rent_type VARCHAR(20) DEFAULT 'monthly', -- 임대유형 ('monthly', 'jeonse')
                         rental_income NUMERIC, -- 임대수익(월세)
+                        jeonse_deposit NUMERIC, -- 전세보증금
 
                         -- 예금/적금 전용 필드
                         maturity_date DATE, -- 만기일
@@ -243,6 +245,26 @@ class PostgresDatabaseService:
                     """)
                     user_id_column = cur.fetchone()
                     print(f"user_id column exists in assets table: {user_id_column is not None}")
+
+                    # 부동산 월세/전세 컬럼 존재 여부 확인 및 추가
+                    cur.execute("""
+                        SELECT column_name
+                        FROM information_schema.columns
+                        WHERE table_name = 'assets' AND column_name = 'rent_type'
+                    """)
+                    rent_type_column = cur.fetchone()
+
+                    if rent_type_column is None:
+                        print("Adding rent_type and jeonse_deposit columns to assets table...")
+                        cur.execute("""
+                            ALTER TABLE assets
+                            ADD COLUMN rent_type VARCHAR(20) DEFAULT 'monthly',
+                            ADD COLUMN jeonse_deposit NUMERIC
+                        """)
+                        conn.commit()
+                        print("Successfully added rent_type and jeonse_deposit columns")
+                    else:
+                        print("rent_type column already exists")
         except Exception as e:
             print(f"Database initialization failed: {e}")
             raise e
@@ -515,11 +537,11 @@ class PostgresDatabaseService:
                         INSERT INTO assets (
                             user_id, asset_type, sub_category, name, amount, quantity, avg_price,
                             eval_amount, principal, profit_loss, profit_rate, date, note,
-                            area_pyeong, acquisition_tax, rental_income, maturity_date, interest_rate,
-                            early_withdrawal_fee, current_yield, annual_yield, minimum_balance,
-                            withdrawal_fee, dividend_rate, nav, management_fee
+                            area_pyeong, acquisition_tax, rent_type, rental_income, jeonse_deposit,
+                            maturity_date, interest_rate, early_withdrawal_fee, current_yield,
+                            annual_yield, minimum_balance, withdrawal_fee, dividend_rate, nav, management_fee
                         )
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                         RETURNING id
                     """, (
                         asset_data.get('user_id'),
@@ -538,7 +560,9 @@ class PostgresDatabaseService:
                         # 부동산 필드
                         asset_data.get('area_pyeong'),
                         asset_data.get('acquisition_tax'),
+                        asset_data.get('rent_type', 'monthly'),
                         asset_data.get('rental_income'),
+                        asset_data.get('jeonse_deposit'),
                         # 예금/적금 필드
                         asset_data.get('maturity_date'),
                         asset_data.get('interest_rate'),
@@ -582,7 +606,7 @@ class PostgresDatabaseService:
                     if user_id:
                         cur.execute("""
                             SELECT id, asset_type, sub_category, name, amount, quantity, avg_price, eval_amount, principal, profit_loss, profit_rate, date, note, created_at,
-                                   area_pyeong, acquisition_tax, rental_income, maturity_date, interest_rate, early_withdrawal_fee,
+                                   area_pyeong, acquisition_tax, rent_type, rental_income, jeonse_deposit, maturity_date, interest_rate, early_withdrawal_fee,
                                    current_yield, annual_yield, minimum_balance, withdrawal_fee, dividend_rate, nav, management_fee
                             FROM assets
                             WHERE user_id = %s
@@ -592,7 +616,7 @@ class PostgresDatabaseService:
                         # 하위 호환성을 위해 user_id가 없으면 모든 자산 조회 (기존 동작)
                         cur.execute("""
                             SELECT id, asset_type, sub_category, name, amount, quantity, avg_price, eval_amount, principal, profit_loss, profit_rate, date, note, created_at,
-                                   area_pyeong, acquisition_tax, rental_income, maturity_date, interest_rate, early_withdrawal_fee,
+                                   area_pyeong, acquisition_tax, rent_type, rental_income, jeonse_deposit, maturity_date, interest_rate, early_withdrawal_fee,
                                    current_yield, annual_yield, minimum_balance, withdrawal_fee, dividend_rate, nav, management_fee
                             FROM assets
                             ORDER BY created_at DESC
