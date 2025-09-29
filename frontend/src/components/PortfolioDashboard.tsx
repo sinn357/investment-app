@@ -423,7 +423,9 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
         return [
           { key: 'area_pyeong', label: '면적(평)', format: (val: number) => `${formatNumber(val)}평` },
           { key: 'acquisition_tax', label: '취득세', format: formatCurrency },
-          { key: 'rental_income', label: '임대수익(월)', format: formatCurrency }
+          { key: 'rent_type', label: '임대형태', format: (val: string) => val === 'jeonse' ? '전세' : '월세' },
+          { key: 'rental_income', label: '임대수익', format: formatCurrency },
+          { key: 'jeonse_deposit', label: '전세보증금', format: formatCurrency }
         ];
       case '예금':
       case '적금':
@@ -485,7 +487,7 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
     switch (subCat) {
       // 부동산
       case '부동산':
-        return ['area_pyeong', 'acquisition_tax', 'rental_income'];
+        return ['area_pyeong', 'acquisition_tax', 'rent_type', 'rental_income', 'jeonse_deposit'];
       // 예금/적금
       case '예금':
       case '적금':
@@ -516,7 +518,9 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
     const configs: Record<string, { label: string; placeholder: string; step?: string; type?: string }> = {
       area_pyeong: { label: '면적(평)', placeholder: '25.5', step: '0.1' },
       acquisition_tax: { label: '취득세', placeholder: '15000000' },
-      rental_income: { label: '임대수익(월세)', placeholder: '2000000' },
+      rent_type: { label: '임대형태', placeholder: '', type: 'select' },
+      rental_income: { label: '월 임대수익', placeholder: '2000000' },
+      jeonse_deposit: { label: '전세보증금', placeholder: '500000000' },
       maturity_date: { label: '만기일', placeholder: '', type: 'date' },
       interest_rate: { label: '연이율(%)', placeholder: '3.5', step: '0.01' },
       early_withdrawal_fee: { label: '중도해지수수료', placeholder: '50000' },
@@ -2045,17 +2049,30 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
                           <label htmlFor={fieldName} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                             {config.label}
                           </label>
-                          <input
-                            type={config.type || "number"}
-                            id={fieldName}
-                            name={fieldName}
-                            value={editForm[fieldName as keyof typeof editForm] || ''}
-                            onChange={(e) => setEditForm({...editForm, [fieldName]: e.target.value === '' ? null : e.target.value})}
-                            placeholder={config.placeholder}
-                            step={config.step}
-                            min="0"
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                          />
+                          {fieldName === 'rent_type' ? (
+                            <select
+                              id={fieldName}
+                              name={fieldName}
+                              value={editForm[fieldName as keyof typeof editForm] || 'monthly'}
+                              onChange={(e) => setEditForm({...editForm, [fieldName]: e.target.value} as typeof editForm)}
+                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                            >
+                              <option value="monthly">월세</option>
+                              <option value="jeonse">전세</option>
+                            </select>
+                          ) : (
+                            <input
+                              type={config.type || "number"}
+                              id={fieldName}
+                              name={fieldName}
+                              value={editForm[fieldName as keyof typeof editForm] || ''}
+                              onChange={(e) => setEditForm({...editForm, [fieldName]: e.target.value === '' ? null : e.target.value})}
+                              placeholder={config.placeholder}
+                              step={config.step}
+                              min="0"
+                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                            />
+                          )}
                         </div>
                       );
                     })}
