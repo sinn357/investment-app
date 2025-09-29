@@ -1,0 +1,279 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
+import DataCharts from './DataCharts';
+
+interface HistoryItem {
+  release_date: string;
+  time: string;
+  actual: string | number | null;
+  forecast: string | number | null;
+  previous: string | number;
+}
+
+interface TabData {
+  [key: string]: {
+    title: string;
+    data: HistoryItem[];
+    loading: boolean;
+  };
+}
+
+const BACKEND_URL = 'https://investment-app-backend-x166.onrender.com';
+
+// % 데이터를 숫자로 변환하는 헬퍼 함수
+const parsePercentValue = (value: string | number | null): number | null => {
+  if (value === null) return null;
+  if (typeof value === 'number') return value;
+  if (typeof value === 'string') {
+    // K 단위 처리
+    if (value.includes('K')) {
+      const numStr = value.replace('K', '');
+      const num = parseFloat(numStr);
+      return isNaN(num) ? null : num;
+    }
+    // % 처리
+    const numStr = value.replace('%', '');
+    const num = parseFloat(numStr);
+    return isNaN(num) ? null : num;
+  }
+  return null;
+};
+
+// 색상 결정 함수
+const getColorForValue = (actual: string | number | null, forecast: string | number | null): string => {
+  if (actual === null || forecast === null) return 'text-gray-600 dark:text-gray-400';
+
+  const actualNum = parsePercentValue(actual);
+  const forecastNum = parsePercentValue(forecast);
+
+  if (actualNum === null || forecastNum === null) return 'text-gray-600 dark:text-gray-400';
+
+  // 기본적으로 예측보다 높으면 빨간색(나쁨), 낮으면 초록색(좋음)
+  if (actualNum > forecastNum) {
+    return 'text-red-600 dark:text-red-400';
+  } else if (actualNum < forecastNum) {
+    return 'text-green-600 dark:text-green-400';
+  }
+  return 'text-gray-600 dark:text-gray-400';
+};
+
+export default function InterestRateDataSection({ refreshTrigger }: { refreshTrigger: number }) {
+  const [activeTab, setActiveTab] = useState('federal-funds-rate');
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [tabData, setTabData] = useState<TabData>({
+    'federal-funds-rate': { title: '연방기금금리', data: [], loading: true },
+    'core-cpi': { title: '핵심 CPI', data: [], loading: true },
+    'ten-year-treasury': { title: '10년 국채', data: [], loading: true },
+    'two-year-treasury': { title: '2년 국채', data: [], loading: true }
+  });
+
+  const fetchTabData = async (tabKey: string) => {
+    try {
+      setTabData(prev => ({
+        ...prev,
+        [tabKey]: { ...prev[tabKey], loading: true }
+      }));
+
+      const response = await fetch(`${BACKEND_URL}/api/history-table/${tabKey}`);
+      const result = await response.json();
+
+      if (result.status === 'success') {
+        setTabData(prev => ({
+          ...prev,
+          [tabKey]: { ...prev[tabKey], data: result.data, loading: false }
+        }));
+      } else {
+        setTabData(prev => ({
+          ...prev,
+          [tabKey]: { ...prev[tabKey], data: [], loading: false }
+        }));
+      }
+    } catch (error) {
+      console.error(`${tabKey} 히스토리 데이터 로드 실패:`, error);
+      setTabData(prev => ({
+        ...prev,
+        [tabKey]: { ...prev[tabKey], data: [], loading: false }
+      }));
+    }
+  };
+
+  const loadAllTabsData = async () => {
+    await Promise.all([
+      fetchTabData('federal-funds-rate'),
+      fetchTabData('core-cpi'),
+      fetchTabData('ten-year-treasury'),
+      fetchTabData('two-year-treasury')
+    ]);
+  };
+
+  useEffect(() => {
+    loadAllTabsData();
+  }, [refreshTrigger]);
+
+  const handleTabChange = (tabKey: string) => {
+    setActiveTab(tabKey);
+  };
+
+  const formatValue = (value: string | number | null): string => {
+    if (value === null || value === undefined) return '-';
+    if (typeof value === 'string') return value;
+    if (typeof value === 'number') return value.toString();
+    return '-';
+  };
+
+  const tabs = [
+    { key: 'federal-funds-rate', label: '연방기금금리', shortLabel: '연방금리' },
+    { key: 'core-cpi', label: '핵심 CPI', shortLabel: '핵심CPI' },
+    { key: 'ten-year-treasury', label: '10년 국채', shortLabel: '10Y국채' },
+    { key: 'two-year-treasury', label: '2년 국채', shortLabel: '2Y국채' }
+  ];
+
+  const currentTabData = tabData[activeTab];
+
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+      {/* 헤더 */}
+      <div
+        className="p-6 bg-gradient-to-r from-purple-500 to-indigo-600 text-white cursor-pointer"
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        <div className="flex justify-between items-center">
+          <div>
+            <h3 className="text-xl font-bold">금리지표 데이터</h3>
+            <p className="text-purple-100 mt-1">과거 발표 데이터와 차트 분석</p>
+          </div>
+          {isExpanded ? (
+            <ChevronUpIcon className="h-6 w-6" />
+          ) : (
+            <ChevronDownIcon className="h-6 w-6" />
+          )}
+        </div>
+      </div>
+
+      {/* 확장 가능한 콘텐츠 */}
+      {isExpanded && (
+        <div className="border-t border-gray-200 dark:border-gray-700">
+          {/* 탭 네비게이션 */}
+          <div className="border-b border-gray-200 dark:border-gray-700">
+            <nav className="flex space-x-8 px-6" aria-label="Tabs">
+              {/* 데스크톱 화면에서는 풀 라벨, 모바일에서는 축약 라벨 */}
+              <div className="hidden sm:flex space-x-8">
+                {tabs.map((tab) => (
+                  <button
+                    key={tab.key}
+                    onClick={() => handleTabChange(tab.key)}
+                    className={`${
+                      activeTab === tab.key
+                        ? 'border-purple-500 text-purple-600 dark:text-purple-400'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                    } whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm`}
+                  >
+                    {tab.label}
+                    {tabData[tab.key].loading && (
+                      <span className="ml-2 inline-block w-3 h-3 border border-current border-t-transparent rounded-full animate-spin" />
+                    )}
+                  </button>
+                ))}
+              </div>
+
+              {/* 모바일 화면 */}
+              <div className="flex sm:hidden space-x-4 overflow-x-auto">
+                {tabs.map((tab) => (
+                  <button
+                    key={tab.key}
+                    onClick={() => handleTabChange(tab.key)}
+                    className={`${
+                      activeTab === tab.key
+                        ? 'border-purple-500 text-purple-600 dark:text-purple-400'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                    } whitespace-nowrap py-2 px-1 border-b-2 font-medium text-xs flex-shrink-0`}
+                  >
+                    {tab.shortLabel}
+                    {tabData[tab.key].loading && (
+                      <span className="ml-1 inline-block w-2 h-2 border border-current border-t-transparent rounded-full animate-spin" />
+                    )}
+                  </button>
+                ))}
+              </div>
+            </nav>
+          </div>
+
+          {/* 탭 콘텐츠 */}
+          <div className="p-6">
+            {currentTabData.loading ? (
+              <div className="flex justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+              </div>
+            ) : (
+              <>
+                {/* 차트 섹션 */}
+                <div className="mb-8">
+                  <DataCharts
+                    data={currentTabData.data}
+                    title={currentTabData.title}
+                  />
+                </div>
+
+                {/* 테이블 섹션 */}
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead className="bg-gray-50 dark:bg-gray-700">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          발표일
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          시간
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          실제
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          예측
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          이전
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                      {currentTabData.data.length > 0 ? (
+                        currentTabData.data.map((item, index) => (
+                          <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                              {item.release_date}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                              {item.time}
+                            </td>
+                            <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${getColorForValue(item.actual, item.forecast)}`}>
+                              {formatValue(item.actual)}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                              {formatValue(item.forecast)}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                              {formatValue(item.previous)}
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                            데이터가 없습니다.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

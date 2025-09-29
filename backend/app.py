@@ -19,6 +19,10 @@ from crawlers.nonfarm_payrolls import get_nonfarm_payrolls
 from crawlers.initial_jobless_claims import get_initial_jobless_claims
 from crawlers.average_hourly_earnings import get_average_hourly_earnings, get_average_hourly_earnings_1777
 from crawlers.participation_rate import get_participation_rate
+from crawlers.federal_funds_rate import get_federal_funds_rate
+from crawlers.core_cpi import get_core_cpi
+from crawlers.ten_year_treasury import get_ten_year_treasury
+from crawlers.two_year_treasury import get_two_year_treasury
 from services.database_service import DatabaseService
 from services.crawler_service import CrawlerService
 import threading
@@ -2029,6 +2033,199 @@ def cleanup_all_users():
                 })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+# 금리지표 API 엔드포인트들
+@app.route('/api/rawdata/federal-funds-rate')
+def get_federal_funds_rate_rawdata():
+    """Get Federal Funds Rate raw data"""
+    try:
+        data = get_federal_funds_rate()
+
+        if "error" in data:
+            return jsonify({
+                "status": "error",
+                "message": data["error"]
+            }), 500
+
+        return jsonify({
+            "status": "success",
+            "data": data,
+            "source": "investing.com",
+            "indicator": "Federal Funds Rate"
+        })
+
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": f"Internal server error: {str(e)}"
+        }), 500
+
+@app.route('/api/history-table/federal-funds-rate')
+def get_federal_funds_rate_history():
+    try:
+        url = "https://www.investing.com/economic-calendar/federal-funds-rate-169"
+        html_content = fetch_html(url)
+        if html_content:
+            history_data = parse_history_table(html_content)
+            return jsonify({
+                "status": "success",
+                "data": history_data,
+                "source": "investing.com"
+            })
+        else:
+            return jsonify({
+                "status": "error",
+                "message": "Failed to fetch history data"
+            }), 500
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": f"Internal server error: {str(e)}"
+        }), 500
+
+@app.route('/api/rawdata/core-cpi')
+def get_core_cpi_rawdata():
+    """Get Core CPI raw data"""
+    try:
+        data = get_core_cpi()
+
+        if "error" in data:
+            return jsonify({
+                "status": "error",
+                "message": data["error"]
+            }), 500
+
+        return jsonify({
+            "status": "success",
+            "data": data,
+            "source": "investing.com",
+            "indicator": "Core CPI"
+        })
+
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": f"Internal server error: {str(e)}"
+        }), 500
+
+@app.route('/api/history-table/core-cpi')
+def get_core_cpi_history():
+    try:
+        url = "https://www.investing.com/economic-calendar/core-cpi-56"
+        html_content = fetch_html(url)
+        if html_content:
+            history_data = parse_history_table(html_content)
+            return jsonify({
+                "status": "success",
+                "data": history_data,
+                "source": "investing.com"
+            })
+        else:
+            return jsonify({
+                "status": "error",
+                "message": "Failed to fetch history data"
+            }), 500
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": f"Internal server error: {str(e)}"
+        }), 500
+
+@app.route('/api/rawdata/ten-year-treasury')
+def get_ten_year_treasury_rawdata():
+    """Get 10-Year Treasury raw data"""
+    try:
+        data = get_ten_year_treasury()
+
+        if "error" in data:
+            return jsonify({
+                "status": "error",
+                "message": data["error"]
+            }), 500
+
+        return jsonify({
+            "status": "success",
+            "data": data,
+            "source": "investing.com",
+            "indicator": "10-Year Treasury"
+        })
+
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": f"Internal server error: {str(e)}"
+        }), 500
+
+@app.route('/api/history-table/ten-year-treasury')
+def get_ten_year_treasury_history():
+    try:
+        url = "https://www.investing.com/economic-calendar/10-year-treasury-auction-90"
+        html_content = fetch_html(url)
+        if html_content:
+            history_data = parse_history_table(html_content)
+            return jsonify({
+                "status": "success",
+                "data": history_data,
+                "source": "investing.com"
+            })
+        else:
+            return jsonify({
+                "status": "error",
+                "message": "Failed to fetch history data"
+            }), 500
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": f"Internal server error: {str(e)}"
+        }), 500
+
+@app.route('/api/rawdata/two-year-treasury')
+def get_two_year_treasury_rawdata():
+    """Get 2-Year Treasury raw data"""
+    try:
+        data = get_two_year_treasury()
+
+        if "error" in data:
+            return jsonify({
+                "status": "error",
+                "message": data["error"]
+            }), 500
+
+        return jsonify({
+            "status": "success",
+            "data": data,
+            "source": "investing.com",
+            "indicator": "2-Year Treasury"
+        })
+
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": f"Internal server error: {str(e)}"
+        }), 500
+
+@app.route('/api/history-table/two-year-treasury')
+def get_two_year_treasury_history():
+    try:
+        url = "https://www.investing.com/economic-calendar/2-year-treasury-auction-91"
+        html_content = fetch_html(url)
+        if html_content:
+            history_data = parse_history_table(html_content)
+            return jsonify({
+                "status": "success",
+                "data": history_data,
+                "source": "investing.com"
+            })
+        else:
+            return jsonify({
+                "status": "error",
+                "message": "Failed to fetch history data"
+            }), 500
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": f"Internal server error: {str(e)}"
+        }), 500
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5001)
