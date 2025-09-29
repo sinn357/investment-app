@@ -8,7 +8,7 @@ def get_ten_year_treasury():
     10년 국채수익률 (10-Year Treasury Yield) 데이터를 크롤링합니다.
     investing.com에서 10년 국채수익률 데이터를 가져와 표준 형식으로 반환합니다.
     """
-    url = "https://www.investing.com/economic-calendar/10-year-treasury-auction-90"
+    url = "https://www.investing.com/economic-calendar/10-year-note-auction-239"
 
     try:
         # 기존 표준 함수들을 사용하여 크롤링

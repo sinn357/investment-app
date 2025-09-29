@@ -2174,7 +2174,7 @@ def get_ten_year_treasury_rawdata():
 @app.route('/api/history-table/ten-year-treasury')
 def get_ten_year_treasury_history():
     try:
-        url = "https://www.investing.com/economic-calendar/10-year-treasury-auction-90"
+        url = "https://www.investing.com/economic-calendar/10-year-note-auction-239"
         html_content = fetch_html(url)
         if html_content:
             history_data = parse_history_table(html_content)
