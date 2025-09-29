@@ -355,7 +355,9 @@ export default function EnhancedPortfolioForm({ onAddItem, user, onExpandedChang
       // 부동산 전용 필드
       areaPyeong: '',
       acquisitionTax: '',
+      rentType: 'monthly', // 'monthly' | 'jeonse'
       rentalIncome: '',
+      jeonseDeposit: '',
       // 예금/적금 전용 필드
       maturityDate: '',
       interestRate: '',
