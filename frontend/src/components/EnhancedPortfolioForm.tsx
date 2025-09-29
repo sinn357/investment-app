@@ -111,11 +111,7 @@ export default function EnhancedPortfolioForm({ onAddItem, user, onExpandedChang
     switch (subCat) {
       // 부동산
       case 'real-estate':
-        if (formData.rentType === 'monthly') {
-          return ['areaPyeong', 'acquisitionTax', 'rentType', 'rentalIncome'];
-        } else {
-          return ['areaPyeong', 'acquisitionTax', 'rentType', 'jeonseDeposit'];
-        }
+        return ['areaPyeong', 'acquisitionTax', 'rentType', 'rentalIncome', 'jeonseDeposit'];
 
       // 예금/적금
       case 'savings':
@@ -274,8 +270,12 @@ export default function EnhancedPortfolioForm({ onAddItem, user, onExpandedChang
           .toLowerCase()
           .replace(/^_/, '');
 
-        // 날짜 필드는 그대로, 나머지는 숫자로 변환
-        submitData[backendFieldName] = fieldName.includes('Date') ? value : Number(value);
+        // 날짜 필드와 문자열 필드는 그대로, 나머지는 숫자로 변환
+        if (fieldName.includes('Date') || fieldName === 'rentType') {
+          submitData[backendFieldName] = value;
+        } else {
+          submitData[backendFieldName] = Number(value);
+        }
       }
     });
 

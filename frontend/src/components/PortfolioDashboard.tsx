@@ -60,7 +60,9 @@ interface EditFormData {
   // 부동산 전용 필드
   area_pyeong?: string | null;
   acquisition_tax?: string | null;
+  rent_type?: string | null;
   rental_income?: string | null;
+  jeonse_deposit?: string | null;
 
   // 예금/적금 전용 필드
   maturity_date?: string | null;
@@ -299,7 +301,9 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
           // 소분류별 전용 필드
           area_pyeong: editForm.area_pyeong ? parseFloat(editForm.area_pyeong as string) : null,
           acquisition_tax: editForm.acquisition_tax ? parseFloat(editForm.acquisition_tax as string) : null,
+          rent_type: editForm.rent_type || 'monthly',
           rental_income: editForm.rental_income ? parseFloat(editForm.rental_income as string) : null,
+          jeonse_deposit: editForm.jeonse_deposit ? parseFloat(editForm.jeonse_deposit as string) : null,
           maturity_date: editForm.maturity_date || null,
           interest_rate: editForm.interest_rate ? parseFloat(editForm.interest_rate as string) : null,
           early_withdrawal_fee: editForm.early_withdrawal_fee ? parseFloat(editForm.early_withdrawal_fee as string) : null,
