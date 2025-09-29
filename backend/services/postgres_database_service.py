@@ -673,7 +673,9 @@ class PostgresDatabaseService:
                             # 소분류별 전용 필드들 추가
                             "area_pyeong": float(row['area_pyeong']) if row['area_pyeong'] else None,
                             "acquisition_tax": float(row['acquisition_tax']) if row['acquisition_tax'] else None,
+                            "rent_type": row['rent_type'],
                             "rental_income": float(row['rental_income']) if row['rental_income'] else None,
+                            "jeonse_deposit": float(row['jeonse_deposit']) if row['jeonse_deposit'] else None,
                             "maturity_date": row['maturity_date'],
                             "interest_rate": float(row['interest_rate']) if row['interest_rate'] else None,
                             "early_withdrawal_fee": float(row['early_withdrawal_fee']) if row['early_withdrawal_fee'] else None,
