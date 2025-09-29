@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
 import DataCharts from './DataCharts';
 
 interface HistoryItem {
@@ -145,9 +144,13 @@ export default function InterestRateDataSection({ refreshTrigger }: { refreshTri
             <p className="text-purple-100 mt-1">과거 발표 데이터와 차트 분석</p>
           </div>
           {isExpanded ? (
-            <ChevronUpIcon className="h-6 w-6" />
+            <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+            </svg>
           ) : (
-            <ChevronDownIcon className="h-6 w-6" />
+            <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
           )}
         </div>
       </div>
@@ -211,8 +214,13 @@ export default function InterestRateDataSection({ refreshTrigger }: { refreshTri
                 {/* 차트 섹션 */}
                 <div className="mb-8">
                   <DataCharts
-                    data={currentTabData.data}
-                    title={currentTabData.title}
+                    data={currentTabData.data.map(item => ({
+                      ...item,
+                      actual: parsePercentValue(item.actual),
+                      forecast: parsePercentValue(item.forecast),
+                      previous: typeof item.previous === 'number' ? item.previous : parsePercentValue(item.previous) || 0
+                    }))}
+                    indicatorName={currentTabData.title}
                   />
                 </div>
 
