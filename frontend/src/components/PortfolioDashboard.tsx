@@ -22,7 +22,9 @@ interface Asset {
   // 부동산 전용 필드
   area_pyeong?: number;
   acquisition_tax?: number;
+  rent_type?: string;
   rental_income?: number;
+  jeonse_deposit?: number;
 
   // 예금/적금 전용 필드
   maturity_date?: string;
