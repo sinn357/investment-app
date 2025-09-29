@@ -1758,8 +1758,21 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
                         <td key={col.key} className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300 text-right">
                           {(() => {
                             const value = asset[col.key as keyof Asset];
+
+                            // 부동산 임대형태별 조건부 렌더링
+                            if (asset.sub_category === '부동산') {
+                              // 월세인 경우 전세보증금 숨김
+                              if (col.key === 'jeonse_deposit' && asset.rent_type === 'monthly') {
+                                return '-';
+                              }
+                              // 전세인 경우 임대수익 숨김
+                              if (col.key === 'rental_income' && asset.rent_type === 'jeonse') {
+                                return '-';
+                              }
+                            }
+
                             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                            return value ? col.format(value as any) : '-';
+                            return value !== null && value !== undefined ? col.format(value as any) : '-';
                           })()}
                         </td>
                       ))}
