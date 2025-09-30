@@ -1769,6 +1769,11 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
                               if (col.key === 'rental_income' && asset.rent_type === 'jeonse') {
                                 return '-';
                               }
+                              // 전세인 경우 전세보증금이 있으면 표시
+                              if (col.key === 'jeonse_deposit' && asset.rent_type === 'jeonse' && asset.jeonse_deposit) {
+                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                return col.format(asset.jeonse_deposit as any);
+                              }
                             }
 
                             // eslint-disable-next-line @typescript-eslint/no-explicit-any
