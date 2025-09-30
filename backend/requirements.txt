@@ -6,4 +6,4 @@ pandas>=2.2.0
 python-dotenv==1.0.0
 psycopg2-binary
 bcrypt==4.1.2
-PyJWT==2.8.0
+PyJWT==2.8.0# Force rebuild 2025년  9월 30일 화요일 15시 27분 04초 KST
