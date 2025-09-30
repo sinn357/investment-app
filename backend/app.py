@@ -1112,11 +1112,11 @@ def add_asset():
 
             # 소분류별 전용 필드들
             # 부동산 필드
-            'area_pyeong': data.get('areaPyeong'),
-            'acquisition_tax': data.get('acquisitionTax'),
-            'rent_type': data.get('rentType'),
-            'rental_income': data.get('rentalIncome'),
-            'jeonse_deposit': data.get('jeonseDeposit'),
+            'area_pyeong': data.get('area_pyeong'),
+            'acquisition_tax': data.get('acquisition_tax'),
+            'rent_type': data.get('rent_type'),
+            'rental_income': data.get('rental_income'),
+            'jeonse_deposit': data.get('jeonse_deposit'),
             # 예금/적금 필드
             'maturity_date': data.get('maturity_date'),
             'interest_rate': data.get('interest_rate'),

@@ -832,9 +832,15 @@ class PostgresDatabaseService:
                     if 'acquisition_tax' in data:
                         update_fields.append("acquisition_tax = %s")
                         values.append(data['acquisition_tax'] if data['acquisition_tax'] else None)
+                    if 'rent_type' in data:
+                        update_fields.append("rent_type = %s")
+                        values.append(data['rent_type'] if data['rent_type'] else 'monthly')
                     if 'rental_income' in data:
                         update_fields.append("rental_income = %s")
                         values.append(data['rental_income'] if data['rental_income'] else None)
+                    if 'jeonse_deposit' in data:
+                        update_fields.append("jeonse_deposit = %s")
+                        values.append(data['jeonse_deposit'] if data['jeonse_deposit'] else None)
 
                     # 예금/적금 필드
                     if 'maturity_date' in data:
