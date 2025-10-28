@@ -150,7 +150,7 @@ export default function PolicyTab() {
       {/* 지표 카드들 */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
         {/* FOMC 회의록 */}
-        {fomcMinutesData && (
+        {fomcMinutesData && fomcMinutesData.latest_release && (
           <EconomicIndicatorCard
             indicator={{
               name: "FOMC 회의록",
@@ -171,7 +171,7 @@ export default function PolicyTab() {
         )}
 
         {/* 소비자 신뢰지수 */}
-        {consumerConfidenceData && (
+        {consumerConfidenceData && consumerConfidenceData.latest_release && (
           <EconomicIndicatorCard
             indicator={{
               name: "소비자 신뢰지수",
@@ -192,7 +192,7 @@ export default function PolicyTab() {
         )}
 
         {/* 기업재고 */}
-        {businessInventoriesData && (
+        {businessInventoriesData && businessInventoriesData.latest_release && (
           <EconomicIndicatorCard
             indicator={{
               name: "기업재고",
@@ -213,7 +213,7 @@ export default function PolicyTab() {
         )}
 
         {/* 선행지표 */}
-        {leadingIndicatorsData && (
+        {leadingIndicatorsData && leadingIndicatorsData.latest_release && (
           <EconomicIndicatorCard
             indicator={{
               name: "선행지표",
