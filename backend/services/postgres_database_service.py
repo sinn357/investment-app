@@ -177,6 +177,8 @@ class PostgresDatabaseService:
                     ALTER TABLE assets ADD COLUMN IF NOT EXISTS area_pyeong NUMERIC;
                     ALTER TABLE assets ADD COLUMN IF NOT EXISTS acquisition_tax NUMERIC;
                     ALTER TABLE assets ADD COLUMN IF NOT EXISTS rental_income NUMERIC;
+                    ALTER TABLE assets ADD COLUMN IF NOT EXISTS lawyer_fee NUMERIC;
+                    ALTER TABLE assets ADD COLUMN IF NOT EXISTS brokerage_fee NUMERIC;
                     ALTER TABLE assets ADD COLUMN IF NOT EXISTS maturity_date DATE;
                     ALTER TABLE assets ADD COLUMN IF NOT EXISTS interest_rate NUMERIC;
                     ALTER TABLE assets ADD COLUMN IF NOT EXISTS early_withdrawal_fee NUMERIC;
@@ -606,7 +608,7 @@ class PostgresDatabaseService:
                     if user_id:
                         cur.execute("""
                             SELECT id, asset_type, sub_category, name, amount, quantity, avg_price, eval_amount, principal, profit_loss, profit_rate, date, note, created_at,
-                                   area_pyeong, acquisition_tax, rent_type, rental_income, jeonse_deposit, maturity_date, interest_rate, early_withdrawal_fee,
+                                   area_pyeong, acquisition_tax, rent_type, rental_income, jeonse_deposit, lawyer_fee, brokerage_fee, maturity_date, interest_rate, early_withdrawal_fee,
                                    current_yield, annual_yield, minimum_balance, withdrawal_fee, dividend_rate, nav, management_fee
                             FROM assets
                             WHERE user_id = %s
@@ -616,7 +618,7 @@ class PostgresDatabaseService:
                         # 하위 호환성을 위해 user_id가 없으면 모든 자산 조회 (기존 동작)
                         cur.execute("""
                             SELECT id, asset_type, sub_category, name, amount, quantity, avg_price, eval_amount, principal, profit_loss, profit_rate, date, note, created_at,
-                                   area_pyeong, acquisition_tax, rent_type, rental_income, jeonse_deposit, maturity_date, interest_rate, early_withdrawal_fee,
+                                   area_pyeong, acquisition_tax, rent_type, rental_income, jeonse_deposit, lawyer_fee, brokerage_fee, maturity_date, interest_rate, early_withdrawal_fee,
                                    current_yield, annual_yield, minimum_balance, withdrawal_fee, dividend_rate, nav, management_fee
                             FROM assets
                             ORDER BY created_at DESC
@@ -676,6 +678,8 @@ class PostgresDatabaseService:
                             "rent_type": row['rent_type'],
                             "rental_income": float(row['rental_income']) if row['rental_income'] else None,
                             "jeonse_deposit": float(row['jeonse_deposit']) if row['jeonse_deposit'] else None,
+                            "lawyer_fee": float(row['lawyer_fee']) if row['lawyer_fee'] else None,
+                            "brokerage_fee": float(row['brokerage_fee']) if row['brokerage_fee'] else None,
                             "maturity_date": row['maturity_date'],
                             "interest_rate": float(row['interest_rate']) if row['interest_rate'] else None,
                             "early_withdrawal_fee": float(row['early_withdrawal_fee']) if row['early_withdrawal_fee'] else None,

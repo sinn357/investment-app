@@ -25,6 +25,8 @@ interface Asset {
   rent_type?: string;
   rental_income?: number;
   jeonse_deposit?: number;
+  lawyer_fee?: number;
+  brokerage_fee?: number;
 
   // 예금/적금 전용 필드
   maturity_date?: string;
@@ -63,6 +65,8 @@ interface EditFormData {
   rent_type?: string | null;
   rental_income?: string | null;
   jeonse_deposit?: string | null;
+  lawyer_fee?: string | null;
+  brokerage_fee?: string | null;
 
   // 예금/적금 전용 필드
   maturity_date?: string | null;
@@ -232,6 +236,8 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
       area_pyeong: asset.area_pyeong?.toString() || '',
       acquisition_tax: asset.acquisition_tax?.toString() || '',
       rental_income: asset.rental_income?.toString() || '',
+      lawyer_fee: asset.lawyer_fee?.toString() || '',
+      brokerage_fee: asset.brokerage_fee?.toString() || '',
       maturity_date: asset.maturity_date || '',
       interest_rate: asset.interest_rate?.toString() || '',
       early_withdrawal_fee: asset.early_withdrawal_fee?.toString() || '',
@@ -304,6 +310,8 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
           rent_type: editForm.rent_type || 'monthly',
           rental_income: editForm.rental_income ? parseFloat(editForm.rental_income as string) : null,
           jeonse_deposit: editForm.jeonse_deposit ? parseFloat(editForm.jeonse_deposit as string) : null,
+          lawyer_fee: editForm.lawyer_fee ? parseFloat(editForm.lawyer_fee as string) : null,
+          brokerage_fee: editForm.brokerage_fee ? parseFloat(editForm.brokerage_fee as string) : null,
           maturity_date: editForm.maturity_date || null,
           interest_rate: editForm.interest_rate ? parseFloat(editForm.interest_rate as string) : null,
           early_withdrawal_fee: editForm.early_withdrawal_fee ? parseFloat(editForm.early_withdrawal_fee as string) : null,
@@ -429,6 +437,8 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
         return [
           { key: 'area_pyeong', label: '면적(평)', format: (val: number) => `${formatNumber(val)}평` },
           { key: 'acquisition_tax', label: '취득세', format: formatCurrency },
+          { key: 'lawyer_fee', label: '법무사비용', format: formatCurrency },
+          { key: 'brokerage_fee', label: '중개비', format: formatCurrency },
           { key: 'rent_type', label: '임대형태', format: (val: string) => val === 'jeonse' ? '전세' : '월세' },
           { key: 'rental_income', label: '임대수익', format: formatCurrency },
           { key: 'jeonse_deposit', label: '전세보증금', format: formatCurrency }
@@ -493,7 +503,7 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
     switch (subCat) {
       // 부동산
       case '부동산':
-        return ['area_pyeong', 'acquisition_tax', 'rent_type', 'rental_income', 'jeonse_deposit'];
+        return ['area_pyeong', 'acquisition_tax', 'lawyer_fee', 'brokerage_fee', 'rent_type', 'rental_income', 'jeonse_deposit'];
       // 예금/적금
       case '예금':
       case '적금':
@@ -524,6 +534,8 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
     const configs: Record<string, { label: string; placeholder: string; step?: string; type?: string }> = {
       area_pyeong: { label: '면적(평)', placeholder: '25.5', step: '0.1' },
       acquisition_tax: { label: '취득세', placeholder: '15000000' },
+      lawyer_fee: { label: '법무사 비용', placeholder: '1500000' },
+      brokerage_fee: { label: '중개비', placeholder: '3000000' },
       rent_type: { label: '임대형태', placeholder: '', type: 'select' },
       rental_income: { label: '월 임대수익', placeholder: '2000000' },
       jeonse_deposit: { label: '전세보증금', placeholder: '500000000' },
