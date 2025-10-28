@@ -433,6 +433,7 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
     const subCat = subCategory?.toLowerCase();
 
     switch (subCat) {
+      case '부동산':
       case 'real-estate':
         return [
           { key: 'area_pyeong', label: '면적(평)', format: (val: number) => `${formatNumber(val)}평` },
@@ -443,7 +444,9 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
           { key: 'rental_income', label: '임대수익', format: formatCurrency },
           { key: 'jeonse_deposit', label: '전세보증금', format: formatCurrency }
         ];
+      case '예금':
       case 'savings':
+      case '적금':
       case 'installment-savings':
         return [
           { key: 'maturity_date', label: '만기일', format: (val: string) => new Date(val).toLocaleDateString('ko-KR') },
@@ -457,24 +460,32 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
           { key: 'minimum_balance', label: '최소유지잔고', format: formatCurrency },
           { key: 'withdrawal_fee', label: '출금수수료', format: formatCurrency }
         ];
+      case '국내주식':
       case 'domestic-stock':
+      case '해외주식':
       case 'foreign-stock':
       case 'etf':
         return [
           { key: 'dividend_rate', label: '배당율', format: (val: number) => `${val}%` }
         ];
+      case '펀드':
       case 'fund':
         return [
           { key: 'nav', label: '기준가격', format: formatCurrency },
           { key: 'management_fee', label: '운용보수', format: (val: number) => `${val}%` }
         ];
+      case '현금':
       case 'cash':
+      case '입출금통장':
       case 'checking-account':
+      case '증권예수금':
       case 'securities-deposit':
         return [
           { key: 'interest_rate', label: '연이율', format: (val: number) => `${val}%` }
         ];
+      case '암호화폐':
       case 'cryptocurrency':
+      case '원자재':
       case 'commodity':
       default:
         return [];
@@ -484,7 +495,7 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
   // 소분류별로 수량×평균가 표시 여부 결정
   const shouldShowQuantityPrice = (subCategory: string | null) => {
     const subCat = subCategory?.toLowerCase();
-    return ['domestic-stock', 'foreign-stock', 'etf', 'fund', 'cryptocurrency'].includes(subCat || '');
+    return ['국내주식', 'domestic-stock', '해외주식', 'foreign-stock', 'etf', '펀드', 'fund', '암호화폐', 'cryptocurrency'].includes(subCat || '');
   };
 
   // 날짜 컬럼 라벨 결정
@@ -501,25 +512,33 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
     const subCat = subCategory?.toLowerCase();
     switch (subCat) {
       // 부동산
+      case '부동산':
       case 'real-estate':
         return ['area_pyeong', 'acquisition_tax', 'lawyer_fee', 'brokerage_fee', 'rent_type', 'rental_income', 'jeonse_deposit'];
       // 예금/적금
+      case '예금':
       case 'savings':
+      case '적금':
       case 'installment-savings':
         return ['maturity_date', 'interest_rate', 'early_withdrawal_fee'];
       // MMF
       case 'mmf':
         return ['current_yield', 'annual_yield', 'minimum_balance', 'withdrawal_fee'];
       // 입출금통장, 증권예수금 - 연이율만
+      case '입출금통장':
       case 'checking-account':
+      case '증권예수금':
       case 'securities-deposit':
         return ['interest_rate'];
       // 주식/ETF - 배당율
+      case '국내주식':
       case 'domestic-stock':
+      case '해외주식':
       case 'foreign-stock':
       case 'etf':
         return ['dividend_rate'];
       // 펀드 - 기준가격, 운용보수
+      case '펀드':
       case 'fund':
         return ['nav', 'management_fee'];
       // 암호화폐, 원자재, 채권, 현금 등은 전용 필드 없음
