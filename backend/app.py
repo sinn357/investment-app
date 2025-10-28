@@ -1114,6 +1114,8 @@ def add_asset():
             # 부동산 필드
             'area_pyeong': data.get('area_pyeong'),
             'acquisition_tax': data.get('acquisition_tax'),
+            'lawyer_fee': data.get('lawyer_fee'),
+            'brokerage_fee': data.get('brokerage_fee'),
             'rent_type': data.get('rent_type'),
             'rental_income': data.get('rental_income'),
             'jeonse_deposit': data.get('jeonse_deposit'),
