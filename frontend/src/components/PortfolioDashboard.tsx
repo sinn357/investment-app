@@ -1880,11 +1880,15 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
 
       {/* 수정 모달 */}
       {editingAsset && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              자산 수정: {editingAsset.name}
-            </h3>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white dark:bg-gray-800 p-6 pb-4 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                자산 수정: {editingAsset.name}
+              </h3>
+            </div>
+
+            <div className="p-6 pt-4">
 
             <div className="space-y-4">
               {/* 자산군 */}
@@ -2147,21 +2151,24 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
                 />
               </div>
             </div>
+            </div>
 
-            {/* 버튼 */}
-            <div className="flex justify-end gap-3 mt-6">
-              <button
-                onClick={handleCancelEdit}
-                className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
-              >
-                취소
-              </button>
-              <button
-                onClick={handleUpdateAsset}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors"
-              >
-                수정 완료
-              </button>
+            {/* 하단 버튼 - Sticky Footer */}
+            <div className="sticky bottom-0 bg-white dark:bg-gray-800 p-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={handleCancelEdit}
+                  className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
+                >
+                  취소
+                </button>
+                <button
+                  onClick={handleUpdateAsset}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors"
+                >
+                  수정 완료
+                </button>
+              </div>
             </div>
           </div>
         </div>
