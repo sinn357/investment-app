@@ -36,6 +36,8 @@ export default function EnhancedPortfolioForm({ onAddItem, user, onExpandedChang
     // 부동산 전용 필드
     areaPyeong: '',
     acquisitionTax: '',
+    lawyerFee: '',
+    brokerageFee: '',
     rentType: 'monthly', // 'monthly' | 'jeonse'
     rentalIncome: '',
     jeonseDeposit: '',
@@ -111,7 +113,7 @@ export default function EnhancedPortfolioForm({ onAddItem, user, onExpandedChang
     switch (subCat) {
       // 부동산
       case 'real-estate':
-        return ['areaPyeong', 'acquisitionTax', 'rentType', 'rentalIncome', 'jeonseDeposit'];
+        return ['areaPyeong', 'acquisitionTax', 'lawyerFee', 'brokerageFee', 'rentType', 'rentalIncome', 'jeonseDeposit'];
 
       // 예금/적금
       case 'savings':
@@ -147,6 +149,8 @@ export default function EnhancedPortfolioForm({ onAddItem, user, onExpandedChang
     const configs: Record<string, { label: string; placeholder: string; step?: string; type?: string }> = {
       areaPyeong: { label: '면적(평)', placeholder: '25.5', step: '0.1' },
       acquisitionTax: { label: '취득세', placeholder: '15000000' },
+      lawyerFee: { label: '법무사 비용', placeholder: '1500000' },
+      brokerageFee: { label: '중개비', placeholder: '3000000' },
       rentType: { label: '임대 유형', placeholder: '', type: 'select' },
       rentalIncome: { label: '월세 수입', placeholder: '2000000' },
       jeonseDeposit: { label: '전세보증금', placeholder: '500000000' },
