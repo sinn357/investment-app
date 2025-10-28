@@ -539,11 +539,11 @@ class PostgresDatabaseService:
                         INSERT INTO assets (
                             user_id, asset_type, sub_category, name, amount, quantity, avg_price,
                             eval_amount, principal, profit_loss, profit_rate, date, note,
-                            area_pyeong, acquisition_tax, rent_type, rental_income, jeonse_deposit,
+                            area_pyeong, acquisition_tax, lawyer_fee, brokerage_fee, rent_type, rental_income, jeonse_deposit,
                             maturity_date, interest_rate, early_withdrawal_fee, current_yield,
                             annual_yield, minimum_balance, withdrawal_fee, dividend_rate, nav, management_fee
                         )
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                         RETURNING id
                     """, (
                         asset_data.get('user_id'),
@@ -562,6 +562,8 @@ class PostgresDatabaseService:
                         # 부동산 필드
                         asset_data.get('area_pyeong'),
                         asset_data.get('acquisition_tax'),
+                        asset_data.get('lawyer_fee'),
+                        asset_data.get('brokerage_fee'),
                         asset_data.get('rent_type', 'monthly'),
                         asset_data.get('rental_income'),
                         asset_data.get('jeonse_deposit'),
