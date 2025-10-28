@@ -119,12 +119,11 @@ investment-app/
 
 ## 12) Tasks (Single Source of Truth)
 ### Active (in this session)
-- **T-078:** 전세 부동산 표시 오류 해결
-  - DoD: 포트폴리오 테이블에서 rent_type='jeonse' 부동산이 "전세"로 표시되고 jeonse_deposit 금액이 정상 표시되도록 수정
-  - Files: PortfolioDashboard.tsx (테이블 렌더링 로직)
-  - Risks: 조건부 렌더링 로직에서 타입 불일치 가능성
+- 없음
 
 ### Recent Done
+- **T-079:** 부동산 법무사비용/중개비 필드 추가 시스템 완전 구현 ✅ (2025-10-29) - 백엔드 INSERT 문 lawyer_fee/brokerage_fee 추가 + 프론트엔드 한글/영문 소분류 매칭 호환성 확보 + 수정 모달 스크롤 및 sticky header/footer 구현 + 면적(평) 소수점 둘째자리 입력 지원 (step: 0.01) + 부동산 전용 필드 3개→7개 확장
+- **T-078:** 전세 부동산 표시 오류 해결 ✅ (2025-09-30) - rent_type/jeonse_deposit 필드명 불일치 수정 + update_asset 함수 로직 추가 + 조건부 렌더링 개선
 - **T-077:** Phase 1.1 부동산 월세/전세 선택 시스템 백엔드 완전 구현 ✅ (2025-09-30) - 백엔드 API에 rent_type/jeonse_deposit 필드 반환 + camelCase 변환 수정 + 프론트엔드 조건부 렌더링 로직 구현 + Vercel/Render 배포 완료 + API 테스트 성공 (ID 86: jeonse_deposit 48M, ID 88: monthly) + 프론트엔드 표시 로직 남은 이슈 확인됨
 - **T-077:** 고용지표 시스템 안정성 검증 및 문제 해결 ✅ (2025-09-25) - 비농업고용 404 오류 분석 후 정상 작동 확인 + API 응답 검증 + CORS 설정 확인 + 브라우저 캐시 이슈 해결 가이드 제공
 - **T-076:** 고용지표 역방향 색상 로직 완전 수정 ✅ (2025-09-25) - EconomicIndicatorCard에 고용지표 ID 매핑 추가 + getSurpriseColor 함수에 역방향 지표 처리 로직 구현 + 실업률/신규실업급여신청 올바른 색상 표시 (실제 < 예상 = 초록색)

@@ -63,11 +63,11 @@ const shouldShowQuantityPrice = (subCategory: string | null) => {
 
 ### ✅ Phase 3: 소분류별 전용 필드 완전 구현 (100% 완료)
 
-#### 1. 추가 폼 전용 필드 (기존 완료)
+#### 1. 추가 폼 전용 필드 (완료 + 2025-10-29 업데이트)
 ```typescript
 const getSubCategorySpecificFields = () => {
   switch (subCat) {
-    case 'real-estate': return ['areaPyeong', 'acquisitionTax', 'rentalIncome'];
+    case 'real-estate': return ['areaPyeong', 'acquisitionTax', 'lawyerFee', 'brokerageFee', 'rentType', 'rentalIncome', 'jeonseDeposit'];
     case 'savings': case 'installment-savings':
       return ['maturityDate', 'interestRate', 'earlyWithdrawalFee'];
     // ... 전체 13개 전용 필드 매핑
@@ -75,37 +75,45 @@ const getSubCategorySpecificFields = () => {
 };
 ```
 
-#### 2. 수정 모달 전용 필드 (신규 구현)
+#### 2. 수정 모달 전용 필드 (완료 + 2025-10-29 업데이트)
 ```typescript
 const getEditSubCategorySpecificFields = (subCategory: string | null) => {
   switch (subCat) {
-    case '부동산': return ['area_pyeong', 'acquisition_tax', 'rental_income'];
-    case '예금': case '적금': return ['maturity_date', 'interest_rate', 'early_withdrawal_fee'];
+    case '부동산':
+    case 'real-estate': return ['area_pyeong', 'acquisition_tax', 'lawyer_fee', 'brokerage_fee', 'rent_type', 'rental_income', 'jeonse_deposit'];
+    case '예금': case 'savings': case '적금': case 'installment-savings':
+      return ['maturity_date', 'interest_rate', 'early_withdrawal_fee'];
     case 'mmf': return ['current_yield', 'annual_yield', 'minimum_balance', 'withdrawal_fee'];
-    case '입출금통장': case '증권예수금': return ['interest_rate'];
-    case '국내주식': case '해외주식': case 'etf': return ['dividend_rate'];
-    case '펀드': return ['nav', 'management_fee'];
+    case '입출금통장': case 'checking-account': case '증권예수금': case 'securities-deposit':
+      return ['interest_rate'];
+    case '국내주식': case 'domestic-stock': case '해외주식': case 'foreign-stock': case 'etf':
+      return ['dividend_rate'];
+    case '펀드': case 'fund': return ['nav', 'management_fee'];
   }
 };
 ```
 
-#### 3. 필드 설정 정보
+#### 3. 필드 설정 정보 (2025-10-29 업데이트)
 ```typescript
 const getEditFieldConfig = (fieldName: string) => {
   const configs = {
-    area_pyeong: { label: '면적(평)', placeholder: '25.5', step: '0.1' },
+    area_pyeong: { label: '면적(평)', placeholder: '25.55', step: '0.01' }, // 소수점 둘째자리까지
     acquisition_tax: { label: '취득세', placeholder: '15000000' },
-    rental_income: { label: '임대수익(월세)', placeholder: '2000000' },
+    lawyer_fee: { label: '법무사 비용', placeholder: '1500000' }, // 신규 추가
+    brokerage_fee: { label: '중개비', placeholder: '3000000' }, // 신규 추가
+    rent_type: { label: '임대형태', placeholder: '', type: 'select' },
+    rental_income: { label: '월세 수입', placeholder: '2000000' },
+    jeonse_deposit: { label: '전세보증금', placeholder: '500000000' },
     maturity_date: { label: '만기일', placeholder: '', type: 'date' },
     interest_rate: { label: '연이율(%)', placeholder: '3.5', step: '0.01' },
-    // ... 전체 13개 필드 설정
+    // ... 전체 15개 필드 설정 (13개 → 15개)
   };
 };
 ```
 
 ### ✅ Phase 4: 데이터 처리 완전 구현 (100% 완료)
 
-#### 1. 편집 시 기존값 로드
+#### 1. 편집 시 기존값 로드 (2025-10-29 업데이트)
 ```typescript
 const handleEditAsset = (asset: Asset) => {
   setEditForm({
@@ -115,12 +123,17 @@ const handleEditAsset = (asset: Asset) => {
     // 소분류별 전용 필드
     area_pyeong: asset.area_pyeong?.toString() || '',
     acquisition_tax: asset.acquisition_tax?.toString() || '',
-    // ... 전체 13개 전용 필드
+    lawyer_fee: asset.lawyer_fee?.toString() || '', // 신규 추가
+    brokerage_fee: asset.brokerage_fee?.toString() || '', // 신규 추가
+    rent_type: asset.rent_type || 'monthly',
+    rental_income: asset.rental_income?.toString() || '',
+    jeonse_deposit: asset.jeonse_deposit?.toString() || '',
+    // ... 전체 15개 전용 필드
   });
 };
 ```
 
-#### 2. API 전송 데이터 확장
+#### 2. API 전송 데이터 확장 (2025-10-29 업데이트)
 ```typescript
 body: JSON.stringify({
   // 기본 필드
@@ -129,7 +142,12 @@ body: JSON.stringify({
   // 소분류별 전용 필드
   area_pyeong: editForm.area_pyeong ? parseFloat(editForm.area_pyeong) : null,
   acquisition_tax: editForm.acquisition_tax ? parseFloat(editForm.acquisition_tax) : null,
-  // ... 전체 13개 전용 필드
+  lawyer_fee: editForm.lawyer_fee ? parseFloat(editForm.lawyer_fee) : null, // 신규 추가
+  brokerage_fee: editForm.brokerage_fee ? parseFloat(editForm.brokerage_fee) : null, // 신규 추가
+  rent_type: editForm.rent_type,
+  rental_income: editForm.rental_income ? parseFloat(editForm.rental_income) : null,
+  jeonse_deposit: editForm.jeonse_deposit ? parseFloat(editForm.jeonse_deposit) : null,
+  // ... 전체 15개 전용 필드
 })
 ```
 
@@ -143,10 +161,14 @@ body: JSON.stringify({
 
 ## 3) 구현된 소분류별 전용 필드 목록
 
-### 🏠 부동산
-- 면적(평): area_pyeong
+### 🏠 부동산 (2025-10-29 업데이트: 3개 → 7개)
+- 면적(평): area_pyeong (소수점 둘째자리까지)
 - 취득세: acquisition_tax
-- 임대수익(월세): rental_income
+- 법무사 비용: lawyer_fee ⭐ 신규 추가
+- 중개비: brokerage_fee ⭐ 신규 추가
+- 임대형태: rent_type (전세/월세)
+- 월세 수입: rental_income
+- 전세보증금: jeonse_deposit
 
 ### 💰 예금/적금
 - 만기일: maturity_date (date 타입)
@@ -250,3 +272,95 @@ body: JSON.stringify({
 - 🔄 **실시간 반영**: 새로운 자산 추가 시 즉시 자산흐름에 반영
 
 이제 실제 등록일 기반 자산흐름 구현을 진행할 준비가 완료되었습니다.
+
+---
+
+## 9) 2025-10-29 추가 업데이트
+
+### ✅ Phase 6: 부동산 법무사비용/중개비 필드 추가 (100% 완료)
+
+#### 사용자 요청
+- 부동산 자산에 법무사 비용과 중개비 입력 필드 추가
+- 새 자산 추가 폼 및 수정 모달 모두에서 지원
+
+#### 구현 내용
+
+**1. 백엔드 확장**
+```python
+# backend/services/postgres_database_service.py - save_asset
+INSERT INTO assets (
+    ..., area_pyeong, acquisition_tax, lawyer_fee, brokerage_fee, rent_type, ...
+)
+VALUES (%s, %s, %s, %s, %s, %s, %s, ...)
+```
+
+**2. 프론트엔드 추가**
+```typescript
+// EnhancedPortfolioForm.tsx
+case 'real-estate':
+  return ['areaPyeong', 'acquisitionTax', 'lawyerFee', 'brokerageFee', 'rentType', 'rentalIncome', 'jeonseDeposit'];
+
+// PortfolioDashboard.tsx - getSubCategoryColumns
+case '부동산':
+case 'real-estate':
+  return [
+    { key: 'area_pyeong', label: '면적(평)', format: (val: number) => `${formatNumber(val)}평` },
+    { key: 'acquisition_tax', label: '취득세', format: formatCurrency },
+    { key: 'lawyer_fee', label: '법무사비용', format: formatCurrency },
+    { key: 'brokerage_fee', label: '중개비', format: formatCurrency },
+    // ...
+  ];
+```
+
+**3. 데이터베이스 스키마**
+```sql
+ALTER TABLE assets ADD COLUMN IF NOT EXISTS lawyer_fee NUMERIC;
+ALTER TABLE assets ADD COLUMN IF NOT EXISTS brokerage_fee NUMERIC;
+```
+
+#### 해결한 문제들
+
+**문제 1: 백엔드 INSERT 문 누락**
+- 증상: 필드 입력되지만 DB 저장 안됨
+- 원인: save_asset INSERT 쿼리에 lawyer_fee, brokerage_fee 컬럼 누락
+- 해결: INSERT 문에 2개 필드 추가
+
+**문제 2: 프론트엔드 소분류 매칭 오류**
+- 증상: 부동산 자산의 모든 전용 필드가 사라짐
+- 원인: getSubCategoryColumns에서 한글('부동산')만 매칭, 실제 DB는 영문('real-estate') 또는 한글 혼재
+- 해결: 한글과 영문 모두 case에 추가하여 호환성 확보
+
+**문제 3: 수정 모달 스크롤 문제**
+- 증상: 모달 높이가 화면 초과하여 하단 버튼 접근 불가
+- 해결:
+  - 모달에 `max-h-[90vh]` + `overflow-y-auto` 추가
+  - 헤더를 `sticky top-0`로 고정
+  - 버튼 영역을 `sticky bottom-0`으로 고정
+  - 중간 콘텐츠만 스크롤
+
+**문제 4: 면적(평) 소수점 입력 제한**
+- 증상: 새 자산 추가에서 소수점 둘째자리 입력 시 "유효값을 입력하라" 오류
+- 원인: `step: '0.1'`로 설정되어 소수점 첫째자리까지만 허용
+- 해결: `step: '0.01'`로 변경, placeholder도 `'25.55'`로 업데이트
+
+#### 배포 상태
+- ✅ Frontend: Vercel 배포 완료
+- ✅ Backend: Render 배포 완료
+- ✅ Database: PostgreSQL 스키마 업데이트 완료
+
+#### 커밋 이력
+```
+b60e4ca - fix: 면적(평) 입력 소수점 둘째자리까지 허용
+0a4830d - fix: 수정 모달 스크롤 및 버튼 가시성 개선
+7555fd5 - hotfix: 한글/영문 소분류 모두 지원하도록 수정
+4534f72 - fix: 소분류 영문 코드 매칭 오류 수정으로 lawyer_fee, brokerage_fee 표시 문제 해결
+88f8e6b - fix: save_asset INSERT 문에 lawyer_fee, brokerage_fee 컬럼 추가
+```
+
+#### 최종 결과
+- ✅ 부동산 전용 필드: 3개 → 7개로 확장
+- ✅ 새 자산 추가 시 법무사비용, 중개비 입력 가능
+- ✅ 수정 모달에서도 완전 지원
+- ✅ 포트폴리오 테이블에 정상 표시
+- ✅ 면적(평) 소수점 둘째자리까지 입력 가능
+- ✅ 수정 모달 스크롤 및 사용성 개선
