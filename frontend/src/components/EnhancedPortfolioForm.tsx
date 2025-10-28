@@ -147,7 +147,7 @@ export default function EnhancedPortfolioForm({ onAddItem, user, onExpandedChang
   // 필드 라벨과 설명 매핑
   const getFieldConfig = (fieldName: string) => {
     const configs: Record<string, { label: string; placeholder: string; step?: string; type?: string }> = {
-      areaPyeong: { label: '면적(평)', placeholder: '25.5', step: '0.1' },
+      areaPyeong: { label: '면적(평)', placeholder: '25.55', step: '0.01' },
       acquisitionTax: { label: '취득세', placeholder: '15000000' },
       lawyerFee: { label: '법무사 비용', placeholder: '1500000' },
       brokerageFee: { label: '중개비', placeholder: '3000000' },
