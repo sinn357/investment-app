@@ -8,7 +8,7 @@ def get_leading_indicators():
     선행지표 (Leading Indicators) 데이터를 크롤링합니다.
     investing.com에서 선행지표 데이터를 가져와 표준 형식으로 반환합니다.
     """
-    url = "https://www.investing.com/economic-calendar/cb-leading-index-50"
+    url = "https://www.investing.com/economic-calendar/us-leading-index-1968"
 
     try:
         # 기존 표준 함수들을 사용하여 크롤링

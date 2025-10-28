@@ -2525,7 +2525,7 @@ def get_leading_indicators_rawdata():
 @app.route('/api/history-table/leading-indicators')
 def get_leading_indicators_history():
     try:
-        url = "https://www.investing.com/economic-calendar/cb-leading-index-50"
+        url = "https://www.investing.com/economic-calendar/us-leading-index-1968"
         html_content = fetch_html(url)
         if html_content:
             history_data = parse_history_table(html_content)
@@ -2534,6 +2534,130 @@ def get_leading_indicators_history():
             return jsonify({"status": "error", "message": "Failed to fetch history data"}), 500
     except Exception as e:
         return jsonify({"status": "error", "message": f"Internal server error: {str(e)}"}), 500
+
+# ==================== 코인 거래 분석 API ====================
+from services.upbit_service import UpbitService
+from services.crypto_analyzer import CryptoTradeAnalyzer
+
+# 업비트 API 키 (환경변수에서 로드)
+UPBIT_ACCESS_KEY = os.getenv('UPBIT_ACCESS_KEY', 'Z3mZzfH1Bn61JqqenCyL77tnsvB7jSHQESAAbwN5')
+UPBIT_SECRET_KEY = os.getenv('UPBIT_SECRET_KEY', 'G1INpa7Ac1ewldqkAJLbG9hyUu2CEZIWFADJ9jc9')
+
+@app.route('/api/crypto/analysis')
+def get_crypto_analysis():
+    """코인 거래 분석 결과 조회"""
+    try:
+        max_orders = request.args.get('max_orders', 300, type=int)
+
+        # 업비트 API 호출
+        upbit = UpbitService(UPBIT_ACCESS_KEY, UPBIT_SECRET_KEY)
+        orders = upbit.get_all_trades(max_orders=max_orders)
+
+        # 코인별 분류
+        coin_trades = {}
+        for order in orders:
+            market = order.get('market', '')
+            if not market.startswith('KRW-'):
+                continue
+
+            coin = market.replace('KRW-', '')
+            side = order.get('side')
+
+            if coin not in coin_trades:
+                coin_trades[coin] = {'buys': [], 'sells': []}
+
+            dt = datetime.fromisoformat(order.get('created_at').replace('+09:00', ''))
+
+            # 거래 금액 계산
+            executed_funds = order.get('executed_funds')
+            if executed_funds is None:
+                volume = float(order.get('executed_volume', 0))
+                avg_price = float(order.get('avg_price', 0)) if order.get('avg_price') else 0
+                executed_funds = volume * avg_price
+            else:
+                executed_funds = float(executed_funds)
+
+            paid_fee = float(order.get('paid_fee', 0))
+
+            if side == 'bid':
+                total_amount = executed_funds + paid_fee
+            else:
+                total_amount = executed_funds - paid_fee
+
+            trade_info = {
+                'date': dt.strftime('%m.%d %H:%M'),
+                'volume': float(order.get('executed_volume', 0)),
+                'price': float(order.get('avg_price', 0)) if order.get('avg_price') else 0,
+                'total': total_amount,
+                'fee': paid_fee,
+                'side': side
+            }
+
+            if side == 'bid':
+                coin_trades[coin]['buys'].append(trade_info)
+            elif side == 'ask':
+                coin_trades[coin]['sells'].append(trade_info)
+
+        # 각 코인별 분석
+        analyzer = CryptoTradeAnalyzer()
+        results = {}
+
+        for coin, trades in coin_trades.items():
+            if not trades['buys'] or not trades['sells']:
+                continue
+
+            # 같은 시간대 거래 합산
+            buys_grouped = analyzer.group_by_same_time(trades['buys'])
+            sells_grouped = analyzer.group_by_same_time(trades['sells'])
+
+            # 라운드 매칭
+            rounds = analyzer.match_buy_sell_rounds(buys_grouped, sells_grouped)
+
+            results[coin] = {
+                'rounds': rounds,
+                'total_profit': sum(r['profit'] for r in rounds),
+                'total_rounds': len(rounds)
+            }
+
+        return jsonify({
+            "status": "success",
+            "data": results,
+            "total_orders": len(orders)
+        })
+
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/api/crypto/balance')
+def get_crypto_balance():
+    """현재 코인 잔고 조회"""
+    try:
+        upbit = UpbitService(UPBIT_ACCESS_KEY, UPBIT_SECRET_KEY)
+        accounts = upbit.get_accounts()
+
+        # KRW를 제외한 코인만 필터링
+        balances = []
+        for acc in accounts:
+            currency = acc.get('currency')
+            if currency == 'KRW':
+                continue
+
+            balance = float(acc.get('balance', 0))
+            if balance > 0:
+                balances.append({
+                    'currency': currency,
+                    'balance': balance,
+                    'avg_buy_price': float(acc.get('avg_buy_price', 0)),
+                    'locked': float(acc.get('locked', 0))
+                })
+
+        return jsonify({
+            "status": "success",
+            "data": balances
+        })
+
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5001)
