@@ -265,6 +265,10 @@ export default function EnhancedPortfolioForm({ onAddItem, user, onExpandedChang
 
     // 소분류별 전용 필드들 추가
     const specificFields = getSubCategorySpecificFields();
+    console.log('[DEBUG] specificFields:', specificFields);
+    console.log('[DEBUG] formData.lawyerFee:', formData.lawyerFee);
+    console.log('[DEBUG] formData.brokerageFee:', formData.brokerageFee);
+
     specificFields.forEach(fieldName => {
       const value = formData[fieldName as keyof typeof formData];
       if (value) {
@@ -274,6 +278,8 @@ export default function EnhancedPortfolioForm({ onAddItem, user, onExpandedChang
           .toLowerCase()
           .replace(/^_/, '');
 
+        console.log(`[DEBUG] Converting ${fieldName} -> ${backendFieldName}, value:`, value);
+
         // 날짜 필드와 문자열 필드는 그대로, 나머지는 숫자로 변환
         if (fieldName.includes('Date') || fieldName === 'rentType') {
           submitData[backendFieldName] = value;
@@ -282,6 +288,8 @@ export default function EnhancedPortfolioForm({ onAddItem, user, onExpandedChang
         }
       }
     });
+
+    console.log('[DEBUG] Final submitData:', submitData);
 
     if (showQuantityAndPrice) {
       submitData.quantity = Number(formData.quantity);
