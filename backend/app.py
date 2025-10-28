@@ -1097,11 +1097,6 @@ def add_asset():
                     "message": f"Missing required field: {field}"
                 }), 400
 
-        # 디버깅: 받은 데이터 확인
-        print(f"[DEBUG] Received data keys: {data.keys()}")
-        print(f"[DEBUG] lawyer_fee from data: {data.get('lawyer_fee')}")
-        print(f"[DEBUG] brokerage_fee from data: {data.get('brokerage_fee')}")
-
         # 데이터 변환 (프론트엔드 형식 → DB 형식)
         asset_data = {
             'user_id': data.get('user_id'),
