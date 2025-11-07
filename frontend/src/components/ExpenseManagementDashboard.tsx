@@ -696,7 +696,7 @@ export default function ExpenseManagementDashboard() {
                       expense.transaction_type === '이체' ? 'text-blue-600' :
                       'text-red-600'
                     }`}>
-                      {expense.transaction_type === '수입' ? '+' : expense.transaction_type === '이체' ? '' : '-'}{expense.amount.toLocaleString()}{expense.currency === 'USD' ? '$' : '원'}
+                      {expense.transaction_type === '수입' ? '+' : expense.transaction_type === '이체' ? '' : '-'}{Number(expense.amount).toLocaleString()}{expense.currency === 'USD' ? '$' : '원'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       <div>
