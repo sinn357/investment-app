@@ -1571,8 +1571,8 @@ class PostgresDatabaseService:
                 with conn.cursor() as cur:
                     sql = """
                     INSERT INTO expenses
-                    (user_id, transaction_type, amount, category, subcategory, description, payment_method, transaction_date)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                    (user_id, transaction_type, amount, currency, category, subcategory, description, payment_method, transaction_date)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
                     RETURNING id
                     """
 
@@ -1580,6 +1580,7 @@ class PostgresDatabaseService:
                         user_id,
                         expense_data['transaction_type'],
                         expense_data['amount'],
+                        expense_data.get('currency', 'KRW'),
                         expense_data['category'],
                         expense_data['subcategory'],
                         expense_data.get('description', ''),
@@ -1612,7 +1613,7 @@ class PostgresDatabaseService:
                 with conn.cursor() as cur:
                     # 기본 쿼리
                     base_sql = """
-                    SELECT id, transaction_type, amount, category, subcategory,
+                    SELECT id, transaction_type, amount, currency, category, subcategory,
                            description, payment_method, transaction_date,
                            created_at, updated_at
                     FROM expenses
@@ -1745,6 +1746,10 @@ class PostgresDatabaseService:
                     if 'amount' in expense_data:
                         update_fields.append("amount = %s")
                         values.append(expense_data['amount'])
+
+                    if 'currency' in expense_data:
+                        update_fields.append("currency = %s")
+                        values.append(expense_data['currency'])
 
                     if 'category' in expense_data:
                         update_fields.append("category = %s")
