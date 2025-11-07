@@ -7,6 +7,7 @@ interface Expense {
   id: number;
   transaction_type: '수입' | '지출' | '이체';
   amount: number;
+  currency: string;
   category: string;
   subcategory: string;
   description: string;
@@ -19,6 +20,7 @@ interface Expense {
 interface ExpenseFormData {
   transaction_type?: '수입' | '지출' | '이체';
   amount?: string;
+  currency?: string;
   category?: string;
   subcategory?: string;
   description?: string;
@@ -104,6 +106,7 @@ export default function ExpenseManagementDashboard() {
   const [formData, setFormData] = useState<ExpenseFormData>({
     transaction_type: '지출',
     amount: '',
+    currency: 'KRW',
     category: '',
     subcategory: '',
     description: '',
@@ -207,6 +210,7 @@ export default function ExpenseManagementDashboard() {
       setFormData({
         transaction_type: '지출',
         amount: '',
+        currency: 'KRW',
         category: '',
         subcategory: '',
         description: '',
@@ -255,6 +259,7 @@ export default function ExpenseManagementDashboard() {
     setEditFormData({
       transaction_type: expense.transaction_type,
       amount: expense.amount.toString(),
+      currency: expense.currency || 'KRW',
       category: expense.category,
       subcategory: expense.subcategory,
       description: expense.description,
@@ -441,15 +446,25 @@ export default function ExpenseManagementDashboard() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">금액</label>
-                <input
-                  type="number"
-                  value={formData.amount}
-                  onChange={(e) => setFormData(prev => ({ ...prev, amount: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="금액을 입력하세요"
-                  step="1"
-                  min="0"
-                />
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    value={formData.amount}
+                    onChange={(e) => setFormData(prev => ({ ...prev, amount: e.target.value }))}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="금액을 입력하세요"
+                    step="1"
+                    min="0"
+                  />
+                  <select
+                    value={formData.currency}
+                    onChange={(e) => setFormData(prev => ({ ...prev, currency: e.target.value }))}
+                    className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="KRW">원</option>
+                    <option value="USD">달러</option>
+                  </select>
+                </div>
               </div>
 
               <div>
@@ -499,6 +514,7 @@ export default function ExpenseManagementDashboard() {
                   value={formData.payment_method}
                   onChange={(e) => setFormData(prev => ({ ...prev, payment_method: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  disabled={formData.transaction_type === '수입' || formData.transaction_type === '이체'}
                 >
                   {paymentMethods.map(method => (
                     <option key={method} value={method}>{method}</option>
@@ -680,7 +696,7 @@ export default function ExpenseManagementDashboard() {
                       expense.transaction_type === '이체' ? 'text-blue-600' :
                       'text-red-600'
                     }`}>
-                      {expense.transaction_type === '수입' ? '+' : expense.transaction_type === '이체' ? '' : '-'}{expense.amount.toLocaleString()}원
+                      {expense.transaction_type === '수입' ? '+' : expense.transaction_type === '이체' ? '' : '-'}{expense.amount.toLocaleString()}{expense.currency === 'USD' ? '$' : '원'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       <div>
@@ -745,14 +761,24 @@ export default function ExpenseManagementDashboard() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">금액</label>
-                  <input
-                    type="number"
-                    value={editFormData.amount}
-                    onChange={(e) => setEditFormData(prev => ({ ...prev, amount: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    step="1"
-                    min="0"
-                  />
+                  <div className="flex gap-2">
+                    <input
+                      type="number"
+                      value={editFormData.amount}
+                      onChange={(e) => setEditFormData(prev => ({ ...prev, amount: e.target.value }))}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      step="1"
+                      min="0"
+                    />
+                    <select
+                      value={editFormData.currency}
+                      onChange={(e) => setEditFormData(prev => ({ ...prev, currency: e.target.value }))}
+                      className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="KRW">원</option>
+                      <option value="USD">달러</option>
+                    </select>
+                  </div>
                 </div>
 
                 <div>
@@ -790,6 +816,7 @@ export default function ExpenseManagementDashboard() {
                     value={editFormData.payment_method}
                     onChange={(e) => setEditFormData(prev => ({ ...prev, payment_method: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    disabled={editFormData.transaction_type === '수입' || editFormData.transaction_type === '이체'}
                   >
                     {paymentMethods.map(method => (
                       <option key={method} value={method}>{method}</option>
