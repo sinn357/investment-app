@@ -5,7 +5,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, 
 
 interface Expense {
   id: number;
-  transaction_type: '수입' | '지출';
+  transaction_type: '수입' | '지출' | '이체';
   amount: number;
   category: string;
   subcategory: string;
@@ -17,7 +17,7 @@ interface Expense {
 }
 
 interface ExpenseFormData {
-  transaction_type?: '수입' | '지출';
+  transaction_type?: '수입' | '지출' | '이체';
   amount?: string;
   category?: string;
   subcategory?: string;
@@ -77,8 +77,15 @@ const expenseCategories: Record<string, string[]> = {
 const incomeCategories: Record<string, string[]> = {
   "근로소득": ["급여", "보너스", "부업"],
   "사업소득": ["사업수익", "프리랜서"],
-  "투자소득": ["배당금", "이자", "투자수익"],
+  "투자소득": ["주식", "ETF", "채권", "암호화폐", "부동산", "이자", "배당금", "기타"],
   "기타소득": ["용돈", "선물", "환급"]
+};
+
+const transferCategories: Record<string, string[]> = {
+  "계좌이체": ["계좌이체"],
+  "현금이체": ["현금이체"],
+  "환전": ["환전"],
+  "환불": ["환불"]
 };
 
 const paymentMethods = ["현금", "신용카드", "체크카드", "계좌이체", "기타"];
@@ -110,7 +117,7 @@ export default function ExpenseManagementDashboard() {
 
   // 필터 상태
   const [categoryFilter, setCategoryFilter] = useState<string>('전체');
-  const [typeFilter, setTypeFilter] = useState<'전체' | '수입' | '지출'>('전체');
+  const [typeFilter, setTypeFilter] = useState<'전체' | '수입' | '지출' | '이체'>('전체');
   const [sortBy, setSortBy] = useState<'transaction_date' | 'amount' | 'category'>('transaction_date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
@@ -122,6 +129,18 @@ export default function ExpenseManagementDashboard() {
     return {
       'Content-Type': 'application/json',
     };
+  };
+
+  // 날짜 포맷팅 함수 (2025년 11월 4일 (화) 형식)
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
+    const dayOfWeek = dayNames[date.getDay()];
+
+    return `${year}년 ${month}월 ${day}일 (${dayOfWeek})`;
   };
 
   // 거래내역 조회
@@ -408,7 +427,7 @@ export default function ExpenseManagementDashboard() {
                   value={formData.transaction_type}
                   onChange={(e) => setFormData(prev => ({
                     ...prev,
-                    transaction_type: e.target.value as '수입' | '지출',
+                    transaction_type: e.target.value as '수입' | '지출' | '이체',
                     category: '', // 유형 변경 시 카테고리 초기화
                     subcategory: ''
                   }))}
@@ -416,6 +435,7 @@ export default function ExpenseManagementDashboard() {
                 >
                   <option value="지출">지출</option>
                   <option value="수입">수입</option>
+                  <option value="이체">이체</option>
                 </select>
               </div>
 
@@ -444,7 +464,11 @@ export default function ExpenseManagementDashboard() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">대분류 선택</option>
-                  {Object.keys(formData.transaction_type === '수입' ? incomeCategories : expenseCategories).map(category => (
+                  {Object.keys(
+                    formData.transaction_type === '수입' ? incomeCategories :
+                    formData.transaction_type === '이체' ? transferCategories :
+                    expenseCategories
+                  ).map(category => (
                     <option key={category} value={category}>{category}</option>
                   ))}
                 </select>
@@ -459,7 +483,11 @@ export default function ExpenseManagementDashboard() {
                   disabled={!formData.category}
                 >
                   <option value="">소분류 선택</option>
-                  {formData.category && (formData.transaction_type === '수입' ? incomeCategories : expenseCategories)[formData.category]?.map(subcategory => (
+                  {formData.category && (
+                    formData.transaction_type === '수입' ? incomeCategories :
+                    formData.transaction_type === '이체' ? transferCategories :
+                    expenseCategories
+                  )[formData.category]?.map(subcategory => (
                     <option key={subcategory} value={subcategory}>{subcategory}</option>
                   ))}
                 </select>
@@ -573,12 +601,13 @@ export default function ExpenseManagementDashboard() {
               <label className="block text-sm font-medium text-gray-700 mb-1">거래 유형</label>
               <select
                 value={typeFilter}
-                onChange={(e) => setTypeFilter(e.target.value as '전체' | '수입' | '지출')}
+                onChange={(e) => setTypeFilter(e.target.value as '전체' | '수입' | '지출' | '이체')}
                 className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="전체">전체</option>
                 <option value="수입">수입</option>
                 <option value="지출">지출</option>
+                <option value="이체">이체</option>
               </select>
             </div>
 
@@ -633,21 +662,25 @@ export default function ExpenseManagementDashboard() {
                 {sortedExpenses.map((expense) => (
                   <tr key={expense.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {expense.transaction_date}
+                      {formatDate(expense.transaction_date)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                         expense.transaction_type === '수입'
                           ? 'bg-green-100 text-green-800'
+                          : expense.transaction_type === '이체'
+                          ? 'bg-blue-100 text-blue-800'
                           : 'bg-red-100 text-red-800'
                       }`}>
                         {expense.transaction_type}
                       </span>
                     </td>
                     <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${
-                      expense.transaction_type === '수입' ? 'text-green-600' : 'text-red-600'
+                      expense.transaction_type === '수입' ? 'text-green-600' :
+                      expense.transaction_type === '이체' ? 'text-blue-600' :
+                      'text-red-600'
                     }`}>
-                      {expense.transaction_type === '수입' ? '+' : '-'}{expense.amount.toLocaleString()}원
+                      {expense.transaction_type === '수입' ? '+' : expense.transaction_type === '이체' ? '' : '-'}{expense.amount.toLocaleString()}원
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       <div>
@@ -700,12 +733,13 @@ export default function ExpenseManagementDashboard() {
                     value={editFormData.transaction_type}
                     onChange={(e) => setEditFormData(prev => ({
                       ...prev,
-                      transaction_type: e.target.value as '수입' | '지출'
+                      transaction_type: e.target.value as '수입' | '지출' | '이체'
                     }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="지출">지출</option>
                     <option value="수입">수입</option>
+                    <option value="이체">이체</option>
                   </select>
                 </div>
 
