@@ -118,6 +118,11 @@ export default function ExpenseManagementDashboard() {
   const [editExpense, setEditExpense] = useState<Expense | null>(null);
   const [editFormData, setEditFormData] = useState<ExpenseFormData>({});
 
+  // 연도/월 필터 상태
+  const today = new Date();
+  const [selectedYear, setSelectedYear] = useState(today.getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState(today.getMonth() + 1); // 1-12
+
   // 필터 상태
   const [categoryFilter, setCategoryFilter] = useState<string>('전체');
   const [typeFilter, setTypeFilter] = useState<'전체' | '수입' | '지출' | '이체'>('전체');
@@ -150,7 +155,13 @@ export default function ExpenseManagementDashboard() {
   const fetchExpenses = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_BASE_URL}/api/expenses?user_id=1`);
+
+      // 선택한 연도/월의 시작일과 종료일 계산
+      const startDate = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-01`;
+      const lastDay = new Date(selectedYear, selectedMonth, 0).getDate();
+      const endDate = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+
+      const response = await fetch(`${API_BASE_URL}/api/expenses?user_id=1&start_date=${startDate}&end_date=${endDate}`);
 
       if (!response.ok) {
         if (response.status === 401) {
@@ -169,7 +180,7 @@ export default function ExpenseManagementDashboard() {
     } finally {
       setLoading(false);
     }
-  }, [API_BASE_URL]);
+  }, [API_BASE_URL, selectedYear, selectedMonth]);
 
   useEffect(() => {
     fetchExpenses();
@@ -302,6 +313,25 @@ export default function ExpenseManagementDashboard() {
     }
   };
 
+  // 연도/월 변경 함수들
+  const handlePrevMonth = () => {
+    if (selectedMonth === 1) {
+      setSelectedYear(prev => prev - 1);
+      setSelectedMonth(12);
+    } else {
+      setSelectedMonth(prev => prev - 1);
+    }
+  };
+
+  const handleNextMonth = () => {
+    if (selectedMonth === 12) {
+      setSelectedYear(prev => prev + 1);
+      setSelectedMonth(1);
+    } else {
+      setSelectedMonth(prev => prev + 1);
+    }
+  };
+
   // 카테고리별 데이터 준비 (차트용)
   const prepareChartData = () => {
     if (!expenseData) return { pieData: [], barData: [] };
@@ -385,6 +415,47 @@ export default function ExpenseManagementDashboard() {
           >
             {isFormVisible ? '폼 닫기' : '거래내역 추가'}
           </button>
+        </div>
+
+        {/* 연도/월 선택기 */}
+        <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
+          <div className="flex items-center justify-between">
+            <button
+              onClick={handlePrevMonth}
+              className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+            >
+              ← 이전 달
+            </button>
+
+            <div className="flex items-center gap-4">
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(Number(e.target.value))}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                {Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - 5 + i).map(year => (
+                  <option key={year} value={year}>{year}년</option>
+                ))}
+              </select>
+
+              <select
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                {Array.from({ length: 12 }, (_, i) => i + 1).map(month => (
+                  <option key={month} value={month}>{month}월</option>
+                ))}
+              </select>
+            </div>
+
+            <button
+              onClick={handleNextMonth}
+              className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+            >
+              다음 달 →
+            </button>
+          </div>
         </div>
 
         {/* 요약 카드 */}
