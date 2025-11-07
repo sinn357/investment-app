@@ -116,20 +116,10 @@ export default function ExpenseManagementDashboard() {
   // API URL 설정
   const API_BASE_URL = 'https://investment-app-backend-x166.onrender.com';
 
-  // 인증 토큰 가져오기
-  const getAuthToken = () => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('auth_token');
-    }
-    return null;
-  };
-
-  // 인증 헤더 생성
-  const getAuthHeaders = () => {
-    const token = getAuthToken();
+  // 간단한 헤더 (포트폴리오 패턴과 동일)
+  const getHeaders = () => {
     return {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
     };
   };
 
@@ -175,12 +165,13 @@ export default function ExpenseManagementDashboard() {
     try {
       const submitData = {
         ...formData,
+        user_id: 1, // 포트폴리오 패턴과 동일
         amount: parseFloat(formData.amount!)
       };
 
       const response = await fetch(`${API_BASE_URL}/api/expenses`, {
         method: 'POST',
-        headers: getAuthHeaders(),
+        headers: getHeaders(),
         body: JSON.stringify(submitData),
       });
 
@@ -219,9 +210,9 @@ export default function ExpenseManagementDashboard() {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/expenses/${expenseId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/expenses/${expenseId}?user_id=1`, {
         method: 'DELETE',
-        headers: getAuthHeaders(),
+        headers: getHeaders(),
       });
 
       if (!response.ok) {
@@ -260,12 +251,13 @@ export default function ExpenseManagementDashboard() {
     try {
       const submitData = {
         ...editFormData,
+        user_id: 1, // 포트폴리오 패턴과 동일
         amount: editFormData.amount ? parseFloat(editFormData.amount) : undefined
       };
 
       const response = await fetch(`${API_BASE_URL}/api/expenses/${editExpense.id}`, {
         method: 'PUT',
-        headers: getAuthHeaders(),
+        headers: getHeaders(),
         body: JSON.stringify(submitData),
       });
 

@@ -1784,30 +1784,18 @@ def create_daily_summary():
 def add_expense():
     """거래내역 추가 API (포트폴리오 add_asset 패턴과 동일)"""
     try:
-        # JWT 토큰에서 사용자 확인
-        auth_header = request.headers.get('Authorization')
-        if not auth_header:
-            return jsonify({"status": "error", "message": "인증이 필요합니다."}), 401
-
-        try:
-            token = auth_header.split(' ')[1]
-            user_data = db_service.verify_jwt_token(token)
-            if not user_data:
-                return jsonify({"status": "error", "message": "유효하지 않은 토큰입니다."}), 401
-            user_id = user_data['user_id']
-        except:
-            return jsonify({"status": "error", "message": "토큰 검증에 실패했습니다."}), 401
-
         expense_data = request.get_json()
 
-        # 필수 필드 검증
-        required_fields = ['transaction_type', 'amount', 'category', 'subcategory', 'transaction_date']
+        # 필수 필드 검증 (user_id 포함)
+        required_fields = ['user_id', 'transaction_type', 'amount', 'category', 'subcategory', 'transaction_date']
         for field in required_fields:
             if field not in expense_data or not expense_data[field]:
                 return jsonify({
                     "status": "error",
                     "message": f"필수 필드가 누락되었습니다: {field}"
                 }), 400
+
+        user_id = expense_data.get('user_id')
 
         # 거래내역 저장
         result = db_service.add_expense(user_id, expense_data)
@@ -1862,21 +1850,13 @@ def get_expenses():
 def update_expense(expense_id):
     """거래내역 수정 API"""
     try:
-        # JWT 토큰에서 사용자 확인
-        auth_header = request.headers.get('Authorization')
-        if not auth_header:
-            return jsonify({"status": "error", "message": "인증이 필요합니다."}), 401
-
-        try:
-            token = auth_header.split(' ')[1]
-            user_data = db_service.verify_jwt_token(token)
-            if not user_data:
-                return jsonify({"status": "error", "message": "유효하지 않은 토큰입니다."}), 401
-            user_id = user_data['user_id']
-        except:
-            return jsonify({"status": "error", "message": "토큰 검증에 실패했습니다."}), 401
-
         expense_data = request.get_json()
+
+        # user_id를 body에서 가져오기 (포트폴리오 패턴과 동일)
+        user_id = expense_data.get('user_id')
+        if not user_id:
+            return jsonify({"status": "error", "message": "user_id가 필요합니다."}), 400
+
         result = db_service.update_expense(expense_id, expense_data, user_id)
 
         if result["status"] == "success":
@@ -1895,20 +1875,12 @@ def update_expense(expense_id):
 def delete_expense(expense_id):
     """거래내역 삭제 API"""
     try:
-        # JWT 토큰에서 사용자 확인
-        auth_header = request.headers.get('Authorization')
-        if not auth_header:
-            return jsonify({"status": "error", "message": "인증이 필요합니다."}), 401
+        # user_id를 쿼리 파라미터에서 가져오기 (포트폴리오 패턴과 동일)
+        user_id = request.args.get('user_id')
+        if not user_id:
+            return jsonify({"status": "error", "message": "user_id가 필요합니다."}), 400
 
-        try:
-            token = auth_header.split(' ')[1]
-            user_data = db_service.verify_jwt_token(token)
-            if not user_data:
-                return jsonify({"status": "error", "message": "유효하지 않은 토큰입니다."}), 401
-            user_id = user_data['user_id']
-        except:
-            return jsonify({"status": "error", "message": "토큰 검증에 실패했습니다."}), 401
-
+        user_id = int(user_id)
         result = db_service.delete_expense(expense_id, user_id)
 
         if result["status"] == "success":
