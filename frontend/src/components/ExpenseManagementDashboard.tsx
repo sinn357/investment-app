@@ -13,6 +13,7 @@ interface Expense {
   name: string;
   memo: string;
   payment_method: string;
+  payment_method_name: string;
   transaction_date: string;
   created_at: string;
   updated_at: string;
@@ -27,6 +28,7 @@ interface ExpenseFormData {
   name?: string;
   memo?: string;
   payment_method?: string;
+  payment_method_name?: string;
   transaction_date?: string;
 }
 
@@ -124,6 +126,7 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
     name: '',
     memo: '',
     payment_method: '현금',
+    payment_method_name: '',
     transaction_date: new Date().toISOString().split('T')[0]
   });
 
@@ -240,6 +243,7 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
         name: '',
         memo: '',
         payment_method: '현금',
+        payment_method_name: '',
         transaction_date: new Date().toISOString().split('T')[0]
       });
 
@@ -290,6 +294,7 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
       name: expense.name,
       memo: expense.memo,
       payment_method: expense.payment_method,
+      payment_method_name: expense.payment_method_name,
       transaction_date: expense.transaction_date
     });
   };
@@ -615,6 +620,19 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
                 </select>
               </div>
 
+              {formData.transaction_type === '지출' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">결제수단 이름</label>
+                  <input
+                    type="text"
+                    value={formData.payment_method_name}
+                    onChange={(e) => setFormData(prev => ({ ...prev, payment_method_name: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="예: KB카드, 신한은행"
+                  />
+                </div>
+              )}
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">거래 날짜</label>
                 <input
@@ -816,8 +834,13 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
                     <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
                       {expense.memo || '-'}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {expense.payment_method || '-'}
+                    <td className="px-6 py-4 text-sm text-gray-500">
+                      <div>
+                        <div>{expense.payment_method || '-'}</div>
+                        {expense.payment_method_name && (
+                          <div className="text-xs text-gray-400">({expense.payment_method_name})</div>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                       <button
@@ -939,6 +962,19 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
                     ))}
                   </select>
                 </div>
+
+                {editFormData.transaction_type === '지출' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">결제수단 이름</label>
+                    <input
+                      type="text"
+                      value={editFormData.payment_method_name}
+                      onChange={(e) => setEditFormData(prev => ({ ...prev, payment_method_name: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="예: KB카드, 신한은행"
+                    />
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">거래 날짜</label>

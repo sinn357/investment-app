@@ -1571,8 +1571,8 @@ class PostgresDatabaseService:
                 with conn.cursor() as cur:
                     sql = """
                     INSERT INTO expenses
-                    (user_id, transaction_type, amount, currency, category, subcategory, name, memo, payment_method, transaction_date)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    (user_id, transaction_type, amount, currency, category, subcategory, name, memo, payment_method, payment_method_name, transaction_date)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     RETURNING id
                     """
 
@@ -1586,6 +1586,7 @@ class PostgresDatabaseService:
                         expense_data.get('name', ''),
                         expense_data.get('memo', ''),
                         expense_data.get('payment_method', ''),
+                        expense_data.get('payment_method_name', ''),
                         expense_data['transaction_date']
                     ))
 
@@ -1615,7 +1616,7 @@ class PostgresDatabaseService:
                     # 기본 쿼리
                     base_sql = """
                     SELECT id, transaction_type, amount, currency, category, subcategory,
-                           name, memo, payment_method, transaction_date,
+                           name, memo, payment_method, payment_method_name, transaction_date,
                            created_at, updated_at
                     FROM expenses
                     WHERE user_id = %s
@@ -1771,6 +1772,10 @@ class PostgresDatabaseService:
                     if 'payment_method' in expense_data:
                         update_fields.append("payment_method = %s")
                         values.append(expense_data['payment_method'])
+
+                    if 'payment_method_name' in expense_data:
+                        update_fields.append("payment_method_name = %s")
+                        values.append(expense_data['payment_method_name'])
 
                     if 'transaction_date' in expense_data:
                         update_fields.append("transaction_date = %s")
