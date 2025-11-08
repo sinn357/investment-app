@@ -1571,8 +1571,8 @@ class PostgresDatabaseService:
                 with conn.cursor() as cur:
                     sql = """
                     INSERT INTO expenses
-                    (user_id, transaction_type, amount, currency, category, subcategory, description, payment_method, transaction_date)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    (user_id, transaction_type, amount, currency, category, subcategory, name, memo, payment_method, transaction_date)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     RETURNING id
                     """
 
@@ -1583,7 +1583,8 @@ class PostgresDatabaseService:
                         expense_data.get('currency', 'KRW'),
                         expense_data['category'],
                         expense_data['subcategory'],
-                        expense_data.get('description', ''),
+                        expense_data.get('name', ''),
+                        expense_data.get('memo', ''),
                         expense_data.get('payment_method', '현금'),
                         expense_data['transaction_date']
                     ))
@@ -1614,7 +1615,7 @@ class PostgresDatabaseService:
                     # 기본 쿼리
                     base_sql = """
                     SELECT id, transaction_type, amount, currency, category, subcategory,
-                           description, payment_method, transaction_date,
+                           name, memo, payment_method, transaction_date,
                            created_at, updated_at
                     FROM expenses
                     WHERE user_id = %s
@@ -1759,9 +1760,13 @@ class PostgresDatabaseService:
                         update_fields.append("subcategory = %s")
                         values.append(expense_data['subcategory'])
 
-                    if 'description' in expense_data:
-                        update_fields.append("description = %s")
-                        values.append(expense_data['description'])
+                    if 'name' in expense_data:
+                        update_fields.append("name = %s")
+                        values.append(expense_data['name'])
+
+                    if 'memo' in expense_data:
+                        update_fields.append("memo = %s")
+                        values.append(expense_data['memo'])
 
                     if 'payment_method' in expense_data:
                         update_fields.append("payment_method = %s")

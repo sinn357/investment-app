@@ -10,7 +10,8 @@ interface Expense {
   currency: string;
   category: string;
   subcategory: string;
-  description: string;
+  name: string;
+  memo: string;
   payment_method: string;
   transaction_date: string;
   created_at: string;
@@ -23,7 +24,8 @@ interface ExpenseFormData {
   currency?: string;
   category?: string;
   subcategory?: string;
-  description?: string;
+  name?: string;
+  memo?: string;
   payment_method?: string;
   transaction_date?: string;
 }
@@ -119,7 +121,8 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
     currency: 'KRW',
     category: '',
     subcategory: '',
-    description: '',
+    name: '',
+    memo: '',
     payment_method: '현금',
     transaction_date: new Date().toISOString().split('T')[0]
   });
@@ -234,7 +237,8 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
         currency: 'KRW',
         category: '',
         subcategory: '',
-        description: '',
+        name: '',
+        memo: '',
         payment_method: '현금',
         transaction_date: new Date().toISOString().split('T')[0]
       });
@@ -283,7 +287,8 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
       currency: expense.currency || 'KRW',
       category: expense.category,
       subcategory: expense.subcategory,
-      description: expense.description,
+      name: expense.name,
+      memo: expense.memo,
       payment_method: expense.payment_method,
       transaction_date: expense.transaction_date
     });
@@ -613,14 +618,26 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
                 />
               </div>
 
-              <div className="md:col-span-2 lg:col-span-3">
-                <label className="block text-sm font-medium text-gray-700 mb-2">설명/메모</label>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">이름 *</label>
                 <input
                   type="text"
-                  value={formData.description}
-                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                  value={formData.name}
+                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="거래 내용을 입력하세요"
+                  placeholder="거래내역 이름"
+                  required
+                />
+              </div>
+
+              <div className="md:col-span-2 lg:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">메모</label>
+                <input
+                  type="text"
+                  value={formData.memo}
+                  onChange={(e) => setFormData(prev => ({ ...prev, memo: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="추가 메모 (선택사항)"
                 />
               </div>
 
@@ -750,7 +767,8 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">구분</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">금액</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">카테고리</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">설명</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">이름</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">메모</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">결제수단</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">작업</th>
                 </tr>
@@ -786,7 +804,10 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
                       </div>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-900 max-w-xs truncate">
-                      {expense.description}
+                      {expense.name}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
+                      {expense.memo || '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {expense.payment_method}
@@ -916,12 +937,25 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">설명/메모</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">이름 *</label>
                   <input
                     type="text"
-                    value={editFormData.description}
-                    onChange={(e) => setEditFormData(prev => ({ ...prev, description: e.target.value }))}
+                    value={editFormData.name}
+                    onChange={(e) => setEditFormData(prev => ({ ...prev, name: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="거래내역 이름"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">메모</label>
+                  <input
+                    type="text"
+                    value={editFormData.memo}
+                    onChange={(e) => setEditFormData(prev => ({ ...prev, memo: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="추가 메모 (선택사항)"
                   />
                 </div>
 
