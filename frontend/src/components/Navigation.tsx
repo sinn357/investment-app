@@ -1,10 +1,47 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+
+interface User {
+  id: number;
+  username: string;
+  token?: string;
+}
 
 export default function Navigation() {
   const pathname = usePathname();
+  const router = useRouter();
+  const [user, setUser] = useState<User | null>(null);
+
+  // localStorage에서 사용자 정보 로드
+  useEffect(() => {
+    const savedUser = localStorage.getItem('portfolio_user');
+    const savedToken = localStorage.getItem('auth_token');
+
+    if (savedUser) {
+      try {
+        const userData = JSON.parse(savedUser);
+        if (savedToken) {
+          userData.token = savedToken;
+        }
+        setUser(userData);
+      } catch (error) {
+        console.error('Error parsing saved user data:', error);
+        localStorage.removeItem('portfolio_user');
+        localStorage.removeItem('auth_token');
+      }
+    }
+  }, []);
+
+  const handleLogout = () => {
+    setUser(null);
+    localStorage.removeItem('portfolio_user');
+    localStorage.removeItem('auth_token');
+    // 홈페이지로 이동
+    router.push('/');
+  };
 
   const navItems = [
     { href: '/', label: '홈', icon: 'home' },
@@ -60,8 +97,8 @@ export default function Navigation() {
             </Link>
           </div>
 
-          {/* 네비게이션 메뉴 */}
-          <div className="flex space-x-8">
+          {/* 중앙 네비게이션 메뉴 */}
+          <div className="flex space-x-4">
             {navItems.map((item) => {
               const isActive = pathname === item.href;
               return (
@@ -79,6 +116,36 @@ export default function Navigation() {
                 </Link>
               );
             })}
+          </div>
+
+          {/* 우측 인증 UI */}
+          <div className="flex items-center space-x-3">
+            {user ? (
+              <>
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  <span className="font-medium text-gray-900 dark:text-white">{user.username}</span>님
+                </div>
+                <button
+                  onClick={() => router.push('/settings')}
+                  className="px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                  계정설정
+                </button>
+                <button
+                  onClick={handleLogout}
+                  className="px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                  로그아웃
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => router.push('/portfolio')}
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors"
+              >
+                로그인
+              </button>
+            )}
           </div>
         </div>
       </div>

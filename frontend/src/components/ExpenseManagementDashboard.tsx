@@ -95,7 +95,17 @@ const paymentMethods = ["현금", "신용카드", "체크카드", "계좌이체"
 // 색상 팔레트 (포트폴리오와 동일)
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D', '#FFC658', '#8DD1E1', '#D084D0'];
 
-export default function ExpenseManagementDashboard() {
+interface User {
+  id: number;
+  username: string;
+  token?: string;
+}
+
+interface ExpenseManagementDashboardProps {
+  user: User;
+}
+
+export default function ExpenseManagementDashboard({ user }: ExpenseManagementDashboardProps) {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [expenseData, setExpenseData] = useState<ExpenseData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -161,7 +171,7 @@ export default function ExpenseManagementDashboard() {
       const lastDay = new Date(selectedYear, selectedMonth, 0).getDate();
       const endDate = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
 
-      const response = await fetch(`${API_BASE_URL}/api/expenses?user_id=1&start_date=${startDate}&end_date=${endDate}`);
+      const response = await fetch(`${API_BASE_URL}/api/expenses?user_id=${user.id}&start_date=${startDate}&end_date=${endDate}`);
 
       if (!response.ok) {
         if (response.status === 401) {
@@ -180,7 +190,7 @@ export default function ExpenseManagementDashboard() {
     } finally {
       setLoading(false);
     }
-  }, [API_BASE_URL, selectedYear, selectedMonth]);
+  }, [API_BASE_URL, selectedYear, selectedMonth, user.id]);
 
   useEffect(() => {
     fetchExpenses();
@@ -199,7 +209,7 @@ export default function ExpenseManagementDashboard() {
     try {
       const submitData = {
         ...formData,
-        user_id: 1, // 포트폴리오 패턴과 동일
+        user_id: user.id,
         amount: parseFloat(formData.amount!)
       };
 
@@ -245,7 +255,7 @@ export default function ExpenseManagementDashboard() {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/expenses/${expenseId}?user_id=1`, {
+      const response = await fetch(`${API_BASE_URL}/api/expenses/${expenseId}?user_id=${user.id}`, {
         method: 'DELETE',
         headers: getHeaders(),
       });
@@ -287,7 +297,7 @@ export default function ExpenseManagementDashboard() {
     try {
       const submitData = {
         ...editFormData,
-        user_id: 1, // 포트폴리오 패턴과 동일
+        user_id: user.id,
         amount: editFormData.amount ? parseFloat(editFormData.amount) : undefined
       };
 
