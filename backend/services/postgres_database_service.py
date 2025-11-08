@@ -1585,7 +1585,7 @@ class PostgresDatabaseService:
                         expense_data['subcategory'],
                         expense_data.get('name', ''),
                         expense_data.get('memo', ''),
-                        expense_data.get('payment_method', '현금'),
+                        expense_data.get('payment_method', ''),
                         expense_data['transaction_date']
                     ))
 

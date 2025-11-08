@@ -516,12 +516,16 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
                 <label className="block text-sm font-medium text-gray-700 mb-2">거래 유형</label>
                 <select
                   value={formData.transaction_type}
-                  onChange={(e) => setFormData(prev => ({
-                    ...prev,
-                    transaction_type: e.target.value as '수입' | '지출' | '이체',
-                    category: '', // 유형 변경 시 카테고리 초기화
-                    subcategory: ''
-                  }))}
+                  onChange={(e) => {
+                    const newType = e.target.value as '수입' | '지출' | '이체';
+                    setFormData(prev => ({
+                      ...prev,
+                      transaction_type: newType,
+                      category: '', // 유형 변경 시 카테고리 초기화
+                      subcategory: '',
+                      payment_method: newType === '지출' ? '현금' : '' // 수입/이체는 결제수단 빈칸
+                    }));
+                  }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="지출">지출</option>
@@ -810,7 +814,7 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
                       {expense.memo || '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {expense.payment_method}
+                      {expense.payment_method || '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                       <button
@@ -849,10 +853,14 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
                   <label className="block text-sm font-medium text-gray-700 mb-2">거래 유형</label>
                   <select
                     value={editFormData.transaction_type}
-                    onChange={(e) => setEditFormData(prev => ({
-                      ...prev,
-                      transaction_type: e.target.value as '수입' | '지출' | '이체'
-                    }))}
+                    onChange={(e) => {
+                      const newType = e.target.value as '수입' | '지출' | '이체';
+                      setEditFormData(prev => ({
+                        ...prev,
+                        transaction_type: newType,
+                        payment_method: newType === '지출' ? (prev.payment_method || '현금') : '' // 수입/이체는 결제수단 빈칸
+                      }));
+                    }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="지출">지출</option>
