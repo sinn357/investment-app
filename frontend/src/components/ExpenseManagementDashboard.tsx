@@ -606,6 +606,9 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   disabled={formData.transaction_type === '수입' || formData.transaction_type === '이체'}
                 >
+                  {(formData.transaction_type === '수입' || formData.transaction_type === '이체') && (
+                    <option value="">-</option>
+                  )}
                   {paymentMethods.map(method => (
                     <option key={method} value={method}>{method}</option>
                   ))}
@@ -928,6 +931,9 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     disabled={editFormData.transaction_type === '수입' || editFormData.transaction_type === '이체'}
                   >
+                    {(editFormData.transaction_type === '수입' || editFormData.transaction_type === '이체') && (
+                      <option value="">-</option>
+                    )}
                     {paymentMethods.map(method => (
                       <option key={method} value={method}>{method}</option>
                     ))}
