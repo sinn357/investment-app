@@ -608,12 +608,10 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
 
   // 디버깅용 콘솔 로그
   console.log('=== 차트 데이터 디버깅 ===');
-  console.log('지출 구성 pieData:', compositionPieData);
-  console.log('수입 구성 pieData:', incomePieData);
-  console.log('일별 데이터:', dailyData);
-  console.log('expenses 배열:', expenses);
-  console.log('expenseData:', expenseData);
-  console.log('expenseData.by_category:', expenseData?.by_category);
+  console.log('지출 구성 pieData:', JSON.stringify(compositionPieData, null, 2));
+  console.log('수입 구성 pieData:', JSON.stringify(incomePieData, null, 2));
+  console.log('일별 데이터:', JSON.stringify(dailyData, null, 2));
+  console.log('expenseData.by_category:', JSON.stringify(expenseData?.by_category, null, 2));
 
   if (loading) {
     return (
