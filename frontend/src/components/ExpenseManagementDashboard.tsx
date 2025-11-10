@@ -385,7 +385,7 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
       if (!categoryTotals[item.category]) {
         categoryTotals[item.category] = 0;
       }
-      categoryTotals[item.category] += item.total_amount;
+      categoryTotals[item.category] += Number(item.total_amount);
     });
 
     let pieData: Array<{ name: string; value: number }> = [];
@@ -410,22 +410,22 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
       );
       pieData = filteredExpenses.map(exp => ({
         name: `${exp.name} (${formatDate(exp.transaction_date)})`,
-        value: exp.amount
+        value: Number(exp.amount)
       }));
       barData = filteredExpenses.map(exp => ({
         name: `${exp.name.substring(0, 10)}...`,
-        금액: exp.amount
+        금액: Number(exp.amount)
       }));
     } else {
       // 특정 대분류 선택 시: 해당 대분류의 소분류별 합계 표시
       const filtered = expenseCategories.filter(item => item.category === chartViewType);
       pieData = filtered.map(item => ({
         name: item.subcategory,
-        value: item.total_amount
+        value: Number(item.total_amount)
       }));
       barData = filtered.map(item => ({
         name: item.subcategory,
-        금액: item.total_amount
+        금액: Number(item.total_amount)
       }));
     }
 
@@ -444,7 +444,7 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
       if (!categoryTotals[item.category]) {
         categoryTotals[item.category] = 0;
       }
-      categoryTotals[item.category] += item.total_amount;
+      categoryTotals[item.category] += Number(item.total_amount);
     });
 
     let pieData: Array<{ name: string; value: number }> = [];
@@ -469,22 +469,22 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
       );
       pieData = filteredIncomes.map(exp => ({
         name: `${exp.name} (${formatDate(exp.transaction_date)})`,
-        value: exp.amount
+        value: Number(exp.amount)
       }));
       barData = filteredIncomes.map(exp => ({
         name: `${exp.name.substring(0, 10)}...`,
-        금액: exp.amount
+        금액: Number(exp.amount)
       }));
     } else {
       // 특정 대분류 선택 시: 해당 대분류의 소분류별 합계 표시
       const filtered = incomeData.filter(item => item.category === incomeChartViewType);
       pieData = filtered.map(item => ({
         name: item.subcategory,
-        value: item.total_amount
+        value: Number(item.total_amount)
       }));
       barData = filtered.map(item => ({
         name: item.subcategory,
-        금액: item.total_amount
+        금액: Number(item.total_amount)
       }));
     }
 
@@ -564,8 +564,8 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
     if (!expenseData) return [];
 
     return [
-      { name: '지출', value: expenseData.summary.total_expense },
-      { name: '수입', value: expenseData.summary.total_income }
+      { name: '지출', value: Number(expenseData.summary.total_expense) },
+      { name: '수입', value: Number(expenseData.summary.total_income) }
     ];
   };
 
