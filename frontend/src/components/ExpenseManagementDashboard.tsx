@@ -163,6 +163,9 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
   const [incomeChartViewType, setIncomeChartViewType] = useState<'전체' | '근로소득' | '사업소득' | '투자소득' | '기타소득'>('전체');
   const [incomeSubViewType, setIncomeSubViewType] = useState<string | null>(null);
 
+  // 시계열 차트 탭 상태
+  const [timeSeriesTab, setTimeSeriesTab] = useState<'일별' | '월별' | '비율'>('일별');
+
   // API URL 설정
   const API_BASE_URL = 'https://investment-app-backend-x166.onrender.com';
 
@@ -1107,64 +1110,81 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
           </div>
         )}
 
-        {/* 일별 지출/수입 차트 */}
+        {/* 시계열 차트 (일별/월별/비율 탭) */}
         {expenseData && (
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">일별 지출/수입</h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={dailyData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="날짜" tick={{ fontSize: 10 }} />
-                <YAxis tick={{ fontSize: 10 }} />
-                <Tooltip formatter={(value: number) => [`${value.toLocaleString()}원`]} />
-                <Legend />
-                <Bar dataKey="지출" fill="#ef4444" />
-                <Bar dataKey="수입" fill="#10b981" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        )}
+            <div className="mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">지출/수입 분석</h3>
 
-        {/* 월별 지출/수입 차트 */}
-        {expenseData && (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">월별 지출/수입</h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={monthlyData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="월" tick={{ fontSize: 10 }} />
-                <YAxis tick={{ fontSize: 10 }} />
-                <Tooltip formatter={(value: number) => [`${value.toLocaleString()}원`]} />
-                <Legend />
-                <Bar dataKey="지출" fill="#ef4444" />
-                <Bar dataKey="수입" fill="#10b981" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        )}
+              {/* 탭 버튼 */}
+              <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1 gap-1">
+                {['일별', '월별', '비율'].map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setTimeSeriesTab(tab as '일별' | '월별' | '비율')}
+                    className={`flex-1 px-4 py-2 text-sm rounded transition-colors ${
+                      timeSeriesTab === tab
+                        ? 'bg-blue-500 text-white font-medium'
+                        : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                    }`}
+                  >
+                    {tab}
+                  </button>
+                ))}
+              </div>
+            </div>
 
-        {/* 지출/수입 비율 차트 */}
-        {expenseData && (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">지출/수입 비율</h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={ratioData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={100}
-                  paddingAngle={5}
-                  dataKey="value"
-                >
-                  <Cell fill="#ef4444" />
-                  <Cell fill="#10b981" />
-                </Pie>
-                <Tooltip formatter={(value: number) => [`${value.toLocaleString()}원`, '금액']} />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
+            {/* 일별 차트 */}
+            {timeSeriesTab === '일별' && (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={dailyData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="날짜" tick={{ fontSize: 10 }} />
+                  <YAxis tick={{ fontSize: 10 }} />
+                  <Tooltip formatter={(value: number) => [`${value.toLocaleString()}원`]} />
+                  <Legend />
+                  <Bar dataKey="지출" fill="#ef4444" />
+                  <Bar dataKey="수입" fill="#10b981" />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+
+            {/* 월별 차트 */}
+            {timeSeriesTab === '월별' && (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={monthlyData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="월" tick={{ fontSize: 10 }} />
+                  <YAxis tick={{ fontSize: 10 }} />
+                  <Tooltip formatter={(value: number) => [`${value.toLocaleString()}원`]} />
+                  <Legend />
+                  <Bar dataKey="지출" fill="#ef4444" />
+                  <Bar dataKey="수입" fill="#10b981" />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+
+            {/* 비율 차트 */}
+            {timeSeriesTab === '비율' && (
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={ratioData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={100}
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    <Cell fill="#ef4444" />
+                    <Cell fill="#10b981" />
+                  </Pie>
+                  <Tooltip formatter={(value: number) => [`${value.toLocaleString()}원`, '금액']} />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
           </div>
         )}
 
