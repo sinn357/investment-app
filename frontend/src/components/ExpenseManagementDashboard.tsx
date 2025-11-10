@@ -876,236 +876,177 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
           </div>
         )}
 
-        {/* 지출 구성 분석 섹션 */}
+        {/* 지출/수입 구성 분석 섹션 (나란히 배치) */}
         {expenseData && (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8">
-            <div className="mb-4">
-              <div className="flex justify-between items-center mb-3">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            {/* 지출 구성 분석 */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+              <div className="mb-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
                   {chartViewType === '전체' ? '지출 구성 분석' :
                    subViewType ? `${subViewType} 상세 분석` :
                    `${chartViewType} 세부 분석`}
                 </h3>
-              </div>
 
-              {/* 1단계: 대분류 버튼 */}
-              <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1 flex-wrap gap-1 mb-2">
-                {['전체', '생활', '건강', '사회', '여가', '쇼핑', '기타'].map((viewType) => (
-                  <button
-                    key={viewType}
-                    onClick={() => {
-                      setChartViewType(viewType as '전체' | '생활' | '건강' | '사회' | '여가' | '쇼핑' | '기타');
-                      setSubViewType(null);
-                    }}
-                    className={`px-2 py-1 text-xs rounded transition-colors ${
-                      chartViewType === viewType
-                        ? 'bg-blue-500 text-white'
-                        : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                    }`}
-                  >
-                    {viewType}
-                  </button>
-                ))}
-              </div>
-
-              {/* 2단계: 소분류 버튼 (대분류 선택 시에만 표시) */}
-              {chartViewType !== '전체' && expenseCategories[chartViewType] && (
-                <div className="flex bg-gray-50 dark:bg-gray-600 rounded-lg p-1 flex-wrap gap-1">
-                  <button
-                    onClick={() => setSubViewType(null)}
-                    className={`px-2 py-1 text-xs rounded transition-colors ${
-                      !subViewType
-                        ? 'bg-green-500 text-white'
-                        : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-500'
-                    }`}
-                  >
-                    전체
-                  </button>
-                  {expenseCategories[chartViewType].map((subCategory) => (
+                {/* 1단계: 대분류 버튼 */}
+                <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1 flex-wrap gap-1 mb-2">
+                  {['전체', '생활', '건강', '사회', '여가', '쇼핑', '기타'].map((viewType) => (
                     <button
-                      key={subCategory}
-                      onClick={() => setSubViewType(subCategory)}
+                      key={viewType}
+                      onClick={() => {
+                        setChartViewType(viewType as '전체' | '생활' | '건강' | '사회' | '여가' | '쇼핑' | '기타');
+                        setSubViewType(null);
+                      }}
                       className={`px-2 py-1 text-xs rounded transition-colors ${
-                        subViewType === subCategory
+                        chartViewType === viewType
+                          ? 'bg-blue-500 text-white'
+                          : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                      }`}
+                    >
+                      {viewType}
+                    </button>
+                  ))}
+                </div>
+
+                {/* 2단계: 소분류 버튼 (대분류 선택 시에만 표시) */}
+                {chartViewType !== '전체' && expenseCategories[chartViewType] && (
+                  <div className="flex bg-gray-50 dark:bg-gray-600 rounded-lg p-1 flex-wrap gap-1">
+                    <button
+                      onClick={() => setSubViewType(null)}
+                      className={`px-2 py-1 text-xs rounded transition-colors ${
+                        !subViewType
                           ? 'bg-green-500 text-white'
                           : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-500'
                       }`}
                     >
-                      {subCategory}
+                      전체
                     </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* 도넛 차트와 막대 차트를 나란히 배치 */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* 도넛 차트 - 비중 */}
-              <div>
-                <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2 text-center">구성 비중</h4>
-                <ResponsiveContainer width="100%" height={250}>
-                  <PieChart>
-                    <Pie
-                      data={compositionPieData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={40}
-                      outerRadius={80}
-                      paddingAngle={5}
-                      dataKey="value"
-                    >
-                      {compositionPieData.map((entry, index) => {
-                        if (chartViewType === '전체') {
-                          return <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />;
-                        } else if (subViewType) {
-                          const extendedColors = [...COLORS, '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F', '#BB8FCE'];
-                          return <Cell key={`cell-${index}`} fill={extendedColors[index % extendedColors.length]} />;
-                        } else {
-                          const categoryColors = CATEGORY_COLORS[chartViewType as keyof typeof CATEGORY_COLORS] || COLORS;
-                          return <Cell key={`cell-${index}`} fill={categoryColors[index % categoryColors.length]} />;
-                        }
-                      })}
-                    </Pie>
-                    <Tooltip formatter={(value: number) => [`${value.toLocaleString()}원`, '금액']} />
-                    <Legend wrapperStyle={{ fontSize: '10px' }} />
-                  </PieChart>
-                </ResponsiveContainer>
+                    {expenseCategories[chartViewType].map((subCategory) => (
+                      <button
+                        key={subCategory}
+                        onClick={() => setSubViewType(subCategory)}
+                        className={`px-2 py-1 text-xs rounded transition-colors ${
+                          subViewType === subCategory
+                            ? 'bg-green-500 text-white'
+                            : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-500'
+                        }`}
+                      >
+                        {subCategory}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
-              {/* 막대 차트 - 금액 */}
-              <div>
-                <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2 text-center">금액 비교</h4>
-                <ResponsiveContainer width="100%" height={250}>
-                  <BarChart data={compositionBarData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" tick={{ fontSize: 10 }} />
-                    <YAxis tick={{ fontSize: 10 }} />
-                    <Tooltip formatter={(value: number) => [`${value.toLocaleString()}원`, '금액']} />
-                    <Bar dataKey="금액" fill="#8884d8">
-                      {compositionBarData.map((entry, index) => {
-                        if (chartViewType === '전체') {
-                          return <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />;
-                        } else if (subViewType) {
-                          const extendedColors = [...COLORS, '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F', '#BB8FCE'];
-                          return <Cell key={`cell-${index}`} fill={extendedColors[index % extendedColors.length]} />;
-                        } else {
-                          const categoryColors = CATEGORY_COLORS[chartViewType as keyof typeof CATEGORY_COLORS] || COLORS;
-                          return <Cell key={`cell-${index}`} fill={categoryColors[index % categoryColors.length]} />;
-                        }
-                      })}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+              {/* 도넛 차트만 표시 */}
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={compositionPieData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={50}
+                    outerRadius={100}
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    {compositionPieData.map((entry, index) => {
+                      if (chartViewType === '전체') {
+                        return <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />;
+                      } else if (subViewType) {
+                        const extendedColors = [...COLORS, '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F', '#BB8FCE'];
+                        return <Cell key={`cell-${index}`} fill={extendedColors[index % extendedColors.length]} />;
+                      } else {
+                        const categoryColors = CATEGORY_COLORS[chartViewType as keyof typeof CATEGORY_COLORS] || COLORS;
+                        return <Cell key={`cell-${index}`} fill={categoryColors[index % categoryColors.length]} />;
+                      }
+                    })}
+                  </Pie>
+                  <Tooltip formatter={(value: number) => [`${value.toLocaleString()}원`, '금액']} />
+                  <Legend wrapperStyle={{ fontSize: '11px' }} />
+                </PieChart>
+              </ResponsiveContainer>
             </div>
-          </div>
-        )}
 
-        {/* 수입 구성 분석 섹션 */}
-        {expenseData && (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8">
-            <div className="mb-4">
-              <div className="flex justify-between items-center mb-3">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+            {/* 수입 구성 분석 */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+              <div className="mb-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
                   {incomeChartViewType === '전체' ? '수입 구성 분석' :
                    incomeSubViewType ? `${incomeSubViewType} 상세 분석` :
                    `${incomeChartViewType} 세부 분석`}
                 </h3>
-              </div>
 
-              {/* 1단계: 대분류 버튼 */}
-              <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1 flex-wrap gap-1 mb-2">
-                {['전체', '근로소득', '사업소득', '투자소득', '기타소득'].map((viewType) => (
-                  <button
-                    key={viewType}
-                    onClick={() => {
-                      setIncomeChartViewType(viewType as '전체' | '근로소득' | '사업소득' | '투자소득' | '기타소득');
-                      setIncomeSubViewType(null);
-                    }}
-                    className={`px-2 py-1 text-xs rounded transition-colors ${
-                      incomeChartViewType === viewType
-                        ? 'bg-green-500 text-white'
-                        : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                    }`}
-                  >
-                    {viewType}
-                  </button>
-                ))}
-              </div>
-
-              {/* 2단계: 소분류 버튼 (대분류 선택 시에만 표시) */}
-              {incomeChartViewType !== '전체' && incomeCategories[incomeChartViewType] && (
-                <div className="flex bg-gray-50 dark:bg-gray-600 rounded-lg p-1 flex-wrap gap-1">
-                  <button
-                    onClick={() => setIncomeSubViewType(null)}
-                    className={`px-2 py-1 text-xs rounded transition-colors ${
-                      !incomeSubViewType
-                        ? 'bg-purple-500 text-white'
-                        : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-500'
-                    }`}
-                  >
-                    전체
-                  </button>
-                  {incomeCategories[incomeChartViewType].map((subCategory) => (
+                {/* 1단계: 대분류 버튼 */}
+                <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1 flex-wrap gap-1 mb-2">
+                  {['전체', '근로소득', '사업소득', '투자소득', '기타소득'].map((viewType) => (
                     <button
-                      key={subCategory}
-                      onClick={() => setIncomeSubViewType(subCategory)}
+                      key={viewType}
+                      onClick={() => {
+                        setIncomeChartViewType(viewType as '전체' | '근로소득' | '사업소득' | '투자소득' | '기타소득');
+                        setIncomeSubViewType(null);
+                      }}
                       className={`px-2 py-1 text-xs rounded transition-colors ${
-                        incomeSubViewType === subCategory
+                        incomeChartViewType === viewType
+                          ? 'bg-green-500 text-white'
+                          : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                      }`}
+                    >
+                      {viewType}
+                    </button>
+                  ))}
+                </div>
+
+                {/* 2단계: 소분류 버튼 (대분류 선택 시에만 표시) */}
+                {incomeChartViewType !== '전체' && incomeCategories[incomeChartViewType] && (
+                  <div className="flex bg-gray-50 dark:bg-gray-600 rounded-lg p-1 flex-wrap gap-1">
+                    <button
+                      onClick={() => setIncomeSubViewType(null)}
+                      className={`px-2 py-1 text-xs rounded transition-colors ${
+                        !incomeSubViewType
                           ? 'bg-purple-500 text-white'
                           : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-500'
                       }`}
                     >
-                      {subCategory}
+                      전체
                     </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* 도넛 차트와 막대 차트를 나란히 배치 */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* 도넛 차트 - 비중 */}
-              <div>
-                <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2 text-center">구성 비중</h4>
-                <ResponsiveContainer width="100%" height={250}>
-                  <PieChart>
-                    <Pie
-                      data={incomePieData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={40}
-                      outerRadius={80}
-                      paddingAngle={5}
-                      dataKey="value"
-                    >
-                      {incomePieData.map((_entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip formatter={(value: number) => [`${value.toLocaleString()}원`, '금액']} />
-                    <Legend wrapperStyle={{ fontSize: '10px' }} />
-                  </PieChart>
-                </ResponsiveContainer>
+                    {incomeCategories[incomeChartViewType].map((subCategory) => (
+                      <button
+                        key={subCategory}
+                        onClick={() => setIncomeSubViewType(subCategory)}
+                        className={`px-2 py-1 text-xs rounded transition-colors ${
+                          incomeSubViewType === subCategory
+                            ? 'bg-purple-500 text-white'
+                            : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-500'
+                        }`}
+                      >
+                        {subCategory}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
-              {/* 막대 차트 - 금액 */}
-              <div>
-                <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2 text-center">금액 비교</h4>
-                <ResponsiveContainer width="100%" height={250}>
-                  <BarChart data={incomeBarData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" tick={{ fontSize: 10 }} />
-                    <YAxis tick={{ fontSize: 10 }} />
-                    <Tooltip formatter={(value: number) => [`${value.toLocaleString()}원`, '금액']} />
-                    <Bar dataKey="금액" fill="#82ca9d">
-                      {incomeBarData.map((_entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+              {/* 도넛 차트만 표시 */}
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={incomePieData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={50}
+                    outerRadius={100}
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    {incomePieData.map((_entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value: number) => [`${value.toLocaleString()}원`, '금액']} />
+                  <Legend wrapperStyle={{ fontSize: '11px' }} />
+                </PieChart>
+              </ResponsiveContainer>
             </div>
           </div>
         )}
