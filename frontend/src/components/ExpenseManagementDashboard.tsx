@@ -524,41 +524,6 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
     return sortedData;
   };
 
-  // 월별 지출/수입 데이터 준비
-  const prepareMonthlyData = () => {
-    if (!expenses || expenses.length === 0) return [];
-
-    // 월별로 지출과 수입을 그룹화
-    const monthlyMap: Record<string, { 지출: number; 수입: number }> = {};
-
-    expenses.forEach(expense => {
-      const date = new Date(expense.transaction_date);
-      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-
-      if (!monthlyMap[monthKey]) {
-        monthlyMap[monthKey] = { 지출: 0, 수입: 0 };
-      }
-
-      if (expense.transaction_type === '지출') {
-        monthlyMap[monthKey].지출 += expense.amount;
-      } else if (expense.transaction_type === '수입') {
-        monthlyMap[monthKey].수입 += expense.amount;
-      }
-    });
-
-    // 월 순으로 정렬하여 배열로 변환
-    const sortedData = Object.entries(monthlyMap)
-      .map(([month, amounts]) => ({
-        월: `${month.split('-')[1]}월`,
-        fullMonth: month,
-        지출: amounts.지출,
-        수입: amounts.수입
-      }))
-      .sort((a, b) => a.fullMonth.localeCompare(b.fullMonth));
-
-    return sortedData;
-  };
-
   // 지출/수입 비율 데이터 준비
   const prepareExpenseIncomeRatioData = () => {
     if (!expenseData) return [];
@@ -601,17 +566,10 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
     }
   });
 
-  const { pieData: compositionPieData, barData: compositionBarData } = prepareAssetCompositionData();
-  const { pieData: incomePieData, barData: incomeBarData } = prepareIncomeCompositionData();
+  const { pieData: compositionPieData } = prepareAssetCompositionData();
+  const { pieData: incomePieData } = prepareIncomeCompositionData();
   const dailyData = prepareDailyData();
   const ratioData = prepareExpenseIncomeRatioData();
-
-  // 디버깅용 콘솔 로그
-  console.log('=== 차트 데이터 디버깅 ===');
-  console.log('지출 구성 pieData:', JSON.stringify(compositionPieData, null, 2));
-  console.log('수입 구성 pieData:', JSON.stringify(incomePieData, null, 2));
-  console.log('일별 데이터:', JSON.stringify(dailyData, null, 2));
-  console.log('expenseData.by_category:', JSON.stringify(expenseData?.by_category, null, 2));
 
   if (loading) {
     return (
@@ -956,7 +914,7 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
                       outerRadius={100}
                       paddingAngle={5}
                       dataKey="value"
-                      label={(entry) => `${entry.value.toLocaleString()}원`}
+                      label={(entry) => `${Number(entry.value).toLocaleString()}원`}
                     >
                       {compositionPieData.map((entry, index) => {
                         if (chartViewType === '전체') {
@@ -1052,7 +1010,7 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
                       outerRadius={100}
                       paddingAngle={5}
                       dataKey="value"
-                      label={(entry) => `${entry.value.toLocaleString()}원`}
+                      label={(entry) => `${Number(entry.value).toLocaleString()}원`}
                     >
                       {incomePieData.map((_entry, index) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -1136,7 +1094,7 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
                       outerRadius={100}
                       paddingAngle={5}
                       dataKey="value"
-                      label={(entry) => `${entry.value.toLocaleString()}원`}
+                      label={(entry) => `${Number(entry.value).toLocaleString()}원`}
                     >
                       <Cell fill="#ef4444" />
                       <Cell fill="#10b981" />
