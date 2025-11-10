@@ -939,33 +939,40 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
               </div>
 
               {/* 도넛 차트만 표시 */}
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={compositionPieData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={50}
-                    outerRadius={100}
-                    paddingAngle={5}
-                    dataKey="value"
-                  >
-                    {compositionPieData.map((entry, index) => {
-                      if (chartViewType === '전체') {
-                        return <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />;
-                      } else if (subViewType) {
-                        const extendedColors = [...COLORS, '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F', '#BB8FCE'];
-                        return <Cell key={`cell-${index}`} fill={extendedColors[index % extendedColors.length]} />;
-                      } else {
-                        const categoryColors = CATEGORY_COLORS[chartViewType as keyof typeof CATEGORY_COLORS] || COLORS;
-                        return <Cell key={`cell-${index}`} fill={categoryColors[index % categoryColors.length]} />;
-                      }
-                    })}
-                  </Pie>
-                  <Tooltip formatter={(value: number) => [`${value.toLocaleString()}원`, '금액']} />
-                  <Legend wrapperStyle={{ fontSize: '11px' }} />
-                </PieChart>
-              </ResponsiveContainer>
+              {compositionPieData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={compositionPieData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={50}
+                      outerRadius={100}
+                      paddingAngle={5}
+                      dataKey="value"
+                      label
+                    >
+                      {compositionPieData.map((entry, index) => {
+                        if (chartViewType === '전체') {
+                          return <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />;
+                        } else if (subViewType) {
+                          const extendedColors = [...COLORS, '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F', '#BB8FCE'];
+                          return <Cell key={`cell-${index}`} fill={extendedColors[index % extendedColors.length]} />;
+                        } else {
+                          const categoryColors = CATEGORY_COLORS[chartViewType as keyof typeof CATEGORY_COLORS] || COLORS;
+                          return <Cell key={`cell-${index}`} fill={categoryColors[index % categoryColors.length]} />;
+                        }
+                      })}
+                    </Pie>
+                    <Tooltip formatter={(value: number) => [`${value.toLocaleString()}원`, '금액']} />
+                    <Legend wrapperStyle={{ fontSize: '11px' }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-[300px] flex items-center justify-center text-gray-500">
+                  데이터가 없습니다
+                </div>
+              )}
             </div>
 
             {/* 수입 구성 분석 */}
@@ -1028,25 +1035,32 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
               </div>
 
               {/* 도넛 차트만 표시 */}
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={incomePieData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={50}
-                    outerRadius={100}
-                    paddingAngle={5}
-                    dataKey="value"
-                  >
-                    {incomePieData.map((_entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={(value: number) => [`${value.toLocaleString()}원`, '금액']} />
-                  <Legend wrapperStyle={{ fontSize: '11px' }} />
-                </PieChart>
-              </ResponsiveContainer>
+              {incomePieData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={incomePieData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={50}
+                      outerRadius={100}
+                      paddingAngle={5}
+                      dataKey="value"
+                      label
+                    >
+                      {incomePieData.map((_entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(value: number) => [`${value.toLocaleString()}원`, '금액']} />
+                    <Legend wrapperStyle={{ fontSize: '11px' }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-[300px] flex items-center justify-center text-gray-500">
+                  데이터가 없습니다
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -1077,54 +1091,87 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
 
             {/* 일별 차트 */}
             {timeSeriesTab === '일별' && (
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={dailyData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="날짜" tick={{ fontSize: 10 }} />
-                  <YAxis tick={{ fontSize: 10 }} />
-                  <Tooltip formatter={(value: number) => [`${value.toLocaleString()}원`]} />
-                  <Legend />
-                  <Bar dataKey="지출" fill="#ef4444" />
-                  <Bar dataKey="수입" fill="#10b981" />
-                </BarChart>
-              </ResponsiveContainer>
+              dailyData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={dailyData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="날짜" tick={{ fontSize: 10 }} />
+                    <YAxis
+                      tick={{ fontSize: 10 }}
+                      tickFormatter={(value) => {
+                        if (value >= 1000000) return `${(value / 1000000).toFixed(0)}M`;
+                        if (value >= 1000) return `${(value / 1000).toFixed(0)}K`;
+                        return value.toString();
+                      }}
+                    />
+                    <Tooltip formatter={(value: number) => [`${value.toLocaleString()}원`]} />
+                    <Legend />
+                    <Bar dataKey="지출" fill="#ef4444" />
+                    <Bar dataKey="수입" fill="#10b981" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-[300px] flex items-center justify-center text-gray-500">
+                  데이터가 없습니다
+                </div>
+              )
             )}
 
             {/* 월별 차트 */}
             {timeSeriesTab === '월별' && (
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={monthlyData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="월" tick={{ fontSize: 10 }} />
-                  <YAxis tick={{ fontSize: 10 }} />
-                  <Tooltip formatter={(value: number) => [`${value.toLocaleString()}원`]} />
-                  <Legend />
-                  <Bar dataKey="지출" fill="#ef4444" />
-                  <Bar dataKey="수입" fill="#10b981" />
-                </BarChart>
-              </ResponsiveContainer>
+              monthlyData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={monthlyData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="월" tick={{ fontSize: 10 }} />
+                    <YAxis
+                      tick={{ fontSize: 10 }}
+                      tickFormatter={(value) => {
+                        if (value >= 1000000) return `${(value / 1000000).toFixed(0)}M`;
+                        if (value >= 1000) return `${(value / 1000).toFixed(0)}K`;
+                        return value.toString();
+                      }}
+                    />
+                    <Tooltip formatter={(value: number) => [`${value.toLocaleString()}원`]} />
+                    <Legend />
+                    <Bar dataKey="지출" fill="#ef4444" />
+                    <Bar dataKey="수입" fill="#10b981" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-[300px] flex items-center justify-center text-gray-500">
+                  데이터가 없습니다
+                </div>
+              )
             )}
 
             {/* 비율 차트 */}
             {timeSeriesTab === '비율' && (
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={ratioData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={100}
-                    paddingAngle={5}
-                    dataKey="value"
-                  >
-                    <Cell fill="#ef4444" />
-                    <Cell fill="#10b981" />
-                  </Pie>
-                  <Tooltip formatter={(value: number) => [`${value.toLocaleString()}원`, '금액']} />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
+              ratioData.length > 0 && (ratioData[0].value > 0 || ratioData[1].value > 0) ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={ratioData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={100}
+                      paddingAngle={5}
+                      dataKey="value"
+                      label
+                    >
+                      <Cell fill="#ef4444" />
+                      <Cell fill="#10b981" />
+                    </Pie>
+                    <Tooltip formatter={(value: number) => [`${value.toLocaleString()}원`, '금액']} />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-[300px] flex items-center justify-center text-gray-500">
+                  데이터가 없습니다
+                </div>
+              )
             )}
           </div>
         )}
