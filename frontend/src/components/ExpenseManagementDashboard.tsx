@@ -159,6 +159,10 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
   const [chartViewType, setChartViewType] = useState<'전체' | '생활' | '건강' | '사회' | '여가' | '쇼핑' | '기타'>('전체');
   const [subViewType, setSubViewType] = useState<string | null>(null);
 
+  // 수입 구성 분석 차트 뷰 상태
+  const [incomeChartViewType, setIncomeChartViewType] = useState<'전체' | '근로소득' | '사업소득' | '투자소득' | '기타소득'>('전체');
+  const [incomeSubViewType, setIncomeSubViewType] = useState<string | null>(null);
+
   // API URL 설정
   const API_BASE_URL = 'https://investment-app-backend-x166.onrender.com';
 
@@ -425,6 +429,143 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
     return { pieData, barData };
   };
 
+  // 수입 구성 분석 데이터 준비
+  const prepareIncomeCompositionData = () => {
+    if (!expenseData) return { pieData: [], barData: [] };
+
+    const incomeData = expenseData.by_category.filter(item => item.transaction_type === '수입');
+
+    // 대분류별 합계 계산
+    const categoryTotals: Record<string, number> = {};
+    incomeData.forEach(item => {
+      if (!categoryTotals[item.category]) {
+        categoryTotals[item.category] = 0;
+      }
+      categoryTotals[item.category] += item.total_amount;
+    });
+
+    let pieData: Array<{ name: string; value: number }> = [];
+    let barData: Array<{ name: string; 금액: number }> = [];
+
+    if (incomeChartViewType === '전체') {
+      // 전체 모드: 대분류별 합계 표시
+      pieData = Object.entries(categoryTotals).map(([category, amount]) => ({
+        name: category,
+        value: amount
+      }));
+      barData = Object.entries(categoryTotals).map(([category, amount]) => ({
+        name: category,
+        금액: amount
+      }));
+    } else if (incomeSubViewType) {
+      // 소분류 선택 시: 해당 소분류의 개별 거래내역 표시
+      const filteredIncomes = expenses.filter(
+        exp => exp.transaction_type === '수입' &&
+               exp.category === incomeChartViewType &&
+               exp.subcategory === incomeSubViewType
+      );
+      pieData = filteredIncomes.map(exp => ({
+        name: `${exp.name} (${formatDate(exp.transaction_date)})`,
+        value: exp.amount
+      }));
+      barData = filteredIncomes.map(exp => ({
+        name: `${exp.name.substring(0, 10)}...`,
+        금액: exp.amount
+      }));
+    } else {
+      // 특정 대분류 선택 시: 해당 대분류의 소분류별 합계 표시
+      const filtered = incomeData.filter(item => item.category === incomeChartViewType);
+      pieData = filtered.map(item => ({
+        name: item.subcategory,
+        value: item.total_amount
+      }));
+      barData = filtered.map(item => ({
+        name: item.subcategory,
+        금액: item.total_amount
+      }));
+    }
+
+    return { pieData, barData };
+  };
+
+  // 일별 지출/수입 데이터 준비
+  const prepareDailyData = () => {
+    if (!expenses || expenses.length === 0) return [];
+
+    // 날짜별로 지출과 수입을 그룹화
+    const dailyMap: Record<string, { 지출: number; 수입: number }> = {};
+
+    expenses.forEach(expense => {
+      const date = expense.transaction_date;
+      if (!dailyMap[date]) {
+        dailyMap[date] = { 지출: 0, 수입: 0 };
+      }
+
+      if (expense.transaction_type === '지출') {
+        dailyMap[date].지출 += expense.amount;
+      } else if (expense.transaction_type === '수입') {
+        dailyMap[date].수입 += expense.amount;
+      }
+    });
+
+    // 날짜 순으로 정렬하여 배열로 변환
+    const sortedData = Object.entries(dailyMap)
+      .map(([date, amounts]) => ({
+        날짜: new Date(date).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' }),
+        fullDate: date,
+        지출: amounts.지출,
+        수입: amounts.수입
+      }))
+      .sort((a, b) => new Date(a.fullDate).getTime() - new Date(b.fullDate).getTime());
+
+    return sortedData;
+  };
+
+  // 월별 지출/수입 데이터 준비
+  const prepareMonthlyData = () => {
+    if (!expenses || expenses.length === 0) return [];
+
+    // 월별로 지출과 수입을 그룹화
+    const monthlyMap: Record<string, { 지출: number; 수입: number }> = {};
+
+    expenses.forEach(expense => {
+      const date = new Date(expense.transaction_date);
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+
+      if (!monthlyMap[monthKey]) {
+        monthlyMap[monthKey] = { 지출: 0, 수입: 0 };
+      }
+
+      if (expense.transaction_type === '지출') {
+        monthlyMap[monthKey].지출 += expense.amount;
+      } else if (expense.transaction_type === '수입') {
+        monthlyMap[monthKey].수입 += expense.amount;
+      }
+    });
+
+    // 월 순으로 정렬하여 배열로 변환
+    const sortedData = Object.entries(monthlyMap)
+      .map(([month, amounts]) => ({
+        월: `${month.split('-')[1]}월`,
+        fullMonth: month,
+        지출: amounts.지출,
+        수입: amounts.수입
+      }))
+      .sort((a, b) => a.fullMonth.localeCompare(b.fullMonth));
+
+    return sortedData;
+  };
+
+  // 지출/수입 비율 데이터 준비
+  const prepareExpenseIncomeRatioData = () => {
+    if (!expenseData) return [];
+
+    return [
+      { name: '지출', value: expenseData.summary.total_expense },
+      { name: '수입', value: expenseData.summary.total_income }
+    ];
+  };
+
   // 필터링된 거래내역
   const filteredExpenses = expenses.filter(expense => {
     const categoryMatch = categoryFilter === '전체' || expense.category === categoryFilter;
@@ -458,6 +599,10 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
   });
 
   const { pieData: compositionPieData, barData: compositionBarData } = prepareAssetCompositionData();
+  const { pieData: incomePieData, barData: incomeBarData } = prepareIncomeCompositionData();
+  const dailyData = prepareDailyData();
+  const monthlyData = prepareMonthlyData();
+  const ratioData = prepareExpenseIncomeRatioData();
 
   if (loading) {
     return (
@@ -728,7 +873,7 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
           </div>
         )}
 
-        {/* 자산 구성 분석 섹션 */}
+        {/* 지출 구성 분석 섹션 */}
         {expenseData && (
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8">
             <div className="mb-4">
@@ -850,6 +995,176 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
                 </ResponsiveContainer>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* 수입 구성 분석 섹션 */}
+        {expenseData && (
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8">
+            <div className="mb-4">
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  {incomeChartViewType === '전체' ? '수입 구성 분석' :
+                   incomeSubViewType ? `${incomeSubViewType} 상세 분석` :
+                   `${incomeChartViewType} 세부 분석`}
+                </h3>
+              </div>
+
+              {/* 1단계: 대분류 버튼 */}
+              <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1 flex-wrap gap-1 mb-2">
+                {['전체', '근로소득', '사업소득', '투자소득', '기타소득'].map((viewType) => (
+                  <button
+                    key={viewType}
+                    onClick={() => {
+                      setIncomeChartViewType(viewType as '전체' | '근로소득' | '사업소득' | '투자소득' | '기타소득');
+                      setIncomeSubViewType(null);
+                    }}
+                    className={`px-2 py-1 text-xs rounded transition-colors ${
+                      incomeChartViewType === viewType
+                        ? 'bg-green-500 text-white'
+                        : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                    }`}
+                  >
+                    {viewType}
+                  </button>
+                ))}
+              </div>
+
+              {/* 2단계: 소분류 버튼 (대분류 선택 시에만 표시) */}
+              {incomeChartViewType !== '전체' && incomeCategories[incomeChartViewType] && (
+                <div className="flex bg-gray-50 dark:bg-gray-600 rounded-lg p-1 flex-wrap gap-1">
+                  <button
+                    onClick={() => setIncomeSubViewType(null)}
+                    className={`px-2 py-1 text-xs rounded transition-colors ${
+                      !incomeSubViewType
+                        ? 'bg-purple-500 text-white'
+                        : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-500'
+                    }`}
+                  >
+                    전체
+                  </button>
+                  {incomeCategories[incomeChartViewType].map((subCategory) => (
+                    <button
+                      key={subCategory}
+                      onClick={() => setIncomeSubViewType(subCategory)}
+                      className={`px-2 py-1 text-xs rounded transition-colors ${
+                        incomeSubViewType === subCategory
+                          ? 'bg-purple-500 text-white'
+                          : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-500'
+                      }`}
+                    >
+                      {subCategory}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* 도넛 차트와 막대 차트를 나란히 배치 */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* 도넛 차트 - 비중 */}
+              <div>
+                <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2 text-center">구성 비중</h4>
+                <ResponsiveContainer width="100%" height={250}>
+                  <PieChart>
+                    <Pie
+                      data={incomePieData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={40}
+                      outerRadius={80}
+                      paddingAngle={5}
+                      dataKey="value"
+                    >
+                      {incomePieData.map((_entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(value: number) => [`${value.toLocaleString()}원`, '금액']} />
+                    <Legend wrapperStyle={{ fontSize: '10px' }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* 막대 차트 - 금액 */}
+              <div>
+                <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2 text-center">금액 비교</h4>
+                <ResponsiveContainer width="100%" height={250}>
+                  <BarChart data={incomeBarData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" tick={{ fontSize: 10 }} />
+                    <YAxis tick={{ fontSize: 10 }} />
+                    <Tooltip formatter={(value: number) => [`${value.toLocaleString()}원`, '금액']} />
+                    <Bar dataKey="금액" fill="#82ca9d">
+                      {incomeBarData.map((_entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 일별 지출/수입 차트 */}
+        {expenseData && (
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">일별 지출/수입</h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={dailyData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="날짜" tick={{ fontSize: 10 }} />
+                <YAxis tick={{ fontSize: 10 }} />
+                <Tooltip formatter={(value: number) => [`${value.toLocaleString()}원`]} />
+                <Legend />
+                <Bar dataKey="지출" fill="#ef4444" />
+                <Bar dataKey="수입" fill="#10b981" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+
+        {/* 월별 지출/수입 차트 */}
+        {expenseData && (
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">월별 지출/수입</h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={monthlyData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="월" tick={{ fontSize: 10 }} />
+                <YAxis tick={{ fontSize: 10 }} />
+                <Tooltip formatter={(value: number) => [`${value.toLocaleString()}원`]} />
+                <Legend />
+                <Bar dataKey="지출" fill="#ef4444" />
+                <Bar dataKey="수입" fill="#10b981" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+
+        {/* 지출/수입 비율 차트 */}
+        {expenseData && (
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">지출/수입 비율</h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={ratioData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={100}
+                  paddingAngle={5}
+                  dataKey="value"
+                >
+                  <Cell fill="#ef4444" />
+                  <Cell fill="#10b981" />
+                </Pie>
+                <Tooltip formatter={(value: number) => [`${value.toLocaleString()}원`, '금액']} />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
           </div>
         )}
 
