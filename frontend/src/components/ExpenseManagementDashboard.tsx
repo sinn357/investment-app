@@ -524,6 +524,45 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
     return sortedData;
   };
 
+  // 월별 지출/수입 데이터 준비 (2025년 12월부터 활성화 예정)
+  // 현재는 선택한 월의 데이터만 가져오므로 월별 차트가 의미 없음
+  // 다음 달(12월)에 2개월 데이터가 쌓이면 '월별' 탭 추가 및 이 함수 활성화
+  /*
+  const prepareMonthlyData = () => {
+    if (!expenses || expenses.length === 0) return [];
+
+    // 월별로 지출과 수입을 그룹화
+    const monthlyMap: Record<string, { 지출: number; 수입: number }> = {};
+
+    expenses.forEach(expense => {
+      const date = new Date(expense.transaction_date);
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+
+      if (!monthlyMap[monthKey]) {
+        monthlyMap[monthKey] = { 지출: 0, 수입: 0 };
+      }
+
+      if (expense.transaction_type === '지출') {
+        monthlyMap[monthKey].지출 += Number(expense.amount);
+      } else if (expense.transaction_type === '수입') {
+        monthlyMap[monthKey].수입 += Number(expense.amount);
+      }
+    });
+
+    // 월 순으로 정렬하여 배열로 변환
+    const sortedData = Object.entries(monthlyMap)
+      .map(([month, amounts]) => ({
+        월: `${month.split('-')[1]}월`,
+        fullMonth: month,
+        지출: amounts.지출,
+        수입: amounts.수입
+      }))
+      .sort((a, b) => a.fullMonth.localeCompare(b.fullMonth));
+
+    return sortedData;
+  };
+  */
+
   // 지출/수입 비율 데이터 준비
   const prepareExpenseIncomeRatioData = () => {
     if (!expenseData) return [];
