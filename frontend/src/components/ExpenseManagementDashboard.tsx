@@ -956,7 +956,7 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
                       outerRadius={100}
                       paddingAngle={5}
                       dataKey="value"
-                      label
+                      label={(entry) => `${entry.value.toLocaleString()}원`}
                     >
                       {compositionPieData.map((entry, index) => {
                         if (chartViewType === '전체') {
@@ -1052,7 +1052,7 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
                       outerRadius={100}
                       paddingAngle={5}
                       dataKey="value"
-                      label
+                      label={(entry) => `${entry.value.toLocaleString()}원`}
                     >
                       {incomePieData.map((_entry, index) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -1136,7 +1136,7 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
                       outerRadius={100}
                       paddingAngle={5}
                       dataKey="value"
-                      label
+                      label={(entry) => `${entry.value.toLocaleString()}원`}
                     >
                       <Cell fill="#ef4444" />
                       <Cell fill="#10b981" />
