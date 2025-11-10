@@ -164,7 +164,7 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
   const [incomeSubViewType, setIncomeSubViewType] = useState<string | null>(null);
 
   // 시계열 차트 탭 상태
-  const [timeSeriesTab, setTimeSeriesTab] = useState<'일별' | '월별' | '비율'>('일별');
+  const [timeSeriesTab, setTimeSeriesTab] = useState<'일별' | '비율'>('일별');
 
   // API URL 설정
   const API_BASE_URL = 'https://investment-app-backend-x166.onrender.com';
@@ -604,8 +604,16 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
   const { pieData: compositionPieData, barData: compositionBarData } = prepareAssetCompositionData();
   const { pieData: incomePieData, barData: incomeBarData } = prepareIncomeCompositionData();
   const dailyData = prepareDailyData();
-  const monthlyData = prepareMonthlyData();
   const ratioData = prepareExpenseIncomeRatioData();
+
+  // 디버깅용 콘솔 로그
+  console.log('=== 차트 데이터 디버깅 ===');
+  console.log('지출 구성 pieData:', compositionPieData);
+  console.log('수입 구성 pieData:', incomePieData);
+  console.log('일별 데이터:', dailyData);
+  console.log('expenses 배열:', expenses);
+  console.log('expenseData:', expenseData);
+  console.log('expenseData.by_category:', expenseData?.by_category);
 
   if (loading) {
     return (
@@ -1073,10 +1081,10 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
 
               {/* 탭 버튼 */}
               <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1 gap-1">
-                {['일별', '월별', '비율'].map((tab) => (
+                {['일별', '비율'].map((tab) => (
                   <button
                     key={tab}
-                    onClick={() => setTimeSeriesTab(tab as '일별' | '월별' | '비율')}
+                    onClick={() => setTimeSeriesTab(tab as '일별' | '비율')}
                     className={`flex-1 px-4 py-2 text-sm rounded transition-colors ${
                       timeSeriesTab === tab
                         ? 'bg-blue-500 text-white font-medium'
@@ -1096,34 +1104,6 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
                   <BarChart data={dailyData}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="날짜" tick={{ fontSize: 10 }} />
-                    <YAxis
-                      tick={{ fontSize: 10 }}
-                      tickFormatter={(value) => {
-                        if (value >= 1000000) return `${(value / 1000000).toFixed(0)}M`;
-                        if (value >= 1000) return `${(value / 1000).toFixed(0)}K`;
-                        return value.toString();
-                      }}
-                    />
-                    <Tooltip formatter={(value: number) => [`${value.toLocaleString()}원`]} />
-                    <Legend />
-                    <Bar dataKey="지출" fill="#ef4444" />
-                    <Bar dataKey="수입" fill="#10b981" />
-                  </BarChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="h-[300px] flex items-center justify-center text-gray-500">
-                  데이터가 없습니다
-                </div>
-              )
-            )}
-
-            {/* 월별 차트 */}
-            {timeSeriesTab === '월별' && (
-              monthlyData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={monthlyData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="월" tick={{ fontSize: 10 }} />
                     <YAxis
                       tick={{ fontSize: 10 }}
                       tickFormatter={(value) => {
