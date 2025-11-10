@@ -505,9 +505,9 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
       }
 
       if (expense.transaction_type === '지출') {
-        dailyMap[date].지출 += expense.amount;
+        dailyMap[date].지출 += Number(expense.amount);
       } else if (expense.transaction_type === '수입') {
-        dailyMap[date].수입 += expense.amount;
+        dailyMap[date].수입 += Number(expense.amount);
       }
     });
 
