@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
+import ExpenseGoalGauge from './ExpenseGoalGauge';
+import IncomeGoalGauge from './IncomeGoalGauge';
 
 interface Expense {
   id: number;
@@ -166,6 +168,17 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
   // 시계열 차트 탭 상태
   const [timeSeriesTab, setTimeSeriesTab] = useState<'일별' | '비율'>('일별');
 
+  // 게이지 섹션 상태
+  const [budgetGoals, setBudgetGoals] = useState<{
+    expense_goals: Record<string, Record<string, number>>;
+    income_goals: Record<string, Record<string, number>>;
+  }>({
+    expense_goals: {},
+    income_goals: {}
+  });
+  const [showExpenseGoals, setShowExpenseGoals] = useState(false);
+  const [showIncomeGoals, setShowIncomeGoals] = useState(false);
+
   // API URL 설정
   const API_BASE_URL = 'https://investment-app-backend-x166.onrender.com';
 
@@ -219,9 +232,57 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
     }
   }, [API_BASE_URL, selectedYear, selectedMonth, user.id]);
 
+  // 예산 목표 가져오기
+  const fetchBudgetGoals = useCallback(async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/expense-budget-goals?user_id=${user.id}`, {
+        headers: getHeaders()
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch budget goals');
+      }
+
+      const result = await response.json();
+      if (result.status === 'success') {
+        setBudgetGoals(result.data);
+      }
+    } catch (error) {
+      console.error('Error fetching budget goals:', error);
+    }
+  }, [API_BASE_URL, user.id]);
+
+  // 예산 목표 저장하기
+  const saveBudgetGoals = async (newGoals: typeof budgetGoals) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/expense-budget-goals`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({
+          user_id: user.id,
+          expense_goals: newGoals.expense_goals,
+          income_goals: newGoals.income_goals
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save budget goals');
+      }
+
+      const result = await response.json();
+      if (result.status === 'success') {
+        console.log('Budget goals saved successfully');
+      }
+    } catch (error) {
+      console.error('Error saving budget goals:', error);
+      alert('예산 목표 저장에 실패했습니다.');
+    }
+  };
+
   useEffect(() => {
     fetchExpenses();
-  }, [fetchExpenses, refreshKey]);
+    fetchBudgetGoals();
+  }, [fetchExpenses, fetchBudgetGoals, refreshKey]);
 
   // 폼 제출
   const handleSubmit = async (e: React.FormEvent) => {
@@ -1148,6 +1209,33 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
                 </div>
               )
             )}
+          </div>
+        )}
+
+        {/* 게이지 섹션 - 목표 지출/수입 */}
+        {expenseData && (
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-8">
+            {/* 목표 지출 게이지 */}
+            <ExpenseGoalGauge
+              expenseData={expenseData.by_category.filter(item => item.transaction_type === '지출')}
+              goals={budgetGoals.expense_goals}
+              onSaveGoals={(goals) => {
+                const newGoals = { ...budgetGoals, expense_goals: goals };
+                setBudgetGoals(newGoals);
+                saveBudgetGoals(newGoals);
+              }}
+            />
+
+            {/* 목표 수입 게이지 */}
+            <IncomeGoalGauge
+              incomeData={expenseData.by_category.filter(item => item.transaction_type === '수입')}
+              goals={budgetGoals.income_goals}
+              onSaveGoals={(goals) => {
+                const newGoals = { ...budgetGoals, income_goals: goals };
+                setBudgetGoals(newGoals);
+                saveBudgetGoals(newGoals);
+              }}
+            />
           </div>
         )}
 

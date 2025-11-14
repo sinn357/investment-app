@@ -8,8 +8,8 @@
 - **Project:** Investment App - Economic Indicators Dashboard
 - **Repo Root:** /Users/woocheolshin/Documents/Vibecoding_1/investment-app
 - **Owner:** Partner
-- **Last Updated:** 2025-11-08 23:45 KST
-- **Session Goal (Today):** ✅ 가계부 지출 구성 분석 섹션 구현 완료 (기존 차트 제거 + 2단계 필터링 시스템 + 도넛/막대 차트 이중 레이아웃 + 대분류별 색상 그룹 + 프로덕션 배포)
+- **Last Updated:** 2025-11-15 00:30 KST
+- **Session Goal (Today):** ✅ 가계부 목표 지출/수입 게이지 섹션 완전 구현 (백엔드 API + PostgreSQL 테이블 + 2개 게이지 컴포넌트 + 대시보드 통합)
 
 ---
 
@@ -122,6 +122,7 @@ investment-app/
 - 없음
 
 ### Recent Done
+- **T-083:** 가계부 목표 지출/수입 게이지 시스템 완전 구현 ✅ (2025-11-15) - 백엔드 API (/api/expense-budget-goals GET/POST) + PostgreSQL expense_budget_goals 테이블 (JSONB 구조) + ExpenseGoalGauge 컴포넌트 (대분류/소분류 목표 설정 + 진행률 게이지) + IncomeGoalGauge 컴포넌트 (4개 대분류 + 소분류별 목표) + ExpenseManagementDashboard 통합 (2열 그리드 레이아웃) + 실시간 목표 저장/로드 + 펼치기/접기 UI + 진행률 색상 시스템 (지출: 100%=빨강, 수입: 100%=초록)
 - **T-082:** 가계부 차트 타입 변경 및 데이터 처리 개선 완전 구현 ✅ (2025-11-11) - 지출/수입 구성 분석 도넛형 전환 + 막대 차트 제거 + 사이드바이사이드 레이아웃 (50% 공간 절약) + 일별/비율 탭 시스템 구현 + 백엔드 문자열 타입 금액 데이터 Number() 변환 (일별/구성/비율 모든 차트) + 천단위 쉼표 포맷팅 (1,000,000원) + TypeScript 타입 에러 완전 해결 + 월별 차트 코드 주석 보존 (12월 활성화 예정) + Vercel 배포 완료
 - **T-081:** 가계부 지출 구성 분석 섹션 완전 구현 ✅ (2025-11-08) - 기존 지출분포/카테고리별지출 차트 제거 + 포트폴리오와 동일한 2단계 필터링 시스템 (대분류: 전체/생활/건강/사회/여가/쇼핑/기타 + 소분류: 동적 표시) + 도넛차트(구성 비중) + 막대차트(금액 비교) 이중 레이아웃 + 대분류별 색상 그룹 시스템 (CATEGORY_COLORS) + 소분류 선택 시 개별 거래내역 상세 분석 + Vercel 배포 완료
 - **T-080:** 가계부 연도/월 필터링 시스템 완전 구현 ✅ (2025-11-08) - 연도/월 선택 UI (드롭다운 + 이전/다음 버튼) + 백엔드 날짜 범위 필터링 (start_date/end_date) + 프론트엔드 useCallback 기반 데이터 페칭 + 요약 통계/차트/테이블 자동 갱신 + 전체 레이아웃 재구성 (필터 UI 최상단 배치) + Vercel/Render 배포 완료

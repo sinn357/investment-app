@@ -1394,6 +1394,52 @@ def save_goal_settings():
             "message": f"목표 설정 저장 실패: {str(e)}"
         }), 500
 
+# === 가계부 예산 목표 설정 API ===
+
+@app.route('/api/expense-budget-goals', methods=['GET'])
+def get_expense_budget_goals():
+    """가계부 예산 목표 조회 API"""
+    try:
+        user_id = request.args.get('user_id', 'default')
+        result = db_service.get_expense_budget_goals(user_id)
+
+        if result.get('status') == 'success':
+            return jsonify(result)
+        else:
+            return jsonify(result), 500
+
+    except Exception as e:
+        print(f"Error getting expense budget goals: {e}")
+        return jsonify({
+            "status": "error",
+            "message": f"예산 목표 조회 실패: {str(e)}"
+        }), 500
+
+@app.route('/api/expense-budget-goals', methods=['POST'])
+def save_expense_budget_goals():
+    """가계부 예산 목표 저장 API"""
+    try:
+        data = request.get_json()
+        user_id = data.get('user_id', 'default')
+        expense_goals = data.get('expense_goals', {})  # { "생활": { "전체": 1000000, "외식": 300000 } }
+        income_goals = data.get('income_goals', {})    # { "근로소득": { "전체": 5000000, "급여": 5000000 } }
+
+        print(f"Saving expense budget goals: user_id={user_id}")
+
+        result = db_service.save_expense_budget_goals(user_id, expense_goals, income_goals)
+
+        if result.get('status') == 'success':
+            return jsonify(result)
+        else:
+            return jsonify(result), 500
+
+    except Exception as e:
+        print(f"Error saving expense budget goals: {e}")
+        return jsonify({
+            "status": "error",
+            "message": f"예산 목표 저장 실패: {str(e)}"
+        }), 500
+
 # === 사용자 인증 API ===
 
 @app.route('/api/auth/register', methods=['POST'])

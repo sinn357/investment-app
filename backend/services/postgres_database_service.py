@@ -1998,3 +1998,95 @@ class PostgresDatabaseService:
                 "data": [],
                 "summary": {}
             }
+
+    def get_expense_budget_goals(self, user_id: str = 'default') -> Dict[str, Any]:
+        """가계부 예산 목표를 데이터베이스에서 조회"""
+        try:
+            print(f"PostgreSQL get_expense_budget_goals called for user: {user_id}")
+            with self.get_connection() as conn:
+                with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                    # expense_budget_goals 테이블 존재 확인 및 생성
+                    cur.execute("""
+                        CREATE TABLE IF NOT EXISTS expense_budget_goals (
+                            user_id VARCHAR(100) PRIMARY KEY,
+                            expense_goals JSONB DEFAULT '{}'::jsonb,
+                            income_goals JSONB DEFAULT '{}'::jsonb,
+                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                        )
+                    """)
+                    conn.commit()
+
+                    cur.execute("SELECT * FROM expense_budget_goals WHERE user_id = %s", (user_id,))
+                    result = cur.fetchone()
+
+                    if result:
+                        return {
+                            "status": "success",
+                            "data": {
+                                "expense_goals": result['expense_goals'] or {},
+                                "income_goals": result['income_goals'] or {}
+                            }
+                        }
+                    else:
+                        # 기본값 반환
+                        return {
+                            "status": "success",
+                            "data": {
+                                "expense_goals": {},
+                                "income_goals": {}
+                            }
+                        }
+
+        except Exception as e:
+            print(f"PostgreSQL get_expense_budget_goals error: {e}")
+            return {
+                "status": "error",
+                "message": f"예산 목표 조회 중 오류가 발생했습니다: {str(e)}"
+            }
+
+    def save_expense_budget_goals(self, user_id: str, expense_goals: Dict, income_goals: Dict) -> Dict[str, Any]:
+        """가계부 예산 목표를 데이터베이스에 저장"""
+        try:
+            print(f"PostgreSQL save_expense_budget_goals called for user: {user_id}")
+            print(f"Data: expense_goals={expense_goals}, income_goals={income_goals}")
+
+            with self.get_connection() as conn:
+                with conn.cursor() as cur:
+                    # 테이블 존재 확인 및 생성
+                    cur.execute("""
+                        CREATE TABLE IF NOT EXISTS expense_budget_goals (
+                            user_id VARCHAR(100) PRIMARY KEY,
+                            expense_goals JSONB DEFAULT '{}'::jsonb,
+                            income_goals JSONB DEFAULT '{}'::jsonb,
+                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                        )
+                    """)
+
+                    # UPSERT (INSERT ... ON CONFLICT UPDATE)
+                    sql = """
+                    INSERT INTO expense_budget_goals (user_id, expense_goals, income_goals, updated_at)
+                    VALUES (%s, %s, %s, CURRENT_TIMESTAMP)
+                    ON CONFLICT (user_id)
+                    DO UPDATE SET
+                        expense_goals = EXCLUDED.expense_goals,
+                        income_goals = EXCLUDED.income_goals,
+                        updated_at = CURRENT_TIMESTAMP
+                    """
+
+                    cur.execute(sql, (user_id, json.dumps(expense_goals), json.dumps(income_goals)))
+                    conn.commit()
+
+                    print(f"Expense budget goals saved successfully for user: {user_id}")
+                    return {
+                        "status": "success",
+                        "message": "예산 목표가 저장되었습니다."
+                    }
+
+        except Exception as e:
+            print(f"PostgreSQL save_expense_budget_goals error: {e}")
+            return {
+                "status": "error",
+                "message": f"예산 목표 저장 중 오류가 발생했습니다: {str(e)}"
+            }
