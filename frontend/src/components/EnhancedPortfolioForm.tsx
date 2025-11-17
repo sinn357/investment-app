@@ -1,6 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { portfolioFormSchema, type PortfolioFormInput } from '../lib/validations/portfolio';
 
 interface User {
   id: number;
@@ -22,40 +25,47 @@ export default function EnhancedPortfolioForm({ onAddItem, user, onExpandedChang
     onExpandedChange?.(isExpanded);
   }, [isExpanded, onExpandedChange]);
 
-  const [formData, setFormData] = useState({
-    assetType: '',
-    subCategory: '',
-    name: '',
-    amount: '',
-    quantity: '',
-    avgPrice: '',
-    principal: '',
-    evaluationAmount: '',
-    date: '',
-    note: '',
-    // 부동산 전용 필드
-    areaPyeong: '',
-    acquisitionTax: '',
-    lawyerFee: '',
-    brokerageFee: '',
-    rentType: 'monthly', // 'monthly' | 'jeonse'
-    rentalIncome: '',
-    jeonseDeposit: '',
-    // 예금/적금 전용 필드
-    maturityDate: '',
-    interestRate: '',
-    earlyWithdrawalFee: '',
-    // MMF/CMA 전용 필드
-    currentYield: '',
-    annualYield: '',
-    minimumBalance: '',
-    withdrawalFee: '',
-    // 주식/ETF 전용 필드
-    dividendRate: '',
-    // 펀드 전용 필드
-    nav: '',
-    managementFee: ''
+  // React Hook Form으로 전환
+  const form = useForm<PortfolioFormInput>({
+    resolver: zodResolver(portfolioFormSchema),
+    defaultValues: {
+      assetType: 'immediate-cash',
+      subCategory: 'cash',
+      name: '',
+      amount: '',
+      quantity: '',
+      avgPrice: '',
+      principal: '',
+      evaluationAmount: '',
+      date: new Date().toISOString().split('T')[0],
+      note: '',
+      // 부동산 전용 필드
+      areaPyeong: '',
+      acquisitionTax: '',
+      lawyerFee: '',
+      brokerageFee: '',
+      rentType: 'monthly',
+      rentalIncome: '',
+      jeonseDeposit: '',
+      // 예금/적금 전용 필드
+      maturityDate: '',
+      interestRate: '',
+      earlyWithdrawalFee: '',
+      // MMF/CMA 전용 필드
+      currentYield: '',
+      annualYield: '',
+      minimumBalance: '',
+      withdrawalFee: '',
+      // 주식/ETF 전용 필드
+      dividendRate: '',
+      // 펀드 전용 필드
+      nav: '',
+      managementFee: ''
+    },
   });
+
+  // 기존 로직 호환성을 위한 formData (watch로 실시간 동기화)
+  const formData = form.watch();
 
   const assetTypes = [
     { value: 'immediate-cash', label: '즉시현금' },
@@ -173,45 +183,40 @@ export default function EnhancedPortfolioForm({ onAddItem, user, onExpandedChang
 
     // 대분류 변경 시 소분류 초기화
     if (name === 'assetType') {
-      setFormData(prev => ({ ...prev, [name]: value, subCategory: '' }));
+      form.setValue(name as keyof PortfolioFormInput, value as never);
+      form.setValue('subCategory', '' as never);
     } else if (name === 'rentType') {
       // 임대 유형 변경 시 관련 필드 초기화
-      setFormData(prev => ({
-        ...prev,
-        [name]: value,
-        rentalIncome: '', // 월세 수입 초기화
-        jeonseDeposit: '' // 전세보증금 초기화
-      }));
+      form.setValue('rentType', value as never);
+      form.setValue('rentalIncome', '');
+      form.setValue('jeonseDeposit', '');
     } else {
-      setFormData(prev => {
-        const newData = { ...prev, [name]: value };
+      form.setValue(name as keyof PortfolioFormInput, value as never);
 
-        // 수량 또는 평균가가 변경될 때 원금 자동 계산 (사용자가 원금을 직접 입력하지 않은 경우만)
-        if ((name === 'quantity' || name === 'avgPrice') && showPrincipalAndEvaluation) {
-          const quantity = parseFloat(name === 'quantity' ? value : newData.quantity) || 0;
-          const avgPrice = parseFloat(name === 'avgPrice' ? value : newData.avgPrice) || 0;
+      // 수량 또는 평균가가 변경될 때 원금 자동 계산
+      if ((name === 'quantity' || name === 'avgPrice') && showPrincipalAndEvaluation) {
+        const currentFormData = form.getValues();
+        const quantity = parseFloat(name === 'quantity' ? value : currentFormData.quantity || '0') || 0;
+        const avgPrice = parseFloat(name === 'avgPrice' ? value : currentFormData.avgPrice || '0') || 0;
 
-          // 수량과 평균가가 모두 있고, 원금이 비어있거나 기존 계산값과 같은 경우에만 자동 계산
-          if (quantity > 0 && avgPrice > 0) {
-            const calculatedPrincipal = quantity * avgPrice;
-            const currentPrincipal = parseFloat(newData.principal) || 0;
+        // 수량과 평균가가 모두 있으면 원금 자동 계산
+        if (quantity > 0 && avgPrice > 0) {
+          const calculatedPrincipal = quantity * avgPrice;
+          const currentPrincipal = parseFloat(currentFormData.principal || '0') || 0;
 
-            // 원금이 비어있거나, 기존 계산값과 동일한 경우에만 업데이트
-            if (!newData.principal || Math.abs(currentPrincipal - (parseFloat(prev.quantity || '0') * parseFloat(prev.avgPrice || '0'))) < 0.01) {
-              newData.principal = calculatedPrincipal.toString();
-            }
+          // 원금이 비어있거나, 기존 계산값과 동일한 경우에만 업데이트
+          if (!currentFormData.principal || Math.abs(currentPrincipal - (parseFloat(currentFormData.quantity || '0') * parseFloat(currentFormData.avgPrice || '0'))) < 0.01) {
+            form.setValue('principal', calculatedPrincipal.toString());
           }
         }
-
-        return newData;
-      });
+      }
     }
   };
 
   // 수익률 계산 함수
   const calculateProfitRate = () => {
-    const principal = parseFloat(formData.principal) || 0;
-    const evaluationAmount = parseFloat(formData.evaluationAmount) || 0;
+    const principal = parseFloat(formData.principal || '0') || 0;
+    const evaluationAmount = parseFloat(formData.evaluationAmount || '0') || 0;
 
     if (principal > 0) {
       return ((evaluationAmount - principal) / principal * 100).toFixed(2);
@@ -220,39 +225,13 @@ export default function EnhancedPortfolioForm({ onAddItem, user, onExpandedChang
   };
 
   const calculateProfitLoss = () => {
-    const principal = parseFloat(formData.principal) || 0;
-    const evaluationAmount = parseFloat(formData.evaluationAmount) || 0;
+    const principal = parseFloat(formData.principal || '0') || 0;
+    const evaluationAmount = parseFloat(formData.evaluationAmount || '0') || 0;
     return evaluationAmount - principal;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!formData.assetType || !formData.subCategory || !formData.name || !formData.date) {
-      alert('자산군, 소분류, 자산명, 날짜는 필수 입력 항목입니다.');
-      return;
-    }
-
-    // 자산군별 필수 필드 검증
-    if (showQuantityAndPrice && (!formData.quantity || !formData.avgPrice)) {
-      alert('보유수량과 매수평균가를 입력해주세요.');
-      return;
-    }
-
-    // 원금/평가금액 검증 - 부동산/원자재는 수량 없이도 원금/평가금액 필요
-    const needsPrincipalAndEvaluation = showPrincipalAndEvaluation ||
-      (formData.assetType === 'alternative-investment' && ['real-estate', 'commodity'].includes(formData.subCategory));
-
-    if (needsPrincipalAndEvaluation && (!formData.principal || !formData.evaluationAmount)) {
-      alert('원금과 평가금액을 입력해주세요.');
-      return;
-    }
-
-    if (showOnlyAmount && !formData.amount) {
-      alert('보유금액을 입력해주세요.');
-      return;
-    }
-
+  // React Hook Form submit handler - Zod validation is already done at this point
+  const onSubmit = async (data: PortfolioFormInput) => {
     // 데이터 정리 및 출력
     const submitData: Record<string, unknown> = {
       assetType: assetTypes.find(type => type.value === formData.assetType)?.label || formData.assetType,
@@ -344,10 +323,10 @@ export default function EnhancedPortfolioForm({ onAddItem, user, onExpandedChang
       return;
     }
 
-    // 폼 초기화
-    setFormData({
-      assetType: '',
-      subCategory: '',
+    // React Hook Form으로 폼 초기화
+    form.reset({
+      assetType: 'immediate-cash',
+      subCategory: 'cash',
       name: '',
       amount: '',
       quantity: '',
@@ -361,7 +340,7 @@ export default function EnhancedPortfolioForm({ onAddItem, user, onExpandedChang
       acquisitionTax: '',
       lawyerFee: '',
       brokerageFee: '',
-      rentType: 'monthly', // 'monthly' | 'jeonse'
+      rentType: 'monthly',
       rentalIncome: '',
       jeonseDeposit: '',
       // 예금/적금 전용 필드
@@ -404,7 +383,7 @@ export default function EnhancedPortfolioForm({ onAddItem, user, onExpandedChang
       <div className={`transition-all duration-300 ease-in-out overflow-hidden ${
         isExpanded ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'
       }`}>
-        <form onSubmit={handleSubmit} className="space-y-6 pt-2">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-2">
         {/* 자산군 선택 */}
         <div>
           <label htmlFor="assetType" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -606,7 +585,7 @@ export default function EnhancedPortfolioForm({ onAddItem, user, onExpandedChang
                       <select
                         id={fieldName}
                         name={fieldName}
-                        value={formData[fieldName as keyof typeof formData]}
+                        value={formData[fieldName as keyof typeof formData] ?? ''}
                         onChange={handleInputChange}
                         className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
                       >
@@ -618,7 +597,7 @@ export default function EnhancedPortfolioForm({ onAddItem, user, onExpandedChang
                         type={config.type || "number"}
                         id={fieldName}
                         name={fieldName}
-                        value={formData[fieldName as keyof typeof formData]}
+                        value={formData[fieldName as keyof typeof formData] ?? ''}
                         onChange={handleInputChange}
                         placeholder={config.placeholder}
                         step={config.step}
@@ -656,7 +635,7 @@ export default function EnhancedPortfolioForm({ onAddItem, user, onExpandedChang
           <textarea
             id="note"
             name="note"
-            value={formData.note}
+            value={formData.note ?? ''}
             onChange={handleInputChange}
             rows={3}
             placeholder="추가 정보나 메모를 입력하세요"
