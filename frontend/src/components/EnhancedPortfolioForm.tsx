@@ -13,6 +13,8 @@ import {
   FormMessage,
 } from './ui/form';
 import { Input } from './ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Textarea } from './ui/textarea';
 
 interface User {
   id: number;
@@ -395,47 +397,61 @@ export default function EnhancedPortfolioForm({ onAddItem, user, onExpandedChang
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-2">
         {/* 자산군 선택 */}
-        <div>
-          <label htmlFor="assetType" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            자산군 <span className="text-red-500">*</span>
-          </label>
-          <select
-            id="assetType"
-            name="assetType"
-            value={formData.assetType}
-            onChange={handleInputChange}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-          >
-            <option value="">자산군을 선택하세요</option>
-            {assetTypes.map(type => (
-              <option key={type.value} value={type.value}>
-                {type.label}
-              </option>
-            ))}
-          </select>
-        </div>
+        <FormField
+          control={form.control}
+          name="assetType"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>
+                자산군 <span className="text-red-500">*</span>
+              </FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="자산군을 선택하세요" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {assetTypes.map(type => (
+                    <SelectItem key={type.value} value={type.value}>
+                      {type.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         {/* 소분류 선택 */}
         {formData.assetType && (
-          <div>
-            <label htmlFor="subCategory" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              소분류 <span className="text-red-500">*</span>
-            </label>
-            <select
-              id="subCategory"
-              name="subCategory"
-              value={formData.subCategory}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-            >
-              <option value="">소분류를 선택하세요</option>
-              {subCategories[formData.assetType as keyof typeof subCategories]?.map(subType => (
-                <option key={subType.value} value={subType.value}>
-                  {subType.label}
-                </option>
-              ))}
-            </select>
-          </div>
+          <FormField
+            control={form.control}
+            name="subCategory"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>
+                  소분류 <span className="text-red-500">*</span>
+                </FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="소분류를 선택하세요" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {subCategories[formData.assetType as keyof typeof subCategories]?.map(subType => (
+                      <SelectItem key={subType.value} value={subType.value}>
+                        {subType.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         )}
 
         {/* 자산명/종목명 */}
@@ -672,20 +688,25 @@ export default function EnhancedPortfolioForm({ onAddItem, user, onExpandedChang
         />
 
         {/* 메모 */}
-        <div>
-          <label htmlFor="note" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            메모 (선택사항)
-          </label>
-          <textarea
-            id="note"
-            name="note"
-            value={formData.note ?? ''}
-            onChange={handleInputChange}
-            rows={3}
-            placeholder="추가 정보나 메모를 입력하세요"
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white resize-none"
-          />
-        </div>
+        <FormField
+          control={form.control}
+          name="note"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>메모 (선택사항)</FormLabel>
+              <FormControl>
+                <Textarea
+                  placeholder="추가 정보나 메모를 입력하세요"
+                  className="resize-none"
+                  rows={3}
+                  {...field}
+                  value={field.value ?? ''}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         {/* 저장 버튼 */}
         <button
