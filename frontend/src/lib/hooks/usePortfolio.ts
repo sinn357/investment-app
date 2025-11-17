@@ -42,6 +42,7 @@ interface PortfolioResponse {
   status: string
   assets?: Asset[]
   asset?: Asset
+  data?: Asset[]  // 백엔드가 data 필드로 자산을 반환
   message?: string
 }
 
