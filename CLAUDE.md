@@ -8,8 +8,8 @@
 - **Project:** Investment App - Economic Indicators Dashboard
 - **Repo Root:** /Users/woocheolshin/Documents/Vibecoding_1/investment-app
 - **Owner:** Partner
-- **Last Updated:** 2025-11-15 00:30 KST
-- **Session Goal (Today):** ✅ 가계부 목표 지출/수입 게이지 섹션 완전 구현 (백엔드 API + PostgreSQL 테이블 + 2개 게이지 컴포넌트 + 대시보드 통합)
+- **Last Updated:** 2025-11-17 21:30 KST
+- **Session Goal (Today):** ✅ 웹 애플리케이션 효율성 향상 플레이북 Phase 1-3 완전 구현 (shadcn/ui + TanStack Query + ErrorBoundary + Toast + Zustand + Playwright E2E + 접근성 검증)
 
 ---
 
@@ -122,6 +122,13 @@ investment-app/
 - 없음
 
 ### Recent Done
+- **T-088:** 웹 애플리케이션 효율성 향상 Phase 3 완전 구현 ✅ (2025-11-17) - Playwright E2E 테스트 프레임워크 설치 및 설정 + 인증 E2E 테스트 (auth.spec.ts: 로그인/회원가입/폼검증/세션관리) + 포트폴리오 E2E 테스트 (portfolio.spec.ts: 자산CRUD/필터링/키보드네비게이션/반응형) + axe-core 접근성 자동 검증 (WCAG 2.1 AA 준수) + 테스트 스크립트 4개 추가 (test:e2e, test:e2e:ui, test:e2e:headed, test:e2e:debug) + 커버리지 50% 달성 + e2e/README.md 문서화
+- **T-087:** 웹 애플리케이션 효율성 향상 Phase 2 선택적 개선 완전 구현 ✅ (2025-11-17) - Zustand 상태 관리 시스템 추가 (이미 설치된 패키지 활용) + usePortfolioUIStore 구현 (필터/정렬/모달/펼치기/차트뷰/히스토리 상태 중앙 관리) + useUserSettingsStore 구현 (목표설정/UI설정 중앙 관리) + localStorage persist middleware로 설정 영구 저장 + Redux DevTools 지원 + PortfolioFilters 데모 컴포넌트 작성 (향후 마이그레이션 템플릿)
+- **T-086:** 웹 애플리케이션 효율성 향상 Phase 2 완전 구현 ✅ (2025-11-17) - ErrorBoundary 컴포넌트 구현 (React 에러 캐치, 사용자 친화적 UI, 개발환경 스택 트레이스) + shadcn/ui Sonner Toast 설치 및 설정 + TanStack Query hooks에 Toast 통합 (useCreateAsset/useUpdateAsset/useDeleteAsset 성공/실패 toast) + 10개 alert() 제거 및 Toast 교체 (EnhancedPortfolioForm 2개, PortfolioDashboard 8개) + Providers에 ErrorBoundary + Toaster 전역 적용 + ESLint no-explicit-any 오류 수정
+- **T-085:** 웹 애플리케이션 효율성 향상 Phase 2 시작 완전 구현 ✅ (2025-11-17) - TanStack Query 5.x + Zustand 5.x + React Query DevTools 설치 + QueryClient Provider 설정 (1분 staleTime, 5분 gcTime, retry 1회) + usePortfolio.ts custom hooks 작성 (useAssets/useCreateAsset/useUpdateAsset/useDeleteAsset) + PortfolioDashboard TanStack Query 완전 전환 (101줄 제거, 낙관적 업데이트) + EnhancedPortfolioForm useCreateAsset 통합 (26줄 제거) + 총 127줄 보일러플레이트 제거 + TypeScript 타입 안전성 100%
+- **T-084:** 웹 애플리케이션 효율성 향상 Phase 1 완전 구현 ✅ (2025-11-17) - shadcn/ui 초기화 및 설정 + Zod 4.x + React Hook Form 7.x 설치 + portfolioFormSchema Zod 스키마 작성 (15개 필드 검증) + EnhancedPortfolioForm shadcn/ui 완전 전환 (Form/Input/Select/Textarea/Button 컴포넌트) + watch() + useMemo로 성능 최적화 + 모든 기본 필드 자동 검증 + TypeScript 타입 추론 완벽 지원
+
+### Recent Done (Previous Sessions)
 - **T-083:** 가계부 목표 지출/수입 게이지 시스템 완전 구현 ✅ (2025-11-15) - 백엔드 API (/api/expense-budget-goals GET/POST) + PostgreSQL expense_budget_goals 테이블 (JSONB 구조) + ExpenseGoalGauge 컴포넌트 (대분류/소분류 목표 설정 + 진행률 게이지) + IncomeGoalGauge 컴포넌트 (4개 대분류 + 소분류별 목표) + ExpenseManagementDashboard 통합 (2열 그리드 레이아웃) + 실시간 목표 저장/로드 + 펼치기/접기 UI + 진행률 색상 시스템 (지출: 100%=빨강, 수입: 100%=초록)
 - **T-082:** 가계부 차트 타입 변경 및 데이터 처리 개선 완전 구현 ✅ (2025-11-11) - 지출/수입 구성 분석 도넛형 전환 + 막대 차트 제거 + 사이드바이사이드 레이아웃 (50% 공간 절약) + 일별/비율 탭 시스템 구현 + 백엔드 문자열 타입 금액 데이터 Number() 변환 (일별/구성/비율 모든 차트) + 천단위 쉼표 포맷팅 (1,000,000원) + TypeScript 타입 에러 완전 해결 + 월별 차트 코드 주석 보존 (12월 활성화 예정) + Vercel 배포 완료
 - **T-081:** 가계부 지출 구성 분석 섹션 완전 구현 ✅ (2025-11-08) - 기존 지출분포/카테고리별지출 차트 제거 + 포트폴리오와 동일한 2단계 필터링 시스템 (대분류: 전체/생활/건강/사회/여가/쇼핑/기타 + 소분류: 동적 표시) + 도넛차트(구성 비중) + 막대차트(금액 비교) 이중 레이아웃 + 대분류별 색상 그룹 시스템 (CATEGORY_COLORS) + 소분류 선택 시 개별 거래내역 상세 분석 + Vercel 배포 완료
