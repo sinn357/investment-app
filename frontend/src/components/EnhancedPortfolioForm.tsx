@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { portfolioFormSchema, type PortfolioFormInput } from '../lib/validations/portfolio';
@@ -75,7 +75,15 @@ export default function EnhancedPortfolioForm({ onAddItem, user, onExpandedChang
     },
   });
 
-  // 기존 로직 호환성을 위한 formData (watch로 실시간 동기화)
+  // 조건부 렌더링에 필요한 필드만 watch (성능 최적화)
+  const assetType = form.watch('assetType');
+  const subCategory = form.watch('subCategory');
+  const quantity = form.watch('quantity');
+  const avgPrice = form.watch('avgPrice');
+  const principal = form.watch('principal');
+  const evaluationAmount = form.watch('evaluationAmount');
+
+  // 기존 로직 호환성을 위한 formData (전체 watch)
   const formData = form.watch();
 
   const assetTypes = [
@@ -110,28 +118,29 @@ export default function EnhancedPortfolioForm({ onAddItem, user, onExpandedChang
     ]
   };
 
-  // 자산군별 필드 표시 로직
-  const showQuantityAndPrice = (() => {
-    if (formData.assetType === 'investment-assets') return true;
-    if (formData.assetType === 'alternative-investment') {
+  // 자산군별 필드 표시 로직 (useMemo로 최적화)
+  const showQuantityAndPrice = useMemo(() => {
+    if (assetType === 'investment-assets') return true;
+    if (assetType === 'alternative-investment') {
       // 부동산, 원자재는 수량/평균가 대신 원금/평가금액만 사용
-      return !['real-estate', 'commodity'].includes(formData.subCategory);
+      return !['real-estate', 'commodity'].includes(subCategory);
     }
     return false;
-  })();
+  }, [assetType, subCategory]);
 
-  const showPrincipalAndEvaluation = (() => {
-    if (formData.assetType === 'investment-assets') return true;
-    if (formData.assetType === 'alternative-investment') return true;
+  const showPrincipalAndEvaluation = useMemo(() => {
+    if (assetType === 'investment-assets') return true;
+    if (assetType === 'alternative-investment') return true;
     return false;
-  })();
-  const showOnlyAmount = ['immediate-cash', 'deposit-assets'].includes(formData.assetType);
+  }, [assetType]);
 
-  // 소분류별 전용 필드 표시 로직
-  const getSubCategorySpecificFields = () => {
-    const subCat = formData.subCategory;
+  const showOnlyAmount = useMemo(() => {
+    return ['immediate-cash', 'deposit-assets'].includes(assetType);
+  }, [assetType]);
 
-    switch (subCat) {
+  // 소분류별 전용 필드 표시 로직 (useMemo로 최적화)
+  const subCategorySpecificFields = useMemo(() => {
+    switch (subCategory) {
       // 부동산
       case 'real-estate':
         return ['areaPyeong', 'acquisitionTax', 'lawyerFee', 'brokerageFee', 'rentType', 'rentalIncome', 'jeonseDeposit'];
@@ -163,7 +172,7 @@ export default function EnhancedPortfolioForm({ onAddItem, user, onExpandedChang
       default:
         return [];
     }
-  };
+  }, [subCategory]);
 
   // 필드 라벨과 설명 매핑
   const getFieldConfig = (fieldName: string) => {
@@ -254,7 +263,7 @@ export default function EnhancedPortfolioForm({ onAddItem, user, onExpandedChang
     };
 
     // 소분류별 전용 필드들 추가
-    const specificFields = getSubCategorySpecificFields();
+    const specificFields = subCategorySpecificFields;
     specificFields.forEach(fieldName => {
       const value = formData[fieldName as keyof typeof formData];
       if (value) {
@@ -623,13 +632,13 @@ export default function EnhancedPortfolioForm({ onAddItem, user, onExpandedChang
         )}
 
         {/* 소분류별 전용 필드들 */}
-        {formData.subCategory && getSubCategorySpecificFields().length > 0 && (
+        {formData.subCategory && subCategorySpecificFields.length > 0 && (
           <div className="border-t pt-6">
             <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
               {subCategories[formData.assetType as keyof typeof subCategories]?.find(sub => sub.value === formData.subCategory)?.label} 전용 정보
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {getSubCategorySpecificFields().map((fieldName) => {
+              {subCategorySpecificFields.map((fieldName) => {
                 const config = getFieldConfig(fieldName);
                 return (
                   <div key={fieldName}>
