@@ -52,14 +52,23 @@ export function useAssets(userId: number) {
   return useQuery<Asset[], Error>({
     queryKey: ['assets', userId],
     queryFn: async () => {
-      const response = await fetch(`${API_BASE_URL}/api/portfolio?user_id=${userId}`)
-      const data: PortfolioResponse = await response.json()
+      console.log('[useAssets] Fetching assets for userId:', userId);
+      const url = `${API_BASE_URL}/api/portfolio?user_id=${userId}`;
+      console.log('[useAssets] API URL:', url);
+
+      const response = await fetch(url);
+      const data: PortfolioResponse = await response.json();
+
+      console.log('[useAssets] API Response:', { status: data.status, hasAssets: !!data.assets, message: data.message });
 
       if (data.status !== 'success' || !data.assets) {
-        throw new Error(data.message || 'Failed to fetch assets')
+        const errorMsg = data.message || 'Failed to fetch assets';
+        console.error('[useAssets] Error:', errorMsg);
+        throw new Error(errorMsg);
       }
 
-      return data.assets
+      console.log('[useAssets] Success - fetched', data.assets.length, 'assets');
+      return data.assets;
     },
     enabled: !!userId, // userId가 있을 때만 실행
   })

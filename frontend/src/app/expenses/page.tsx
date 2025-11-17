@@ -27,11 +27,20 @@ export default function ExpensesPage() {
         if (savedToken) {
           userData.token = savedToken;
         }
+        // user.id가 없으면 잘못된 데이터로 간주하고 재로그인 요구
+        if (!userData.id) {
+          console.warn('Invalid user data (missing id), clearing localStorage');
+          localStorage.removeItem('portfolio_user');
+          localStorage.removeItem('auth_token');
+          localStorage.removeItem('userId'); // 레거시 키도 제거
+          return;
+        }
         setUser(userData);
       } catch (error) {
         console.error('Error parsing saved user data:', error);
         localStorage.removeItem('portfolio_user');
         localStorage.removeItem('auth_token');
+        localStorage.removeItem('userId');
       }
     }
   }, []);

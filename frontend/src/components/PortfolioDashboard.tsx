@@ -728,7 +728,7 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
     setIsLoadingHistory(true);
     try {
       const userId = localStorage.getItem('userId');
-      let url = `http://localhost:5001/api/portfolio-history?user_id=${userId}&time_range=${range}`;
+      let url = `https://investment-app-backend-x166.onrender.com/api/portfolio-history?user_id=${userId}&time_range=${range}`;
 
       if (start) url += `&start_date=${start}`;
       if (end) url += `&end_date=${end}`;
@@ -985,11 +985,13 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
   }
 
   if (error) {
+    console.error('[PortfolioDashboard] Error state:', { error, userId: user?.id });
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
         <div className="text-center">
           <div className="text-red-500 text-lg font-medium mb-2">오류 발생</div>
           <p className="text-gray-600 dark:text-gray-400 mb-4">{error.message}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-600 mb-4">User ID: {user?.id || 'undefined'}</p>
           <button
             onClick={() => refetchAssets()}
             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md"
