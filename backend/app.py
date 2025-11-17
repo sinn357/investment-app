@@ -74,14 +74,15 @@ def handle_preflight():
         response.headers.add("Access-Control-Allow-Credentials", "true")
         return response
 
-# 모든 응답에 CORS 헤더 추가
+# 모든 응답에 CORS 헤더 추가 (중복 방지를 위해 set 사용)
 @app.after_request
 def add_cors_headers(response):
     origin = request.headers.get('Origin')
     allowed_origins = ["https://investment-app-rust-one.vercel.app", "http://localhost:3000"]
     if origin in allowed_origins:
-        response.headers.add("Access-Control-Allow-Origin", origin)
-        response.headers.add("Access-Control-Allow-Credentials", "true")
+        # add 대신 direct assignment로 중복 방지
+        response.headers['Access-Control-Allow-Origin'] = origin
+        response.headers['Access-Control-Allow-Credentials'] = 'true'
     return response
 
 # 데이터베이스 서비스 초기화 (PostgreSQL 우선 사용)

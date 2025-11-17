@@ -59,16 +59,19 @@ export function useAssets(userId: number) {
       const response = await fetch(url);
       const data: PortfolioResponse = await response.json();
 
-      console.log('[useAssets] API Response:', { status: data.status, hasAssets: !!data.assets, message: data.message });
+      console.log('[useAssets] API Response:', { status: data.status, hasData: !!data.data, hasAssets: !!data.assets, message: data.message });
 
-      if (data.status !== 'success' || !data.assets) {
+      // 백엔드는 data.data로 자산을 반환합니다
+      const assets = data.assets || data.data;
+
+      if (data.status !== 'success' || !assets) {
         const errorMsg = data.message || 'Failed to fetch assets';
         console.error('[useAssets] Error:', errorMsg);
         throw new Error(errorMsg);
       }
 
-      console.log('[useAssets] Success - fetched', data.assets.length, 'assets');
-      return data.assets;
+      console.log('[useAssets] Success - fetched', assets.length, 'assets');
+      return assets;
     },
     enabled: !!userId, // userId가 있을 때만 실행
   })
