@@ -15,6 +15,7 @@ import {
 import { Input } from './ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Textarea } from './ui/textarea';
+import { useCreateAsset } from '../lib/hooks/usePortfolio';
 
 interface User {
   id: number;
@@ -30,6 +31,9 @@ interface EnhancedPortfolioFormProps {
 
 export default function EnhancedPortfolioForm({ onAddItem, user, onExpandedChange }: EnhancedPortfolioFormProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+
+  // TanStack Query mutation
+  const createAssetMutation = useCreateAsset(user.id);
 
   // 접기/펼치기 상태 변경을 상위 컴포넌트에 알림
   useEffect(() => {
@@ -311,35 +315,14 @@ export default function EnhancedPortfolioForm({ onAddItem, user, onExpandedChang
 
     console.log('Portfolio Data:', JSON.stringify(submitData, null, 2));
 
-    // 백엔드 API로 데이터 전송
+    // TanStack Query mutation으로 데이터 전송
     try {
-      const headers: HeadersInit = {
-        'Content-Type': 'application/json',
-      };
-
-      // JWT 토큰이 있으면 Authorization 헤더에 추가
-      if (user.token) {
-        headers['Authorization'] = `Bearer ${user.token}`;
-      }
-
-      const response = await fetch('https://investment-app-backend-x166.onrender.com/api/add-asset', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(submitData),
-      });
-
-      const result = await response.json();
-
-      if (result.status === 'success') {
-        alert('자산이 성공적으로 저장되었습니다!');
-        onAddItem(); // 대시보드 새로고침 트리거
-      } else {
-        alert(`저장 실패: ${result.message}`);
-        return;
-      }
+      await createAssetMutation.mutateAsync(submitData as any); // TypeScript 호환을 위한 any 캐스팅
+      alert('자산이 성공적으로 저장되었습니다!');
+      // onAddItem은 더 이상 필요 없음 (TanStack Query가 자동으로 재검증)
     } catch (error) {
       console.error('API Error:', error);
-      alert('서버 연결에 실패했습니다.');
+      alert('저장 중 오류가 발생했습니다.');
       return;
     }
 
