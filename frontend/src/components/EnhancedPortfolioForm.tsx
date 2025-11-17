@@ -317,7 +317,7 @@ export default function EnhancedPortfolioForm({ onAddItem, user, onExpandedChang
 
     // TanStack Query mutation으로 데이터 전송
     try {
-      await createAssetMutation.mutateAsync(submitData as any); // TypeScript 호환을 위한 any 캐스팅
+      await createAssetMutation.mutateAsync(submitData as PortfolioFormInput & { user_id: number });
       alert('자산이 성공적으로 저장되었습니다!');
       // onAddItem은 더 이상 필요 없음 (TanStack Query가 자동으로 재검증)
     } catch (error) {
