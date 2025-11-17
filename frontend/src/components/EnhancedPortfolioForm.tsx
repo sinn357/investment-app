@@ -4,6 +4,15 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { portfolioFormSchema, type PortfolioFormInput } from '../lib/validations/portfolio';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from './ui/form';
+import { Input } from './ui/input';
 
 interface User {
   id: number;
@@ -383,7 +392,8 @@ export default function EnhancedPortfolioForm({ onAddItem, user, onExpandedChang
       <div className={`transition-all duration-300 ease-in-out overflow-hidden ${
         isExpanded ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'
       }`}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-2">
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-2">
         {/* 자산군 선택 */}
         <div>
           <label htmlFor="assetType" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -429,56 +439,70 @@ export default function EnhancedPortfolioForm({ onAddItem, user, onExpandedChang
         )}
 
         {/* 자산명/종목명 */}
-        <div>
-          <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            자산명/종목명 <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="text"
-            id="name"
-            name="name"
-            value={formData.name}
-            onChange={handleInputChange}
-            placeholder="예: 지갑현금, KB예금, 삼성전자, 비트코인"
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-          />
-        </div>
+        <FormField
+          control={form.control}
+          name="name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>
+                자산명/종목명 <span className="text-red-500">*</span>
+              </FormLabel>
+              <FormControl>
+                <Input
+                  placeholder="예: 지갑현금, KB예금, 삼성전자, 비트코인"
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         {/* 자산군별 특화 필드 */}
         {showQuantityAndPrice && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="quantity" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                보유수량 <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="number"
-                id="quantity"
-                name="quantity"
-                value={formData.quantity}
-                onChange={handleInputChange}
-                placeholder="0"
-                min="0"
-                step="0.001"
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-              />
-            </div>
-            <div>
-              <label htmlFor="avgPrice" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                매수평균가 <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="number"
-                id="avgPrice"
-                name="avgPrice"
-                value={formData.avgPrice}
-                onChange={handleInputChange}
-                placeholder="0"
-                min="0"
-                step="0.01"
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-              />
-            </div>
+            <FormField
+              control={form.control}
+              name="quantity"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    보유수량 <span className="text-red-500">*</span>
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      placeholder="0"
+                      min="0"
+                      step="0.001"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="avgPrice"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    매수평균가 <span className="text-red-500">*</span>
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      placeholder="0"
+                      min="0"
+                      step="0.01"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           </div>
         )}
 
@@ -486,36 +510,46 @@ export default function EnhancedPortfolioForm({ onAddItem, user, onExpandedChang
           (formData.assetType === 'alternative-investment' && ['real-estate', 'commodity'].includes(formData.subCategory))) && (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="principal" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  원금 <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="number"
-                  id="principal"
-                  name="principal"
-                  value={formData.principal}
-                  onChange={handleInputChange}
-                  placeholder="0"
-                  min="0"
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                />
-              </div>
-              <div>
-                <label htmlFor="evaluationAmount" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  평가금액 <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="number"
-                  id="evaluationAmount"
-                  name="evaluationAmount"
-                  value={formData.evaluationAmount}
-                  onChange={handleInputChange}
-                  placeholder="0"
-                  min="0"
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                />
-              </div>
+              <FormField
+                control={form.control}
+                name="principal"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      원금 <span className="text-red-500">*</span>
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        placeholder="0"
+                        min="0"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="evaluationAmount"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      평가금액 <span className="text-red-500">*</span>
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        placeholder="0"
+                        min="0"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
 
             {/* 실시간 수익률 표시 */}
@@ -541,21 +575,26 @@ export default function EnhancedPortfolioForm({ onAddItem, user, onExpandedChang
         )}
 
         {showOnlyAmount && (
-          <div>
-            <label htmlFor="amount" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              보유금액 <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="number"
-              id="amount"
-              name="amount"
-              value={formData.amount}
-              onChange={handleInputChange}
-              placeholder="0"
-              min="0"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-            />
-          </div>
+          <FormField
+            control={form.control}
+            name="amount"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>
+                  보유금액 <span className="text-red-500">*</span>
+                </FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    placeholder="0"
+                    min="0"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         )}
 
         {/* 계산된 금액 표시 (주식/펀드/크립토) */}
@@ -613,19 +652,24 @@ export default function EnhancedPortfolioForm({ onAddItem, user, onExpandedChang
         )}
 
         {/* 날짜 입력 */}
-        <div>
-          <label htmlFor="date" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            {showQuantityAndPrice ? '매수일' : '등록일'} <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="date"
-            id="date"
-            name="date"
-            value={formData.date}
-            onChange={handleInputChange}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-          />
-        </div>
+        <FormField
+          control={form.control}
+          name="date"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>
+                {showQuantityAndPrice ? '매수일' : '등록일'} <span className="text-red-500">*</span>
+              </FormLabel>
+              <FormControl>
+                <Input
+                  type="date"
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         {/* 메모 */}
         <div>
@@ -650,7 +694,8 @@ export default function EnhancedPortfolioForm({ onAddItem, user, onExpandedChang
         >
           포트폴리오에 추가
         </button>
-        </form>
+          </form>
+        </Form>
       </div>
     </div>
   );
