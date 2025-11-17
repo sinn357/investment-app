@@ -56,7 +56,7 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app,
      origins=["https://investment-app-rust-one.vercel.app", "http://localhost:3000"],
-     methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+     methods=['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
      allow_headers=['Content-Type', 'Authorization'],
      supports_credentials=True)
 
@@ -70,9 +70,19 @@ def handle_preflight():
         if origin in allowed_origins:
             response.headers.add("Access-Control-Allow-Origin", origin)
         response.headers.add("Access-Control-Allow-Headers", "Content-Type, Authorization")
-        response.headers.add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+        response.headers.add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, OPTIONS")
         response.headers.add("Access-Control-Allow-Credentials", "true")
         return response
+
+# 모든 응답에 CORS 헤더 추가
+@app.after_request
+def add_cors_headers(response):
+    origin = request.headers.get('Origin')
+    allowed_origins = ["https://investment-app-rust-one.vercel.app", "http://localhost:3000"]
+    if origin in allowed_origins:
+        response.headers.add("Access-Control-Allow-Origin", origin)
+        response.headers.add("Access-Control-Allow-Credentials", "true")
+    return response
 
 # 데이터베이스 서비스 초기화 (PostgreSQL 우선 사용)
 try:
