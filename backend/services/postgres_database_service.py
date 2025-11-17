@@ -1843,7 +1843,7 @@ class PostgresDatabaseService:
                         conn.commit()
                         return {
                             "status": "success",
-                            "message": f"'{expense['description'] or '거래내역'}'이 성공적으로 삭제되었습니다."
+                            "message": f"'{expense['name'] or '거래내역'}'이 성공적으로 삭제되었습니다."
                         }
                     else:
                         return {
