@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import type { PortfolioFormInput } from '../validations/portfolio'
 
 // 백엔드 API 응답 타입
@@ -91,6 +92,10 @@ export function useCreateAsset(userId: number) {
     onSuccess: () => {
       // 자산 목록 무효화 → 자동 재조회
       queryClient.invalidateQueries({ queryKey: ['assets', userId] })
+      toast.success('자산이 성공적으로 추가되었습니다')
+    },
+    onError: (error: Error) => {
+      toast.error(`자산 추가 실패: ${error.message}`)
     },
   })
 }
@@ -118,6 +123,10 @@ export function useUpdateAsset(userId: number) {
     onSuccess: () => {
       // 자산 목록 무효화 → 자동 재조회
       queryClient.invalidateQueries({ queryKey: ['assets', userId] })
+      toast.success('자산이 성공적으로 수정되었습니다')
+    },
+    onError: (error: Error) => {
+      toast.error(`자산 수정 실패: ${error.message}`)
     },
   })
 }
@@ -155,11 +164,16 @@ export function useDeleteAsset(userId: number) {
 
       return { previousAssets }
     },
+    // 성공 시
+    onSuccess: () => {
+      toast.success('자산이 성공적으로 삭제되었습니다')
+    },
     // 에러 시 롤백
-    onError: (err, assetId, context) => {
+    onError: (error: Error, assetId, context) => {
       if (context?.previousAssets) {
         queryClient.setQueryData(['assets', userId], context.previousAssets)
       }
+      toast.error(`자산 삭제 실패: ${error.message}`)
     },
     // 성공/실패 모두 재검증
     onSettled: () => {

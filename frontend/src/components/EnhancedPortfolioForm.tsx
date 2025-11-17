@@ -315,14 +315,14 @@ export default function EnhancedPortfolioForm({ onAddItem, user, onExpandedChang
 
     console.log('Portfolio Data:', JSON.stringify(submitData, null, 2));
 
-    // TanStack Query mutation으로 데이터 전송
+    // TanStack Query mutation으로 데이터 전송 (toast는 hooks에서 자동 표시)
     try {
       await createAssetMutation.mutateAsync(submitData as PortfolioFormInput & { user_id: number });
-      alert('자산이 성공적으로 저장되었습니다!');
+      // 성공 시 hooks에서 toast.success 자동 표시
       // onAddItem은 더 이상 필요 없음 (TanStack Query가 자동으로 재검증)
     } catch (error) {
+      // 에러 시 hooks에서 toast.error 자동 표시
       console.error('API Error:', error);
-      alert('저장 중 오류가 발생했습니다.');
       return;
     }
 

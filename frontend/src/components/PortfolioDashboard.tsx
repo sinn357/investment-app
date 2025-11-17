@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, LineChart, Line } from 'recharts';
 import { useAssets, useDeleteAsset, useUpdateAsset } from '../lib/hooks/usePortfolio';
+import { toast } from 'sonner';
 
 interface Asset {
   id: number;
@@ -193,10 +194,10 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
 
     try {
       await deleteAssetMutation.mutateAsync(assetId);
-      alert('자산이 삭제되었습니다.');
+      // 성공 시 hooks에서 toast 자동 표시
     } catch (error) {
+      // 에러 시 hooks에서 toast 자동 표시
       console.error('Delete error:', error);
-      alert('삭제 중 오류가 발생했습니다.');
     }
   };
 
@@ -239,14 +240,14 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
 
     // 공통 필수 필드 검증
     if (!editForm.asset_type || !editForm.name || !editForm.name.trim() || !editForm.date) {
-      alert('자산군, 자산명, 날짜는 필수 입력 항목입니다.');
+      toast.error('자산군, 자산명, 날짜는 필수 입력 항목입니다.');
       return;
     }
 
     // 자산군별 필수 필드 검증
     if (editForm.asset_type === '즉시현금' || editForm.asset_type === '예치자산') {
       if (!editForm.amount) {
-        alert('보유금액을 입력해주세요.');
+        toast.error('보유금액을 입력해주세요.');
         return;
       }
     }
@@ -256,7 +257,7 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
       (editForm.asset_type === '대체투자' && !['부동산', '원자재'].includes(editForm.sub_category || ''));
 
     if (needsQuantityPrice && (!editForm.quantity || !editForm.avg_price)) {
-      alert('보유수량과 매수평균가를 입력해주세요.');
+      toast.error('보유수량과 매수평균가를 입력해주세요.');
       return;
     }
 
@@ -264,7 +265,7 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
     const needsPrincipalEval = editForm.asset_type === '투자자산' || editForm.asset_type === '대체투자';
 
     if (needsPrincipalEval && (!editForm.principal || !editForm.eval_amount)) {
-      alert('원금과 평가금액을 입력해주세요.');
+      toast.error('원금과 평가금액을 입력해주세요.');
       return;
     }
 
@@ -301,12 +302,12 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
         management_fee: editForm.management_fee ? parseFloat(editForm.management_fee as string) : undefined
       });
 
-      alert('자산이 수정되었습니다.');
+      // 성공 시 hooks에서 toast 자동 표시
       setEditingAsset(null);
       setEditForm({});
     } catch (error) {
+      // 에러 시 hooks에서 toast 자동 표시
       console.error('Update error:', error);
-      alert('수정 중 오류가 발생했습니다.');
     }
   };
 
