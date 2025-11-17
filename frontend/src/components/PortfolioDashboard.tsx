@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, LineChart, Line } from 'recharts';
+import { useAssets, useDeleteAsset, useUpdateAsset } from '../lib/hooks/usePortfolio';
 
 interface Asset {
   id: number;
@@ -132,9 +133,12 @@ interface PortfolioDashboardProps {
 }
 
 export default function PortfolioDashboard({ showSideInfo = false, user }: PortfolioDashboardProps) {
+  // TanStack Query로 자산 데이터 조회
+  const { data: assets, isLoading: loading, error, refetch: refetchAssets } = useAssets(user.id);
+  const deleteAssetMutation = useDeleteAsset(user.id);
+  const updateAssetMutation = useUpdateAsset(user.id);
+
   const [portfolioData, setPortfolioData] = useState<PortfolioData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('전체');
   const [sortBy, setSortBy] = useState<'amount' | 'profit_rate' | 'name'>('amount');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
@@ -158,36 +162,29 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
     '대체투자': ['암호화폐', '부동산', '원자재']
   };
 
-  const fetchPortfolioData = useCallback(async () => {
-    try {
-      setLoading(true);
-      const headers: HeadersInit = {
-        'Content-Type': 'application/json'
+  // TanStack Query로 교체: assets 데이터가 변경되면 portfolioData 계산
+  useEffect(() => {
+    if (assets) {
+      // 백엔드 응답 구조를 기존 portfolioData 형식으로 변환
+      // 필요한 경우 여기서 추가 집계 로직 구현
+      const transformedData: PortfolioData = {
+        status: 'success',
+        data: assets.map(a => ({
+          ...a,
+          eval_amount: a.evaluation_amount || null,
+          created_at: a.date // date를 created_at으로 매핑
+        }) as Asset),
+        summary: {
+          total_assets: assets.reduce((sum, a) => sum + (a.evaluation_amount || a.amount), 0),
+          total_principal: assets.reduce((sum, a) => sum + (a.principal || 0), 0),
+          total_profit_loss: assets.reduce((sum, a) => sum + (a.profit_loss || 0), 0),
+          profit_rate: 0 // 필요시 계산
+        },
+        by_category: {} // 필요시 계산
       };
-
-      // JWT 토큰이 있으면 Authorization 헤더에 추가
-      if (user.token) {
-        headers['Authorization'] = `Bearer ${user.token}`;
-      }
-
-      const response = await fetch(`https://investment-app-backend-x166.onrender.com/api/portfolio?user_id=${user.id}`, {
-        headers
-      });
-      const data = await response.json();
-
-      if (data.status === 'success') {
-        setPortfolioData(data);
-        setError(null);
-      } else {
-        setError(data.message || '포트폴리오 데이터를 불러올 수 없습니다.');
-      }
-    } catch (err) {
-      setError('서버 연결에 실패했습니다.');
-      console.error('Portfolio fetch error:', err);
-    } finally {
-      setLoading(false);
+      setPortfolioData(transformedData);
     }
-  }, [user.id, user.token]);
+  }, [assets]);
 
   const handleDeleteAsset = async (assetId: number, assetName: string) => {
     if (!window.confirm(`정말로 '${assetName}' 자산을 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.`)) {
@@ -195,25 +192,11 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
     }
 
     try {
-      setLoading(true);
-      const response = await fetch(`https://investment-app-backend-x166.onrender.com/api/delete-asset/${assetId}?user_id=${user.id}`, {
-        method: 'DELETE'
-      });
-
-      const result = await response.json();
-
-      if (result.status === 'success') {
-        alert(result.message);
-        // 포트폴리오 데이터 새로고침
-        await fetchPortfolioData();
-      } else {
-        alert(`삭제 실패: ${result.message}`);
-      }
+      await deleteAssetMutation.mutateAsync(assetId);
+      alert('자산이 삭제되었습니다.');
     } catch (error) {
       console.error('Delete error:', error);
       alert('삭제 중 오류가 발생했습니다.');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -286,61 +269,44 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
     }
 
     try {
-      setLoading(true);
-      const response = await fetch(`https://investment-app-backend-x166.onrender.com/api/update-asset/${editingAsset.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          asset_type: editForm.asset_type,
-          sub_category: editForm.sub_category || null,
-          name: editForm.name,
-          amount: editForm.amount ? parseFloat(editForm.amount as string) : null,
-          quantity: editForm.quantity ? parseFloat(editForm.quantity as string) : null,
-          avg_price: editForm.avg_price ? parseFloat(editForm.avg_price as string) : null,
-          principal: editForm.principal ? parseFloat(editForm.principal as string) : null,
-          eval_amount: editForm.eval_amount ? parseFloat(editForm.eval_amount as string) : null,
-          date: editForm.date,
-          note: editForm.note || '',
-          user_id: user.id,
-          // 소분류별 전용 필드
-          area_pyeong: editForm.area_pyeong ? parseFloat(editForm.area_pyeong as string) : null,
-          acquisition_tax: editForm.acquisition_tax ? parseFloat(editForm.acquisition_tax as string) : null,
-          rent_type: editForm.rent_type || 'monthly',
-          rental_income: editForm.rental_income ? parseFloat(editForm.rental_income as string) : null,
-          jeonse_deposit: editForm.jeonse_deposit ? parseFloat(editForm.jeonse_deposit as string) : null,
-          lawyer_fee: editForm.lawyer_fee ? parseFloat(editForm.lawyer_fee as string) : null,
-          brokerage_fee: editForm.brokerage_fee ? parseFloat(editForm.brokerage_fee as string) : null,
-          maturity_date: editForm.maturity_date || null,
-          interest_rate: editForm.interest_rate ? parseFloat(editForm.interest_rate as string) : null,
-          early_withdrawal_fee: editForm.early_withdrawal_fee ? parseFloat(editForm.early_withdrawal_fee as string) : null,
-          current_yield: editForm.current_yield ? parseFloat(editForm.current_yield as string) : null,
-          annual_yield: editForm.annual_yield ? parseFloat(editForm.annual_yield as string) : null,
-          minimum_balance: editForm.minimum_balance ? parseFloat(editForm.minimum_balance as string) : null,
-          withdrawal_fee: editForm.withdrawal_fee ? parseFloat(editForm.withdrawal_fee as string) : null,
-          dividend_rate: editForm.dividend_rate ? parseFloat(editForm.dividend_rate as string) : null,
-          nav: editForm.nav ? parseFloat(editForm.nav as string) : null,
-          management_fee: editForm.management_fee ? parseFloat(editForm.management_fee as string) : null
-        }),
+      await updateAssetMutation.mutateAsync({
+        id: editingAsset.id,
+        asset_type: editForm.asset_type,
+        sub_category: editForm.sub_category || undefined,
+        name: editForm.name,
+        amount: editForm.amount ? parseFloat(editForm.amount as string) : undefined,
+        quantity: editForm.quantity ? parseFloat(editForm.quantity as string) : undefined,
+        avg_price: editForm.avg_price ? parseFloat(editForm.avg_price as string) : undefined,
+        principal: editForm.principal ? parseFloat(editForm.principal as string) : undefined,
+        evaluation_amount: editForm.eval_amount ? parseFloat(editForm.eval_amount as string) : undefined,
+        date: editForm.date,
+        note: editForm.note || '',
+        // 소분류별 전용 필드
+        area_pyeong: editForm.area_pyeong ? parseFloat(editForm.area_pyeong as string) : undefined,
+        acquisition_tax: editForm.acquisition_tax ? parseFloat(editForm.acquisition_tax as string) : undefined,
+        rent_type: editForm.rent_type || 'monthly',
+        rental_income: editForm.rental_income ? parseFloat(editForm.rental_income as string) : undefined,
+        jeonse_deposit: editForm.jeonse_deposit ? parseFloat(editForm.jeonse_deposit as string) : undefined,
+        lawyer_fee: editForm.lawyer_fee ? parseFloat(editForm.lawyer_fee as string) : undefined,
+        brokerage_fee: editForm.brokerage_fee ? parseFloat(editForm.brokerage_fee as string) : undefined,
+        maturity_date: editForm.maturity_date || undefined,
+        interest_rate: editForm.interest_rate ? parseFloat(editForm.interest_rate as string) : undefined,
+        early_withdrawal_fee: editForm.early_withdrawal_fee ? parseFloat(editForm.early_withdrawal_fee as string) : undefined,
+        current_yield: editForm.current_yield ? parseFloat(editForm.current_yield as string) : undefined,
+        annual_yield: editForm.annual_yield ? parseFloat(editForm.annual_yield as string) : undefined,
+        minimum_balance: editForm.minimum_balance ? parseFloat(editForm.minimum_balance as string) : undefined,
+        withdrawal_fee: editForm.withdrawal_fee ? parseFloat(editForm.withdrawal_fee as string) : undefined,
+        dividend_rate: editForm.dividend_rate ? parseFloat(editForm.dividend_rate as string) : undefined,
+        nav: editForm.nav ? parseFloat(editForm.nav as string) : undefined,
+        management_fee: editForm.management_fee ? parseFloat(editForm.management_fee as string) : undefined
       });
 
-      const result = await response.json();
-
-      if (result.status === 'success') {
-        alert(result.message);
-        setEditingAsset(null);
-        setEditForm({});
-        // 포트폴리오 데이터 새로고침
-        await fetchPortfolioData();
-      } else {
-        alert(`수정 실패: ${result.message}`);
-      }
+      alert('자산이 수정되었습니다.');
+      setEditingAsset(null);
+      setEditForm({});
     } catch (error) {
       console.error('Update error:', error);
       alert('수정 중 오류가 발생했습니다.');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -380,9 +346,9 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
   }, [user.id, user.token]);
 
   useEffect(() => {
-    fetchPortfolioData();
+    // useAssets hook이 자동으로 데이터 페칭하므로 fetchPortfolioData 제거
     fetchGoalSettings();
-  }, [fetchPortfolioData, fetchGoalSettings]); // 함수들과 user.id 변경 시 데이터 새로고침
+  }, [fetchGoalSettings]); // user.id 변경 시 목표 설정 새로고침
 
   const saveGoalSettings = async (newSettings: typeof goalSettings) => {
     try {
@@ -1022,9 +988,9 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
         <div className="text-center">
           <div className="text-red-500 text-lg font-medium mb-2">오류 발생</div>
-          <p className="text-gray-600 dark:text-gray-400 mb-4">{error}</p>
+          <p className="text-gray-600 dark:text-gray-400 mb-4">{error.message}</p>
           <button
-            onClick={fetchPortfolioData}
+            onClick={() => refetchAssets()}
             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md"
           >
             다시 시도
@@ -1563,7 +1529,7 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
           <div className="flex items-center gap-4">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">포트폴리오 상세</h3>
             <button
-              onClick={fetchPortfolioData}
+              onClick={() => refetchAssets()}
               className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
               title="새로고침"
             >
