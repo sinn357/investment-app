@@ -8,8 +8,8 @@
 - **Project:** Investment App - Economic Indicators Dashboard
 - **Repo Root:** /Users/woocheolshin/Documents/Vibecoding_1/investment-app
 - **Owner:** Partner
-- **Last Updated:** 2025-11-17 21:30 KST
-- **Session Goal (Today):** ✅ 웹 애플리케이션 효율성 향상 플레이북 Phase 1-3 완전 구현 (shadcn/ui + TanStack Query + ErrorBoundary + Toast + Zustand + Playwright E2E + 접근성 검증)
+- **Last Updated:** 2025-11-18 KST
+- **Session Goal (Today):** ✅ 골드-에메랄드 프리미엄 테마 시스템 구축 + 다크모드 완전 구현
 
 ---
 
@@ -122,6 +122,7 @@ investment-app/
 - 없음
 
 ### Recent Done
+- **T-089:** 골드-에메랄드 프리미엄 테마 시스템 + 다크모드 완전 구현 ✅ (2025-11-18) - CSS 변수 기반 골드(primary)/에메랄드(secondary) 색상 시스템 구축 + Navigation 골드 그라데이션 배경 + 모든 페이지 테마 적용 (홈/경제지표/포트폴리오/가계부) + 크림/아이보리 배경 + 카드 골드/에메랄드 테두리 + useDarkMode 커스텀 훅 (localStorage 영속성) + 해/달 토글 버튼 + 시스템 설정 자동 감지 + 다크모드 전용 색상 팔레트 (은은한 골드 힌트 배경, 빛나는 골드/에메랄드) + 3개 커밋 (테마 적용 → 전체 페이지 → 다크모드) + ADR-044, ADR-045 추가
 - **T-088:** 웹 애플리케이션 효율성 향상 Phase 3 완전 구현 ✅ (2025-11-17) - Playwright E2E 테스트 프레임워크 설치 및 설정 + 인증 E2E 테스트 (auth.spec.ts: 로그인/회원가입/폼검증/세션관리) + 포트폴리오 E2E 테스트 (portfolio.spec.ts: 자산CRUD/필터링/키보드네비게이션/반응형) + axe-core 접근성 자동 검증 (WCAG 2.1 AA 준수) + 테스트 스크립트 4개 추가 (test:e2e, test:e2e:ui, test:e2e:headed, test:e2e:debug) + 커버리지 50% 달성 + e2e/README.md 문서화
 - **T-087:** 웹 애플리케이션 효율성 향상 Phase 2 선택적 개선 완전 구현 ✅ (2025-11-17) - Zustand 상태 관리 시스템 추가 (이미 설치된 패키지 활용) + usePortfolioUIStore 구현 (필터/정렬/모달/펼치기/차트뷰/히스토리 상태 중앙 관리) + useUserSettingsStore 구현 (목표설정/UI설정 중앙 관리) + localStorage persist middleware로 설정 영구 저장 + Redux DevTools 지원 + PortfolioFilters 데모 컴포넌트 작성 (향후 마이그레이션 템플릿)
 - **T-086:** 웹 애플리케이션 효율성 향상 Phase 2 완전 구현 ✅ (2025-11-17) - ErrorBoundary 컴포넌트 구현 (React 에러 캐치, 사용자 친화적 UI, 개발환경 스택 트레이스) + shadcn/ui Sonner Toast 설치 및 설정 + TanStack Query hooks에 Toast 통합 (useCreateAsset/useUpdateAsset/useDeleteAsset 성공/실패 toast) + 10개 alert() 제거 및 Toast 교체 (EnhancedPortfolioForm 2개, PortfolioDashboard 8개) + Providers에 ErrorBoundary + Toaster 전역 적용 + ESLint no-explicit-any 오류 수정
@@ -826,6 +827,43 @@ investment-app/
   - **데이터 집계**: 현재 월의 실제 지출/수입 데이터와 목표를 비교하여 진행률 계산
   - **레이아웃**: ExpenseManagementDashboard에 2열 그리드로 통합, 지출/수입 게이지 나란히 배치
   - **확장성**: 향후 월별 목표, 연간 목표, 목표 히스토리 추적 등 쉽게 확장 가능
+
+### ADR-044: 골드-에메랄드 프리미엄 테마 아키텍처
+- Date: 2025-11-18
+- Context: 기존 흑백 테마에서 투자 앱에 어울리는 프리미엄 색상 시스템 필요
+- Options: 블루-인디고 vs 틸-사파이어 vs 네이비-골드 vs 골드-에메랄드
+- Decision: 골드(primary) + 에메랄드(secondary) 프리미엄 테마 시스템 구축
+- Consequences:
+  - **색상 변수 시스템**: CSS 변수 기반으로 라이트/다크 모드 자동 대응
+  - **골드 (Primary)**: oklch(0.68 0.17 88) - 화려하고 반짝이는 골드, 번영과 재산 증가 상징
+  - **에메랄드 (Secondary)**: oklch(0.65 0.16 158) - 파릇파릇하고 기분좋은 호황, 성장과 성공 상징
+  - **배경**: 크림/아이보리 (oklch 0.99 0.005 90) - 은은한 골드 힌트로 따뜻한 느낌
+  - **Navigation 헤더**: 골드→에메랄드 그라데이션 배경 + 흰색 텍스트
+  - **카드 디자인**: 흰색 배경 + 골드/에메랄드 테두리 (hover 시 진하게)
+  - **버튼 시스템**: Primary(골드), Secondary(에메랄드) 역할 분담
+  - **차트 팔레트**: 골드-에메랄드 조화로운 5색 시스템
+  - **전체 적용**: 홈/경제지표/포트폴리오/가계부 모든 페이지 일관된 테마
+  - **확장성**: CSS 변수만 수정하면 전체 색상 변경 가능
+
+### ADR-045: 다크모드 토글 시스템 아키텍처
+- Date: 2025-11-18
+- Context: 저조도 환경에서의 사용성 향상과 사용자 선택권 제공을 위한 다크모드 필요
+- Options: 시스템 설정만 따름 vs 수동 토글만 제공 vs 하이브리드 접근
+- Decision: 시스템 설정 자동 감지 + 수동 토글 + localStorage 영속성
+- Consequences:
+  - **useDarkMode 훅**: 다크모드 상태 관리 및 DOM 클래스 제어
+  - **시스템 감지**: prefers-color-scheme 미디어 쿼리로 초기 설정 자동 적용
+  - **localStorage 저장**: theme 키에 light/dark 저장, 새로고침 후에도 유지
+  - **토글 버튼**: Navigation 우측에 해☀️/달🌙 아이콘 버튼 배치
+  - **다크모드 색상**:
+    - 배경: 은은한 골드 힌트 (oklch 0.13 0.02 85)
+    - 골드: 더 밝고 빛나는 (oklch 0.78 0.20 88)
+    - 에메랄드: 더 생동감 있는 (oklch 0.70 0.19 158)
+    - 카드: 골드 톤 배경 (oklch 0.17 0.025 88)
+  - **접근성**: aria-label로 스크린리더 지원
+  - **부드러운 전환**: CSS transition으로 테마 변경 시 자연스러운 애니메이션
+  - **전역 적용**: html 클래스에 dark 추가로 모든 컴포넌트 자동 대응
+  - **확장성**: 향후 자동 시간대별 테마, 사용자 정의 테마 등 추가 가능
 
 ---
 
