@@ -82,16 +82,16 @@ export default function Navigation() {
   };
 
   return (
-    <nav className="bg-white dark:bg-gray-800 shadow-lg border-b border-gray-200 dark:border-gray-700">
+    <nav className="bg-gradient-to-r from-primary via-primary/90 to-secondary/20 shadow-lg border-b border-primary/30">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* 로고 */}
           <div className="flex items-center">
             <Link href="/" className="flex items-center">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+              <div className="w-8 h-8 bg-gradient-to-br from-primary to-secondary rounded-lg flex items-center justify-center shadow-md">
                 <span className="text-white font-bold text-sm">투자</span>
               </div>
-              <span className="ml-2 text-xl font-semibold text-gray-900 dark:text-white">
+              <span className="ml-2 text-xl font-semibold text-white drop-shadow-sm">
                 어시스턴트
               </span>
             </Link>
@@ -107,8 +107,8 @@ export default function Navigation() {
                   href={item.href}
                   className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
                     isActive
-                      ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20'
-                      : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700'
+                      ? 'text-white bg-secondary shadow-md'
+                      : 'text-white/90 hover:text-white hover:bg-white/10 backdrop-blur-sm'
                   }`}
                 >
                   {getIcon(item.icon)}
@@ -122,18 +122,18 @@ export default function Navigation() {
           <div className="flex items-center space-x-3">
             {user ? (
               <>
-                <div className="text-sm text-gray-600 dark:text-gray-400">
-                  <span className="font-medium text-gray-900 dark:text-white">{user.username}</span>님
+                <div className="text-sm text-white/80">
+                  <span className="font-medium text-white">{user.username}</span>님
                 </div>
                 <button
                   onClick={() => router.push('/settings')}
-                  className="px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  className="px-3 py-1.5 text-sm font-medium text-white border border-white/30 rounded-md hover:bg-white/10 backdrop-blur-sm transition-colors"
                 >
                   계정설정
                 </button>
                 <button
                   onClick={handleLogout}
-                  className="px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  className="px-3 py-1.5 text-sm font-medium text-white border border-white/30 rounded-md hover:bg-white/10 backdrop-blur-sm transition-colors"
                 >
                   로그아웃
                 </button>
@@ -141,7 +141,7 @@ export default function Navigation() {
             ) : (
               <button
                 onClick={() => router.push('/portfolio')}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors"
+                className="px-4 py-2 text-sm font-medium text-white bg-secondary hover:bg-secondary/80 rounded-md shadow-md transition-colors"
               >
                 로그인
               </button>
