@@ -2,14 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import DataCharts from './DataCharts';
-
-interface DataRow {
-  release_date: string;
-  time: string;
-  actual: number | null;
-  forecast: number | null;
-  previous: number;
-}
+import StandardHistoryTable, { DataRow } from './StandardHistoryTable';
 
 interface TabData {
   id: string;
@@ -127,36 +120,6 @@ export default function DataSection() {
 
   const currentTabData = tabsData.find(tab => tab.id === activeTab);
 
-  // % 데이터를 숫자로 변환하는 헬퍼 함수 (색상 비교용)
-  const parsePercentValue = (value: string | number | null): number | null => {
-    if (value === null) return null;
-    if (typeof value === 'number') return value;
-    if (typeof value === 'string') {
-      const numStr = value.replace('%', '');
-      const num = parseFloat(numStr);
-      return isNaN(num) ? null : num;
-    }
-    return null;
-  };
-
-  const formatValue = (value: string | number | null) => {
-    if (value === null) return '-';
-    // If value is string (like "0.87%"), return as is
-    if (typeof value === 'string') return value;
-    // If value is number, format with 1 decimal place
-    if (typeof value === 'number') return value.toFixed(1);
-    return value;
-  };
-
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('ko-KR', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit'
-    });
-  };
-
   return (
     <section className="py-8 bg-white dark:bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -215,131 +178,13 @@ export default function DataSection() {
 
         {/* 데이터 테이블 */}
         {currentTabData && (
-          <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden">
-            {/* 로딩 상태 */}
-            {currentTabData.loading && (
-              <div className="flex justify-center items-center py-12">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                <span className="ml-3 text-gray-600 dark:text-gray-400">데이터를 가져오는 중...</span>
-              </div>
-            )}
-
-            {/* 에러 상태 */}
-            {currentTabData.error && (
-              <div className="p-8 text-center">
-                <div className="text-red-600 dark:text-red-400 mb-2">
-                  ⚠️ 데이터를 가져올 수 없습니다
-                </div>
-                <p className="text-gray-600 dark:text-gray-400 text-sm">{currentTabData.error}</p>
-                <button
-                  onClick={() => fetchHistoryData(activeTab)}
-                  className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-                >
-                  다시 시도
-                </button>
-              </div>
-            )}
-
-            {/* 데이터 테이블 */}
-            {!currentTabData.loading && !currentTabData.error && currentTabData.data.length > 0 && (
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead className="bg-gray-50 dark:bg-gray-700">
-                  <tr>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-                    >
-                      Release Date
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-                    >
-                      Time
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-                    >
-                      Actual
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-                    >
-                      Forecast
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-                    >
-                      Previous
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                  {currentTabData.data.map((row, index) => (
-                    <tr
-                      key={index}
-                      className={`${
-                        index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700'
-                      } hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors`}
-                    >
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                        {formatDate(row.release_date)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                        {row.time}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                        <span
-                          className={`font-medium ${(() => {
-                            if (row.actual === null) return 'text-gray-400';
-
-                            const actualNum = parsePercentValue(row.actual);
-                            const forecastNum = parsePercentValue(row.forecast);
-
-                            if (actualNum !== null && forecastNum !== null) {
-                              if (actualNum > forecastNum) return 'text-green-600 dark:text-green-400'; // actual better than forecast
-                              if (actualNum < forecastNum) return 'text-red-600 dark:text-red-400';   // actual worse than forecast
-                            }
-
-                            return 'text-gray-900 dark:text-white';
-                          })()}`}
-                        >
-                          {formatValue(row.actual)}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                        {formatValue(row.forecast)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                        {formatValue(row.previous)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              </div>
-            )}
-
-            {/* 데이터 없음 */}
-            {!currentTabData.loading && !currentTabData.error && currentTabData.data.length === 0 && (
-              <div className="p-8 text-center text-gray-500 dark:text-gray-400">
-                표시할 데이터가 없습니다.
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* 테이블 하단 정보 */}
-        {currentTabData && !currentTabData.loading && !currentTabData.error && currentTabData.data.length > 0 && (
-          <div className="mt-4 text-sm text-gray-500 dark:text-gray-400">
-            <p>* 최신 날짜순으로 정렬됨 (총 {currentTabData.data.length}개 데이터)</p>
-            <p>* 초록색: 예측치 초과, 빨간색: 예측치 미달</p>
-            <p>* 데이터 출처: investing.com</p>
-          </div>
+          <StandardHistoryTable
+            data={currentTabData.data}
+            loading={currentTabData.loading}
+            error={currentTabData.error}
+            indicatorName={currentTabData.name}
+            onRetry={() => fetchHistoryData(activeTab)}
+          />
         )}
 
         {/* 차트 섹션 */}
