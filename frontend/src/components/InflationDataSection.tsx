@@ -2,55 +2,21 @@
 
 import { useState, useEffect } from 'react';
 import DataCharts from './DataCharts';
+import StandardHistoryTable, { DataRow } from './StandardHistoryTable';
 
-interface HistoryItem {
-  release_date: string;
-  time: string;
-  actual: string | number | null;
-  forecast: string | number | null;
-  previous: string | number;
-}
 
 interface TabData {
   [key: string]: {
     title: string;
-    data: HistoryItem[];
+    data: DataRow[];
     loading: boolean;
+    error?: string;
   };
 }
 
 const BACKEND_URL = 'https://investment-app-backend-x166.onrender.com';
 
-// % 데이터를 숫자로 변환하는 헬퍼 함수
-const parsePercentValue = (value: string | number | null): number | null => {
-  if (value === null) return null;
-  if (typeof value === 'number') return value;
-  if (typeof value === 'string') {
-    // % 처리
-    const numStr = value.replace('%', '');
-    const num = parseFloat(numStr);
-    return isNaN(num) ? null : num;
-  }
-  return null;
-};
 
-// 색상 결정 함수 (물가지표는 높을수록 나쁨)
-const getColorForValue = (actual: string | number | null, forecast: string | number | null): string => {
-  if (actual === null || forecast === null) return 'text-gray-600 dark:text-gray-400';
-
-  const actualNum = parsePercentValue(actual);
-  const forecastNum = parsePercentValue(forecast);
-
-  if (actualNum === null || forecastNum === null) return 'text-gray-600 dark:text-gray-400';
-
-  // 물가지표는 예측보다 높으면 빨간색(나쁨), 낮으면 초록색(좋음)
-  if (actualNum > forecastNum) {
-    return 'text-red-600 dark:text-red-400';
-  } else if (actualNum < forecastNum) {
-    return 'text-green-600 dark:text-green-400';
-  }
-  return 'text-gray-600 dark:text-gray-400';
-};
 
 export default function InflationDataSection({ refreshTrigger }: { refreshTrigger: number }) {
   const [activeTab, setActiveTab] = useState('cpi');
@@ -66,7 +32,7 @@ export default function InflationDataSection({ refreshTrigger }: { refreshTrigge
     try {
       setTabData(prev => ({
         ...prev,
-        [tabKey]: { ...prev[tabKey], loading: true }
+        [tabKey]: { ...prev[tabKey], loading: true, error: undefined }
       }));
 
       const response = await fetch(`${BACKEND_URL}/api/history-table/${tabKey}`);
@@ -75,19 +41,19 @@ export default function InflationDataSection({ refreshTrigger }: { refreshTrigge
       if (result.status === 'success') {
         setTabData(prev => ({
           ...prev,
-          [tabKey]: { ...prev[tabKey], data: result.data, loading: false }
+          [tabKey]: { ...prev[tabKey], data: result.data, loading: false, error: undefined }
         }));
       } else {
         setTabData(prev => ({
           ...prev,
-          [tabKey]: { ...prev[tabKey], data: [], loading: false }
+          [tabKey]: { ...prev[tabKey], data: [], loading: false, error: result.message || 'Failed to fetch data' }
         }));
       }
     } catch (error) {
       console.error(`${tabKey} 히스토리 데이터 로드 실패:`, error);
       setTabData(prev => ({
         ...prev,
-        [tabKey]: { ...prev[tabKey], data: [], loading: false }
+        [tabKey]: { ...prev[tabKey], data: [], loading: false, error: 'Network error' }
       }));
     }
   };
@@ -103,18 +69,13 @@ export default function InflationDataSection({ refreshTrigger }: { refreshTrigge
 
   useEffect(() => {
     loadAllTabsData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refreshTrigger]);
 
   const handleTabChange = (tabKey: string) => {
     setActiveTab(tabKey);
   };
 
-  const formatValue = (value: string | number | null): string => {
-    if (value === null || value === undefined) return '-';
-    if (typeof value === 'string') return value;
-    if (typeof value === 'number') return value.toString();
-    return '-';
-  };
 
   const tabs = [
     { key: 'cpi', label: '소비자물가지수', shortLabel: 'CPI' },
@@ -199,80 +160,25 @@ export default function InflationDataSection({ refreshTrigger }: { refreshTrigge
 
           {/* 탭 콘텐츠 */}
           <div className="p-6">
-            {currentTabData.loading ? (
-              <div className="flex justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600"></div>
+            {/* 차트 섹션 */}
+            {!currentTabData.loading && !currentTabData.error && currentTabData.data.length > 0 && (
+              <div className="mb-8">
+                <DataCharts
+                  data={currentTabData.data}
+                  indicatorName={currentTabData.title}
+                />
               </div>
-            ) : (
-              <>
-                {/* 차트 섹션 */}
-                <div className="mb-8">
-                  <DataCharts
-                    data={currentTabData.data.map(item => ({
-                      ...item,
-                      actual: parsePercentValue(item.actual),
-                      forecast: parsePercentValue(item.forecast),
-                      previous: typeof item.previous === 'number' ? item.previous : parsePercentValue(item.previous) || 0
-                    }))}
-                    indicatorName={currentTabData.title}
-                  />
-                </div>
-
-                {/* 테이블 섹션 */}
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                    <thead className="bg-gray-50 dark:bg-gray-700">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                          발표일
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                          시간
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                          실제
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                          예측
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                          이전
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                      {currentTabData.data.length > 0 ? (
-                        currentTabData.data.map((item, index) => (
-                          <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                              {item.release_date}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                              {item.time}
-                            </td>
-                            <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${getColorForValue(item.actual, item.forecast)}`}>
-                              {formatValue(item.actual)}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                              {formatValue(item.forecast)}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                              {formatValue(item.previous)}
-                            </td>
-                          </tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
-                            데이터가 없습니다.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </>
             )}
+
+            {/* 테이블 섹션 */}
+            <StandardHistoryTable
+              data={currentTabData.data}
+              loading={currentTabData.loading}
+              error={currentTabData.error}
+              indicatorName={currentTabData.title}
+              indicatorId={activeTab}
+              onRetry={() => fetchTabData(activeTab)}
+            />
           </div>
         </div>
       )}
