@@ -29,7 +29,6 @@ export default function StandardHistoryTable({
   data,
   loading,
   error,
-  indicatorName,
   indicatorId,
   onRetry,
 }: StandardHistoryTableProps) {

@@ -124,6 +124,7 @@ export default function EmploymentDataSection({ refreshTrigger }: EmploymentData
   // 컴포넌트 마운트 시 첫 번째 탭 데이터 로드
   useEffect(() => {
     fetchHistoryData(activeTab);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // refreshTrigger 변경 시 모든 탭 데이터 업데이트
@@ -136,6 +137,7 @@ export default function EmploymentDataSection({ refreshTrigger }: EmploymentData
       };
       updateAllTabs();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refreshTrigger]);
 
   // 탭 변경 시 해당 탭 데이터 로드 (아직 로드되지 않은 경우만)

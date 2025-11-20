@@ -6,9 +6,9 @@ import { THRESHOLD_CONFIGS } from '../utils/thresholds';
 interface DataRow {
   release_date: string;
   time: string;
-  actual: number | null;
-  forecast: number | null;
-  previous: number;
+  actual: number | string | null;
+  forecast: number | string | null;
+  previous: number | string;
 }
 
 interface DataChartsProps {
