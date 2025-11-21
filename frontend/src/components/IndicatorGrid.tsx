@@ -1,11 +1,12 @@
 /**
  * IndicatorGrid 컴포넌트
  * Phase 8: 모든 경제지표를 그리드로 표시 (탭 제거)
+ * Phase 9: useMemo, useCallback으로 성능 최적화
  */
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import CompactIndicatorCard from './CompactIndicatorCard';
 import { CARD_CLASSES } from '@/styles/theme';
 
@@ -37,16 +38,18 @@ const CATEGORY_FILTERS = [
 export default function IndicatorGrid({ indicators, onIndicatorClick }: IndicatorGridProps) {
   const [activeFilter, setActiveFilter] = useState<FilterCategory>('all');
 
-  // 필터링된 지표
-  const filteredIndicators = activeFilter === 'all'
-    ? indicators
-    : indicators.filter(ind => ind.category === activeFilter);
+  // 필터링된 지표 (useMemo로 최적화)
+  const filteredIndicators = useMemo(() => {
+    return activeFilter === 'all'
+      ? indicators
+      : indicators.filter(ind => ind.category === activeFilter);
+  }, [activeFilter, indicators]);
 
-  // 카테고리별 지표 개수
-  const getCategoryCount = (category: FilterCategory) => {
+  // 카테고리별 지표 개수 (useCallback으로 최적화)
+  const getCategoryCount = useCallback((category: FilterCategory) => {
     if (category === 'all') return indicators.length;
     return indicators.filter(ind => ind.category === category).length;
-  };
+  }, [indicators]);
 
   return (
     <section className="py-8 bg-gradient-to-b from-transparent to-gray-50 dark:to-gray-900/30">
