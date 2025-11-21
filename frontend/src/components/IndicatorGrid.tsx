@@ -138,6 +138,6 @@ export default function IndicatorGrid({ indicators, onIndicatorClick }: Indicato
           )}
         </div>
       </div>
-    </div>
+    </section>
   );
 }
