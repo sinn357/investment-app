@@ -134,3 +134,56 @@ export const BADGE_CLASSES = {
   warning: 'px-3 py-1 rounded-full text-sm font-bold bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
   neutral: 'px-3 py-1 rounded-full text-sm font-bold bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200',
 };
+
+// 확장 버튼 스타일 클래스 (4방향: 위/왼/오른/아래)
+export const EXPANSION_BUTTON_CLASSES = {
+  // 공통 기본 스타일
+  base: 'absolute transition-all duration-200 opacity-60 hover:opacity-100 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700',
+
+  // 위치별 스타일
+  top: 'absolute -top-3 left-1/2 transform -translate-x-1/2',
+  left: 'absolute top-1/2 -left-3 transform -translate-y-1/2',
+  right: 'absolute top-1/2 -right-3 transform -translate-y-1/2',
+  bottom: 'w-full flex items-center justify-center text-sm transition-colors',
+
+  // 색상별 스타일
+  blue: 'text-blue-500 hover:text-blue-700',
+  green: 'text-green-500 hover:text-green-700',
+  purple: 'text-purple-500 hover:text-purple-700',
+  gray: 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white',
+
+  // 아이콘 스타일
+  icon: 'w-5 h-5 transition-transform',
+  iconRotated: 'rotate-180',
+};
+
+// 확장 섹션 스타일 클래스
+export const EXPANSION_SECTION_CLASSES = {
+  // 공통 기본 스타일
+  base: 'mb-4 p-4 rounded-lg border-l-4 transition-all duration-300',
+
+  // 테마별 스타일
+  overview: {
+    container: 'bg-blue-50 dark:bg-blue-900/20 border-blue-500',
+    title: 'font-semibold text-blue-900 dark:text-blue-100 mb-2 flex items-center gap-2',
+    content: 'text-sm text-blue-800 dark:text-blue-200 whitespace-pre-line leading-relaxed',
+    icon: '📊',
+  },
+  interpretation: {
+    container: 'bg-green-50 dark:bg-green-900/20 border-green-500',
+    title: 'font-semibold text-green-900 dark:text-green-100 mb-2 flex items-center gap-2',
+    content: 'text-sm text-green-800 dark:text-green-200 whitespace-pre-line leading-relaxed',
+    icon: '💡',
+  },
+  investment: {
+    container: 'bg-purple-50 dark:bg-purple-900/20 border-purple-500',
+    title: 'font-semibold text-purple-900 dark:text-purple-100 mb-2 flex items-center gap-2',
+    content: 'text-sm text-purple-800 dark:text-purple-200 whitespace-pre-line leading-relaxed',
+    icon: '📈',
+  },
+  badge: {
+    container: 'bg-gray-50 dark:bg-gray-700/50 border-gray-300 dark:border-gray-600',
+    title: 'font-semibold text-gray-900 dark:text-white mb-2',
+    content: 'text-sm text-gray-600 dark:text-gray-300',
+  },
+};
