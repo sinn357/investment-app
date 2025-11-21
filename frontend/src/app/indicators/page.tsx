@@ -8,6 +8,7 @@ import EconomicIndicatorsSection from '@/components/EconomicIndicatorsSection';
 import DataSection from '@/components/DataSection';
 import CyclePanelSkeleton from '@/components/skeletons/CyclePanelSkeleton';
 import IndicatorGridSkeleton from '@/components/skeletons/IndicatorGridSkeleton';
+import ErrorBoundary from '@/components/ErrorBoundary';
 import { CARD_CLASSES } from '@/styles/theme';
 import { calculateCycleScore, RawIndicators } from '@/utils/cycleCalculator';
 
@@ -138,8 +139,9 @@ export default function IndicatorsPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navigation />
+    <ErrorBoundary>
+      <div className="min-h-screen bg-background">
+        <Navigation />
 
       <header className="bg-gradient-to-r from-primary/5 to-secondary/5 shadow-sm border-b border-primary/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -196,6 +198,7 @@ export default function IndicatorsPage() {
         <EconomicIndicatorsSection />
         <DataSection />
       </main>
-    </div>
+      </div>
+    </ErrorBoundary>
   );
 }
