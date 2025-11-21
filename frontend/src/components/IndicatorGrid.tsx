@@ -49,15 +49,15 @@ export default function IndicatorGrid({ indicators, onIndicatorClick }: Indicato
   };
 
   return (
-    <div className="py-8">
+    <section className="py-8 bg-gradient-to-b from-transparent to-gray-50 dark:to-gray-900/30">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* 헤더 */}
-        <div className="mb-6">
-          <h2 className={`${CARD_CLASSES.title} text-2xl mb-2`}>
+        <div className="mb-8">
+          <h2 className={`${CARD_CLASSES.title} text-3xl mb-2`}>
             경제지표 한눈에 보기
           </h2>
           <p className={CARD_CLASSES.subtitle}>
-            모든 지표를 카테고리별로 필터링하여 확인하세요
+            전체 지표를 카테고리별로 필터링하여 확인하세요 • 클릭하면 상세 정보 표시
           </p>
         </div>
 
