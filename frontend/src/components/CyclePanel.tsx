@@ -1,10 +1,12 @@
 /**
  * CyclePanel 컴포넌트
  * Phase 7-2: 경제 국면 판별 결과를 시각적으로 표시
+ * Phase 9: React.memo로 성능 최적화
  */
 
 'use client';
 
+import React from 'react';
 import { CycleScore, AssetRecommendation, getPhaseEmoji, getPhaseDescription, getPhaseColor } from '@/utils/cycleCalculator';
 import { CARD_CLASSES } from '@/styles/theme';
 
@@ -111,7 +113,7 @@ export default function CyclePanel({ score }: CyclePanelProps) {
 }
 
 // ============================================================================
-// GaugeCard 서브 컴포넌트
+// GaugeCard 서브 컴포넌트 (React.memo로 최적화)
 // ============================================================================
 
 interface GaugeCardProps {
@@ -121,7 +123,7 @@ interface GaugeCardProps {
   description: string;
 }
 
-function GaugeCard({ label, value, icon, description }: GaugeCardProps) {
+const GaugeCard = React.memo(function GaugeCard({ label, value, icon, description }: GaugeCardProps) {
   // 색상 결정 (0-100 점수 기반)
   const getColor = () => {
     if (value >= 70) return { stroke: '#10b981', text: 'text-green-600 dark:text-green-400' };
@@ -178,4 +180,4 @@ function GaugeCard({ label, value, icon, description }: GaugeCardProps) {
       <p className="text-xs text-gray-500 dark:text-gray-400">{description}</p>
     </div>
   );
-}
+});

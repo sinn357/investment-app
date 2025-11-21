@@ -1,10 +1,12 @@
 /**
  * CompactIndicatorCard 컴포넌트
  * Phase 8: 간결한 지표 카드 (그리드용)
+ * Phase 9: React.memo로 성능 최적화
  */
 
 'use client';
 
+import React from 'react';
 import { CARD_CLASSES, BADGE_CLASSES } from '@/styles/theme';
 
 interface CompactIndicatorCardProps {
@@ -16,7 +18,7 @@ interface CompactIndicatorCardProps {
   onClick?: () => void;
 }
 
-export default function CompactIndicatorCard({
+const CompactIndicatorCard = React.memo(function CompactIndicatorCard({
   name,
   actual,
   previous,
@@ -138,4 +140,6 @@ export default function CompactIndicatorCard({
       </div>
     </button>
   );
-}
+});
+
+export default CompactIndicatorCard;

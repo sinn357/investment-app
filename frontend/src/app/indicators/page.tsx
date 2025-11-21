@@ -6,8 +6,12 @@ import CyclePanel from '@/components/CyclePanel';
 import IndicatorGrid from '@/components/IndicatorGrid';
 import EconomicIndicatorsSection from '@/components/EconomicIndicatorsSection';
 import DataSection from '@/components/DataSection';
+import CyclePanelSkeleton from '@/components/skeletons/CyclePanelSkeleton';
+import IndicatorGridSkeleton from '@/components/skeletons/IndicatorGridSkeleton';
+import ErrorBoundary from '@/components/ErrorBoundary';
 import { CARD_CLASSES } from '@/styles/theme';
 import { calculateCycleScore, RawIndicators } from '@/utils/cycleCalculator';
+import { fetchJsonWithRetry } from '@/utils/fetchWithRetry';
 
 interface GridIndicator {
   name: string;
@@ -74,8 +78,12 @@ export default function IndicatorsPage() {
     async function fetchAndCalculateCycle() {
       try {
         setLoading(true);
-        const response = await fetch('https://investment-app-backend-x166.onrender.com/api/v2/indicators');
-        const result = await response.json();
+        const result = await fetchJsonWithRetry(
+          'https://investment-app-backend-x166.onrender.com/api/v2/indicators',
+          {},
+          3, // 최대 3번 재시도
+          1000 // 1초 간격 (지수 백오프)
+        );
 
         if (result.status === 'success' && result.indicators) {
           // 필요한 지표 추출
@@ -102,10 +110,62 @@ export default function IndicatorsPage() {
             }
           });
 
-          // 임시 CPI, 금리 데이터 (추후 크롤링으로 교체)
-          indicators.cpi = 2.8; // TODO: CPI 크롤링 추가
-          indicators.nominalRate = 4.5; // TODO: 10년물 국채 금리 추가
-          indicators.fedRate = 5.25; // TODO: 연준 기준금리 추가
+          // CPI, 금리 데이터 페칭
+          try {
+            // CPI 데이터 페칭
+            const cpiResult = await fetchJsonWithRetry(
+              'https://investment-app-backend-x166.onrender.com/api/rawdata/cpi',
+              {},
+              3,
+              1000
+            );
+            if (cpiResult.status === 'success' && cpiResult.data?.latest_release?.actual) {
+              const cpiActual = cpiResult.data.latest_release.actual;
+              indicators.cpi = typeof cpiActual === 'string'
+                ? parseFloat(cpiActual.replace('%', '').replace('K', '000'))
+                : cpiActual;
+            } else {
+              indicators.cpi = 2.8; // 폴백값
+            }
+
+            // 10년물 국채 금리 페칭
+            const treasuryResult = await fetchJsonWithRetry(
+              'https://investment-app-backend-x166.onrender.com/api/rawdata/ten-year-treasury',
+              {},
+              3,
+              1000
+            );
+            if (treasuryResult.status === 'success' && treasuryResult.data?.latest_release?.actual) {
+              const treasuryActual = treasuryResult.data.latest_release.actual;
+              indicators.nominalRate = typeof treasuryActual === 'string'
+                ? parseFloat(treasuryActual.replace('%', '').replace('K', '000'))
+                : treasuryActual;
+            } else {
+              indicators.nominalRate = 4.5; // 폴백값
+            }
+
+            // 연준 기준금리 페칭
+            const fedRateResult = await fetchJsonWithRetry(
+              'https://investment-app-backend-x166.onrender.com/api/rawdata/federal-funds-rate',
+              {},
+              3,
+              1000
+            );
+            if (fedRateResult.status === 'success' && fedRateResult.data?.latest_release?.actual) {
+              const fedActual = fedRateResult.data.latest_release.actual;
+              indicators.fedRate = typeof fedActual === 'string'
+                ? parseFloat(fedActual.replace('%', '').replace('K', '000'))
+                : fedActual;
+            } else {
+              indicators.fedRate = 5.25; // 폴백값
+            }
+          } catch (error) {
+            console.error('Failed to fetch CPI/Treasury/Fed Rate data:', error);
+            // 페칭 실패 시 기본값 사용
+            indicators.cpi = indicators.cpi || 2.8;
+            indicators.nominalRate = indicators.nominalRate || 4.5;
+            indicators.fedRate = indicators.fedRate || 5.25;
+          }
 
           // 국면 점수 계산
           const score = calculateCycleScore(indicators);
@@ -136,8 +196,9 @@ export default function IndicatorsPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navigation />
+    <ErrorBoundary>
+      <div className="min-h-screen bg-background">
+        <Navigation />
 
       <header className="bg-gradient-to-r from-primary/5 to-secondary/5 shadow-sm border-b border-primary/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -159,24 +220,28 @@ export default function IndicatorsPage() {
 
       <main>
         {/* 경제 국면 판별 패널 */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          {loading ? (
-            <div className="flex justify-center items-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400"></div>
-            </div>
-          ) : cycleScore ? (
+        {loading ? (
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <CyclePanelSkeleton />
+          </div>
+        ) : cycleScore ? (
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             <CyclePanel score={cycleScore} />
-          ) : (
+          </div>
+        ) : (
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
               <p className="text-yellow-800 dark:text-yellow-200">
                 경제 국면 데이터를 불러올 수 없습니다. 나중에 다시 시도해주세요.
               </p>
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* 경제지표 그리드 (Phase 8 - 한눈에 보기) */}
-        {!loading && allIndicators.length > 0 && (
+        {loading ? (
+          <IndicatorGridSkeleton />
+        ) : allIndicators.length > 0 ? (
           <IndicatorGrid
             indicators={allIndicators}
             onIndicatorClick={(indicator) => {
@@ -184,12 +249,13 @@ export default function IndicatorsPage() {
               // TODO: 상세 모달/패널 표시
             }}
           />
-        )}
+        ) : null}
 
         {/* 상세 지표 섹션 (Raw Data + History Table) */}
         <EconomicIndicatorsSection />
         <DataSection />
       </main>
-    </div>
+      </div>
+    </ErrorBoundary>
   );
 }

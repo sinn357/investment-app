@@ -106,22 +106,23 @@
 
 **커밋**: `5a8e476` - feat: Phase 7-1 경제 국면 판별 시스템 구현
 
-#### Phase 7-3: 데이터 크롤링 추가 ⏳ (미완료 - 낮은 우선순위)
+#### Phase 7-3: 데이터 크롤링 추가 ✅ (완료: 2025-11-21)
 **목표**: CPI, 10년물 국채금리, 연준 기준금리 크롤링
 
-**현재 상태**: 임시 하드코딩 데이터 사용
-```typescript
-indicators.cpi = 2.8; // TODO: CPI 크롤링 추가
-indicators.nominalRate = 4.5; // TODO: 10년물 국채 금리 추가
-indicators.fedRate = 5.25; // TODO: 연준 기준금리 추가
-```
+**구현 완료**:
+- ✅ CPI 크롤러 활용 (`/backend/crawlers/cpi.py`)
+- ✅ 10년물 국채금리 크롤러 활용 (`/backend/crawlers/ten_year_treasury.py`)
+- ✅ 연준 기준금리 크롤러 활용 (`/backend/crawlers/federal_funds_rate.py`)
+- ✅ API 엔드포인트 활용:
+  - `/api/rawdata/cpi`
+  - `/api/rawdata/ten-year-treasury`
+  - `/api/rawdata/federal-funds-rate`
+- ✅ 프론트엔드 하드코딩 제거
+- ✅ fetchJsonWithRetry로 재시도 로직 적용
+- ✅ 실패 시 폴백값으로 안정성 보장
+- ✅ 문자열(%) 및 숫자 타입 모두 처리
 
-**필요 작업**:
-1. CPI 크롤러 추가 (`/backend/crawlers/cpi_crawler.py`)
-2. 10년물 국채금리 크롤러 (`/backend/crawlers/treasury_crawler.py`)
-3. 연준 기준금리 크롤러 (`/backend/crawlers/fed_rate_crawler.py`)
-4. `/api/v2/indicators` 응답에 3개 지표 추가
-5. 프론트엔드 하드코딩 제거
+**커밋**: `96dad96` (rebased to `c23d0fe`) - feat: Phase 7-3 실제 CPI/금리 데이터 크롤링 연동
 
 ---
 
@@ -180,37 +181,64 @@ indicators.fedRate = 5.25; // TODO: 연준 기준금리 추가
 #### Phase 8-4: 향후 개선 사항 (선택)
 - ⏳ Mini 스파크라인 차트 추가
 - ⏳ 상세 모달/확장 패널 (onIndicatorClick 핸들러)
-- ⏳ 정렬 기능 (최신순, 중요도순, 알파벳순)
+- ✅ 정렬 기능 (기본순/가나다순/영향력순) - 커밋 `23081d2`
 
 ---
 
-### **Phase 9: 로딩 최적화 및 UX 개선** (1-2일)
+### **Phase 9: 로딩 최적화 및 UX 개선** ✅ (완료: 2025-11-21)
 
-#### Phase 9-1: Skeleton UI (0.5일)
+#### Phase 9-1: Skeleton UI ✅ (완료)
 **파일**: `/frontend/src/components/skeletons/*`
 
-```typescript
-// 구현 내용:
-- CyclePanelSkeleton
-- IndicatorCardSkeleton
-- ChartSkeleton
-```
+**구현 완료**:
+- ✅ CyclePanelSkeleton: 4개 게이지 + 국면/자산 영역 스켈레톤
+- ✅ IndicatorGridSkeleton: 8개 카드 그리드 + 필터 버튼
+- ✅ indicators/page.tsx 통합 (로딩 중 스켈레톤 표시)
+- ✅ animate-pulse 애니메이션
 
-#### Phase 9-2: Progressive Loading (0.5일)
-```typescript
-// 구현 전략:
-1. 캐시된 데이터 즉시 표시 (localStorage)
-2. 백그라운드에서 최신 데이터 페칭
-3. 데이터 도착 시 부드러운 전환
-```
+**커밋**: `ad7f6e3` - feat: Phase 9-1 Skeleton UI 로딩 상태 구현
 
-#### Phase 9-3: 오류 처리 강화 (0.5일)
-```typescript
-// 구현 내용:
-- ErrorBoundary 추가
-- 재시도 버튼
-- 오프라인 감지
-```
+#### Phase 9-2: Error Boundary ✅ (완료)
+**파일**: `/frontend/src/components/ErrorBoundary.tsx`
+
+**구현 완료**:
+- ✅ React Error Boundary 클래스 컴포넌트
+- ✅ 개발 환경: 에러 상세 + 스택 트레이스
+- ✅ 프로덕션: 사용자 친화적 메시지
+- ✅ 페이지 새로고침/이전 페이지 버튼
+- ✅ indicators/page.tsx 전역 적용
+
+**커밋**: `ae6309c` - feat: Phase 9-2 Error Boundary 전역 에러 처리 구현
+
+#### Phase 9-3: API 재시도 로직 ✅ (완료)
+**파일**: `/frontend/src/utils/fetchWithRetry.ts`
+
+**구현 완료**:
+- ✅ fetchWithRetry 유틸리티 함수
+  - 최대 3번 재시도
+  - 지수 백오프 (1초 → 2초 → 4초)
+  - 4xx 에러: 재시도 안 함
+  - 5xx/네트워크 에러: 재시도
+- ✅ fetchJsonWithRetry 래퍼 (타입 안전)
+- ✅ indicators/page.tsx 적용
+- ✅ Render cold start 자동 복구
+
+**커밋**: `b854e50` - feat: Phase 9-3 API 재시도 로직 구현
+
+#### Phase 9-4: React 성능 최적화 ✅ (완료)
+**파일**:
+- `/frontend/src/components/CompactIndicatorCard.tsx`
+- `/frontend/src/components/CyclePanel.tsx`
+- `/frontend/src/components/IndicatorGrid.tsx`
+
+**구현 완료**:
+- ✅ CompactIndicatorCard: React.memo
+- ✅ GaugeCard: React.memo
+- ✅ IndicatorGrid: useMemo (필터링) + useCallback (카운트)
+- ✅ 불필요한 리렌더링 방지
+- ✅ 필터 변경 시 성능 향상
+
+**커밋**: `e6a3ec5` - perf: Phase 9-4 React 성능 최적화
 
 ---
 

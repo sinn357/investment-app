@@ -1,0 +1,37 @@
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * JSON fetch helper with simple exponential backoff retry.
+ */
+export async function fetchJsonWithRetry(
+  url: string,
+  options: RequestInit = {},
+  retries = 3,
+  delayMs = 500
+) {
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const response = await fetch(url, options);
+
+      if (!response.ok) {
+        throw new Error(`Request failed with status ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      lastError = error;
+
+      const isLastAttempt = attempt === retries;
+      if (isLastAttempt) {
+        throw lastError;
+      }
+
+      const backoff = delayMs * Math.pow(2, attempt);
+      await sleep(backoff);
+    }
+  }
+
+  throw lastError ?? new Error('fetchJsonWithRetry failed without error detail');
+}

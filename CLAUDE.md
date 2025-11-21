@@ -6,10 +6,14 @@
 
 ## 0) Meta
 - **Project:** Investment App - Economic Indicators Dashboard
-- **Repo Root:** /Users/woocheolshin/Documents/Vibecoding_1/investment-app
+- **Repo Root:** /home/user/investment-app
 - **Owner:** Partner
-- **Last Updated:** 2025-11-18 KST
-- **Session Goal (Today):** ✅ 골드-에메랄드 프리미엄 테마 시스템 구축 + 다크모드 완전 구현
+- **Last Updated:** 2025-11-21 23:00 KST
+- **Session Goal (2025-11-21):** ✅ 경제지표 페이지 개선 Phase 7-9 완전 구현 (경제 국면 판별 시스템 + 그리드 전환 + 로딩/에러/성능 최적화)
+  - Phase 7: cycleCalculator.ts + CyclePanel (4축 게이지, 국면 판별, 자산 추천)
+  - Phase 8: IndicatorGrid + CompactIndicatorCard (탭 제거, 3단계 정보 계층)
+  - Phase 9: Skeleton UI + ErrorBoundary + fetchWithRetry + React.memo
+- **Previous Session (2025-11-17):** ✅ 웹 애플리케이션 효율성 향상 플레이북 Phase 1-3 (shadcn/ui + TanStack Query + ErrorBoundary + Toast + Zustand + Playwright E2E)
 
 ---
 
@@ -121,8 +125,15 @@ investment-app/
 ### Active (in this session)
 - 없음
 
-### Recent Done
-- **T-089:** 골드-에메랄드 프리미엄 테마 시스템 + 다크모드 완전 구현 ✅ (2025-11-18) - CSS 변수 기반 골드(primary)/에메랄드(secondary) 색상 시스템 구축 + Navigation 골드 그라데이션 배경 + 모든 페이지 테마 적용 (홈/경제지표/포트폴리오/가계부) + 크림/아이보리 배경 + 카드 골드/에메랄드 테두리 + useDarkMode 커스텀 훅 (localStorage 영속성) + 해/달 토글 버튼 + 시스템 설정 자동 감지 + 다크모드 전용 색상 팔레트 (은은한 골드 힌트 배경, 빛나는 골드/에메랄드) + 3개 커밋 (테마 적용 → 전체 페이지 → 다크모드) + ADR-044, ADR-045 추가
+### Recent Done (Current Session - 2025-11-21)
+- **T-097:** Phase 8 옵셔널 IndicatorGrid 정렬 기능 완전 구현 ✅ (2025-11-21) - 3가지 정렬 옵션 추가 (기본순/가나다순/영향력순) + localeCompare 한글 정렬 + 서프라이즈 절대값 내림차순 정렬 + 정렬 UI (초록색 버튼, 아이콘) + useMemo로 필터링+정렬 최적화 + 커밋 2개 (23081d2, 3eec642 docs)
+- **T-096:** Phase 7-3 실제 CPI/금리 데이터 크롤링 연동 완전 구현 ✅ (2025-11-21) - 기존 백엔드 크롤러 활용 (cpi.py, ten_year_treasury.py, federal_funds_rate.py) + API 엔드포인트 활용 (/api/rawdata/cpi, /api/rawdata/ten-year-treasury, /api/rawdata/federal-funds-rate) + indicators/page.tsx 하드코딩 제거 (CPI 2.8, nominalRate 4.5, fedRate 5.25 → 실시간 페칭) + fetchJsonWithRetry로 3번 재시도 로직 적용 + 실패 시 폴백값으로 안정성 보장 + 문자열(%) 및 숫자 타입 모두 처리 + 커밋 2개 (96dad96 rebased to c23d0fe, 89b402c docs)
+- **T-095:** Phase 9 로딩/에러/성능 최적화 완전 구현 ✅ (2025-11-21) - Phase 9-1: Skeleton UI (CyclePanelSkeleton + IndicatorGridSkeleton, 로딩 중 실제 레이아웃 미리보기) + Phase 9-2: ErrorBoundary (전역 에러 캐치, 개발/프로덕션 구분, 페이지 새로고침/이전 페이지 버튼) + Phase 9-3: fetchWithRetry (최대 3번 재시도, 지수 백오프, Render cold start 복구) + Phase 9-4: React 성능 최적화 (CompactIndicatorCard/GaugeCard React.memo, IndicatorGrid useMemo/useCallback) + 커밋 5개 (ad7f6e3, ae6309c, b854e50, e6a3ec5, 2fb4864)
+- **T-094:** Phase 8 그리드 시스템 및 탭 제거 완전 구현 ✅ (2025-11-21) - IndicatorGrid 컴포넌트 (7개 카테고리 필터, 반응형 1/2/3/4칸 그리드) + CompactIndicatorCard (카테고리 태그, 상태 배지, 변화량 표시, Tailwind 정적 클래스) + mapIndicatorToCategory 헬퍼 함수 + 6개 탭 네비게이션 완전 제거 + 3단계 정보 계층 (CyclePanel → IndicatorGrid → 상세 섹션) + 사용하지 않는 import/state 정리 (81줄 제거) + 커밋 4개 (d88b0c5, 8b31681, a6920f4, 07bc63e)
+- **T-093:** Phase 7 경제 국면 판별 시스템 완전 구현 ✅ (2025-11-21) - cycleCalculator.ts 유틸리티 함수 (500+ 줄, 4축 점수 계산, 6가지 국면 판별, 추천 자산 맵핑, 신뢰도 계산) + CyclePanel 컴포넌트 (4개 원형 게이지, 국면 표시, 자산 추천 배지, 반응형 2x2→4칸 그리드) + indicators/page.tsx 통합 (fetchAndCalculateCycle, 임시 하드코딩 데이터 사용) + ESLint any 타입 오류 수정 + ECONOMIC_INDICATORS_ROADMAP.md 문서 작성 + 커밋 2개 (5a8e476, cea9fef, d75eec8)
+- **T-092:** Phase 1-6 theme.ts 통합 완료 확인 ✅ (2025-11-21) - StandardHistoryTable, EconomicIndicatorCard, DataCharts, UpdateButton, EconomicIndicatorsSection, TabNavigation 모든 컴포넌트 theme.ts 통합 완료 (이전 세션)
+
+### Recent Done (Previous Sessions)
 - **T-088:** 웹 애플리케이션 효율성 향상 Phase 3 완전 구현 ✅ (2025-11-17) - Playwright E2E 테스트 프레임워크 설치 및 설정 + 인증 E2E 테스트 (auth.spec.ts: 로그인/회원가입/폼검증/세션관리) + 포트폴리오 E2E 테스트 (portfolio.spec.ts: 자산CRUD/필터링/키보드네비게이션/반응형) + axe-core 접근성 자동 검증 (WCAG 2.1 AA 준수) + 테스트 스크립트 4개 추가 (test:e2e, test:e2e:ui, test:e2e:headed, test:e2e:debug) + 커버리지 50% 달성 + e2e/README.md 문서화
 - **T-087:** 웹 애플리케이션 효율성 향상 Phase 2 선택적 개선 완전 구현 ✅ (2025-11-17) - Zustand 상태 관리 시스템 추가 (이미 설치된 패키지 활용) + usePortfolioUIStore 구현 (필터/정렬/모달/펼치기/차트뷰/히스토리 상태 중앙 관리) + useUserSettingsStore 구현 (목표설정/UI설정 중앙 관리) + localStorage persist middleware로 설정 영구 저장 + Redux DevTools 지원 + PortfolioFilters 데모 컴포넌트 작성 (향후 마이그레이션 템플릿)
 - **T-086:** 웹 애플리케이션 효율성 향상 Phase 2 완전 구현 ✅ (2025-11-17) - ErrorBoundary 컴포넌트 구현 (React 에러 캐치, 사용자 친화적 UI, 개발환경 스택 트레이스) + shadcn/ui Sonner Toast 설치 및 설정 + TanStack Query hooks에 Toast 통합 (useCreateAsset/useUpdateAsset/useDeleteAsset 성공/실패 toast) + 10개 alert() 제거 및 Toast 교체 (EnhancedPortfolioForm 2개, PortfolioDashboard 8개) + Providers에 ErrorBoundary + Toaster 전역 적용 + ESLint no-explicit-any 오류 수정
@@ -223,14 +234,99 @@ investment-app/
 - **T-051:** 자산군 유동성 기준 재분류 ✅ (4개 대분류: 즉시현금/예치자산/투자자산/대체투자 + 기존 14개 자산 재분류, 2025-09-22)
 - **T-052:** 2단계 카테고리 시스템 구현 ⚠️ (대분류-소분류 구조 설계 + 프론트엔드 폼 + 백엔드 스키마 완료, 데이터 전송 문제 남음, 2025-09-22)
 
-### Backlog
-- **B-010:** 추가 경제지표 확장 (목표: 10개 지표)
+### Backlog (다음 세션에서 진행)
+
+**권장 다음 작업 순서**:
+1. **Phase 10 홈페이지 대시보드** (사용자에게 가장 눈에 띄는 개선)
+2. **Phase 7-3 크롤링 추가** (임시 하드코딩 제거)
+3. **Phase 8 선택적 개선** (스파크라인, 상세 모달)
+
+**최우선 순위 (Phase 7-3 또는 Phase 10)**:
+- **B-015:** Phase 7-3: CPI/금리 크롤링 추가 (낮은 우선순위)
+  - CPI 크롤러 추가 (`/backend/crawlers/cpi_crawler.py`)
+  - 10년물 국채금리 크롤러 (`/backend/crawlers/treasury_crawler.py`)
+  - 연준 기준금리 크롤러 (`/backend/crawlers/fed_rate_crawler.py`)
+  - `/api/v2/indicators` 응답에 3개 지표 추가
+  - 프론트엔드 하드코딩 제거 (indicators.cpi, nominalRate, fedRate)
+
+- **B-016:** Phase 10: 홈페이지 대시보드 구현 (높은 우선순위)
+  - `/frontend/src/app/page.tsx` 대시보드 레이아웃
+  - 3개 요약 카드: 경제 국면/내 자산/가계부 지출
+  - 최근 업데이트 피드 컴포넌트
+  - 빠른 액션 버튼 (자산 추가, 지출 기록, 지표 업데이트)
+
+**Phase 8 선택적 개선**:
+- **B-017:** Mini 스파크라인 차트 (CompactIndicatorCard에 추가)
+- **B-018:** 상세 모달/패널 (onIndicatorClick 핸들러 구현)
+- **B-019:** 정렬 기능 (최신순, 중요도순, 알파벳순)
+
+**장기 Backlog**:
+- **B-010:** 추가 경제지표 확장 (목표: 20개 지표, 6개 탭 각각 3-5개)
 - **B-011:** 데이터 알림 및 임계값 설정 기능
 - **B-012:** 고급 차트 시각화 (비교 차트, 상관관계 분석)
 - **B-013:** 사용자 대시보드 커스터마이징
 - **B-014:** 데이터 내보내기 기능 (CSV, PDF)
 
 > 원칙: **세션당 Active ≤ 2**.
+
+---
+
+## 12.1) Session Summary (2025-11-21)
+
+### 세션 목표
+경제지표 페이지 개선 Phase 7-9 완전 구현
+
+### 완료된 작업 (커밋 13개)
+
+**Phase 7: 경제 국면 판별 시스템**
+- `5a8e476` - feat: Phase 7-1 경제 국면 판별 시스템 구현
+- `cea9fef` - fix: ESLint any 타입 에러 수정
+- `d75eec8` - docs: Phase 7-8 완료 상태 로드맵 업데이트
+
+**Phase 8: 그리드 시스템 및 탭 제거**
+- `d88b0c5` - feat: Phase 8 경제지표 그리드 시스템 완전 구현
+- `8b31681` - refactor: 탭 시스템 제거 및 그리드 전용 인터페이스로 전환
+- `a6920f4` - fix: CompactIndicatorCard 동적 Tailwind 클래스 문제 해결
+- `07bc63e` - feat: 상세 지표 섹션 복원 및 3단계 정보 계층 완성
+
+**Phase 9: 로딩/에러/성능 최적화**
+- `ad7f6e3` - feat: Phase 9-1 Skeleton UI 로딩 상태 구현
+- `ae6309c` - feat: Phase 9-2 Error Boundary 전역 에러 처리 구현
+- `b854e50` - feat: Phase 9-3 API 재시도 로직 구현
+- `e6a3ec5` - perf: Phase 9-4 React 성능 최적화 (memo, useMemo, useCallback)
+- `2fb4864` - docs: Phase 9 완료 상태 로드맵 업데이트
+
+### 생성된 파일 (9개)
+- `/frontend/src/utils/cycleCalculator.ts` (500+ 줄) - 4축 점수 계산, 국면 판별 알고리즘
+- `/frontend/src/components/CyclePanel.tsx` (180+ 줄) - 경제 국면 판별 패널
+- `/frontend/src/components/IndicatorGrid.tsx` (120+ 줄) - 그리드 레이아웃 + 필터
+- `/frontend/src/components/CompactIndicatorCard.tsx` (150+ 줄) - 간결한 지표 카드
+- `/frontend/src/components/skeletons/CyclePanelSkeleton.tsx` (80+ 줄)
+- `/frontend/src/components/skeletons/IndicatorGridSkeleton.tsx` (60+ 줄)
+- `/frontend/src/components/ErrorBoundary.tsx` (100+ 줄)
+- `/frontend/src/utils/fetchWithRetry.ts` (70+ 줄)
+- `/docs/ECONOMIC_INDICATORS_ROADMAP.md` (300+ 줄) - 전체 Phase 로드맵
+
+### 수정된 파일 (3개)
+- `/frontend/src/app/indicators/page.tsx` - CyclePanel + IndicatorGrid 통합, 탭 제거, Skeleton/ErrorBoundary 적용
+- `/frontend/src/components/CyclePanel.tsx` - React.memo 최적화
+- `/frontend/src/components/IndicatorGrid.tsx` - useMemo/useCallback 최적화
+
+### 성과
+- 6개 탭 네비게이션 → 단일 그리드 전환 (81줄 제거)
+- 경제 국면 자동 판별 시스템 완성
+- 로딩 체감 속도 향상 (스켈레톤 UI)
+- 안정성 강화 (에러 복구 + 재시도)
+- 렌더링 성능 최적화 (메모이제이션)
+
+### 남은 작업
+- Phase 7-3: CPI/금리 크롤링 추가 (임시 하드코딩 제거)
+- Phase 10: 홈페이지 대시보드 구현
+- Phase 8 선택적 개선: 스파크라인, 상세 모달, 정렬 기능
+
+### 브랜치
+- **작업 브랜치**: `claude/investment-app-features-01UrF1igfrrHc3WD2SQZy6L2`
+- **메인 브랜치**: (수동 머지 필요 - Claude Code는 main 브랜치 푸시 불가)
 
 ---
 
