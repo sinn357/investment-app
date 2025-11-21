@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import Navigation from '@/components/Navigation';
 import CyclePanel from '@/components/CyclePanel';
 import IndicatorGrid from '@/components/IndicatorGrid';
+import EconomicIndicatorsSection from '@/components/EconomicIndicatorsSection';
+import DataSection from '@/components/DataSection';
 import { CARD_CLASSES } from '@/styles/theme';
 import { calculateCycleScore, RawIndicators } from '@/utils/cycleCalculator';
 
@@ -173,7 +175,7 @@ export default function IndicatorsPage() {
           )}
         </div>
 
-        {/* 경제지표 그리드 (Phase 8 - 탭 시스템 대체) */}
+        {/* 경제지표 그리드 (Phase 8 - 한눈에 보기) */}
         {!loading && allIndicators.length > 0 && (
           <IndicatorGrid
             indicators={allIndicators}
@@ -184,8 +186,9 @@ export default function IndicatorsPage() {
           />
         )}
 
-        {/* 기존 탭 콘텐츠 임시 숨김 - 그리드로 대체됨 */}
-        {/* {renderTabContent()} */}
+        {/* 상세 지표 섹션 (Raw Data + History Table) */}
+        <EconomicIndicatorsSection />
+        <DataSection />
       </main>
     </div>
   );
