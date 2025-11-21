@@ -65,126 +65,122 @@
 
 ## Phase 7-10 실행 계획
 
-### **Phase 7: 경제 국면 판별 시스템** (최우선, 2-3일)
+### **Phase 7: 경제 국면 판별 시스템** ✅ (완료: 2025-11-21)
 
 #### 목표
 - 4가지 축(성장/인플레이션/유동성/정책)을 점수화
 - 현재 사이클 자동 판단 (골디락스, 스태그플레이션 등)
 - 추천 자산 클래스 제시
 
-#### Phase 7-1: 경제 국면 판별 로직 (1일)
+#### Phase 7-1: 경제 국면 판별 로직 ✅ (완료)
 **파일**: `/frontend/src/utils/cycleCalculator.ts`
 
-```typescript
-// 구현 내용:
-- 4축 점수 계산 함수 (0-100 정규화)
-  - growth: ISM + 실업률 기반
-  - inflation: CPI 기반
-  - liquidity: 실질금리 기반
+**구현 완료**:
+- ✅ 4축 점수 계산 함수 (0-100 정규화)
+  - growth: ISM Manufacturing/Non-Manufacturing + 실업률 가중평균
+  - inflation: CPI 기반 (2% 연준 목표 중심)
+  - liquidity: 실질금리 기반 (명목금리 - 인플레이션)
   - policy: 연준 기준금리 기반
-- 6가지 국면 판별 알고리즘
-  - 골디락스, 확장기, 과열기, 스태그플레이션, 수축기, 회복기
-- 추천 자산 클래스 맵핑
-```
+- ✅ 6가지 국면 판별 알고리즘 + 전환기
+  - 골디락스, 확장기, 과열기, 스태그플레이션, 수축기, 회복기, 전환기
+- ✅ 추천 자산 클래스 맵핑 (favorable/neutral/unfavorable)
+- ✅ 신뢰도 계산 로직 (데이터 품질 + 극단성)
 
-**작업 내용**:
-1. `cycleCalculator.ts` 유틸리티 함수 작성
-2. 정규화 함수 구현 (normalizeISM, normalizeCPI 등)
-3. 국면 판별 로직 구현
-4. 단위 테스트 작성
+**커밋**: `5a8e476` - feat: Phase 7-1 경제 국면 판별 시스템 구현
 
-#### Phase 7-2: CyclePanel 컴포넌트 (1일)
+#### Phase 7-2: CyclePanel 컴포넌트 ✅ (완료)
 **파일**: `/frontend/src/components/CyclePanel.tsx`
 
+**구현 완료**:
+- ✅ 4개 게이지 카드 (원형 SVG 프로그레스)
+  - 성장/인플레이션/유동성/정책
+  - 0-100 점수 시각화
+  - 색상 동적 변경 (초록/노랑/빨강)
+- ✅ 현재 국면 표시
+  - 국면별 이모지 (🌟 골디락스, 📈 확장기 등)
+  - 국면별 설명 텍스트
+  - 신뢰도 표시
+- ✅ 추천 자산 배지 (favorable/unfavorable)
+- ✅ 반응형 디자인 (모바일 2x2 → 데스크톱 4칸)
+- ✅ indicators/page.tsx에 통합
+
+**커밋**: `5a8e476` - feat: Phase 7-1 경제 국면 판별 시스템 구현
+
+#### Phase 7-3: 데이터 크롤링 추가 ⏳ (미완료 - 낮은 우선순위)
+**목표**: CPI, 10년물 국채금리, 연준 기준금리 크롤링
+
+**현재 상태**: 임시 하드코딩 데이터 사용
 ```typescript
-// 구현 내용:
-- 4개 게이지 카드 (원형 프로그레스)
-- 현재 국면 표시 (이모지 + 텍스트 + 설명)
-- 추천 자산 배지
-- 국면별 색상 테마
+indicators.cpi = 2.8; // TODO: CPI 크롤링 추가
+indicators.nominalRate = 4.5; // TODO: 10년물 국채 금리 추가
+indicators.fedRate = 5.25; // TODO: 연준 기준금리 추가
 ```
 
-**작업 내용**:
-1. GaugeCard 서브 컴포넌트 (SVG 원형 프로그레스)
-2. 국면별 이모지/색상/설명 매핑
-3. 추천 자산 표시
-4. 반응형 디자인 (모바일 2x2 그리드)
-5. indicators/page.tsx에 통합
-
-#### Phase 7-3: 통합 API 엔드포인트 (0.5일)
-**파일**: `/backend/app.py`
-
-```python
-# 엔드포인트: /api/v3/dashboard
-# 반환 데이터:
-{
-  "cycle": {
-    "growth": 65,
-    "inflation": 45,
-    "liquidity": 70,
-    "policy": 50,
-    "phase": "골디락스"
-  },
-  "indicators": [...],
-  "last_updated": "2025-11-21T10:30:00"
-}
-```
-
-**작업 내용**:
-1. 기존 v2 API 활용하여 통합 엔드포인트 생성
-2. 국면 점수 계산 로직 백엔드 구현 (선택)
-3. 캐싱 로직 추가 (5분)
+**필요 작업**:
+1. CPI 크롤러 추가 (`/backend/crawlers/cpi_crawler.py`)
+2. 10년물 국채금리 크롤러 (`/backend/crawlers/treasury_crawler.py`)
+3. 연준 기준금리 크롤러 (`/backend/crawlers/fed_rate_crawler.py`)
+4. `/api/v2/indicators` 응답에 3개 지표 추가
+5. 프론트엔드 하드코딩 제거
 
 ---
 
-### **Phase 8: 핵심 지표 그리드 시스템** (2-3일)
+### **Phase 8: 핵심 지표 그리드 시스템** ✅ (완료: 2025-11-21)
 
 #### 목표
 - 탭 없이 모든 지표를 한 화면에 그리드로 표시
 - 필터링 (카테고리별)
 - 컴팩트한 카드 디자인
 
-#### Phase 8-1: IndicatorGrid 컴포넌트 (1일)
+#### Phase 8-1: IndicatorGrid 컴포넌트 ✅ (완료)
 **파일**: `/frontend/src/components/IndicatorGrid.tsx`
 
-```typescript
-// 구현 내용:
-- 2x3x4 그리드 레이아웃 (모바일/태블릿/데스크톱)
-- 카테고리 필터 버튼
-- CompactIndicatorCard 사용
-```
+**구현 완료**:
+- ✅ 반응형 그리드 레이아웃 (1/2/3/4칸)
+- ✅ 7개 카테고리 필터 (전체/경기/고용/금리/무역/물가/정책)
+- ✅ 카테고리별 지표 개수 표시
+- ✅ 필터 상태 관리 (useState)
+- ✅ 빈 상태 처리
+- ✅ 전체 보기 버튼
 
-**작업 내용**:
-1. 그리드 레이아웃 구현
-2. 필터 상태 관리 (useState)
-3. 정렬 기능 (최신순, 중요도순, 알파벳순)
+**커밋**: `d88b0c5` - feat: Phase 8 경제지표 그리드 시스템 완전 구현
 
-#### Phase 8-2: CompactIndicatorCard (1일)
+#### Phase 8-2: CompactIndicatorCard ✅ (완료)
 **파일**: `/frontend/src/components/CompactIndicatorCard.tsx`
 
-```typescript
-// 구현 내용:
-- 지표명 + 최신값 + 변화량
-- 상태 배지 (양호/주의/경고)
-- Mini 스파크라인 차트
-- 클릭 시 상세 확장
-```
+**구현 완료**:
+- ✅ 컴팩트한 카드 디자인 (지표명 + 최신값 + 변화량)
+- ✅ 카테고리 태그 (아이콘 + 이름)
+- ✅ 상태 배지 (양호/주의/중립)
+- ✅ 변화량 화살표 표시 (↑↓)
+- ✅ 이전값 표시
+- ✅ 호버 효과 (scale + shadow)
+- ✅ 클릭 핸들러 지원
+- ✅ 카테고리별 동적 색상 (Tailwind 정적 클래스)
 
-**작업 내용**:
-1. 컴팩트한 카드 디자인
-2. MiniSparkline 컴포넌트 (Recharts LineChart)
-3. 호버/클릭 애니메이션
-4. theme.ts에 COMPACT_CARD_CLASSES 추가
+**커밋**: `a6920f4` - fix: CompactIndicatorCard 동적 Tailwind 클래스 문제 해결
 
-#### Phase 8-3: 상세 모달/확장 패널 (1일)
-**파일**: `/frontend/src/components/IndicatorDetailPanel.tsx`
+#### Phase 8-3: 페이지 통합 및 탭 제거 ✅ (완료)
+**파일**: `/frontend/src/app/indicators/page.tsx`
 
-```typescript
-// 구현 내용:
-- 카드 클릭 시 확장 패널 또는 모달
-- 전체 차트 + 히스토리 테이블
-- 해석 섹션 (기존 EconomicIndicatorCard 활용)
-```
+**구현 완료**:
+- ✅ mapIndicatorToCategory() 헬퍼 함수
+- ✅ allIndicators 상태 자동 생성
+- ✅ 6개 탭 네비게이션 제거
+- ✅ 3단계 정보 계층 구현:
+  1. CyclePanel (경제 국면)
+  2. IndicatorGrid (한눈에 보기)
+  3. EconomicIndicatorsSection + DataSection (상세)
+- ✅ 사용하지 않는 import/state 정리
+
+**커밋**:
+- `8b31681` - refactor: 탭 시스템 제거 및 그리드 전용 인터페이스로 전환
+- `07bc63e` - feat: 상세 지표 섹션 복원 및 3단계 정보 계층 완성
+
+#### Phase 8-4: 향후 개선 사항 (선택)
+- ⏳ Mini 스파크라인 차트 추가
+- ⏳ 상세 모달/확장 패널 (onIndicatorClick 핸들러)
+- ⏳ 정렬 기능 (최신순, 중요도순, 알파벳순)
 
 ---
 
