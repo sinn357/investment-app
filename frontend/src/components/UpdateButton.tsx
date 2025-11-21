@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { CARD_CLASSES, BUTTON_CLASSES, BADGE_CLASSES } from '../styles/theme';
 
 interface UpdateStatus {
   is_updating: boolean;
@@ -101,13 +102,13 @@ export default function UpdateButton({ onUpdateComplete }: UpdateButtonProps) {
   const isUpdating = updateStatus?.is_updating || isLoading;
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
+    <div className={`${CARD_CLASSES.container} p-6 mb-6`}>
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+          <h3 className={`${CARD_CLASSES.title} text-lg`}>
             데이터 업데이트
           </h3>
-          <p className="text-sm text-gray-600 dark:text-gray-400">
+          <p className={`text-sm ${CARD_CLASSES.subtitle}`}>
             최신 경제지표 데이터를 크롤링하여 업데이트합니다
           </p>
         </div>
@@ -115,11 +116,7 @@ export default function UpdateButton({ onUpdateComplete }: UpdateButtonProps) {
         <button
           onClick={handleUpdate}
           disabled={isUpdating}
-          className={`px-6 py-2 rounded-lg font-medium transition-colors ${
-            isUpdating
-              ? 'bg-gray-400 text-gray-700 cursor-not-allowed'
-              : 'bg-blue-600 hover:bg-blue-700 text-white'
-          }`}
+          className={isUpdating ? BUTTON_CLASSES.secondary : BUTTON_CLASSES.primary}
         >
           {isUpdating ? '업데이트 중...' : '실시간 업데이트'}
         </button>
@@ -130,7 +127,7 @@ export default function UpdateButton({ onUpdateComplete }: UpdateButtonProps) {
         <div className="space-y-4">
           {/* 진행률 바 */}
           <div>
-            <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-2">
+            <div className={`flex justify-between text-sm ${CARD_CLASSES.subtitle} mb-2`}>
               <span>진행률</span>
               <span>{updateStatus.progress}%</span>
             </div>
@@ -144,7 +141,7 @@ export default function UpdateButton({ onUpdateComplete }: UpdateButtonProps) {
 
           {/* 현재 처리 중인 지표 */}
           {updateStatus.current_indicator && (
-            <div className="text-sm text-gray-600 dark:text-gray-400">
+            <div className={`text-sm ${CARD_CLASSES.subtitle}`}>
               현재 업데이트 중: <span className="font-medium text-blue-600 dark:text-blue-400">
                 {formatIndicatorName(updateStatus.current_indicator)}
               </span>
@@ -161,7 +158,7 @@ export default function UpdateButton({ onUpdateComplete }: UpdateButtonProps) {
                 {updateStatus.completed_indicators.map((indicator) => (
                   <span
                     key={indicator}
-                    className="px-2 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-xs rounded"
+                    className={`${BADGE_CLASSES.excellent} text-xs`}
                   >
                     {formatIndicatorName(indicator)}
                   </span>
@@ -180,7 +177,7 @@ export default function UpdateButton({ onUpdateComplete }: UpdateButtonProps) {
                 {updateStatus.failed_indicators.map((failed, index) => (
                   <div
                     key={index}
-                    className="px-2 py-1 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 text-xs rounded"
+                    className={`${BADGE_CLASSES.warning} text-xs`}
                   >
                     {formatIndicatorName(failed.indicator_id)}: {failed.error}
                   </div>
@@ -191,7 +188,7 @@ export default function UpdateButton({ onUpdateComplete }: UpdateButtonProps) {
 
           {/* 완료 메시지 */}
           {!updateStatus.is_updating && updateStatus.progress === 100 && (
-            <div className="p-3 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded-lg text-sm">
+            <div className={`${BADGE_CLASSES.excellent} text-sm`}>
               ✅ 모든 데이터 업데이트가 완료되었습니다!
             </div>
           )}
