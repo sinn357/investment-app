@@ -110,10 +110,62 @@ export default function IndicatorsPage() {
             }
           });
 
-          // 임시 CPI, 금리 데이터 (추후 크롤링으로 교체)
-          indicators.cpi = 2.8; // TODO: CPI 크롤링 추가
-          indicators.nominalRate = 4.5; // TODO: 10년물 국채 금리 추가
-          indicators.fedRate = 5.25; // TODO: 연준 기준금리 추가
+          // CPI, 금리 데이터 페칭
+          try {
+            // CPI 데이터 페칭
+            const cpiResult = await fetchJsonWithRetry(
+              'https://investment-app-backend-x166.onrender.com/api/rawdata/cpi',
+              {},
+              3,
+              1000
+            );
+            if (cpiResult.status === 'success' && cpiResult.data?.latest_release?.actual) {
+              const cpiActual = cpiResult.data.latest_release.actual;
+              indicators.cpi = typeof cpiActual === 'string'
+                ? parseFloat(cpiActual.replace('%', '').replace('K', '000'))
+                : cpiActual;
+            } else {
+              indicators.cpi = 2.8; // 폴백값
+            }
+
+            // 10년물 국채 금리 페칭
+            const treasuryResult = await fetchJsonWithRetry(
+              'https://investment-app-backend-x166.onrender.com/api/rawdata/ten-year-treasury',
+              {},
+              3,
+              1000
+            );
+            if (treasuryResult.status === 'success' && treasuryResult.data?.latest_release?.actual) {
+              const treasuryActual = treasuryResult.data.latest_release.actual;
+              indicators.nominalRate = typeof treasuryActual === 'string'
+                ? parseFloat(treasuryActual.replace('%', '').replace('K', '000'))
+                : treasuryActual;
+            } else {
+              indicators.nominalRate = 4.5; // 폴백값
+            }
+
+            // 연준 기준금리 페칭
+            const fedRateResult = await fetchJsonWithRetry(
+              'https://investment-app-backend-x166.onrender.com/api/rawdata/federal-funds-rate',
+              {},
+              3,
+              1000
+            );
+            if (fedRateResult.status === 'success' && fedRateResult.data?.latest_release?.actual) {
+              const fedActual = fedRateResult.data.latest_release.actual;
+              indicators.fedRate = typeof fedActual === 'string'
+                ? parseFloat(fedActual.replace('%', '').replace('K', '000'))
+                : fedActual;
+            } else {
+              indicators.fedRate = 5.25; // 폴백값
+            }
+          } catch (error) {
+            console.error('Failed to fetch CPI/Treasury/Fed Rate data:', error);
+            // 페칭 실패 시 기본값 사용
+            indicators.cpi = indicators.cpi || 2.8;
+            indicators.nominalRate = indicators.nominalRate || 4.5;
+            indicators.fedRate = indicators.fedRate || 5.25;
+          }
 
           // 국면 점수 계산
           const score = calculateCycleScore(indicators);
