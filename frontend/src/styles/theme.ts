@@ -187,3 +187,21 @@ export const EXPANSION_SECTION_CLASSES = {
     content: 'text-sm text-gray-600 dark:text-gray-300',
   },
 };
+
+// 탭 네비게이션 테마
+export const TAB_CLASSES = {
+  // 컨테이너
+  container: 'border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800',
+
+  // 탭 버튼 기본 스타일
+  button: 'py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200',
+
+  // 활성 탭
+  buttonActive: 'border-blue-500 text-blue-600 dark:text-blue-400',
+
+  // 비활성 탭
+  buttonInactive: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:border-gray-600',
+
+  // 모바일 select
+  select: 'block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md',
+};

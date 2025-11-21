@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import EconomicIndicatorCard from './EconomicIndicatorCard';
 import UpdateButton from './UpdateButton';
+import { CARD_CLASSES } from '../styles/theme';
 
 interface EconomicIndicator {
   name: string;
@@ -119,7 +120,7 @@ export default function EconomicIndicatorsSection() {
   if (loading) {
     return (
       <div className="flex justify-center items-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400"></div>
       </div>
     );
   }
@@ -128,10 +129,10 @@ export default function EconomicIndicatorsSection() {
     <section className="py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
-          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+          <h2 className={`${CARD_CLASSES.title} text-3xl mb-2`}>
             경제지표 Raw Data
           </h2>
-          <p className="text-gray-600 dark:text-gray-400">
+          <p className={CARD_CLASSES.subtitle}>
             주요 경제지표의 최신 데이터를 확인하세요
           </p>
         </div>
@@ -146,7 +147,7 @@ export default function EconomicIndicatorsSection() {
         </div>
 
         {/* 데이터 소스 표시 */}
-        <div className="mt-6 text-center text-sm text-gray-500 dark:text-gray-400">
+        <div className={`mt-6 text-center text-sm ${CARD_CLASSES.subtitle}`}>
           <p>* 데이터 소스: 데이터베이스 (investing.com 크롤링)</p>
           <p>* 실시간 업데이트를 원하시면 위의 &apos;실시간 업데이트&apos; 버튼을 클릭하세요</p>
         </div>
