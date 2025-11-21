@@ -11,6 +11,7 @@ import IndicatorGridSkeleton from '@/components/skeletons/IndicatorGridSkeleton'
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { CARD_CLASSES } from '@/styles/theme';
 import { calculateCycleScore, RawIndicators } from '@/utils/cycleCalculator';
+import { fetchJsonWithRetry } from '@/utils/fetchWithRetry';
 
 interface GridIndicator {
   name: string;
@@ -77,8 +78,12 @@ export default function IndicatorsPage() {
     async function fetchAndCalculateCycle() {
       try {
         setLoading(true);
-        const response = await fetch('https://investment-app-backend-x166.onrender.com/api/v2/indicators');
-        const result = await response.json();
+        const result = await fetchJsonWithRetry(
+          'https://investment-app-backend-x166.onrender.com/api/v2/indicators',
+          {},
+          3, // 최대 3번 재시도
+          1000 // 1초 간격 (지수 백오프)
+        );
 
         if (result.status === 'success' && result.indicators) {
           // 필요한 지표 추출
