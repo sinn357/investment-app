@@ -6,6 +6,8 @@ import CyclePanel from '@/components/CyclePanel';
 import IndicatorGrid from '@/components/IndicatorGrid';
 import EconomicIndicatorsSection from '@/components/EconomicIndicatorsSection';
 import DataSection from '@/components/DataSection';
+import CyclePanelSkeleton from '@/components/skeletons/CyclePanelSkeleton';
+import IndicatorGridSkeleton from '@/components/skeletons/IndicatorGridSkeleton';
 import { CARD_CLASSES } from '@/styles/theme';
 import { calculateCycleScore, RawIndicators } from '@/utils/cycleCalculator';
 
@@ -159,24 +161,28 @@ export default function IndicatorsPage() {
 
       <main>
         {/* 경제 국면 판별 패널 */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          {loading ? (
-            <div className="flex justify-center items-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400"></div>
-            </div>
-          ) : cycleScore ? (
+        {loading ? (
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <CyclePanelSkeleton />
+          </div>
+        ) : cycleScore ? (
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             <CyclePanel score={cycleScore} />
-          ) : (
+          </div>
+        ) : (
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
               <p className="text-yellow-800 dark:text-yellow-200">
                 경제 국면 데이터를 불러올 수 없습니다. 나중에 다시 시도해주세요.
               </p>
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* 경제지표 그리드 (Phase 8 - 한눈에 보기) */}
-        {!loading && allIndicators.length > 0 && (
+        {loading ? (
+          <IndicatorGridSkeleton />
+        ) : allIndicators.length > 0 ? (
           <IndicatorGrid
             indicators={allIndicators}
             onIndicatorClick={(indicator) => {
@@ -184,7 +190,7 @@ export default function IndicatorsPage() {
               // TODO: 상세 모달/패널 표시
             }}
           />
-        )}
+        ) : null}
 
         {/* 상세 지표 섹션 (Raw Data + History Table) */}
         <EconomicIndicatorsSection />
