@@ -11,6 +11,7 @@ import TradeTab from '@/components/tabs/TradeTab';
 import InflationTab from '@/components/tabs/InflationTab';
 import PolicyTab from '@/components/tabs/PolicyTab';
 import CyclePanel from '@/components/CyclePanel';
+import IndicatorGrid from '@/components/IndicatorGrid';
 import { CARD_CLASSES } from '@/styles/theme';
 import { calculateCycleScore, RawIndicators } from '@/utils/cycleCalculator';
 
@@ -53,9 +54,65 @@ const indicatorTabs: TabDefinition[] = [
   }
 ];
 
+interface GridIndicator {
+  name: string;
+  actual: number | string | null;
+  previous: number | string;
+  surprise?: number | null;
+  category: string;
+}
+
+// 지표명을 카테고리로 매핑하는 헬퍼 함수
+function mapIndicatorToCategory(name: string): string {
+  const lowerName = name.toLowerCase();
+
+  // 경기지표
+  if (lowerName.includes('ism') || lowerName.includes('pmi') ||
+      lowerName.includes('production') || lowerName.includes('sales') ||
+      lowerName.includes('manufacturing') || lowerName.includes('sentiment')) {
+    return 'business';
+  }
+
+  // 고용지표
+  if (lowerName.includes('unemployment') || lowerName.includes('employment') ||
+      lowerName.includes('payroll') || lowerName.includes('jobless') ||
+      lowerName.includes('claims') || lowerName.includes('wage')) {
+    return 'employment';
+  }
+
+  // 금리지표
+  if (lowerName.includes('rate') && !lowerName.includes('unemployment') ||
+      lowerName.includes('treasury') || lowerName.includes('yield') ||
+      lowerName.includes('fed funds')) {
+    return 'interest';
+  }
+
+  // 무역지표
+  if (lowerName.includes('trade') || lowerName.includes('export') ||
+      lowerName.includes('import') || lowerName.includes('balance')) {
+    return 'trade';
+  }
+
+  // 물가지표
+  if (lowerName.includes('cpi') || lowerName.includes('ppi') ||
+      lowerName.includes('pce') || lowerName.includes('inflation') ||
+      lowerName.includes('price')) {
+    return 'inflation';
+  }
+
+  // 정책지표
+  if (lowerName.includes('gdp') || lowerName.includes('fomc') ||
+      lowerName.includes('confidence') || lowerName.includes('policy')) {
+    return 'policy';
+  }
+
+  return 'business'; // 기본값
+}
+
 export default function IndicatorsPage() {
   const [activeTab, setActiveTab] = useState('business');
   const [cycleScore, setCycleScore] = useState<ReturnType<typeof calculateCycleScore> | null>(null);
+  const [allIndicators, setAllIndicators] = useState<GridIndicator[]>([]);
   const [loading, setLoading] = useState(true);
 
   // 경제 지표 데이터 페칭 및 국면 계산
@@ -99,6 +156,20 @@ export default function IndicatorsPage() {
           // 국면 점수 계산
           const score = calculateCycleScore(indicators);
           setCycleScore(score);
+
+          // 그리드용 지표 데이터 생성
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const gridIndicators: GridIndicator[] = result.indicators.map((item: any) => {
+            const latest = item.data.latest_release;
+            return {
+              name: item.name,
+              actual: latest.actual,
+              previous: latest.previous,
+              surprise: latest.surprise ?? null,
+              category: mapIndicatorToCategory(item.name)
+            };
+          });
+          setAllIndicators(gridIndicators);
         }
       } catch (error) {
         console.error('Failed to fetch cycle data:', error);
@@ -173,7 +244,18 @@ export default function IndicatorsPage() {
           )}
         </div>
 
-        {/* 탭 콘텐츠 */}
+        {/* 경제지표 그리드 (Phase 8) */}
+        {!loading && allIndicators.length > 0 && (
+          <IndicatorGrid
+            indicators={allIndicators}
+            onIndicatorClick={(indicator) => {
+              console.log('지표 클릭:', indicator);
+              // TODO: 상세 모달/패널 표시
+            }}
+          />
+        )}
+
+        {/* 탭 콘텐츠 (기존 시스템 유지) */}
         {renderTabContent()}
       </main>
     </div>
