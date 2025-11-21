@@ -106,22 +106,23 @@
 
 **커밋**: `5a8e476` - feat: Phase 7-1 경제 국면 판별 시스템 구현
 
-#### Phase 7-3: 데이터 크롤링 추가 ⏳ (미완료 - 낮은 우선순위)
+#### Phase 7-3: 데이터 크롤링 추가 ✅ (완료: 2025-11-21)
 **목표**: CPI, 10년물 국채금리, 연준 기준금리 크롤링
 
-**현재 상태**: 임시 하드코딩 데이터 사용
-```typescript
-indicators.cpi = 2.8; // TODO: CPI 크롤링 추가
-indicators.nominalRate = 4.5; // TODO: 10년물 국채 금리 추가
-indicators.fedRate = 5.25; // TODO: 연준 기준금리 추가
-```
+**구현 완료**:
+- ✅ CPI 크롤러 활용 (`/backend/crawlers/cpi.py`)
+- ✅ 10년물 국채금리 크롤러 활용 (`/backend/crawlers/ten_year_treasury.py`)
+- ✅ 연준 기준금리 크롤러 활용 (`/backend/crawlers/federal_funds_rate.py`)
+- ✅ API 엔드포인트 활용:
+  - `/api/rawdata/cpi`
+  - `/api/rawdata/ten-year-treasury`
+  - `/api/rawdata/federal-funds-rate`
+- ✅ 프론트엔드 하드코딩 제거
+- ✅ fetchJsonWithRetry로 재시도 로직 적용
+- ✅ 실패 시 폴백값으로 안정성 보장
+- ✅ 문자열(%) 및 숫자 타입 모두 처리
 
-**필요 작업**:
-1. CPI 크롤러 추가 (`/backend/crawlers/cpi_crawler.py`)
-2. 10년물 국채금리 크롤러 (`/backend/crawlers/treasury_crawler.py`)
-3. 연준 기준금리 크롤러 (`/backend/crawlers/fed_rate_crawler.py`)
-4. `/api/v2/indicators` 응답에 3개 지표 추가
-5. 프론트엔드 하드코딩 제거
+**커밋**: `96dad96` (rebased to `c23d0fe`) - feat: Phase 7-3 실제 CPI/금리 데이터 크롤링 연동
 
 ---
 
