@@ -61,20 +61,20 @@ export default function CompactIndicatorCard({
 
   const status = getStatusBadge();
 
-  // 카테고리 색상
-  const getCategoryColor = () => {
-    const colors: Record<string, string> = {
-      'business': 'blue',
-      'employment': 'green',
-      'interest': 'purple',
-      'trade': 'orange',
-      'inflation': 'red',
-      'policy': 'indigo',
+  // 카테고리별 완전한 클래스명 (Tailwind 동적 클래스 문제 해결)
+  const getCategoryClasses = () => {
+    const classes: Record<string, string> = {
+      'business': 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300',
+      'employment': 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300',
+      'interest': 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300',
+      'trade': 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300',
+      'inflation': 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300',
+      'policy': 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300',
     };
-    return colors[category] || 'gray';
+    return classes[category] || 'bg-gray-100 dark:bg-gray-900/30 text-gray-700 dark:text-gray-300';
   };
 
-  const categoryColor = getCategoryColor();
+  const categoryClasses = getCategoryClasses();
 
   return (
     <button
@@ -83,7 +83,7 @@ export default function CompactIndicatorCard({
     >
       {/* 카테고리 태그 */}
       <div className="flex items-center justify-between mb-2">
-        <span className={`text-xs px-2 py-1 bg-${categoryColor}-100 dark:bg-${categoryColor}-900/30 text-${categoryColor}-700 dark:text-${categoryColor}-300 rounded`}>
+        <span className={`text-xs px-2 py-1 rounded ${categoryClasses}`}>
           {category === 'business' && '📊 경기'}
           {category === 'employment' && '👷 고용'}
           {category === 'interest' && '🏦 금리'}
