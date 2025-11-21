@@ -24,6 +24,7 @@ interface IndicatorGridProps {
 }
 
 type FilterCategory = 'all' | 'business' | 'employment' | 'interest' | 'trade' | 'inflation' | 'policy';
+type SortOption = 'default' | 'alphabetical' | 'impact';
 
 const CATEGORY_FILTERS = [
   { id: 'all' as FilterCategory, name: '전체', icon: '🌐' },
@@ -35,15 +36,37 @@ const CATEGORY_FILTERS = [
   { id: 'policy' as FilterCategory, name: '정책', icon: '🏛️' },
 ];
 
+const SORT_OPTIONS = [
+  { id: 'default' as SortOption, name: '기본 순서', icon: '📋' },
+  { id: 'alphabetical' as SortOption, name: '가나다순', icon: '🔤' },
+  { id: 'impact' as SortOption, name: '영향력순', icon: '⚡' },
+];
+
 export default function IndicatorGrid({ indicators, onIndicatorClick }: IndicatorGridProps) {
   const [activeFilter, setActiveFilter] = useState<FilterCategory>('all');
+  const [sortOption, setSortOption] = useState<SortOption>('default');
 
-  // 필터링된 지표 (useMemo로 최적화)
+  // 필터링 및 정렬된 지표 (useMemo로 최적화)
   const filteredIndicators = useMemo(() => {
-    return activeFilter === 'all'
+    // 1. 필터링
+    let result = activeFilter === 'all'
       ? indicators
       : indicators.filter(ind => ind.category === activeFilter);
-  }, [activeFilter, indicators]);
+
+    // 2. 정렬
+    if (sortOption === 'alphabetical') {
+      result = [...result].sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+    } else if (sortOption === 'impact') {
+      result = [...result].sort((a, b) => {
+        const aSurprise = Math.abs(a.surprise ?? 0);
+        const bSurprise = Math.abs(b.surprise ?? 0);
+        return bSurprise - aSurprise; // 내림차순 (높은 영향력 우선)
+      });
+    }
+    // 'default'는 원본 순서 유지
+
+    return result;
+  }, [activeFilter, sortOption, indicators]);
 
   // 카테고리별 지표 개수 (useCallback으로 최적화)
   const getCategoryCount = useCallback((category: FilterCategory) => {
@@ -64,39 +87,68 @@ export default function IndicatorGrid({ indicators, onIndicatorClick }: Indicato
           </p>
         </div>
 
-        {/* 카테고리 필터 */}
-        <div className="mb-6 overflow-x-auto">
-          <div className="flex gap-2 pb-2">
-            {CATEGORY_FILTERS.map((filter) => {
-              const count = getCategoryCount(filter.id);
-              const isActive = activeFilter === filter.id;
+        {/* 카테고리 필터 및 정렬 */}
+        <div className="mb-6">
+          {/* 카테고리 필터 */}
+          <div className="overflow-x-auto mb-4">
+            <div className="flex gap-2 pb-2">
+              {CATEGORY_FILTERS.map((filter) => {
+                const count = getCategoryCount(filter.id);
+                const isActive = activeFilter === filter.id;
 
-              return (
-                <button
-                  key={filter.id}
-                  onClick={() => setActiveFilter(filter.id)}
-                  className={`
-                    flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all whitespace-nowrap
-                    ${isActive
-                      ? 'bg-blue-600 text-white shadow-md scale-105'
-                      : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-                    }
-                  `}
-                >
-                  <span>{filter.icon}</span>
-                  <span>{filter.name}</span>
-                  <span className={`
-                    px-2 py-0.5 rounded-full text-xs
-                    ${isActive
-                      ? 'bg-blue-700'
-                      : 'bg-gray-200 dark:bg-gray-700'
-                    }
-                  `}>
-                    {count}
-                  </span>
-                </button>
-              );
-            })}
+                return (
+                  <button
+                    key={filter.id}
+                    onClick={() => setActiveFilter(filter.id)}
+                    className={`
+                      flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all whitespace-nowrap
+                      ${isActive
+                        ? 'bg-blue-600 text-white shadow-md scale-105'
+                        : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                      }
+                    `}
+                  >
+                    <span>{filter.icon}</span>
+                    <span>{filter.name}</span>
+                    <span className={`
+                      px-2 py-0.5 rounded-full text-xs
+                      ${isActive
+                        ? 'bg-blue-700'
+                        : 'bg-gray-200 dark:bg-gray-700'
+                      }
+                    `}>
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 정렬 옵션 */}
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-gray-600 dark:text-gray-400 font-medium">정렬:</span>
+            <div className="flex gap-2">
+              {SORT_OPTIONS.map((option) => {
+                const isActive = sortOption === option.id;
+                return (
+                  <button
+                    key={option.id}
+                    onClick={() => setSortOption(option.id)}
+                    className={`
+                      flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all whitespace-nowrap
+                      ${isActive
+                        ? 'bg-green-600 text-white shadow-sm'
+                        : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                      }
+                    `}
+                  >
+                    <span>{option.icon}</span>
+                    <span>{option.name}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
 
