@@ -1,5 +1,11 @@
 import { useEffect, useState } from 'react';
 import { THRESHOLD_CONFIGS, getThresholdBadge, calculateTrend, TrendInfo, INDICATOR_INFO } from '../utils/thresholds';
+import {
+  CARD_CLASSES,
+  EXPANSION_BUTTON_CLASSES,
+  EXPANSION_SECTION_CLASSES,
+  INDICATOR_COLORS
+} from '../styles/theme';
 
 interface EconomicIndicator {
   name: string;
@@ -360,21 +366,25 @@ export default function EconomicIndicatorCard({ indicator }: EconomicIndicatorCa
   };
 
   const getSurpriseColor = (surprise: number | null) => {
-    if (surprise === null) return 'text-gray-500';
+    if (surprise === null) return 'text-gray-500 dark:text-gray-400';
 
     const indicatorId = getIndicatorId(indicator.name);
 
     // 실업률, 신규 실업급여 신청은 낮을수록 좋음 (역방향 지표)
     if (indicatorId === 'unemployment-rate' || indicatorId === 'initial-jobless-claims') {
-      if (surprise > 0) return 'text-red-600';   // 실제가 예상보다 높음 = 나쁜 소식 = RED
-      if (surprise < 0) return 'text-green-600'; // 실제가 예상보다 낮음 = 좋은 소식 = GREEN
+      // 실제가 예상보다 높음 = 나쁜 소식
+      if (surprise > 0) return 'text-red-600 dark:text-red-400';
+      // 실제가 예상보다 낮음 = 좋은 소식
+      if (surprise < 0) return 'text-green-600 dark:text-green-400';
     } else {
       // 나머지 지표들은 높을수록 좋음 (정방향 지표)
-      if (surprise > 0) return 'text-green-600'; // 실제가 예상보다 높음 = 좋은 소식 = GREEN
-      if (surprise < 0) return 'text-red-600';   // 실제가 예상보다 낮음 = 나쁜 소식 = RED
+      // 실제가 예상보다 높음 = 좋은 소식
+      if (surprise > 0) return 'text-green-600 dark:text-green-400';
+      // 실제가 예상보다 낮음 = 나쁜 소식
+      if (surprise < 0) return 'text-red-600 dark:text-red-400';
     }
 
-    return 'text-gray-500';
+    return 'text-gray-500 dark:text-gray-400';
   };
 
   // 새로운 4단계 배지 시스템
@@ -397,14 +407,20 @@ export default function EconomicIndicatorCard({ indicator }: EconomicIndicatorCa
   };
 
   return (
-    <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow">
+    <div className={`relative ${CARD_CLASSES.container}`}>
       {/* 위쪽 버튼 - 지표 개요 */}
       <button
         onClick={() => toggleSection('top')}
-        className="absolute -top-2 left-1/2 transform -translate-x-1/2 text-blue-500 hover:text-blue-700 transition-colors opacity-60 hover:opacity-100"
+        className={`${EXPANSION_BUTTON_CLASSES.base} ${EXPANSION_BUTTON_CLASSES.top} ${EXPANSION_BUTTON_CLASSES.blue}`}
         title="지표 개요"
+        aria-label="지표 개요 펼치기/접기"
       >
-        <svg className={`w-4 h-4 transition-transform ${expandedSections.top ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg
+          className={`${EXPANSION_BUTTON_CLASSES.icon} ${expandedSections.top ? EXPANSION_BUTTON_CLASSES.iconRotated : ''}`}
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
         </svg>
       </button>
@@ -412,10 +428,16 @@ export default function EconomicIndicatorCard({ indicator }: EconomicIndicatorCa
       {/* 왼쪽 버튼 - 해석 포인트 */}
       <button
         onClick={() => toggleSection('left')}
-        className="absolute top-1/2 -left-2 transform -translate-y-1/2 text-green-500 hover:text-green-700 transition-colors opacity-60 hover:opacity-100"
+        className={`${EXPANSION_BUTTON_CLASSES.base} ${EXPANSION_BUTTON_CLASSES.left} ${EXPANSION_BUTTON_CLASSES.green}`}
         title="해석 포인트"
+        aria-label="해석 포인트 펼치기/접기"
       >
-        <svg className={`w-4 h-4 transition-transform ${expandedSections.left ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg
+          className={`${EXPANSION_BUTTON_CLASSES.icon} ${expandedSections.left ? EXPANSION_BUTTON_CLASSES.iconRotated : ''}`}
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
         </svg>
       </button>
@@ -423,44 +445,59 @@ export default function EconomicIndicatorCard({ indicator }: EconomicIndicatorCa
       {/* 오른쪽 버튼 - 경제·투자 적용 */}
       <button
         onClick={() => toggleSection('right')}
-        className="absolute top-1/2 -right-2 transform -translate-y-1/2 text-purple-500 hover:text-purple-700 transition-colors opacity-60 hover:opacity-100"
+        className={`${EXPANSION_BUTTON_CLASSES.base} ${EXPANSION_BUTTON_CLASSES.right} ${EXPANSION_BUTTON_CLASSES.purple}`}
         title="경제·투자 적용"
+        aria-label="경제·투자 적용 펼치기/접기"
       >
-        <svg className={`w-4 h-4 transition-transform ${expandedSections.right ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg
+          className={`${EXPANSION_BUTTON_CLASSES.icon} ${expandedSections.right ? EXPANSION_BUTTON_CLASSES.iconRotated : ''}`}
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
         </svg>
       </button>
 
       {/* 위쪽 확장 섹션 - 지표 개요 */}
       {expandedSections.top && (
-        <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border-l-4 border-blue-500">
-          <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">📊 지표 개요</h4>
-          <div className="text-sm text-blue-800 dark:text-blue-200 whitespace-pre-line">
+        <div className={`${EXPANSION_SECTION_CLASSES.base} ${EXPANSION_SECTION_CLASSES.overview.container}`}>
+          <h4 className={EXPANSION_SECTION_CLASSES.overview.title}>
+            <span>{EXPANSION_SECTION_CLASSES.overview.icon}</span>
+            <span>지표 개요</span>
+          </h4>
+          <div className={EXPANSION_SECTION_CLASSES.overview.content}>
             {getIndicatorContent(getIndicatorId(indicator.name)).overview}
           </div>
         </div>
       )}
 
       <div className="flex justify-between items-start mb-3">
-        <h3 className="font-semibold text-lg text-gray-900 dark:text-white">{indicator.name}</h3>
+        <h3 className={CARD_CLASSES.title}>{indicator.name}</h3>
         {getNewThresholdBadge()}
       </div>
 
-      {/* 왼쪽 확장 섹션 - 해석 포인트 (전체 덮기) */}
+      {/* 왼쪽 확장 섹션 - 해석 포인트 */}
       {expandedSections.left && (
-        <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border-l-4 border-green-500">
-          <h4 className="font-semibold text-green-900 dark:text-green-100 mb-2">💡 해석 포인트</h4>
-          <div className="text-sm text-green-800 dark:text-green-200 whitespace-pre-line">
+        <div className={`${EXPANSION_SECTION_CLASSES.base} ${EXPANSION_SECTION_CLASSES.interpretation.container}`}>
+          <h4 className={EXPANSION_SECTION_CLASSES.interpretation.title}>
+            <span>{EXPANSION_SECTION_CLASSES.interpretation.icon}</span>
+            <span>해석 포인트</span>
+          </h4>
+          <div className={EXPANSION_SECTION_CLASSES.interpretation.content}>
             {getIndicatorContent(getIndicatorId(indicator.name)).interpretation}
           </div>
         </div>
       )}
 
-      {/* 오른쪽 확장 섹션 - 경제·투자 적용 (전체 덮기) */}
+      {/* 오른쪽 확장 섹션 - 경제·투자 적용 */}
       {expandedSections.right && (
-        <div className="mb-4 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border-l-4 border-purple-500">
-          <h4 className="font-semibold text-purple-900 dark:text-purple-100 mb-2">📈 경제·투자 적용</h4>
-          <div className="text-sm text-purple-800 dark:text-purple-200 whitespace-pre-line">
+        <div className={`${EXPANSION_SECTION_CLASSES.base} ${EXPANSION_SECTION_CLASSES.investment.container}`}>
+          <h4 className={EXPANSION_SECTION_CLASSES.investment.title}>
+            <span>{EXPANSION_SECTION_CLASSES.investment.icon}</span>
+            <span>경제·투자 적용</span>
+          </h4>
+          <div className={EXPANSION_SECTION_CLASSES.investment.content}>
             {getIndicatorContent(getIndicatorId(indicator.name)).investment}
           </div>
         </div>
@@ -469,44 +506,44 @@ export default function EconomicIndicatorCard({ indicator }: EconomicIndicatorCa
       {/* 메인 콘텐츠 영역 - 왼쪽/오른쪽 확장 시 숨김 */}
       {!expandedSections.left && !expandedSections.right && (
         <div className="grid grid-cols-2 gap-3 text-sm">
-        <div>
-          <p className="text-gray-500 dark:text-gray-400">최신 발표일</p>
-          <p className="font-medium text-gray-900 dark:text-white">{indicator.latestDate}</p>
-        </div>
+          <div>
+            <p className={CARD_CLASSES.subtitle}>최신 발표일</p>
+            <p className={CARD_CLASSES.value}>{indicator.latestDate}</p>
+          </div>
 
-        <div>
-          <p className="text-gray-500 dark:text-gray-400">다음 발표일</p>
-          <p className="font-medium text-gray-900 dark:text-white">{indicator.nextDate}</p>
-        </div>
+          <div>
+            <p className={CARD_CLASSES.subtitle}>다음 발표일</p>
+            <p className={CARD_CLASSES.value}>{indicator.nextDate}</p>
+          </div>
 
-        <div>
-          <p className="text-gray-500 dark:text-gray-400">실제치</p>
-          <p className="font-medium text-gray-900 dark:text-white">
-            {indicator.actual !== null ? indicator.actual : 'N/A'}
-          </p>
-        </div>
+          <div>
+            <p className={CARD_CLASSES.subtitle}>실제치</p>
+            <p className={CARD_CLASSES.value}>
+              {indicator.actual !== null ? indicator.actual : 'N/A'}
+            </p>
+          </div>
 
-        <div>
-          <p className="text-gray-500 dark:text-gray-400">예측치</p>
-          <p className="font-medium text-gray-900 dark:text-white">
-            {indicator.forecast !== null ? indicator.forecast : 'N/A'}
-          </p>
-        </div>
+          <div>
+            <p className={CARD_CLASSES.subtitle}>예측치</p>
+            <p className={CARD_CLASSES.value}>
+              {indicator.forecast !== null ? indicator.forecast : 'N/A'}
+            </p>
+          </div>
 
-        <div>
-          <p className="text-gray-500 dark:text-gray-400">이전치</p>
-          <p className="font-medium text-gray-900 dark:text-white">{indicator.previous}</p>
-        </div>
+          <div>
+            <p className={CARD_CLASSES.subtitle}>이전치</p>
+            <p className={CARD_CLASSES.value}>{indicator.previous}</p>
+          </div>
 
-        <div>
-          <p className="text-gray-500 dark:text-gray-400">서프라이즈</p>
-          <p className={`font-medium ${getSurpriseColor(indicator.surprise)}`}>
-            {indicator.surprise !== null
-              ? `${indicator.surprise > 0 ? '+' : ''}${indicator.surprise.toFixed(2)}`
-              : 'N/A'
-            }
-          </p>
-        </div>
+          <div>
+            <p className={CARD_CLASSES.subtitle}>서프라이즈</p>
+            <p className={`font-medium ${getSurpriseColor(indicator.surprise)}`}>
+              {indicator.surprise !== null
+                ? `${indicator.surprise > 0 ? '+' : ''}${indicator.surprise.toFixed(2)}`
+                : 'N/A'
+              }
+            </p>
+          </div>
         </div>
       )}
 
@@ -518,12 +555,13 @@ export default function EconomicIndicatorCard({ indicator }: EconomicIndicatorCa
             e.stopPropagation();
             toggleSection('bottom');
           }}
-          className="w-full flex items-center justify-center text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+          className={`${EXPANSION_BUTTON_CLASSES.bottom} ${EXPANSION_BUTTON_CLASSES.gray}`}
           data-indicator-button={indicator.name}
+          aria-label="배지 시스템 설명 펼치기/접기"
         >
           <span className="mr-2">배지 시스템 설명</span>
           <svg
-            className={`w-4 h-4 transition-transform ${expandedSections.bottom ? 'rotate-180' : ''}`}
+            className={`${EXPANSION_BUTTON_CLASSES.icon} ${expandedSections.bottom ? EXPANSION_BUTTON_CLASSES.iconRotated : ''}`}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -536,7 +574,7 @@ export default function EconomicIndicatorCard({ indicator }: EconomicIndicatorCa
       {/* 아래쪽 확장 섹션 - 배지 시스템 설명 */}
       {expandedSections.bottom && (
         <div
-          className="mt-3 px-4 py-3 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm transition-all duration-300 ease-in-out"
+          className={`mt-3 px-4 py-3 ${EXPANSION_SECTION_CLASSES.badge.container} rounded-lg transition-all duration-300 ease-in-out`}
           data-indicator={indicator.name}
         >
           {(() => {
@@ -545,7 +583,7 @@ export default function EconomicIndicatorCard({ indicator }: EconomicIndicatorCa
 
             if (!info) {
               return (
-                <p className="text-gray-500 dark:text-gray-400">
+                <p className={EXPANSION_SECTION_CLASSES.badge.content}>
                   이 지표에 대한 상세 정보가 없습니다.
                 </p>
               );
@@ -555,37 +593,37 @@ export default function EconomicIndicatorCard({ indicator }: EconomicIndicatorCa
               <div className="space-y-3">
                 {/* 지표 설명 */}
                 <div>
-                  <h4 className="font-semibold text-gray-900 dark:text-white mb-1">지표 설명</h4>
-                  <p className="text-gray-600 dark:text-gray-300">{info.description}</p>
+                  <h4 className={EXPANSION_SECTION_CLASSES.badge.title}>지표 설명</h4>
+                  <p className={EXPANSION_SECTION_CLASSES.badge.content}>{info.description}</p>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">카테고리: {info.category}</p>
                 </div>
 
                 {/* 배지 임계점 */}
                 <div>
-                  <h4 className="font-semibold text-gray-900 dark:text-white mb-2">배지 시스템</h4>
+                  <h4 className={EXPANSION_SECTION_CLASSES.badge.title}>배지 시스템</h4>
                   <div className="space-y-1">
                     <div className="flex items-center">
-                      <span className="text-green-600 mr-2">✅</span>
-                      <span className="text-gray-600 dark:text-gray-300">{info.thresholds.good}</span>
+                      <span className="text-green-600 dark:text-green-400 mr-2">✅</span>
+                      <span className={EXPANSION_SECTION_CLASSES.badge.content}>{info.thresholds.good}</span>
                     </div>
                     <div className="flex items-center">
-                      <span className="text-gray-600 mr-2">➖</span>
-                      <span className="text-gray-600 dark:text-gray-300">{info.thresholds.neutral}</span>
+                      <span className="text-gray-600 dark:text-gray-400 mr-2">➖</span>
+                      <span className={EXPANSION_SECTION_CLASSES.badge.content}>{info.thresholds.neutral}</span>
                     </div>
                     <div className="flex items-center">
-                      <span className="text-yellow-600 mr-2">⚠️</span>
-                      <span className="text-gray-600 dark:text-gray-300">{info.thresholds.warning}</span>
+                      <span className="text-yellow-600 dark:text-yellow-400 mr-2">⚠️</span>
+                      <span className={EXPANSION_SECTION_CLASSES.badge.content}>{info.thresholds.warning}</span>
                     </div>
                     <div className="flex items-center">
-                      <span className="text-red-600 mr-2">🔴</span>
-                      <span className="text-gray-600 dark:text-gray-300">{info.thresholds.bad}</span>
+                      <span className="text-red-600 dark:text-red-400 mr-2">🔴</span>
+                      <span className={EXPANSION_SECTION_CLASSES.badge.content}>{info.thresholds.bad}</span>
                     </div>
                   </div>
                 </div>
 
                 {/* 차트 기준선 */}
                 <div>
-                  <h4 className="font-semibold text-gray-900 dark:text-white mb-2">차트 기준선</h4>
+                  <h4 className={EXPANSION_SECTION_CLASSES.badge.title}>차트 기준선</h4>
                   <div className="space-y-1">
                     {info.referenceLines.map((line, index) => (
                       <div key={index} className="flex items-center">
@@ -599,8 +637,8 @@ export default function EconomicIndicatorCard({ indicator }: EconomicIndicatorCa
 
                 {/* 경제적 의미 */}
                 <div>
-                  <h4 className="font-semibold text-gray-900 dark:text-white mb-1">경제적 의미</h4>
-                  <p className="text-gray-600 dark:text-gray-300">{info.economicMeaning}</p>
+                  <h4 className={EXPANSION_SECTION_CLASSES.badge.title}>경제적 의미</h4>
+                  <p className={EXPANSION_SECTION_CLASSES.badge.content}>{info.economicMeaning}</p>
                 </div>
               </div>
             );

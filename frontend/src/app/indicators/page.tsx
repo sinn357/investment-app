@@ -10,6 +10,7 @@ import InterestRateTab from '@/components/tabs/InterestRateTab';
 import TradeTab from '@/components/tabs/TradeTab';
 import InflationTab from '@/components/tabs/InflationTab';
 import PolicyTab from '@/components/tabs/PolicyTab';
+import { CARD_CLASSES } from '@/styles/theme';
 
 const indicatorTabs: TabDefinition[] = [
   {
@@ -83,10 +84,10 @@ export default function IndicatorsPage() {
 
       <header className="bg-gradient-to-r from-primary/5 to-secondary/5 shadow-sm border-b border-primary/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <h1 className="text-3xl font-bold text-foreground">
+          <h1 className={`${CARD_CLASSES.title} text-3xl`}>
             경제지표 모니터링
           </h1>
-          <p className="mt-2 text-muted-foreground">
+          <p className={`mt-2 ${CARD_CLASSES.subtitle}`}>
             실시간 경제지표 데이터 분석
           </p>
         </div>
