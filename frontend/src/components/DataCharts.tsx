@@ -2,6 +2,7 @@
 
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { THRESHOLD_CONFIGS } from '../utils/thresholds';
+import { CHART_THEME, CARD_CLASSES } from '../styles/theme';
 
 interface DataRow {
   release_date: string;
@@ -123,7 +124,7 @@ export default function DataCharts({ data, indicatorName }: DataChartsProps) {
     // 주요 기준선 (baseline)
     lines.push({
       value: config.baseline,
-      color: '#EF4444',
+      color: CHART_THEME.colors.referenceLine,
       dashArray: '5 5',
       label: `${config.baseline} (기준선)`,
       strokeWidth: 2
@@ -133,7 +134,7 @@ export default function DataCharts({ data, indicatorName }: DataChartsProps) {
     if (config.secondaryBaseline) {
       lines.push({
         value: config.secondaryBaseline,
-        color: '#F59E0B',
+        color: CHART_THEME.colors.referenceLineSecondary,
         dashArray: '3 3',
         label: `${config.secondaryBaseline}`,
         strokeWidth: 1.5
@@ -147,11 +148,11 @@ export default function DataCharts({ data, indicatorName }: DataChartsProps) {
 
   if (chartData.length === 0) {
     return (
-      <div className="mt-8 bg-white dark:bg-gray-800 shadow-md rounded-lg p-8">
-        <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+      <div className={`mt-8 ${CARD_CLASSES.container} p-8`}>
+        <h3 className={`${CARD_CLASSES.title} text-xl mb-4`}>
           {indicatorName} 차트
         </h3>
-        <div className="text-center text-gray-500 dark:text-gray-400 py-8">
+        <div className={`text-center ${CARD_CLASSES.subtitle} py-8`}>
           차트를 표시할 데이터가 없습니다.
         </div>
       </div>
@@ -176,47 +177,42 @@ export default function DataCharts({ data, indicatorName }: DataChartsProps) {
   };
 
   return (
-    <div className="mt-8 bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
-      <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
+    <div className={`mt-8 ${CARD_CLASSES.container} p-6`}>
+      <h3 className={`${CARD_CLASSES.title} text-xl mb-6`}>
         {indicatorName} 차트
       </h3>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* 막대형 차트 */}
         <div>
-          <h4 className="text-lg font-medium text-gray-700 dark:text-gray-300 mb-4">
+          <h4 className={`text-lg font-medium ${CARD_CLASSES.subtitle} mb-4`}>
             막대형 차트
           </h4>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+              <BarChart data={chartData} margin={CHART_THEME.margin}>
+                <CartesianGrid strokeDasharray="3 3" stroke={CHART_THEME.colors.grid} />
                 <XAxis
                   dataKey="date"
-                  stroke="#6B7280"
-                  fontSize={12}
+                  stroke={CHART_THEME.colors.axis}
+                  fontSize={CHART_THEME.fontSize.axis}
                   angle={-45}
                   textAnchor="end"
                   height={60}
                 />
                 <YAxis
-                  stroke="#6B7280"
-                  fontSize={12}
+                  stroke={CHART_THEME.colors.axis}
+                  fontSize={CHART_THEME.fontSize.axis}
                   domain={yAxisDomain}
                 />
                 <Tooltip
                   formatter={formatTooltip}
                   labelFormatter={formatLabel}
-                  contentStyle={{
-                    backgroundColor: '#1F2937',
-                    border: '1px solid #374151',
-                    borderRadius: '6px',
-                    color: '#F3F4F6'
-                  }}
+                  contentStyle={CHART_THEME.tooltip.contentStyle}
                 />
                 <Bar
                   dataKey="actual"
-                  fill="#3B82F6"
+                  fill={CHART_THEME.colors.bar}
                   radius={[2, 2, 0, 0]}
                 />
                 {referenceLines.map((line, index) => (
@@ -236,43 +232,38 @@ export default function DataCharts({ data, indicatorName }: DataChartsProps) {
 
         {/* 선형 차트 */}
         <div>
-          <h4 className="text-lg font-medium text-gray-700 dark:text-gray-300 mb-4">
+          <h4 className={`text-lg font-medium ${CARD_CLASSES.subtitle} mb-4`}>
             선형 차트
           </h4>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+              <LineChart data={chartData} margin={CHART_THEME.margin}>
+                <CartesianGrid strokeDasharray="3 3" stroke={CHART_THEME.colors.grid} />
                 <XAxis
                   dataKey="date"
-                  stroke="#6B7280"
-                  fontSize={12}
+                  stroke={CHART_THEME.colors.axis}
+                  fontSize={CHART_THEME.fontSize.axis}
                   angle={-45}
                   textAnchor="end"
                   height={60}
                 />
                 <YAxis
-                  stroke="#6B7280"
-                  fontSize={12}
+                  stroke={CHART_THEME.colors.axis}
+                  fontSize={CHART_THEME.fontSize.axis}
                   domain={yAxisDomain}
                 />
                 <Tooltip
                   formatter={formatTooltip}
                   labelFormatter={formatLabel}
-                  contentStyle={{
-                    backgroundColor: '#1F2937',
-                    border: '1px solid #374151',
-                    borderRadius: '6px',
-                    color: '#F3F4F6'
-                  }}
+                  contentStyle={CHART_THEME.tooltip.contentStyle}
                 />
                 <Line
                   type="monotone"
                   dataKey="actual"
-                  stroke="#10B981"
+                  stroke={CHART_THEME.colors.line}
                   strokeWidth={3}
-                  dot={{ fill: '#10B981', strokeWidth: 2, r: 4 }}
-                  activeDot={{ r: 6, stroke: '#10B981', strokeWidth: 2 }}
+                  dot={{ fill: CHART_THEME.colors.line, strokeWidth: 2, r: 4 }}
+                  activeDot={{ r: 6, stroke: CHART_THEME.colors.line, strokeWidth: 2 }}
                 />
                 {referenceLines.map((line, index) => (
                   <ReferenceLine
@@ -291,7 +282,7 @@ export default function DataCharts({ data, indicatorName }: DataChartsProps) {
       </div>
 
       {/* 차트 설명 */}
-      <div className="mt-6 text-sm text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700 pt-4">
+      <div className={`mt-6 text-sm ${CARD_CLASSES.subtitle} border-t border-gray-200 dark:border-gray-700 pt-4`}>
         <p>* Actual 값만 표시됨 (과거 데이터)</p>
         <p>* 시간순으로 정렬된 데이터 ({chartData.length}개 포인트)</p>
         <p>* 막대형: 각 시점별 값, 선형: 트렌드 변화</p>
