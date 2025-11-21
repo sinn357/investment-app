@@ -70,6 +70,7 @@ export default function IndicatorsPage() {
           // 필요한 지표 추출
           const indicators: RawIndicators = {};
 
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           result.indicators.forEach((item: any) => {
             const latest = item.data.latest_release;
             const actualValue = typeof latest.actual === 'string'
