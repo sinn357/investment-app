@@ -282,6 +282,42 @@ class PostgresDatabaseService:
                     );
 
                     CREATE INDEX IF NOT EXISTS idx_economic_narrative_user_date ON economic_narrative(user_id, date DESC);
+
+                    -- 섹터 성과 테이블 (Page 3: Industries)
+                    CREATE TABLE IF NOT EXISTS sector_performance (
+                        id SERIAL PRIMARY KEY,
+                        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+                        date DATE NOT NULL,
+                        sector VARCHAR(100) NOT NULL,  -- 섹터명 (예: Technology, Healthcare)
+                        performance NUMERIC,            -- 성과 (%)
+                        relative_strength NUMERIC,      -- 상대강도 지수
+                        notes TEXT,                     -- 메모
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        UNIQUE(user_id, date, sector)
+                    );
+
+                    CREATE INDEX IF NOT EXISTS idx_sector_performance_user_date ON sector_performance(user_id, date DESC);
+
+                    -- 관심 종목 테이블 (Page 3: Industries)
+                    CREATE TABLE IF NOT EXISTS watchlist (
+                        id SERIAL PRIMARY KEY,
+                        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+                        symbol VARCHAR(20) NOT NULL,    -- 티커 심볼 (예: AAPL, TSLA)
+                        name VARCHAR(200) NOT NULL,     -- 종목명
+                        sector VARCHAR(100),            -- 섹터
+                        current_price NUMERIC,          -- 현재가
+                        target_price NUMERIC,           -- 목표가
+                        notes TEXT,                     -- 투자 근거/메모
+                        alert_enabled BOOLEAN DEFAULT false,  -- 알림 활성화
+                        alert_price NUMERIC,            -- 알림 가격
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        UNIQUE(user_id, symbol)
+                    );
+
+                    CREATE INDEX IF NOT EXISTS idx_watchlist_user ON watchlist(user_id);
+                    CREATE INDEX IF NOT EXISTS idx_watchlist_symbol ON watchlist(symbol);
                     """
 
                     print("Executing PostgreSQL schema initialization...")
@@ -2303,4 +2339,253 @@ class PostgresDatabaseService:
             return {
                 "status": "error",
                 "message": f"거시경제 담론 저장 중 오류: {str(e)}"
+            }
+
+    # ========== Page 3: Industries (섹터 & 종목 분석) ==========
+
+    def get_sector_performance(self, user_id: int, date: str) -> Dict:
+        """섹터 성과 조회"""
+        try:
+            with self.get_connection() as conn:
+                with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                    cur.execute("""
+                        SELECT sector, performance, relative_strength, notes, created_at, updated_at
+                        FROM sector_performance
+                        WHERE user_id = %s AND date = %s
+                        ORDER BY sector
+                    """, (user_id, date))
+
+                    results = cur.fetchall()
+
+                    if results:
+                        sectors = []
+                        for row in results:
+                            sectors.append({
+                                'sector': row['sector'],
+                                'performance': float(row['performance']) if row['performance'] else None,
+                                'relative_strength': float(row['relative_strength']) if row['relative_strength'] else None,
+                                'notes': row['notes']
+                            })
+
+                        return {
+                            "status": "success",
+                            "data": sectors
+                        }
+                    else:
+                        return {
+                            "status": "success",
+                            "data": []
+                        }
+
+        except Exception as e:
+            print(f"PostgreSQL get_sector_performance error: {e}")
+            return {
+                "status": "error",
+                "message": f"섹터 성과 조회 중 오류: {str(e)}"
+            }
+
+    def save_sector_performance(self, user_id: int, date: str, sectors: list) -> Dict:
+        """섹터 성과 저장 (UPSERT)"""
+        try:
+            with self.get_connection() as conn:
+                with conn.cursor() as cur:
+                    # 기존 데이터 삭제 후 새로 삽입
+                    cur.execute("""
+                        DELETE FROM sector_performance
+                        WHERE user_id = %s AND date = %s
+                    """, (user_id, date))
+
+                    # 새 데이터 삽입
+                    for sector_data in sectors:
+                        cur.execute("""
+                            INSERT INTO sector_performance
+                                (user_id, date, sector, performance, relative_strength, notes, updated_at)
+                            VALUES (%s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
+                        """, (
+                            user_id,
+                            date,
+                            sector_data.get('sector'),
+                            sector_data.get('performance'),
+                            sector_data.get('relative_strength'),
+                            sector_data.get('notes', '')
+                        ))
+
+                    conn.commit()
+
+                    print(f"Sector performance saved successfully for user: {user_id}, date: {date}")
+                    return {
+                        "status": "success",
+                        "message": "섹터 성과가 저장되었습니다."
+                    }
+
+        except Exception as e:
+            print(f"PostgreSQL save_sector_performance error: {e}")
+            return {
+                "status": "error",
+                "message": f"섹터 성과 저장 중 오류: {str(e)}"
+            }
+
+    def get_watchlist(self, user_id: int) -> Dict:
+        """관심 종목 조회"""
+        try:
+            with self.get_connection() as conn:
+                with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                    cur.execute("""
+                        SELECT id, symbol, name, sector, current_price, target_price,
+                               notes, alert_enabled, alert_price, created_at, updated_at
+                        FROM watchlist
+                        WHERE user_id = %s
+                        ORDER BY created_at DESC
+                    """, (user_id,))
+
+                    results = cur.fetchall()
+
+                    if results:
+                        stocks = []
+                        for row in results:
+                            stocks.append({
+                                'id': row['id'],
+                                'symbol': row['symbol'],
+                                'name': row['name'],
+                                'sector': row['sector'],
+                                'current_price': float(row['current_price']) if row['current_price'] else None,
+                                'target_price': float(row['target_price']) if row['target_price'] else None,
+                                'notes': row['notes'],
+                                'alert_enabled': row['alert_enabled'],
+                                'alert_price': float(row['alert_price']) if row['alert_price'] else None
+                            })
+
+                        return {
+                            "status": "success",
+                            "data": stocks
+                        }
+                    else:
+                        return {
+                            "status": "success",
+                            "data": []
+                        }
+
+        except Exception as e:
+            print(f"PostgreSQL get_watchlist error: {e}")
+            return {
+                "status": "error",
+                "message": f"관심 종목 조회 중 오류: {str(e)}"
+            }
+
+    def add_watchlist_item(self, user_id: int, data: Dict) -> Dict:
+        """관심 종목 추가"""
+        try:
+            with self.get_connection() as conn:
+                with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                    cur.execute("""
+                        INSERT INTO watchlist
+                            (user_id, symbol, name, sector, current_price, target_price,
+                             notes, alert_enabled, alert_price, updated_at)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
+                        ON CONFLICT (user_id, symbol)
+                        DO UPDATE SET
+                            name = EXCLUDED.name,
+                            sector = EXCLUDED.sector,
+                            current_price = EXCLUDED.current_price,
+                            target_price = EXCLUDED.target_price,
+                            notes = EXCLUDED.notes,
+                            alert_enabled = EXCLUDED.alert_enabled,
+                            alert_price = EXCLUDED.alert_price,
+                            updated_at = CURRENT_TIMESTAMP
+                        RETURNING id
+                    """, (
+                        user_id,
+                        data.get('symbol'),
+                        data.get('name'),
+                        data.get('sector'),
+                        data.get('current_price'),
+                        data.get('target_price'),
+                        data.get('notes', ''),
+                        data.get('alert_enabled', False),
+                        data.get('alert_price')
+                    ))
+
+                    result = cur.fetchone()
+                    conn.commit()
+
+                    print(f"Watchlist item added successfully for user: {user_id}, symbol: {data.get('symbol')}")
+                    return {
+                        "status": "success",
+                        "message": "관심 종목이 추가되었습니다.",
+                        "id": result['id']
+                    }
+
+        except Exception as e:
+            print(f"PostgreSQL add_watchlist_item error: {e}")
+            return {
+                "status": "error",
+                "message": f"관심 종목 추가 중 오류: {str(e)}"
+            }
+
+    def update_watchlist_item(self, user_id: int, stock_id: int, data: Dict) -> Dict:
+        """관심 종목 수정"""
+        try:
+            with self.get_connection() as conn:
+                with conn.cursor() as cur:
+                    cur.execute("""
+                        UPDATE watchlist
+                        SET name = %s,
+                            sector = %s,
+                            current_price = %s,
+                            target_price = %s,
+                            notes = %s,
+                            alert_enabled = %s,
+                            alert_price = %s,
+                            updated_at = CURRENT_TIMESTAMP
+                        WHERE id = %s AND user_id = %s
+                    """, (
+                        data.get('name'),
+                        data.get('sector'),
+                        data.get('current_price'),
+                        data.get('target_price'),
+                        data.get('notes', ''),
+                        data.get('alert_enabled', False),
+                        data.get('alert_price'),
+                        stock_id,
+                        user_id
+                    ))
+
+                    conn.commit()
+
+                    print(f"Watchlist item updated successfully: {stock_id}")
+                    return {
+                        "status": "success",
+                        "message": "관심 종목이 수정되었습니다."
+                    }
+
+        except Exception as e:
+            print(f"PostgreSQL update_watchlist_item error: {e}")
+            return {
+                "status": "error",
+                "message": f"관심 종목 수정 중 오류: {str(e)}"
+            }
+
+    def delete_watchlist_item(self, user_id: int, stock_id: int) -> Dict:
+        """관심 종목 삭제"""
+        try:
+            with self.get_connection() as conn:
+                with conn.cursor() as cur:
+                    cur.execute("""
+                        DELETE FROM watchlist
+                        WHERE id = %s AND user_id = %s
+                    """, (stock_id, user_id))
+
+                    conn.commit()
+
+                    print(f"Watchlist item deleted successfully: {stock_id}")
+                    return {
+                        "status": "success",
+                        "message": "관심 종목이 삭제되었습니다."
+                    }
+
+        except Exception as e:
+            print(f"PostgreSQL delete_watchlist_item error: {e}")
+            return {
+                "status": "error",
+                "message": f"관심 종목 삭제 중 오류: {str(e)}"
             }

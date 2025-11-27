@@ -1577,6 +1577,176 @@ def save_economic_narrative():
             "message": f"거시경제 담론 저장 실패: {str(e)}"
         }), 500
 
+# === Page 3: Industries (섹터 & 종목 분석) API ===
+
+@app.route('/api/sector-performance', methods=['GET'])
+def get_sector_performance():
+    """섹터 성과 조회 API"""
+    try:
+        user_id = request.args.get('user_id', type=int)
+        date = request.args.get('date')
+
+        if not user_id or not date:
+            return jsonify({
+                "status": "error",
+                "message": "user_id와 date는 필수입니다."
+            }), 400
+
+        result = db_service.get_sector_performance(user_id, date)
+
+        if result['status'] == 'success':
+            return jsonify(result), 200
+        else:
+            return jsonify(result), 500
+
+    except Exception as e:
+        print(f"Error fetching sector performance: {e}")
+        return jsonify({
+            "status": "error",
+            "message": f"섹터 성과 조회 실패: {str(e)}"
+        }), 500
+
+@app.route('/api/sector-performance', methods=['POST'])
+def save_sector_performance():
+    """섹터 성과 저장 API"""
+    try:
+        data = request.get_json()
+        user_id = data.get('user_id')
+        date = data.get('date')
+        sectors = data.get('sectors', [])
+
+        if not user_id or not date:
+            return jsonify({
+                "status": "error",
+                "message": "user_id와 date는 필수입니다."
+            }), 400
+
+        result = db_service.save_sector_performance(user_id, date, sectors)
+
+        if result['status'] == 'success':
+            return jsonify(result), 200
+        else:
+            return jsonify(result), 500
+
+    except Exception as e:
+        print(f"Error saving sector performance: {e}")
+        return jsonify({
+            "status": "error",
+            "message": f"섹터 성과 저장 실패: {str(e)}"
+        }), 500
+
+@app.route('/api/watchlist', methods=['GET'])
+def get_watchlist():
+    """관심 종목 조회 API"""
+    try:
+        user_id = request.args.get('user_id', type=int)
+
+        if not user_id:
+            return jsonify({
+                "status": "error",
+                "message": "user_id는 필수입니다."
+            }), 400
+
+        result = db_service.get_watchlist(user_id)
+
+        if result['status'] == 'success':
+            return jsonify(result), 200
+        else:
+            return jsonify(result), 500
+
+    except Exception as e:
+        print(f"Error fetching watchlist: {e}")
+        return jsonify({
+            "status": "error",
+            "message": f"관심 종목 조회 실패: {str(e)}"
+        }), 500
+
+@app.route('/api/watchlist', methods=['POST'])
+def add_watchlist_item():
+    """관심 종목 추가 API"""
+    try:
+        data = request.get_json()
+        user_id = data.get('user_id')
+
+        if not user_id:
+            return jsonify({
+                "status": "error",
+                "message": "user_id는 필수입니다."
+            }), 400
+
+        if not data.get('symbol') or not data.get('name'):
+            return jsonify({
+                "status": "error",
+                "message": "symbol과 name은 필수입니다."
+            }), 400
+
+        result = db_service.add_watchlist_item(user_id, data)
+
+        if result['status'] == 'success':
+            return jsonify(result), 200
+        else:
+            return jsonify(result), 500
+
+    except Exception as e:
+        print(f"Error adding watchlist item: {e}")
+        return jsonify({
+            "status": "error",
+            "message": f"관심 종목 추가 실패: {str(e)}"
+        }), 500
+
+@app.route('/api/watchlist/<int:stock_id>', methods=['PUT'])
+def update_watchlist_item(stock_id):
+    """관심 종목 수정 API"""
+    try:
+        data = request.get_json()
+        user_id = data.get('user_id')
+
+        if not user_id:
+            return jsonify({
+                "status": "error",
+                "message": "user_id는 필수입니다."
+            }), 400
+
+        result = db_service.update_watchlist_item(user_id, stock_id, data)
+
+        if result['status'] == 'success':
+            return jsonify(result), 200
+        else:
+            return jsonify(result), 500
+
+    except Exception as e:
+        print(f"Error updating watchlist item: {e}")
+        return jsonify({
+            "status": "error",
+            "message": f"관심 종목 수정 실패: {str(e)}"
+        }), 500
+
+@app.route('/api/watchlist/<int:stock_id>', methods=['DELETE'])
+def delete_watchlist_item(stock_id):
+    """관심 종목 삭제 API"""
+    try:
+        user_id = request.args.get('user_id', type=int)
+
+        if not user_id:
+            return jsonify({
+                "status": "error",
+                "message": "user_id는 필수입니다."
+            }), 400
+
+        result = db_service.delete_watchlist_item(user_id, stock_id)
+
+        if result['status'] == 'success':
+            return jsonify(result), 200
+        else:
+            return jsonify(result), 500
+
+    except Exception as e:
+        print(f"Error deleting watchlist item: {e}")
+        return jsonify({
+            "status": "error",
+            "message": f"관심 종목 삭제 실패: {str(e)}"
+        }), 500
+
 # === 사용자 인증 API ===
 
 @app.route('/api/auth/register', methods=['POST'])
