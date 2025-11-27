@@ -69,7 +69,7 @@ export default function InvestmentPrinciples({ principles, onChange }: Investmen
           <div key={category}>
             <h3 className="text-sm font-semibold text-muted-foreground mb-2">{category}</h3>
             <div className="space-y-2">
-              {items.map((principle, idx) => {
+              {items.map((principle) => {
                 const globalIndex = principles.findIndex(p => p === principle);
                 return (
                   <div

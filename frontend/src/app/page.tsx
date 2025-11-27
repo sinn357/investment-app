@@ -63,6 +63,7 @@ export default function Home() {
     };
 
     fetchPhilosophy();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
   // 저장 함수

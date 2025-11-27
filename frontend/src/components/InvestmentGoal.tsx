@@ -24,12 +24,19 @@ export default function InvestmentGoal({ goal, onChange }: InvestmentGoalProps) 
     const newGoal = { ...goal };
     if (field.includes('.')) {
       const [parent, child] = field.split('.');
-      newGoal[parent as keyof typeof goal] = {
-        ...newGoal[parent as keyof typeof goal],
-        [child]: value
-      };
-    } else {
-      (newGoal as any)[field] = value;
+      if (parent === 'riskTolerance') {
+        newGoal.riskTolerance = {
+          ...newGoal.riskTolerance,
+          [child]: value
+        };
+      } else if (parent === 'timeHorizon') {
+        newGoal.timeHorizon = {
+          ...newGoal.timeHorizon,
+          [child]: value
+        };
+      }
+    } else if (field === 'targetReturn' && typeof value === 'number') {
+      newGoal.targetReturn = value;
     }
     onChange(newGoal);
   };

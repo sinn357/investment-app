@@ -52,7 +52,11 @@ export default function AllocationRange({ allocationRange, onChange }: Allocatio
 
   const handleUpdate = (index: number, field: keyof AllocationItem, value: number | string) => {
     const newRanges = [...allocationRange];
-    (newRanges[index][field] as any) = value;
+    if (typeof value === 'number' && (field === 'min' || field === 'max' || field === 'current')) {
+      newRanges[index][field] = value;
+    } else if (typeof value === 'string' && (field === 'category' || field === 'color')) {
+      newRanges[index][field] = value;
+    }
     onChange(newRanges);
   };
 
