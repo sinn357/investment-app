@@ -76,6 +76,22 @@ interface EconomicNarrative {
   risks: Array<{ category: string; level: number; description: string }>;
 }
 
+type RiskLevel = 'Low' | 'Medium' | 'High';
+interface RiskItem {
+  id: string;
+  category: string;
+  title: string;
+  level: RiskLevel;
+  note?: string;
+}
+
+interface RiskRadarData {
+  structural: RiskItem[];
+  cycle: RiskItem[];
+  portfolio: RiskItem[];
+  executionTags: string[];
+}
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://investment-app-backend-x166.onrender.com';
 
 export default function IndicatorsPage() {
@@ -89,7 +105,14 @@ export default function IndicatorsPage() {
     myNarrative: '',
     risks: []
   });
+  const [riskRadar, setRiskRadar] = useState<RiskRadarData>({
+    structural: [],
+    cycle: [],
+    portfolio: [],
+    executionTags: []
+  });
   const [isSavingNarrative, setIsSavingNarrative] = useState(false);
+  const [savingRisk, setSavingRisk] = useState(false);
 
   // 경제 지표 데이터 페칭 및 국면 계산
   useEffect(() => {
@@ -273,6 +296,12 @@ export default function IndicatorsPage() {
     }
   };
 
+  const handleSaveRisk = () => {
+    // TODO: 백엔드 연동 시 POST 호출. 현재는 로컬 상태만 유지.
+    setSavingRisk(true);
+    setTimeout(() => setSavingRisk(false), 600);
+  };
+
   return (
     <ErrorBoundary>
       <div className="min-h-screen bg-background">
@@ -366,10 +395,20 @@ export default function IndicatorsPage() {
 
         {/* 리스크 레이더 섹션 */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-6">
-          <RiskRadar
-            risks={narrative.risks}
-            onChange={(risks) => setNarrative({ ...narrative, risks })}
-          />
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <h3 className="text-xl font-semibold">리스크 레이더</h3>
+              <p className="text-sm text-muted-foreground">구조·정책 / 사이클 / 포트폴리오 + 실행 리스크 태그</p>
+            </div>
+            <button
+              onClick={handleSaveRisk}
+              disabled={savingRisk}
+              className="px-4 py-2 bg-primary text-white rounded-md shadow-sm disabled:opacity-50"
+            >
+              {savingRisk ? '저장 중...' : '저장'}
+            </button>
+          </div>
+          <RiskRadar value={riskRadar} onChange={setRiskRadar} />
         </div>
       </main>
       </div>
