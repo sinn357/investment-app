@@ -93,6 +93,7 @@ interface RiskRadarData {
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://investment-app-backend-x166.onrender.com';
+const RISK_STORAGE_KEY = 'risk_radar_v1';
 
 export default function IndicatorsPage() {
   const [userId] = useState(1); // 임시 user_id
@@ -113,6 +114,19 @@ export default function IndicatorsPage() {
   });
   const [isSavingNarrative, setIsSavingNarrative] = useState(false);
   const [savingRisk, setSavingRisk] = useState(false);
+
+  // 리스크 레이더 로드 (로컬 스토리지)
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(RISK_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved) as RiskRadarData;
+        setRiskRadar(parsed);
+      }
+    } catch (error) {
+      console.warn('리스크 레이더 로드 실패:', error);
+    }
+  }, []);
 
   // 경제 지표 데이터 페칭 및 국면 계산
   useEffect(() => {
@@ -297,9 +311,14 @@ export default function IndicatorsPage() {
   };
 
   const handleSaveRisk = () => {
-    // TODO: 백엔드 연동 시 POST 호출. 현재는 로컬 상태만 유지.
     setSavingRisk(true);
-    setTimeout(() => setSavingRisk(false), 600);
+    try {
+      localStorage.setItem(RISK_STORAGE_KEY, JSON.stringify(riskRadar));
+    } catch (error) {
+      console.warn('리스크 레이더 저장 실패:', error);
+    } finally {
+      setTimeout(() => setSavingRisk(false), 400);
+    }
   };
 
   return (

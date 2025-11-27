@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -69,6 +69,12 @@ export default function RiskRadar({ value, onChange }: RiskRadarProps) {
     portfolio: ensureDefaults(value.portfolio || [], DEFAULT_PORTFOLIO, 'portfolio'),
     executionTags: value.executionTags || []
   };
+
+  const [tagInput, setTagInput] = useState(data.executionTags.join(', '));
+
+  useEffect(() => {
+    setTagInput((value.executionTags || []).join(', '));
+  }, [value.executionTags]);
 
   const updateItems = (key: keyof RiskRadarData, items: RiskItem[]) => {
     onChange({ ...data, [key]: items });
@@ -161,15 +167,16 @@ export default function RiskRadar({ value, onChange }: RiskRadarProps) {
         <CardContent className="space-y-3">
           <Input
             placeholder="콤마로 구분해 입력 (예: 감정, 판단, 루틴, 피로)"
-            value={data.executionTags.join(', ')}
-            onChange={e =>
-              updateTag(
-                e.target.value
-                  .split(',')
-                  .map(v => v.trim())
-                  .filter(Boolean)
-              )
-            }
+            value={tagInput}
+            onChange={e => {
+              const next = e.target.value;
+              setTagInput(next);
+              const parsed = next
+                .split(',')
+                .map(v => v.trim())
+                .filter(Boolean);
+              updateTag(parsed);
+            }}
           />
           <div className="flex flex-wrap gap-2">
             {data.executionTags.map(tag => (
