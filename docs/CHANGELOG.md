@@ -1,5 +1,30 @@
 # Investment App Changelog
 
+## 2025-11-27
+
+### Added
+- Page 4 분석(Analysis) MVP: 리스트/필터 + 정량/정성/투자 의견/참고 자료 탭, 로컬 저장/삭제 지원
+- 포트폴리오 확장 섹션: 매수·매도 계획, 데일리 모니터링, 리밸런싱 제안(목표 vs 현재 비중 Δ), 월간 피드백(수익률/승률/회고) – 로컬 저장 기반
+- 리스크 레이더 리뉴얼: 구조·정책/사이클/포트폴리오 3축 + 실행 리스크 태그, 로컬 저장
+- 빅웨이브 트래커: 카테고리/단계/포지션/플레이어/이벤트/논지 카드 관리, 로컬 저장
+- 사이클 보조 스코어 입력: 신용·유동성, 심리·밸류에이션 수동 스코어 + 메모
+
+### Fixed
+- 리스크 태그 입력 시 콤마 입력/편집 안 되던 문제 해결
+- Select 값 공란으로 인한 포트폴리오 페이지 런타임 오류 수정
+
+### Commits
+- `5c9d14f`: feat: add analysis page mvp
+- `2d82540`: feat: make analysis page editable
+- `857ee2c`: feat: persist analysis edits and add delete
+- `8aee318`: feat: add portfolio planning sections
+- `4f5695a`: fix: avoid empty select values in portfolio sections
+- `fada972`: feat: redesign risk radar with structured categories
+- `c981c2a`: fix: persist risk radar and allow tag input
+- `63edf78`: fix: keep risk tag input editable
+- `ab41c61`: feat: add manual credit/sentiment cycle inputs
+- `136310d`: feat: add big wave tracker and cycle manual inputs
+
 ## 2025-11-18
 
 ### Changed
