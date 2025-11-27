@@ -17,6 +17,7 @@ import { fetchJsonWithRetry } from '@/utils/fetchWithRetry';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
+import BigWaveSection, { BigWaveCard } from '@/components/BigWaveSection';
 
 interface GridIndicator {
   name: string;
@@ -102,8 +103,13 @@ interface CycleScoreInput {
   notes?: string;
 }
 
+interface BigWaveData {
+  cards: BigWaveCard[];
+}
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://investment-app-backend-x166.onrender.com';
 const RISK_STORAGE_KEY = 'risk_radar_v1';
+const BIGWAVE_STORAGE_KEY = 'bigwave_v1';
 
 export default function IndicatorsPage() {
   const [userId] = useState(1); // 임시 user_id
@@ -127,6 +133,7 @@ export default function IndicatorsPage() {
     sentiment: '중립',
     notes: ''
   });
+  const [bigWave, setBigWave] = useState<BigWaveData>({ cards: [] });
   const [isSavingNarrative, setIsSavingNarrative] = useState(false);
   const [savingRisk, setSavingRisk] = useState(false);
 
@@ -140,6 +147,19 @@ export default function IndicatorsPage() {
       }
     } catch (error) {
       console.warn('리스크 레이더 로드 실패:', error);
+    }
+  }, []);
+
+  // 빅웨이브 로드
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(BIGWAVE_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved) as BigWaveData;
+        setBigWave(parsed);
+      }
+    } catch (error) {
+      console.warn('빅웨이브 로드 실패:', error);
     }
   }, []);
 
@@ -336,6 +356,14 @@ export default function IndicatorsPage() {
     }
   };
 
+  const handleSaveBigWave = () => {
+    try {
+      localStorage.setItem(BIGWAVE_STORAGE_KEY, JSON.stringify(bigWave));
+    } catch (error) {
+      console.warn('빅웨이브 저장 실패:', error);
+    }
+  };
+
   return (
     <ErrorBoundary>
       <div className="min-h-screen bg-background">
@@ -503,6 +531,28 @@ export default function IndicatorsPage() {
             </button>
           </div>
           <RiskRadar value={riskRadar} onChange={setRiskRadar} />
+        </div>
+
+        {/* 빅웨이브 섹션 */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-10">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <h3 className="text-xl font-semibold">빅웨이브 트래커</h3>
+              <p className="text-sm text-muted-foreground">
+                구조적 파동(빅웨이브)을 카테고리·단계·이벤트·포지션으로 관리하세요.
+              </p>
+            </div>
+            <button
+              onClick={handleSaveBigWave}
+              className="px-4 py-2 bg-primary text-white rounded-md shadow-sm"
+            >
+              저장
+            </button>
+          </div>
+          <BigWaveSection
+            cards={bigWave.cards}
+            onChange={(cards) => setBigWave({ cards })}
+          />
         </div>
       </main>
       </div>
