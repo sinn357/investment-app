@@ -49,6 +49,7 @@ export default function Navigation() {
     { href: '/', label: '홈', icon: 'home' },
     { href: '/indicators', label: '경제지표', icon: 'chart' },
     { href: '/industries', label: '섹터/종목', icon: 'industries' },
+    { href: '/analysis', label: '개별 분석', icon: 'analysis' },
     { href: '/portfolio', label: '포트폴리오', icon: 'portfolio' },
     { href: '/expenses', label: '가계부', icon: 'expenses' }
   ];
@@ -77,6 +78,12 @@ export default function Navigation() {
         return (
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+          </svg>
+        );
+      case 'analysis':
+        return (
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h6a2 2 0 012 2v12a2 2 0 01-2 2H3a2 2 0 01-2-2V7a2 2 0 012-2zm0 0V3a2 2 0 012-2h6a2 2 0 012 2v2m6 4l3 3m0 0l-3 3m3-3H13" />
           </svg>
         );
       case 'expenses':
