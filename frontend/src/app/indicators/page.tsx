@@ -20,11 +20,16 @@ import { Input } from '@/components/ui/input';
 import BigWaveSection, { BigWaveCard } from '@/components/BigWaveSection';
 
 interface GridIndicator {
+  id: string;
   name: string;
+  nameKo?: string;
   actual: number | string | null;
   previous: number | string;
+  forecast?: number | string | null;
   surprise?: number | null;
   category: string;
+  sparklineData?: number[];
+  reverseColor?: boolean;
 }
 
 // 지표명을 카테고리로 매핑하는 헬퍼 함수
@@ -286,7 +291,7 @@ export default function IndicatorsPage() {
 
             // 히스토리 데이터에서 스파크라인 데이터 추출 (최근 6개월)
             const sparklineData = item.data.history
-              ? item.data.history.slice(0, 6).reverse().map((h: any) => {
+              ? item.data.history.slice(0, 6).reverse().map((h: { actual: string | number }) => {
                   const actualValue = typeof h.actual === 'string'
                     ? parseFloat(h.actual.replace('%', '').replace('K', '000'))
                     : h.actual;
