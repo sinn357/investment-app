@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -70,11 +70,7 @@ export default function RiskRadar({ value, onChange }: RiskRadarProps) {
     executionTags: value.executionTags || []
   };
 
-  const [tagInput, setTagInput] = useState(data.executionTags.join(', '));
-
-  useEffect(() => {
-    setTagInput((value.executionTags || []).join(', '));
-  }, [value.executionTags]);
+  const [tagInput, setTagInput] = useState(() => (value.executionTags || []).join(', '));
 
   const updateItems = (key: keyof RiskRadarData, items: RiskItem[]) => {
     onChange({ ...data, [key]: items });
