@@ -1,11 +1,18 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Navigation from '@/components/Navigation';
 import EnhancedPortfolioForm from '@/components/EnhancedPortfolioForm';
 import PortfolioDashboard from '@/components/PortfolioDashboard';
 import AuthForm from '@/components/AuthForm';
+import { useAssets } from '@/lib/hooks/usePortfolio';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
 
 export interface PortfolioItem {
   id: string;
@@ -27,11 +34,58 @@ interface User {
   token?: string;
 }
 
+type PlanStatus = '대기' | '부분체결' | '완료' | '취소';
+type PlanType = '매수' | '매도';
+
+interface TradePlan {
+  id: string;
+  assetId?: number;
+  symbol: string;
+  type: PlanType;
+  targetPrice?: number;
+  quantity?: number;
+  condition?: string;
+  status: PlanStatus;
+  note?: string;
+  createdAt: string;
+}
+
+interface DailyTask {
+  id: string;
+  assetId?: number;
+  text: string;
+  done: boolean;
+  date: string;
+  note?: string;
+}
+
+interface MonthlyReview {
+  performance?: number;
+  winRate?: number;
+  wins?: string;
+  mistakes?: string;
+  improvements?: string;
+}
+
 export default function PortfolioPage() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [user, setUser] = useState<User | null>(null);
   const [isFormExpanded, setIsFormExpanded] = useState(false);
   const router = useRouter();
+  const { data: assetsForPlans = [] } = useAssets(user?.id ?? 0);
+
+  const today = useMemo(() => new Date().toISOString().split('T')[0], []);
+  const [tradePlans, setTradePlans] = useState<TradePlan[]>([]);
+  const [dailyTasks, setDailyTasks] = useState<DailyTask[]>([]);
+  const [dailyNote, setDailyNote] = useState('');
+  const [targetWeights, setTargetWeights] = useState<Record<string, number>>({});
+  const [monthlyReviews, setMonthlyReviews] = useState<Record<string, MonthlyReview>>({});
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  });
+
+  const storageKey = (name: string) => (user ? `portfolio_${name}_v1_${user.id}` : '');
 
   // 로컬 스토리지에서 사용자 정보 로드 (토큰 포함)
   useEffect(() => {
@@ -63,6 +117,40 @@ export default function PortfolioPage() {
     }
   }, []);
 
+  // 보조 데이터 로드
+  useEffect(() => {
+    if (!user) return;
+    try {
+      const savedPlans = localStorage.getItem(storageKey('plans'));
+      const savedTasks = localStorage.getItem(storageKey('daily'));
+      const savedNote = localStorage.getItem(storageKey('daily_note'));
+      const savedWeights = localStorage.getItem(storageKey('targets'));
+      const savedReviews = localStorage.getItem(storageKey('reviews'));
+
+      if (savedPlans) setTradePlans(JSON.parse(savedPlans));
+      if (savedTasks) setDailyTasks(JSON.parse(savedTasks));
+      if (savedNote) setDailyNote(savedNote);
+      if (savedWeights) setTargetWeights(JSON.parse(savedWeights));
+      if (savedReviews) setMonthlyReviews(JSON.parse(savedReviews));
+    } catch (error) {
+      console.warn('보조 데이터 로드 실패:', error);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
+
+  // 자산이 로드됐는데 목표 비중이 없으면 현재 비중을 기본값으로 설정
+  useEffect(() => {
+    if (!user || assetsForPlans.length === 0 || Object.keys(targetWeights).length > 0) return;
+    const totals = assetsForPlans.reduce((acc, a) => acc + (a.evaluation_amount || a.principal || a.amount || 0), 0);
+    if (totals <= 0) return;
+    const defaults: Record<string, number> = {};
+    assetsForPlans.forEach(a => {
+      const key = a.asset_type || '기타';
+      defaults[key] = (defaults[key] || 0) + ((a.evaluation_amount || a.principal || a.amount || 0) / totals) * 100;
+    });
+    setTargetWeights(defaults);
+  }, [assetsForPlans, targetWeights, user]);
+
   const handleLogin = (userData: User) => {
     setUser(userData);
     // 로컬 스토리지에 사용자 정보 저장
@@ -86,9 +174,156 @@ export default function PortfolioPage() {
     setRefreshKey(prev => prev + 1);
   };
 
+  const persistTradePlans = (plans: TradePlan[]) => {
+    setTradePlans(plans);
+    if (user) localStorage.setItem(storageKey('plans'), JSON.stringify(plans));
+  };
+
+  const persistDailyTasks = (tasks: DailyTask[], note = dailyNote) => {
+    setDailyTasks(tasks);
+    if (user) {
+      localStorage.setItem(storageKey('daily'), JSON.stringify(tasks));
+      localStorage.setItem(storageKey('daily_note'), note);
+    }
+  };
+
+  const persistTargetWeights = (weights: Record<string, number>) => {
+    setTargetWeights(weights);
+    if (user) localStorage.setItem(storageKey('targets'), JSON.stringify(weights));
+  };
+
+  const persistMonthlyReviews = (reviews: Record<string, MonthlyReview>) => {
+    setMonthlyReviews(reviews);
+    if (user) localStorage.setItem(storageKey('reviews'), JSON.stringify(reviews));
+  };
+
+  // 입력 폼 상태
+  const [planForm, setPlanForm] = useState({
+    assetId: '' as number | '' | 'custom',
+    symbol: '',
+    type: '매수' as PlanType,
+    targetPrice: '',
+    quantity: '',
+    condition: '',
+    note: ''
+  });
+
+  const [taskForm, setTaskForm] = useState({
+    assetId: '' as number | '' | 'custom',
+    text: '',
+    note: ''
+  });
+
   const handleFormExpandedChange = (expanded: boolean) => {
     setIsFormExpanded(expanded);
   };
+
+  const resolveSymbol = (assetId?: number, fallback?: string) => {
+    if (assetId) {
+      const asset = assetsForPlans.find(a => a.id === assetId);
+      if (asset) return asset.name || asset.sub_category || asset.asset_type || fallback || 'UNKNOWN';
+    }
+    return fallback || 'CUSTOM';
+  };
+
+  const handleAddPlanEntry = () => {
+    const assetId = planForm.assetId === '' || planForm.assetId === 'custom' ? undefined : Number(planForm.assetId);
+    const symbol = planForm.symbol.trim() || resolveSymbol(assetId, '');
+    if (!symbol) return;
+    const newPlan: TradePlan = {
+      id: `plan-${Date.now()}`,
+      assetId,
+      symbol,
+      type: planForm.type,
+      targetPrice: planForm.targetPrice ? Number(planForm.targetPrice) : undefined,
+      quantity: planForm.quantity ? Number(planForm.quantity) : undefined,
+      condition: planForm.condition.trim() || undefined,
+      note: planForm.note.trim() || undefined,
+      status: '대기',
+      createdAt: today
+    };
+    const updated = [newPlan, ...tradePlans];
+    persistTradePlans(updated);
+    setPlanForm({ assetId: '', symbol: '', type: '매수', targetPrice: '', quantity: '', condition: '', note: '' });
+  };
+
+  const handleUpdatePlanStatus = (id: string, status: PlanStatus) => {
+    const updated = tradePlans.map(p => (p.id === id ? { ...p, status } : p));
+    persistTradePlans(updated);
+  };
+
+  const handleDeletePlan = (id: string) => {
+    const updated = tradePlans.filter(p => p.id !== id);
+    persistTradePlans(updated);
+  };
+
+  const handleAddTask = () => {
+    if (!taskForm.text.trim()) return;
+    const assetId = taskForm.assetId === '' || taskForm.assetId === 'custom' ? undefined : Number(taskForm.assetId);
+    const newTask: DailyTask = {
+      id: `task-${Date.now()}`,
+      assetId,
+      text: taskForm.text.trim(),
+      note: taskForm.note.trim() || undefined,
+      done: false,
+      date: today
+    };
+    const updated = [newTask, ...dailyTasks];
+    persistDailyTasks(updated);
+    setTaskForm({ assetId: '', text: '', note: '' });
+  };
+
+  const handleToggleTask = (id: string) => {
+    const updated = dailyTasks.map(t => (t.id === id ? { ...t, done: !t.done } : t));
+    persistDailyTasks(updated);
+  };
+
+  const handleDeleteTask = (id: string) => {
+    const updated = dailyTasks.filter(t => t.id !== id);
+    persistDailyTasks(updated);
+  };
+
+  const handleUpdateDailyNote = (val: string) => {
+    setDailyNote(val);
+    if (user) localStorage.setItem(storageKey('daily_note'), val);
+  };
+
+  const handleUpdateTargetWeight = (category: string, value: number) => {
+    const updated = { ...targetWeights, [category]: value };
+    persistTargetWeights(updated);
+  };
+
+  const handleUpdateReview = (field: keyof MonthlyReview, value: string) => {
+    const next = { ...monthlyReviews };
+    const current = next[selectedMonth] || {};
+    const parsedValue =
+      field === 'performance' || field === 'winRate' ? (value === '' ? undefined : Number(value)) : value;
+    next[selectedMonth] = { ...current, [field]: parsedValue };
+    persistMonthlyReviews(next);
+  };
+
+  const assetOptions = useMemo(
+    () =>
+      assetsForPlans.map(a => ({
+        id: a.id,
+        label: `${a.name || a.sub_category || a.asset_type} (${a.asset_type})`,
+        type: a.asset_type
+      })),
+    [assetsForPlans]
+  );
+
+  const todayTasks = useMemo(() => dailyTasks.filter(t => t.date === today), [dailyTasks, today]);
+
+  const currentWeights = useMemo(() => {
+    const totals = assetsForPlans.reduce((acc, a) => acc + (a.evaluation_amount || a.principal || a.amount || 0), 0);
+    if (totals <= 0) return {};
+    const map: Record<string, number> = {};
+    assetsForPlans.forEach(a => {
+      const key = a.asset_type || '기타';
+      map[key] = (map[key] || 0) + ((a.evaluation_amount || a.principal || a.amount || 0) / totals) * 100;
+    });
+    return map;
+  }, [assetsForPlans]);
 
   // 로그인하지 않은 경우 인증 폼 표시
   if (!user) {
@@ -156,6 +391,395 @@ export default function PortfolioPage() {
           <div>
             <PortfolioDashboard key={`${refreshKey}-${user.id}`} user={user} showSideInfo={false} />
           </div>
+
+          {/* 추가 섹션: 매수/매도 계획 */}
+          <Card className="border border-primary/20 bg-card">
+            <CardHeader>
+              <CardTitle className="text-xl">매수/매도 계획</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                포트폴리오 자산을 선택해 목표가·수량·조건을 기록하세요 (로컬 저장)
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-3 md:grid-cols-5">
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">자산 선택</p>
+                  <Select
+                    value={String(planForm.assetId)}
+                    onValueChange={val =>
+                      setPlanForm(prev => ({ ...prev, assetId: val === 'custom' ? 'custom' : val === '' ? '' : Number(val) }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="포트폴리오 자산 선택" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">선택 안 함</SelectItem>
+                      {assetOptions.map(opt => (
+                        <SelectItem key={opt.id} value={String(opt.id)}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                      <SelectItem value="custom">직접 입력</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">심볼/이름</p>
+                  <Input
+                    placeholder="AAPL / BTC / ETF 등"
+                    value={planForm.symbol}
+                    onChange={e => setPlanForm(prev => ({ ...prev, symbol: e.target.value }))}
+                    disabled={planForm.assetId !== 'custom' && planForm.assetId !== ''}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">타입</p>
+                  <Select value={planForm.type} onValueChange={val => setPlanForm(prev => ({ ...prev, type: val as PlanType }))}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="매수">매수</SelectItem>
+                      <SelectItem value="매도">매도</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">목표가</p>
+                  <Input
+                    type="number"
+                    placeholder="예: 120"
+                    value={planForm.targetPrice}
+                    onChange={e => setPlanForm(prev => ({ ...prev, targetPrice: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">수량/예산</p>
+                  <Input
+                    type="number"
+                    placeholder="예: 10"
+                    value={planForm.quantity}
+                    onChange={e => setPlanForm(prev => ({ ...prev, quantity: e.target.value }))}
+                  />
+                </div>
+              </div>
+              <div className="grid gap-3 md:grid-cols-3">
+                <div className="md:col-span-2">
+                  <p className="text-xs text-muted-foreground mb-1">조건</p>
+                  <Textarea
+                    placeholder="가격/이벤트/지표 조건을 적어주세요"
+                    value={planForm.condition}
+                    onChange={e => setPlanForm(prev => ({ ...prev, condition: e.target.value }))}
+                    rows={2}
+                  />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">메모</p>
+                  <Textarea
+                    placeholder="추가 메모"
+                    value={planForm.note}
+                    onChange={e => setPlanForm(prev => ({ ...prev, note: e.target.value }))}
+                    rows={2}
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end">
+                <Button onClick={handleAddPlanEntry}>계획 추가</Button>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-sm">
+                  <thead>
+                    <tr className="text-left text-muted-foreground">
+                      <th className="px-2 py-2">심볼</th>
+                      <th className="px-2 py-2">타입</th>
+                      <th className="px-2 py-2">목표가</th>
+                      <th className="px-2 py-2">수량/예산</th>
+                      <th className="px-2 py-2">조건</th>
+                      <th className="px-2 py-2">상태</th>
+                      <th className="px-2 py-2 text-right">액션</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {tradePlans.length === 0 && (
+                      <tr>
+                        <td className="px-2 py-3 text-muted-foreground" colSpan={7}>
+                          계획이 없습니다. 계획을 추가하세요.
+                        </td>
+                      </tr>
+                    )}
+                    {tradePlans.map(plan => (
+                      <tr key={plan.id} className="border-t border-border/60">
+                        <td className="px-2 py-3">{plan.symbol}</td>
+                        <td className="px-2 py-3">
+                          <Badge variant={plan.type === '매수' ? 'default' : 'secondary'}>{plan.type}</Badge>
+                        </td>
+                        <td className="px-2 py-3">{plan.targetPrice ? `$${plan.targetPrice}` : '-'}</td>
+                        <td className="px-2 py-3">{plan.quantity ?? '-'}</td>
+                        <td className="px-2 py-3 max-w-xs truncate" title={plan.condition}>
+                          {plan.condition || '-'}
+                        </td>
+                        <td className="px-2 py-3">
+                          <Select
+                            value={plan.status}
+                            onValueChange={val => handleUpdatePlanStatus(plan.id, val as PlanStatus)}
+                          >
+                            <SelectTrigger className="w-28">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="대기">대기</SelectItem>
+                              <SelectItem value="부분체결">부분체결</SelectItem>
+                              <SelectItem value="완료">완료</SelectItem>
+                              <SelectItem value="취소">취소</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </td>
+                        <td className="px-2 py-3 text-right">
+                          <Button variant="ghost" size="sm" onClick={() => handleDeletePlan(plan.id)}>
+                            삭제
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* 추가 섹션: 데일리 모니터링 */}
+          <Card className="border border-secondary/20 bg-card">
+            <CardHeader>
+              <CardTitle className="text-xl">데일리 모니터링</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                오늘 체크리스트와 메모를 관리하세요 (날짜별 로컬 저장)
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-3 md:grid-cols-5">
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">자산 선택 (선택)</p>
+                  <Select
+                    value={String(taskForm.assetId)}
+                    onValueChange={val =>
+                      setTaskForm(prev => ({ ...prev, assetId: val === 'custom' ? 'custom' : val === '' ? '' : Number(val) }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="선택 안 함" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">선택 안 함</SelectItem>
+                      {assetOptions.map(opt => (
+                        <SelectItem key={opt.id} value={String(opt.id)}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                      <SelectItem value="custom">직접 입력</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="md:col-span-3 space-y-1">
+                  <p className="text-xs text-muted-foreground">체크 항목</p>
+                  <Input
+                    placeholder="오늘 확인할 사항"
+                    value={taskForm.text}
+                    onChange={e => setTaskForm(prev => ({ ...prev, text: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">메모</p>
+                  <Input
+                    placeholder="간단 메모"
+                    value={taskForm.note}
+                    onChange={e => setTaskForm(prev => ({ ...prev, note: e.target.value }))}
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end">
+                <Button onClick={handleAddTask}>오늘 항목 추가</Button>
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-sm font-semibold">오늘({today}) 체크리스트</p>
+                {todayTasks.length === 0 && <p className="text-muted-foreground text-sm">오늘 항목이 없습니다.</p>}
+                <div className="space-y-2">
+                  {todayTasks.map(task => (
+                    <div
+                      key={task.id}
+                      className="flex items-center justify-between rounded-md border border-dashed border-border bg-muted/30 px-3 py-2"
+                    >
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="checkbox"
+                          checked={task.done}
+                          onChange={() => handleToggleTask(task.id)}
+                          className="h-4 w-4"
+                        />
+                        <div>
+                          <p className={`font-medium ${task.done ? 'line-through text-muted-foreground' : ''}`}>
+                            {task.text}
+                          </p>
+                          {task.note ? (
+                            <p className="text-xs text-muted-foreground">메모: {task.note}</p>
+                          ) : null}
+                        </div>
+                      </div>
+                      <Button variant="ghost" size="sm" onClick={() => handleDeleteTask(task.id)}>
+                        삭제
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-sm font-semibold">오늘 메모</p>
+                <Textarea
+                  placeholder="경제지표/뉴스/체크 결과를 기록하세요"
+                  value={dailyNote}
+                  onChange={e => handleUpdateDailyNote(e.target.value)}
+                  rows={4}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* 추가 섹션: 리밸런싱 제안 */}
+          <Card className="border border-primary/15 bg-card">
+            <CardHeader>
+              <CardTitle className="text-xl">리밸런싱 제안</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                목표 비중을 설정하면 현재 비중과 차이를 보여줍니다 (보기용)
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-3 md:grid-cols-3">
+                {Object.keys(currentWeights).length === 0 && (
+                  <p className="text-muted-foreground text-sm md:col-span-3">
+                    포트폴리오 자산이 없거나 금액이 0입니다. 자산을 추가하면 자동으로 계산됩니다.
+                  </p>
+                )}
+                {Object.entries(currentWeights).map(([category, current]) => (
+                  <div key={category} className="rounded-md border border-border bg-muted/30 p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <p className="font-semibold">{category}</p>
+                      <Badge variant="outline">{current.toFixed(1)}%</Badge>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-xs text-muted-foreground">목표 비중</p>
+                      <Input
+                        type="number"
+                        value={targetWeights[category]?.toFixed(1) ?? ''}
+                        onChange={e => handleUpdateTargetWeight(category, Number(e.target.value))}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-sm">
+                  <thead>
+                    <tr className="text-left text-muted-foreground">
+                      <th className="px-2 py-2">카테고리</th>
+                      <th className="px-2 py-2">현재</th>
+                      <th className="px-2 py-2">목표</th>
+                      <th className="px-2 py-2">Δ 제안</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Array.from(new Set([...Object.keys(currentWeights), ...Object.keys(targetWeights)])).map(cat => {
+                      const current = currentWeights[cat] ?? 0;
+                      const target = targetWeights[cat] ?? 0;
+                      const delta = target - current;
+                      return (
+                        <tr key={cat} className="border-t border-border/60">
+                          <td className="px-2 py-2">{cat}</td>
+                          <td className="px-2 py-2">{current.toFixed(1)}%</td>
+                          <td className="px-2 py-2">{target.toFixed(1)}%</td>
+                          <td className="px-2 py-2">
+                            {delta > 0 ? (
+                              <span className="text-emerald-600">매수 +{delta.toFixed(1)}%</span>
+                            ) : delta < 0 ? (
+                              <span className="text-rose-600">매도 {delta.toFixed(1)}%</span>
+                            ) : (
+                              <span className="text-muted-foreground">적정</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* 추가 섹션: 월간 피드백 */}
+          <Card className="border border-border bg-card">
+            <CardHeader>
+              <CardTitle className="text-xl">월간 피드백</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                월별로 성과와 잘한 점/실수/개선을 기록하세요 (로컬 저장)
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-3 md:grid-cols-4">
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">월 선택</p>
+                  <Input
+                    type="month"
+                    value={selectedMonth}
+                    onChange={e => setSelectedMonth(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">수익률(%)</p>
+                  <Input
+                    type="number"
+                    value={(monthlyReviews[selectedMonth]?.performance ?? '').toString()}
+                    onChange={e => handleUpdateReview('performance', e.target.value)}
+                  />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">승률(%)</p>
+                  <Input
+                    type="number"
+                    value={(monthlyReviews[selectedMonth]?.winRate ?? '').toString()}
+                    onChange={e => handleUpdateReview('winRate', e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="grid gap-3 md:grid-cols-3">
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">잘한 점</p>
+                  <Textarea
+                    rows={3}
+                    value={monthlyReviews[selectedMonth]?.wins ?? ''}
+                    onChange={e => handleUpdateReview('wins', e.target.value)}
+                  />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">실수</p>
+                  <Textarea
+                    rows={3}
+                    value={monthlyReviews[selectedMonth]?.mistakes ?? ''}
+                    onChange={e => handleUpdateReview('mistakes', e.target.value)}
+                  />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">개선</p>
+                  <Textarea
+                    rows={3}
+                    value={monthlyReviews[selectedMonth]?.improvements ?? ''}
+                    onChange={e => handleUpdateReview('improvements', e.target.value)}
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </main>
     </div>
