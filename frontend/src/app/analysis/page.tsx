@@ -214,6 +214,7 @@ function ConvictionDots({ level }: { level: number }) {
 }
 
 export default function AnalysisPage() {
+  const STORAGE_KEY = 'analysis_reports_v1';
   const [analyses, setAnalyses] = useState<AssetAnalysis[]>(sampleAnalyses);
   const [selectedId, setSelectedId] = useState<string>(sampleAnalyses[0]?.id ?? '');
   const [typeFilter, setTypeFilter] = useState<AssetType | '전체'>('전체');
@@ -238,6 +239,22 @@ export default function AnalysisPage() {
   const selected = analyses.find(a => a.id === selectedId) ?? filteredAnalyses[0];
   const detail = draft ?? selected;
 
+  // 최초 로드시 localStorage에 저장된 리포트 불러오기
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved) as AssetAnalysis[];
+        if (parsed.length > 0) {
+          setAnalyses(parsed);
+          setSelectedId(parsed[0].id);
+        }
+      }
+    } catch (error) {
+      console.warn('로컬 저장소 로드 실패:', error);
+    }
+  }, []);
+
   useEffect(() => {
     if (selected) {
       const cloned = JSON.parse(JSON.stringify(selected)) as AssetAnalysis;
@@ -248,9 +265,19 @@ export default function AnalysisPage() {
 
   const toNumber = (value: string) => (value === '' ? undefined : Number(value));
 
+  const persistAnalyses = (updated: AssetAnalysis[]) => {
+    setAnalyses(updated);
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    } catch (error) {
+      console.warn('로컬 저장소 저장 실패:', error);
+    }
+  };
+
   const handleSave = () => {
     if (!draft) return;
-    setAnalyses(prev => prev.map(item => (item.id === draft.id ? draft : item)));
+    const updated = analyses.map(item => (item.id === draft.id ? draft : item));
+    persistAnalyses(updated);
     setSelectedId(draft.id);
     setSaveState('saved');
     setTimeout(() => setSaveState('idle'), 1500);
@@ -291,9 +318,22 @@ export default function AnalysisPage() {
       references: [],
       tags: ['임시']
     };
-    setAnalyses(prev => [newItem, ...prev]);
+    const updated = [newItem, ...analyses];
+    persistAnalyses(updated);
     setSelectedId(newItem.id);
     setActiveTab('quant');
+  };
+
+  const handleDelete = () => {
+    if (!detail) return;
+    const updated = analyses.filter(item => item.id !== detail.id);
+    persistAnalyses(updated);
+    setDraft(null);
+    if (updated.length > 0) {
+      setSelectedId(updated[0].id);
+    } else {
+      setSelectedId('');
+    }
   };
 
   return (
@@ -520,8 +560,11 @@ export default function AnalysisPage() {
                           }
                           className="w-64"
                         />
-                        <Button variant="secondary" onClick={() => setDraft(selected ?? null)}>
+                        <Button variant="ghost" onClick={() => setDraft(selected ?? null)}>
                           되돌리기
+                        </Button>
+                        <Button variant="destructive" onClick={handleDelete}>
+                          삭제
                         </Button>
                         <Button onClick={handleSave} disabled={saveState === 'saved'}>
                           {saveState === 'saved' ? '저장됨' : '저장'}
