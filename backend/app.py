@@ -5,45 +5,9 @@ import functools
 from dotenv import load_dotenv
 from datetime import datetime
 
-# 통합 크롤러 (신규)
+# 통합 크롤러
 from crawlers.unified_crawler import crawl_indicator, crawl_category
 from crawlers.indicators_config import INDICATORS, CATEGORIES, get_all_enabled_indicators
-
-# 기존 크롤러 (하위 호환성 유지)
-from crawlers.investing_crawler import get_ism_manufacturing_pmi, parse_history_table, fetch_html
-from crawlers.ism_non_manufacturing import get_ism_non_manufacturing_pmi
-from crawlers.sp_global_composite import get_sp_global_composite_pmi
-from crawlers.industrial_production import get_industrial_production
-from crawlers.industrial_production_1755 import get_industrial_production_1755
-from crawlers.retail_sales import get_retail_sales_data
-from crawlers.retail_sales_yoy import get_retail_sales_yoy_data
-from crawlers.gdp import get_gdp_data
-from crawlers.cb_consumer_confidence import get_cb_consumer_confidence_data
-from crawlers.michigan_consumer_sentiment import get_michigan_consumer_sentiment_data
-from crawlers.unemployment_rate import get_unemployment_rate
-from crawlers.nonfarm_payrolls import get_nonfarm_payrolls
-from crawlers.initial_jobless_claims import get_initial_jobless_claims
-from crawlers.average_hourly_earnings import get_average_hourly_earnings, get_average_hourly_earnings_1777
-from crawlers.participation_rate import get_participation_rate
-from crawlers.federal_funds_rate import get_federal_funds_rate
-from crawlers.core_cpi import get_core_cpi
-from crawlers.ten_year_treasury import get_ten_year_treasury
-from crawlers.two_year_treasury import get_two_year_treasury
-# 무역지표
-from crawlers.trade_balance import get_trade_balance
-from crawlers.exports import get_exports
-from crawlers.imports import get_imports
-from crawlers.current_account import get_current_account
-# 물가지표
-from crawlers.cpi import get_cpi
-from crawlers.ppi import get_ppi
-from crawlers.pce import get_pce
-from crawlers.core_pce import get_core_pce
-# 정책지표
-from crawlers.fomc_minutes import get_fomc_minutes
-from crawlers.consumer_confidence import get_consumer_confidence
-from crawlers.business_inventories import get_business_inventories
-from crawlers.leading_indicators import get_leading_indicators
 from services.database_service import DatabaseService
 from services.crawler_service import CrawlerService
 import threading
