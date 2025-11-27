@@ -36,6 +36,7 @@ interface User {
 
 type PlanStatus = '대기' | '부분체결' | '완료' | '취소';
 type PlanType = '매수' | '매도';
+type AssetSelectValue = number | 'custom' | 'none';
 
 interface TradePlan {
   id: string;
@@ -199,7 +200,7 @@ export default function PortfolioPage() {
 
   // 입력 폼 상태
   const [planForm, setPlanForm] = useState({
-    assetId: '' as number | '' | 'custom',
+    assetId: 'none' as AssetSelectValue,
     symbol: '',
     type: '매수' as PlanType,
     targetPrice: '',
@@ -209,7 +210,7 @@ export default function PortfolioPage() {
   });
 
   const [taskForm, setTaskForm] = useState({
-    assetId: '' as number | '' | 'custom',
+    assetId: 'none' as AssetSelectValue,
     text: '',
     note: ''
   });
@@ -227,7 +228,7 @@ export default function PortfolioPage() {
   };
 
   const handleAddPlanEntry = () => {
-    const assetId = planForm.assetId === '' || planForm.assetId === 'custom' ? undefined : Number(planForm.assetId);
+    const assetId = planForm.assetId === 'none' || planForm.assetId === 'custom' ? undefined : Number(planForm.assetId);
     const symbol = planForm.symbol.trim() || resolveSymbol(assetId, '');
     if (!symbol) return;
     const newPlan: TradePlan = {
@@ -244,7 +245,7 @@ export default function PortfolioPage() {
     };
     const updated = [newPlan, ...tradePlans];
     persistTradePlans(updated);
-    setPlanForm({ assetId: '', symbol: '', type: '매수', targetPrice: '', quantity: '', condition: '', note: '' });
+    setPlanForm({ assetId: 'none', symbol: '', type: '매수', targetPrice: '', quantity: '', condition: '', note: '' });
   };
 
   const handleUpdatePlanStatus = (id: string, status: PlanStatus) => {
@@ -259,7 +260,7 @@ export default function PortfolioPage() {
 
   const handleAddTask = () => {
     if (!taskForm.text.trim()) return;
-    const assetId = taskForm.assetId === '' || taskForm.assetId === 'custom' ? undefined : Number(taskForm.assetId);
+    const assetId = taskForm.assetId === 'none' || taskForm.assetId === 'custom' ? undefined : Number(taskForm.assetId);
     const newTask: DailyTask = {
       id: `task-${Date.now()}`,
       assetId,
@@ -270,7 +271,7 @@ export default function PortfolioPage() {
     };
     const updated = [newTask, ...dailyTasks];
     persistDailyTasks(updated);
-    setTaskForm({ assetId: '', text: '', note: '' });
+    setTaskForm({ assetId: 'none', text: '', note: '' });
   };
 
   const handleToggleTask = (id: string) => {
@@ -407,14 +408,17 @@ export default function PortfolioPage() {
                   <Select
                     value={String(planForm.assetId)}
                     onValueChange={val =>
-                      setPlanForm(prev => ({ ...prev, assetId: val === 'custom' ? 'custom' : val === '' ? '' : Number(val) }))
+                      setPlanForm(prev => ({
+                        ...prev,
+                        assetId: val === 'custom' ? 'custom' : val === 'none' ? 'none' : Number(val)
+                      }))
                     }
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="포트폴리오 자산 선택" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">선택 안 함</SelectItem>
+                      <SelectItem value="none">선택 안 함</SelectItem>
                       {assetOptions.map(opt => (
                         <SelectItem key={opt.id} value={String(opt.id)}>
                           {opt.label}
@@ -430,7 +434,7 @@ export default function PortfolioPage() {
                     placeholder="AAPL / BTC / ETF 등"
                     value={planForm.symbol}
                     onChange={e => setPlanForm(prev => ({ ...prev, symbol: e.target.value }))}
-                    disabled={planForm.assetId !== 'custom' && planForm.assetId !== ''}
+                    disabled={planForm.assetId !== 'custom' && planForm.assetId !== 'none'}
                   />
                 </div>
                 <div className="space-y-1">
@@ -564,14 +568,17 @@ export default function PortfolioPage() {
                   <Select
                     value={String(taskForm.assetId)}
                     onValueChange={val =>
-                      setTaskForm(prev => ({ ...prev, assetId: val === 'custom' ? 'custom' : val === '' ? '' : Number(val) }))
+                      setTaskForm(prev => ({
+                        ...prev,
+                        assetId: val === 'custom' ? 'custom' : val === 'none' ? 'none' : Number(val)
+                      }))
                     }
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="선택 안 함" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">선택 안 함</SelectItem>
+                      <SelectItem value="none">선택 안 함</SelectItem>
                       {assetOptions.map(opt => (
                         <SelectItem key={opt.id} value={String(opt.id)}>
                           {opt.label}
