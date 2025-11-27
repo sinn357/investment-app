@@ -6,6 +6,8 @@ import CyclePanel from '@/components/CyclePanel';
 import IndicatorGrid from '@/components/IndicatorGrid';
 import EconomicIndicatorsSection from '@/components/EconomicIndicatorsSection';
 import DataSection from '@/components/DataSection';
+import NewsNarrative from '@/components/NewsNarrative';
+import RiskRadar from '@/components/RiskRadar';
 import CyclePanelSkeleton from '@/components/skeletons/CyclePanelSkeleton';
 import IndicatorGridSkeleton from '@/components/skeletons/IndicatorGridSkeleton';
 import ErrorBoundary from '@/components/ErrorBoundary';
@@ -68,10 +70,26 @@ function mapIndicatorToCategory(name: string): string {
   return 'business'; // 기본값
 }
 
+interface EconomicNarrative {
+  articles: Array<{ title: string; url: string; summary: string; keyword: string }>;
+  myNarrative: string;
+  risks: Array<{ category: string; level: number; description: string }>;
+}
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://investment-app-backend-x166.onrender.com';
+
 export default function IndicatorsPage() {
+  const [userId] = useState(1); // 임시 user_id
+  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [cycleScore, setCycleScore] = useState<ReturnType<typeof calculateCycleScore> | null>(null);
   const [allIndicators, setAllIndicators] = useState<GridIndicator[]>([]);
   const [loading, setLoading] = useState(true);
+  const [narrative, setNarrative] = useState<EconomicNarrative>({
+    articles: [],
+    myNarrative: '',
+    risks: []
+  });
+  const [isSavingNarrative, setIsSavingNarrative] = useState(false);
 
   // 경제 지표 데이터 페칭 및 국면 계산
   useEffect(() => {
@@ -195,6 +213,66 @@ export default function IndicatorsPage() {
     fetchAndCalculateCycle();
   }, []);
 
+  // 경제 담론 데이터 로드
+  useEffect(() => {
+    const fetchNarrative = async () => {
+      try {
+        const response = await fetch(`${API_URL}/api/economic-narrative?user_id=${userId}&date=${selectedDate}`);
+        const result = await response.json();
+
+        if (result.status === 'success' && result.data) {
+          setNarrative({
+            articles: result.data.articles || [],
+            myNarrative: result.data.my_narrative || '',
+            risks: result.data.risks || []
+          });
+        } else {
+          // 데이터 없으면 초기화
+          setNarrative({
+            articles: [],
+            myNarrative: '',
+            risks: []
+          });
+        }
+      } catch (error) {
+        console.error('담론 로드 실패:', error);
+      }
+    };
+
+    fetchNarrative();
+  }, [userId, selectedDate]);
+
+  // 경제 담론 저장
+  const handleSaveNarrative = async () => {
+    setIsSavingNarrative(true);
+    try {
+      const response = await fetch(`${API_URL}/api/economic-narrative`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: userId,
+          date: selectedDate,
+          articles: narrative.articles,
+          my_narrative: narrative.myNarrative,
+          risks: narrative.risks
+        })
+      });
+
+      const result = await response.json();
+
+      if (result.status === 'success') {
+        alert('✅ 경제 담론이 저장되었습니다!');
+      } else {
+        alert('❌ 저장 실패: ' + result.message);
+      }
+    } catch (error) {
+      console.error('저장 오류:', error);
+      alert('❌ 저장 중 오류가 발생했습니다.');
+    } finally {
+      setIsSavingNarrative(false);
+    }
+  };
+
   return (
     <ErrorBoundary>
       <div className="min-h-screen bg-background">
@@ -254,6 +332,45 @@ export default function IndicatorsPage() {
         {/* 상세 지표 섹션 (Raw Data + History Table) */}
         <EconomicIndicatorsSection />
         <DataSection />
+
+        {/* 날짜 선택 및 저장 버튼 */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex items-center justify-between gap-4 mb-6 bg-card rounded-lg p-4 border border-primary/20">
+            <div className="flex items-center gap-3">
+              <label className="text-sm font-medium text-muted-foreground">기준 날짜:</label>
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="px-3 py-2 bg-background border border-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground"
+              />
+            </div>
+            <button
+              onClick={handleSaveNarrative}
+              disabled={isSavingNarrative}
+              className="px-6 py-2 bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-white font-semibold rounded-lg shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isSavingNarrative ? '저장 중...' : '💾 담론 저장'}
+            </button>
+          </div>
+        </div>
+
+        {/* 뉴스 & 담론 섹션 */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-6">
+          <NewsNarrative
+            articles={narrative.articles}
+            myNarrative={narrative.myNarrative}
+            onChange={(data) => setNarrative({ ...narrative, ...data })}
+          />
+        </div>
+
+        {/* 리스크 레이더 섹션 */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-6">
+          <RiskRadar
+            risks={narrative.risks}
+            onChange={(risks) => setNarrative({ ...narrative, risks })}
+          />
+        </div>
       </main>
       </div>
     </ErrorBoundary>

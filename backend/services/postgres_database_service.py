@@ -262,6 +262,26 @@ class PostgresDatabaseService:
                     );
 
                     CREATE INDEX IF NOT EXISTS idx_investment_philosophy_user_id ON investment_philosophy(user_id);
+
+                    -- 거시경제 담론 테이블 (MASTER_PLAN Page 2)
+                    CREATE TABLE IF NOT EXISTS economic_narrative (
+                        id SERIAL PRIMARY KEY,
+                        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+                        date DATE NOT NULL,
+
+                        -- 뉴스 & 담론
+                        articles JSONB DEFAULT '[]',  -- [{ title, url, summary, keyword }]
+                        my_narrative TEXT,            -- 내 담론
+
+                        -- 리스크 레이더
+                        risks JSONB DEFAULT '[]',     -- [{ category, level, description }]
+
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        UNIQUE(user_id, date)
+                    );
+
+                    CREATE INDEX IF NOT EXISTS idx_economic_narrative_user_date ON economic_narrative(user_id, date DESC);
                     """
 
                     print("Executing PostgreSQL schema initialization...")
@@ -2206,4 +2226,81 @@ class PostgresDatabaseService:
             return {
                 "status": "error",
                 "message": f"투자 철학 저장 중 오류: {str(e)}"
+            }
+
+    # ==================== 거시경제 담론 시스템 (MASTER_PLAN Page 2) ====================
+
+    def get_economic_narrative(self, user_id: int, date: str) -> Dict:
+        """거시경제 담론 조회"""
+        try:
+            with self.get_connection() as conn:
+                with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                    cur.execute("""
+                        SELECT articles, my_narrative, risks, created_at, updated_at
+                        FROM economic_narrative
+                        WHERE user_id = %s AND date = %s
+                    """, (user_id, date))
+
+                    result = cur.fetchone()
+
+                    if result:
+                        return {
+                            "status": "success",
+                            "data": dict(result)
+                        }
+                    else:
+                        # 기본값 반환
+                        return {
+                            "status": "success",
+                            "data": {
+                                "articles": [],
+                                "my_narrative": "",
+                                "risks": []
+                            }
+                        }
+
+        except Exception as e:
+            print(f"PostgreSQL get_economic_narrative error: {e}")
+            return {
+                "status": "error",
+                "message": f"거시경제 담론 조회 중 오류: {str(e)}"
+            }
+
+    def save_economic_narrative(self, user_id: int, date: str, data: Dict) -> Dict:
+        """거시경제 담론 저장 (UPSERT)"""
+        try:
+            with self.get_connection() as conn:
+                with conn.cursor() as cur:
+                    sql = """
+                    INSERT INTO economic_narrative
+                        (user_id, date, articles, my_narrative, risks, updated_at)
+                    VALUES (%s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
+                    ON CONFLICT (user_id, date)
+                    DO UPDATE SET
+                        articles = EXCLUDED.articles,
+                        my_narrative = EXCLUDED.my_narrative,
+                        risks = EXCLUDED.risks,
+                        updated_at = CURRENT_TIMESTAMP
+                    """
+
+                    cur.execute(sql, (
+                        user_id,
+                        date,
+                        json.dumps(data.get('articles', [])),
+                        data.get('my_narrative', ''),
+                        json.dumps(data.get('risks', []))
+                    ))
+                    conn.commit()
+
+                    print(f"Economic narrative saved successfully for user: {user_id}, date: {date}")
+                    return {
+                        "status": "success",
+                        "message": "거시경제 담론이 저장되었습니다."
+                    }
+
+        except Exception as e:
+            print(f"PostgreSQL save_economic_narrative error: {e}")
+            return {
+                "status": "error",
+                "message": f"거시경제 담론 저장 중 오류: {str(e)}"
             }

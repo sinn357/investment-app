@@ -1514,6 +1514,69 @@ def save_investment_philosophy():
             "message": f"투자 철학 저장 실패: {str(e)}"
         }), 500
 
+# === 거시경제 담론 API (MASTER_PLAN Page 2) ===
+
+@app.route('/api/economic-narrative', methods=['GET'])
+def get_economic_narrative():
+    """거시경제 담론 조회 API"""
+    try:
+        user_id = request.args.get('user_id', type=int)
+        date = request.args.get('date', type=str)
+
+        if not user_id or not date:
+            return jsonify({
+                "status": "error",
+                "message": "user_id와 date가 필요합니다."
+            }), 400
+
+        result = db_service.get_economic_narrative(user_id, date)
+
+        if result.get('status') == 'success':
+            return jsonify(result)
+        else:
+            return jsonify(result), 500
+
+    except Exception as e:
+        print(f"Error getting economic narrative: {e}")
+        return jsonify({
+            "status": "error",
+            "message": f"거시경제 담론 조회 실패: {str(e)}"
+        }), 500
+
+@app.route('/api/economic-narrative', methods=['POST'])
+def save_economic_narrative():
+    """거시경제 담론 저장 API"""
+    try:
+        data = request.get_json()
+        user_id = data.get('user_id')
+        date = data.get('date')
+
+        if not user_id or not date:
+            return jsonify({
+                "status": "error",
+                "message": "user_id와 date가 필요합니다."
+            }), 400
+
+        narrative_data = {
+            'articles': data.get('articles', []),
+            'my_narrative': data.get('myNarrative', ''),
+            'risks': data.get('risks', [])
+        }
+
+        result = db_service.save_economic_narrative(user_id, date, narrative_data)
+
+        if result.get('status') == 'success':
+            return jsonify(result)
+        else:
+            return jsonify(result), 500
+
+    except Exception as e:
+        print(f"Error saving economic narrative: {e}")
+        return jsonify({
+            "status": "error",
+            "message": f"거시경제 담론 저장 실패: {str(e)}"
+        }), 500
+
 # === 사용자 인증 API ===
 
 @app.route('/api/auth/register', methods=['POST'])
