@@ -232,6 +232,36 @@ class PostgresDatabaseService:
                     CREATE INDEX IF NOT EXISTS idx_expenses_user_category ON expenses(user_id, category, subcategory);
                     CREATE INDEX IF NOT EXISTS idx_expenses_date_type ON expenses(transaction_date, transaction_type);
                     CREATE INDEX IF NOT EXISTS idx_budgets_user_period ON budgets(user_id, year, month);
+
+                    -- 투자 철학 테이블 (MASTER_PLAN Page 1)
+                    CREATE TABLE IF NOT EXISTS investment_philosophy (
+                        id SERIAL PRIMARY KEY,
+                        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE UNIQUE,
+
+                        -- 투자 목표 (Section 1)
+                        goal JSONB DEFAULT '{
+                            "targetReturn": 10,
+                            "riskTolerance": {"volatility": 15, "maxDrawdown": 20, "maxLeverage": 1},
+                            "timeHorizon": {"start": "2025-01-01", "target": "2030-12-31", "years": 5}
+                        }',
+
+                        -- 금지 자산 (Section 2)
+                        forbidden_assets JSONB DEFAULT '[]',
+
+                        -- 운용 범위 (Section 3)
+                        allocation_range JSONB DEFAULT '[]',
+
+                        -- 투자 원칙 (Section 4)
+                        principles JSONB DEFAULT '[]',
+
+                        -- 투자 방법 (Section 5)
+                        methods JSONB DEFAULT '[]',
+
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    );
+
+                    CREATE INDEX IF NOT EXISTS idx_investment_philosophy_user_id ON investment_philosophy(user_id);
                     """
 
                     print("Executing PostgreSQL schema initialization...")
@@ -2089,4 +2119,91 @@ class PostgresDatabaseService:
             return {
                 "status": "error",
                 "message": f"예산 목표 저장 중 오류가 발생했습니다: {str(e)}"
+            }
+
+    # ==================== 투자 철학 시스템 (MASTER_PLAN Page 1) ====================
+
+    def get_investment_philosophy(self, user_id: int) -> Dict:
+        """투자 철학 조회"""
+        try:
+            with self.get_connection() as conn:
+                with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                    cur.execute("""
+                        SELECT goal, forbidden_assets, allocation_range, principles, methods,
+                               created_at, updated_at
+                        FROM investment_philosophy
+                        WHERE user_id = %s
+                    """, (user_id,))
+
+                    result = cur.fetchone()
+
+                    if result:
+                        return {
+                            "status": "success",
+                            "data": dict(result)
+                        }
+                    else:
+                        # 기본값 반환
+                        return {
+                            "status": "success",
+                            "data": {
+                                "goal": {
+                                    "targetReturn": 10,
+                                    "riskTolerance": {"volatility": 15, "maxDrawdown": 20, "maxLeverage": 1},
+                                    "timeHorizon": {"start": "2025-01-01", "target": "2030-12-31", "years": 5}
+                                },
+                                "forbidden_assets": [],
+                                "allocation_range": [],
+                                "principles": [],
+                                "methods": []
+                            }
+                        }
+
+        except Exception as e:
+            print(f"PostgreSQL get_investment_philosophy error: {e}")
+            return {
+                "status": "error",
+                "message": f"투자 철학 조회 중 오류: {str(e)}"
+            }
+
+    def save_investment_philosophy(self, user_id: int, data: Dict) -> Dict:
+        """투자 철학 저장 (UPSERT)"""
+        try:
+            with self.get_connection() as conn:
+                with conn.cursor() as cur:
+                    sql = """
+                    INSERT INTO investment_philosophy
+                        (user_id, goal, forbidden_assets, allocation_range, principles, methods, updated_at)
+                    VALUES (%s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
+                    ON CONFLICT (user_id)
+                    DO UPDATE SET
+                        goal = EXCLUDED.goal,
+                        forbidden_assets = EXCLUDED.forbidden_assets,
+                        allocation_range = EXCLUDED.allocation_range,
+                        principles = EXCLUDED.principles,
+                        methods = EXCLUDED.methods,
+                        updated_at = CURRENT_TIMESTAMP
+                    """
+
+                    cur.execute(sql, (
+                        user_id,
+                        json.dumps(data.get('goal', {})),
+                        json.dumps(data.get('forbidden_assets', [])),
+                        json.dumps(data.get('allocation_range', [])),
+                        json.dumps(data.get('principles', [])),
+                        json.dumps(data.get('methods', []))
+                    ))
+                    conn.commit()
+
+                    print(f"Investment philosophy saved successfully for user: {user_id}")
+                    return {
+                        "status": "success",
+                        "message": "투자 철학이 저장되었습니다."
+                    }
+
+        except Exception as e:
+            print(f"PostgreSQL save_investment_philosophy error: {e}")
+            return {
+                "status": "error",
+                "message": f"투자 철학 저장 중 오류: {str(e)}"
             }

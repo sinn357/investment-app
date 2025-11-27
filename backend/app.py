@@ -1451,6 +1451,69 @@ def save_expense_budget_goals():
             "message": f"예산 목표 저장 실패: {str(e)}"
         }), 500
 
+# === 투자 철학 API (MASTER_PLAN Page 1) ===
+
+@app.route('/api/investment-philosophy', methods=['GET'])
+def get_investment_philosophy():
+    """투자 철학 조회 API"""
+    try:
+        user_id = request.args.get('user_id', type=int)
+
+        if not user_id:
+            return jsonify({
+                "status": "error",
+                "message": "user_id가 필요합니다."
+            }), 400
+
+        result = db_service.get_investment_philosophy(user_id)
+
+        if result.get('status') == 'success':
+            return jsonify(result)
+        else:
+            return jsonify(result), 500
+
+    except Exception as e:
+        print(f"Error getting investment philosophy: {e}")
+        return jsonify({
+            "status": "error",
+            "message": f"투자 철학 조회 실패: {str(e)}"
+        }), 500
+
+@app.route('/api/investment-philosophy', methods=['POST'])
+def save_investment_philosophy():
+    """투자 철학 저장 API"""
+    try:
+        data = request.get_json()
+        user_id = data.get('user_id')
+
+        if not user_id:
+            return jsonify({
+                "status": "error",
+                "message": "user_id가 필요합니다."
+            }), 400
+
+        philosophy_data = {
+            'goal': data.get('goal', {}),
+            'forbidden_assets': data.get('forbiddenAssets', []),
+            'allocation_range': data.get('allocationRange', []),
+            'principles': data.get('principles', []),
+            'methods': data.get('methods', [])
+        }
+
+        result = db_service.save_investment_philosophy(user_id, philosophy_data)
+
+        if result.get('status') == 'success':
+            return jsonify(result)
+        else:
+            return jsonify(result), 500
+
+    except Exception as e:
+        print(f"Error saving investment philosophy: {e}")
+        return jsonify({
+            "status": "error",
+            "message": f"투자 철학 저장 실패: {str(e)}"
+        }), 500
+
 # === 사용자 인증 API ===
 
 @app.route('/api/auth/register', methods=['POST'])
