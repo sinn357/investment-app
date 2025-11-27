@@ -1,0 +1,301 @@
+"""
+경제지표 통합 설정 파일
+- 모든 지표의 메타데이터 중앙 관리
+- 정책지표 제거 (GDP, FOMC 등)
+- 5개 카테고리: business, employment, interest, trade, inflation
+"""
+
+from typing import Dict, Any, Optional
+
+class IndicatorConfig:
+    """개별 지표 설정"""
+    def __init__(
+        self,
+        id: str,
+        name: str,
+        name_ko: str,
+        url: str,
+        category: str,
+        enabled: bool = True,
+        threshold: Optional[Dict[str, float]] = None,
+        reverse_color: bool = False,  # True면 낮을수록 좋은 지표 (실업률 등)
+    ):
+        self.id = id
+        self.name = name
+        self.name_ko = name_ko
+        self.url = url
+        self.category = category
+        self.enabled = enabled
+        self.threshold = threshold or {}
+        self.reverse_color = reverse_color
+
+# 전체 지표 설정 (정책지표 제외, 활성 지표만)
+INDICATORS: Dict[str, IndicatorConfig] = {
+    # ========== 경기지표 (Business) ==========
+    "ism-manufacturing": IndicatorConfig(
+        id="ism-manufacturing",
+        name="ISM Manufacturing PMI",
+        name_ko="ISM 제조업 PMI",
+        url="https://www.investing.com/economic-calendar/ism-manufacturing-pmi-173",
+        category="business",
+        threshold={"expansion": 50, "strong": 55, "contraction": 45},
+    ),
+    "ism-non-manufacturing": IndicatorConfig(
+        id="ism-non-manufacturing",
+        name="ISM Non-Manufacturing PMI",
+        name_ko="ISM 비제조업 PMI",
+        url="https://www.investing.com/economic-calendar/ism-non-manufacturing-pmi-176",
+        category="business",
+        threshold={"expansion": 50, "strong": 55, "contraction": 45},
+    ),
+    "sp-global-composite": IndicatorConfig(
+        id="sp-global-composite",
+        name="S&P Global Composite PMI",
+        name_ko="S&P 글로벌 종합 PMI",
+        url="https://www.investing.com/economic-calendar/s-p-global-composite-pmi-1771",
+        category="business",
+        threshold={"expansion": 50, "strong": 55, "contraction": 45},
+    ),
+    "industrial-production": IndicatorConfig(
+        id="industrial-production",
+        name="Industrial Production",
+        name_ko="산업생산",
+        url="https://www.investing.com/economic-calendar/industrial-production-175",
+        category="business",
+    ),
+    "industrial-production-1755": IndicatorConfig(
+        id="industrial-production-1755",
+        name="Industrial Production YoY",
+        name_ko="산업생산 (YoY)",
+        url="https://www.investing.com/economic-calendar/industrial-production-1755",
+        category="business",
+    ),
+    "retail-sales": IndicatorConfig(
+        id="retail-sales",
+        name="Retail Sales MoM",
+        name_ko="소매판매 (MoM)",
+        url="https://www.investing.com/economic-calendar/retail-sales-256",
+        category="business",
+    ),
+    "retail-sales-yoy": IndicatorConfig(
+        id="retail-sales-yoy",
+        name="Retail Sales YoY",
+        name_ko="소매판매 (YoY)",
+        url="https://www.investing.com/economic-calendar/retail-sales-1777",
+        category="business",
+    ),
+    "business-inventories": IndicatorConfig(
+        id="business-inventories",
+        name="Business Inventories",
+        name_ko="기업재고",
+        url="https://www.investing.com/economic-calendar/business-inventories-184",
+        category="business",
+    ),
+    "cb-consumer-confidence": IndicatorConfig(
+        id="cb-consumer-confidence",
+        name="CB Consumer Confidence",
+        name_ko="소비자신뢰지수 (CB)",
+        url="https://www.investing.com/economic-calendar/cb-consumer-confidence-48",
+        category="business",
+        threshold={"strong": 100, "weak": 90},
+    ),
+    "consumer-confidence": IndicatorConfig(
+        id="consumer-confidence",
+        name="Consumer Confidence",
+        name_ko="소비자신뢰지수",
+        url="https://www.investing.com/economic-calendar/consumer-confidence-48",
+        category="business",
+    ),
+    "michigan-consumer-sentiment": IndicatorConfig(
+        id="michigan-consumer-sentiment",
+        name="Michigan Consumer Sentiment",
+        name_ko="미시간 소비자심리",
+        url="https://www.investing.com/economic-calendar/michigan-consumer-sentiment-320",
+        category="business",
+        threshold={"strong": 100, "weak": 80},
+    ),
+    "leading-indicators": IndicatorConfig(
+        id="leading-indicators",
+        name="Leading Indicators",
+        name_ko="경기선행지수",
+        url="https://www.investing.com/economic-calendar/leading-indicators-214",
+        category="business",
+    ),
+
+    # ========== 고용지표 (Employment) ==========
+    "unemployment-rate": IndicatorConfig(
+        id="unemployment-rate",
+        name="Unemployment Rate",
+        name_ko="실업률",
+        url="https://www.investing.com/economic-calendar/unemployment-rate-300",
+        category="employment",
+        reverse_color=True,  # 낮을수록 좋음
+        threshold={"low": 4.0, "high": 6.0},
+    ),
+    "nonfarm-payrolls": IndicatorConfig(
+        id="nonfarm-payrolls",
+        name="Nonfarm Payrolls",
+        name_ko="비농업 고용",
+        url="https://www.investing.com/economic-calendar/nonfarm-payrolls-227",
+        category="employment",
+    ),
+    "initial-jobless-claims": IndicatorConfig(
+        id="initial-jobless-claims",
+        name="Initial Jobless Claims",
+        name_ko="신규 실업급여 신청",
+        url="https://www.investing.com/economic-calendar/initial-jobless-claims-294",
+        category="employment",
+        reverse_color=True,  # 낮을수록 좋음
+    ),
+    "average-hourly-earnings": IndicatorConfig(
+        id="average-hourly-earnings",
+        name="Average Hourly Earnings MoM",
+        name_ko="평균시간당임금 (MoM)",
+        url="https://www.investing.com/economic-calendar/average-hourly-earnings-1776",
+        category="employment",
+    ),
+    "average-hourly-earnings-1777": IndicatorConfig(
+        id="average-hourly-earnings-1777",
+        name="Average Hourly Earnings YoY",
+        name_ko="평균시간당임금 (YoY)",
+        url="https://www.investing.com/economic-calendar/average-hourly-earnings-1777",
+        category="employment",
+    ),
+    "participation-rate": IndicatorConfig(
+        id="participation-rate",
+        name="Participation Rate",
+        name_ko="경제활동참가율",
+        url="https://www.investing.com/economic-calendar/participation-rate-1581",
+        category="employment",
+    ),
+
+    # ========== 금리지표 (Interest Rate) ==========
+    "federal-funds-rate": IndicatorConfig(
+        id="federal-funds-rate",
+        name="Federal Funds Rate",
+        name_ko="연준 기준금리",
+        url="https://www.investing.com/economic-calendar/interest-rate-decision-168",
+        category="interest",
+    ),
+    "ten-year-treasury": IndicatorConfig(
+        id="ten-year-treasury",
+        name="10-Year Treasury Yield",
+        name_ko="10년물 국채금리",
+        url="https://www.investing.com/economic-calendar/10-year-note-auction-200",
+        category="interest",
+    ),
+
+    # ========== 무역지표 (Trade) ==========
+    "trade-balance": IndicatorConfig(
+        id="trade-balance",
+        name="Trade Balance",
+        name_ko="무역수지",
+        url="https://www.investing.com/economic-calendar/trade-balance-259",
+        category="trade",
+    ),
+    "exports": IndicatorConfig(
+        id="exports",
+        name="Exports",
+        name_ko="수출",
+        url="https://www.investing.com/economic-calendar/exports-1779",
+        category="trade",
+    ),
+    "imports": IndicatorConfig(
+        id="imports",
+        name="Imports",
+        name_ko="수입",
+        url="https://www.investing.com/economic-calendar/imports-1780",
+        category="trade",
+    ),
+    "current-account": IndicatorConfig(
+        id="current-account",
+        name="Current Account",
+        name_ko="경상수지",
+        url="https://www.investing.com/economic-calendar/current-account-n-s-a--961",
+        category="trade",
+    ),
+
+    # ========== 물가지표 (Inflation) ==========
+    "cpi": IndicatorConfig(
+        id="cpi",
+        name="Consumer Price Index (CPI)",
+        name_ko="소비자물가지수",
+        url="https://www.investing.com/economic-calendar/cpi-69",
+        category="inflation",
+        threshold={"target": 2.0, "high": 3.0},
+    ),
+    "core-cpi": IndicatorConfig(
+        id="core-cpi",
+        name="Core CPI",
+        name_ko="근원 소비자물가지수",
+        url="https://www.investing.com/economic-calendar/core-cpi-56",
+        category="inflation",
+    ),
+    "ppi": IndicatorConfig(
+        id="ppi",
+        name="Producer Price Index (PPI)",
+        name_ko="생산자물가지수",
+        url="https://www.investing.com/economic-calendar/ppi-238",
+        category="inflation",
+    ),
+    "pce": IndicatorConfig(
+        id="pce",
+        name="Personal Consumption Expenditures (PCE)",
+        name_ko="개인소비지출",
+        url="https://www.investing.com/economic-calendar/personal-spending-235",
+        category="inflation",
+    ),
+    "core-pce": IndicatorConfig(
+        id="core-pce",
+        name="Core PCE",
+        name_ko="근원 개인소비지출",
+        url="https://www.investing.com/economic-calendar/core-pce-prices-326",
+        category="inflation",
+    ),
+}
+
+# 정책지표 제거됨 (GDP, FOMC 등)
+# - gdp: 정책지표로 분류되어 제거
+# - fomc-minutes: 정책지표로 분류되어 제거
+
+# 카테고리별 지표 조회 헬퍼 함수
+def get_indicators_by_category(category: str) -> Dict[str, IndicatorConfig]:
+    """특정 카테고리의 활성 지표만 반환"""
+    return {
+        id: config
+        for id, config in INDICATORS.items()
+        if config.category == category and config.enabled
+    }
+
+def get_all_enabled_indicators() -> Dict[str, IndicatorConfig]:
+    """모든 활성 지표 반환"""
+    return {id: config for id, config in INDICATORS.items() if config.enabled}
+
+def get_indicator_config(indicator_id: str) -> Optional[IndicatorConfig]:
+    """ID로 지표 설정 조회"""
+    return INDICATORS.get(indicator_id)
+
+# 카테고리 목록
+CATEGORIES = {
+    "business": "경기지표",
+    "employment": "고용지표",
+    "interest": "금리지표",
+    "trade": "무역지표",
+    "inflation": "물가지표",
+}
+
+# 통계
+TOTAL_INDICATORS = len(INDICATORS)
+ENABLED_INDICATORS = len(get_all_enabled_indicators())
+
+if __name__ == "__main__":
+    print(f"📊 경제지표 설정 요약")
+    print(f"전체 지표: {TOTAL_INDICATORS}개")
+    print(f"활성 지표: {ENABLED_INDICATORS}개")
+    print()
+
+    for category_id, category_name in CATEGORIES.items():
+        indicators = get_indicators_by_category(category_id)
+        print(f"{category_name}: {len(indicators)}개")
+        for id, config in indicators.items():
+            print(f"  - {config.name_ko} ({config.id})")

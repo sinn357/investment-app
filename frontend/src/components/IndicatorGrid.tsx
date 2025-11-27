@@ -2,20 +2,26 @@
  * IndicatorGrid 컴포넌트
  * Phase 8: 모든 경제지표를 그리드로 표시 (탭 제거)
  * Phase 9: useMemo, useCallback으로 성능 최적화
+ * Phase 10: EnhancedIndicatorCard로 업그레이드 (스파크라인 + 상세 모달)
  */
 
 'use client';
 
 import { useState, useMemo, useCallback } from 'react';
-import CompactIndicatorCard from './CompactIndicatorCard';
+import EnhancedIndicatorCard from './EnhancedIndicatorCard';
 import { CARD_CLASSES } from '@/styles/theme';
 
 interface Indicator {
+  id: string;
   name: string;
+  nameKo?: string;
   actual: number | string | null;
   previous: number | string;
+  forecast?: number | string | null;
   surprise?: number | null;
   category: string;
+  sparklineData?: number[];
+  reverseColor?: boolean;
 }
 
 interface IndicatorGridProps {
@@ -23,7 +29,7 @@ interface IndicatorGridProps {
   onIndicatorClick?: (indicator: Indicator) => void;
 }
 
-type FilterCategory = 'all' | 'business' | 'employment' | 'interest' | 'trade' | 'inflation' | 'policy';
+type FilterCategory = 'all' | 'business' | 'employment' | 'interest' | 'trade' | 'inflation';
 type SortOption = 'default' | 'alphabetical' | 'impact';
 
 const CATEGORY_FILTERS = [
@@ -33,7 +39,6 @@ const CATEGORY_FILTERS = [
   { id: 'interest' as FilterCategory, name: '금리', icon: '🏦' },
   { id: 'trade' as FilterCategory, name: '무역', icon: '🚢' },
   { id: 'inflation' as FilterCategory, name: '물가', icon: '💰' },
-  { id: 'policy' as FilterCategory, name: '정책', icon: '🏛️' },
 ];
 
 const SORT_OPTIONS = [
@@ -156,13 +161,18 @@ export default function IndicatorGrid({ indicators, onIndicatorClick }: Indicato
         {filteredIndicators.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {filteredIndicators.map((indicator, index) => (
-              <CompactIndicatorCard
-                key={`${indicator.name}-${index}`}
+              <EnhancedIndicatorCard
+                key={`${indicator.id}-${index}`}
+                id={indicator.id}
                 name={indicator.name}
+                nameKo={indicator.nameKo}
                 actual={indicator.actual}
                 previous={indicator.previous}
+                forecast={indicator.forecast}
                 surprise={indicator.surprise}
                 category={indicator.category}
+                sparklineData={indicator.sparklineData}
+                reverseColor={indicator.reverseColor}
                 onClick={() => onIndicatorClick?.(indicator)}
               />
             ))}

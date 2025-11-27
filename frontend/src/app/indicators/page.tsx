@@ -168,11 +168,25 @@ export default function IndicatorsPage() {
     async function fetchAndCalculateCycle() {
       try {
         setLoading(true);
+
+        // v3 API: 메타데이터 먼저 가져오기 (빠름, 크롤링 없음)
+        const metadataResult = await fetchJsonWithRetry(
+          'https://investment-app-backend-x166.onrender.com/api/v3/indicators',
+          {},
+          3,
+          1000
+        );
+
+        if (metadataResult.status !== 'success') {
+          throw new Error('Failed to fetch metadata');
+        }
+
+        // v2 API 호환성을 위해 기존 indicators 데이터 사용
         const result = await fetchJsonWithRetry(
           'https://investment-app-backend-x166.onrender.com/api/v2/indicators',
           {},
-          3, // 최대 3번 재시도
-          1000 // 1초 간격 (지수 백오프)
+          3,
+          1000
         );
 
         if (result.status === 'success' && result.indicators) {
@@ -261,16 +275,36 @@ export default function IndicatorsPage() {
           const score = calculateCycleScore(indicators);
           setCycleScore(score);
 
-          // 그리드용 지표 데이터 생성
+          // 그리드용 지표 데이터 생성 (v3 메타데이터 활용)
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const gridIndicators: GridIndicator[] = result.indicators.map((item: any) => {
             const latest = item.data.latest_release;
+            const indicatorId = item.name.toLowerCase().replace(/\s+/g, '-').replace(/[()]/g, '');
+
+            // v3 메타데이터에서 추가 정보 가져오기
+            const metadata = metadataResult.data?.indicators?.[indicatorId];
+
+            // 히스토리 데이터에서 스파크라인 데이터 추출 (최근 6개월)
+            const sparklineData = item.data.history
+              ? item.data.history.slice(0, 6).reverse().map((h: any) => {
+                  const actualValue = typeof h.actual === 'string'
+                    ? parseFloat(h.actual.replace('%', '').replace('K', '000'))
+                    : h.actual;
+                  return isNaN(actualValue) ? 0 : actualValue;
+                })
+              : [];
+
             return {
+              id: indicatorId,
               name: item.name,
+              nameKo: metadata?.name_ko || item.name,
               actual: latest.actual,
               previous: latest.previous,
+              forecast: latest.forecast,
               surprise: latest.surprise ?? null,
-              category: mapIndicatorToCategory(item.name)
+              category: metadata?.category || mapIndicatorToCategory(item.name),
+              sparklineData,
+              reverseColor: metadata?.reverse_color || false,
             };
           });
           setAllIndicators(gridIndicators);

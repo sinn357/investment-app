@@ -4,6 +4,12 @@ import os
 import functools
 from dotenv import load_dotenv
 from datetime import datetime
+
+# 통합 크롤러 (신규)
+from crawlers.unified_crawler import crawl_indicator, crawl_category
+from crawlers.indicators_config import INDICATORS, CATEGORIES, get_all_enabled_indicators
+
+# 기존 크롤러 (하위 호환성 유지)
 from crawlers.investing_crawler import get_ism_manufacturing_pmi, parse_history_table, fetch_html
 from crawlers.ism_non_manufacturing import get_ism_non_manufacturing_pmi
 from crawlers.sp_global_composite import get_sp_global_composite_pmi
@@ -3001,6 +3007,90 @@ else:
     @app.route('/api/crypto/balance')
     def get_crypto_balance():
         return jsonify({"status": "error", "message": "Crypto services are currently disabled"}), 503
+
+# ========== 통합 경제지표 API (신규) ==========
+
+@app.route('/api/v3/indicators/<indicator_id>')
+def get_indicator_v3(indicator_id):
+    """
+    통합 지표 API - unified_crawler 사용
+
+    예시: /api/v3/indicators/ism-manufacturing
+          /api/v3/indicators/cpi
+          /api/v3/indicators/unemployment-rate
+    """
+    try:
+        result = crawl_indicator(indicator_id)
+
+        if result["status"] == "error":
+            return jsonify(result), 404 if "Unknown indicator" in result.get("message", "") else 500
+
+        return jsonify(result)
+
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": f"Internal server error: {str(e)}"
+        }), 500
+
+@app.route('/api/v3/indicators/category/<category>')
+def get_category_indicators_v3(category):
+    """
+    카테고리별 지표 크롤링
+
+    예시: /api/v3/indicators/category/business
+          /api/v3/indicators/category/employment
+    """
+    try:
+        result = crawl_category(category)
+
+        if result.get("status") == "error":
+            return jsonify(result), 404
+
+        return jsonify(result)
+
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": f"Internal server error: {str(e)}"
+        }), 500
+
+@app.route('/api/v3/indicators')
+def get_all_indicators_metadata():
+    """
+    모든 지표의 메타데이터 반환 (크롤링 없음, 빠름)
+
+    프론트엔드가 지표 목록을 알기 위해 사용
+    """
+    try:
+        enabled_indicators = get_all_enabled_indicators()
+
+        metadata = {
+            "total": len(enabled_indicators),
+            "categories": CATEGORIES,
+            "indicators": {
+                id: {
+                    "id": config.id,
+                    "name": config.name,
+                    "name_ko": config.name_ko,
+                    "category": config.category,
+                    "threshold": config.threshold,
+                    "reverse_color": config.reverse_color
+                }
+                for id, config in enabled_indicators.items()
+            }
+        }
+
+        return jsonify({
+            "status": "success",
+            "data": metadata
+        })
+
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": f"Internal server error: {str(e)}"
+        }), 500
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5001)
