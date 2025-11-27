@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Navigation from '@/components/Navigation';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
@@ -196,6 +197,8 @@ const actionBadgeStyle: Record<ActionType, string> = {
   매도: 'bg-rose-100 text-rose-800 border border-rose-200'
 };
 
+const moatOptions: QualitativeSection['moat'][] = ['Wide', 'Narrow', 'None'];
+
 function ConvictionDots({ level }: { level: number }) {
   return (
     <div className="flex items-center gap-1">
@@ -217,6 +220,8 @@ export default function AnalysisPage() {
   const [actionFilter, setActionFilter] = useState<ActionType | '전체'>('전체');
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState<'quant' | 'qual' | 'decision' | 'refs'>('quant');
+  const [draft, setDraft] = useState<AssetAnalysis | null>(null);
+  const [saveState, setSaveState] = useState<'idle' | 'saved'>('idle');
 
   const filteredAnalyses = useMemo(() => {
     return analyses.filter(item => {
@@ -231,6 +236,25 @@ export default function AnalysisPage() {
   }, [analyses, typeFilter, actionFilter, search]);
 
   const selected = analyses.find(a => a.id === selectedId) ?? filteredAnalyses[0];
+  const detail = draft ?? selected;
+
+  useEffect(() => {
+    if (selected) {
+      const cloned = JSON.parse(JSON.stringify(selected)) as AssetAnalysis;
+      setDraft(cloned);
+      setSaveState('idle');
+    }
+  }, [selected]);
+
+  const toNumber = (value: string) => (value === '' ? undefined : Number(value));
+
+  const handleSave = () => {
+    if (!draft) return;
+    setAnalyses(prev => prev.map(item => (item.id === draft.id ? draft : item)));
+    setSelectedId(draft.id);
+    setSaveState('saved');
+    setTimeout(() => setSaveState('idle'), 1500);
+  };
 
   const handleAddNew = () => {
     const newItem: AssetAnalysis = {
@@ -399,24 +423,109 @@ export default function AnalysisPage() {
           </div>
 
           <div className="lg:col-span-2 space-y-4">
-            {selected ? (
+            {detail ? (
               <>
                 <Card className="border border-primary/20 bg-card">
                   <CardHeader className="flex flex-col gap-2">
                     <div className="flex flex-wrap items-center gap-2 justify-between">
                       <div>
-                        <p className="text-sm text-muted-foreground">{selected.type}</p>
+                        <div className="flex flex-wrap items-center gap-3">
+                          <div className="w-24">
+                            <Label className="text-xs text-muted-foreground">자산 타입</Label>
+                            <Select
+                              value={detail.type}
+                              onValueChange={val =>
+                                setDraft(prev => (prev ? { ...prev, type: val as AssetType } : prev))
+                              }
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="주식">주식</SelectItem>
+                                <SelectItem value="암호화폐">암호화폐</SelectItem>
+                                <SelectItem value="ETF">ETF</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="flex items-end gap-3">
+                            <div>
+                              <Label className="text-xs text-muted-foreground">심볼</Label>
+                              <Input
+                                value={detail.symbol}
+                                onChange={e =>
+                                  setDraft(prev => (prev ? { ...prev, symbol: e.target.value } : prev))
+                                }
+                                className="w-28"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs text-muted-foreground">이름</Label>
+                              <Input
+                                value={detail.name}
+                                onChange={e =>
+                                  setDraft(prev => (prev ? { ...prev, name: e.target.value } : prev))
+                                }
+                                className="min-w-[200px]"
+                              />
+                            </div>
+                          </div>
+                        </div>
                         <CardTitle className="text-2xl">
-                          {selected.symbol} · {selected.name}
+                          {detail.symbol} · {detail.name}
                         </CardTitle>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Badge className={actionBadgeStyle[selected.myAnalysis.decision.action]}>
-                          {selected.myAnalysis.decision.action}
+                        <Badge className={actionBadgeStyle[detail.myAnalysis.decision.action]}>
+                          {detail.myAnalysis.decision.action}
                         </Badge>
-                        <Badge variant={selected.inPortfolio ? 'default' : 'secondary'}>
-                          {selected.inPortfolio ? '포트폴리오' : '워치리스트'}
+                        <Badge variant={detail.inPortfolio ? 'default' : 'secondary'}>
+                          {detail.inPortfolio ? '포트폴리오' : '워치리스트'}
                         </Badge>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-3 items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <input
+                            type="checkbox"
+                            checked={detail.inPortfolio}
+                            onChange={e =>
+                              setDraft(prev => (prev ? { ...prev, inPortfolio: e.target.checked } : prev))
+                            }
+                          />
+                          포트폴리오 보유
+                        </label>
+                        <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <input
+                            type="checkbox"
+                            checked={detail.inWatchlist}
+                            onChange={e =>
+                              setDraft(prev => (prev ? { ...prev, inWatchlist: e.target.checked } : prev))
+                            }
+                          />
+                          워치리스트
+                        </label>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          placeholder="태그를 콤마로 구분해 입력"
+                          value={detail.tags.join(', ')}
+                          onChange={e =>
+                            setDraft(prev =>
+                              prev
+                                ? { ...prev, tags: e.target.value.split(',').map(tag => tag.trim()).filter(Boolean) }
+                                : prev
+                            )
+                          }
+                          className="w-64"
+                        />
+                        <Button variant="secondary" onClick={() => setDraft(selected ?? null)}>
+                          되돌리기
+                        </Button>
+                        <Button onClick={handleSave} disabled={saveState === 'saved'}>
+                          {saveState === 'saved' ? '저장됨' : '저장'}
+                        </Button>
                       </div>
                     </div>
                     <div className="flex flex-wrap gap-2">
@@ -458,18 +567,125 @@ export default function AnalysisPage() {
                             <CardTitle className="text-lg">밸류에이션</CardTitle>
                           </CardHeader>
                           <CardContent className="grid grid-cols-2 gap-3 text-sm">
-                            <Metric label="PER" value={selected.myAnalysis.quantitative.valuation.per} suffix="x" />
-                            <Metric label="PBR" value={selected.myAnalysis.quantitative.valuation.pbr} suffix="x" />
-                            <Metric label="PSR" value={selected.myAnalysis.quantitative.valuation.psr} suffix="x" />
-                            <Metric
-                              label="목표가"
-                              value={selected.myAnalysis.quantitative.valuation.targetPrice}
-                              prefix="$"
+                            <MetricInput
+                              label="PER"
+                              value={detail.myAnalysis.quantitative.valuation.per}
+                              suffix="x"
+                              onChange={val =>
+                                setDraft(prev =>
+                                  prev
+                                    ? {
+                                        ...prev,
+                                        myAnalysis: {
+                                          ...prev.myAnalysis,
+                                          quantitative: {
+                                            ...prev.myAnalysis.quantitative,
+                                            valuation: {
+                                              ...prev.myAnalysis.quantitative.valuation,
+                                              per: val ?? 0
+                                            }
+                                          }
+                                        }
+                                      }
+                                    : prev
+                                )
+                              }
                             />
-                            <Metric
+                            <MetricInput
+                              label="PBR"
+                              value={detail.myAnalysis.quantitative.valuation.pbr}
+                              suffix="x"
+                              onChange={val =>
+                                setDraft(prev =>
+                                  prev
+                                    ? {
+                                        ...prev,
+                                        myAnalysis: {
+                                          ...prev.myAnalysis,
+                                          quantitative: {
+                                            ...prev.myAnalysis.quantitative,
+                                            valuation: {
+                                              ...prev.myAnalysis.quantitative.valuation,
+                                              pbr: val ?? 0
+                                            }
+                                          }
+                                        }
+                                      }
+                                    : prev
+                                )
+                              }
+                            />
+                            <MetricInput
+                              label="PSR"
+                              value={detail.myAnalysis.quantitative.valuation.psr}
+                              suffix="x"
+                              onChange={val =>
+                                setDraft(prev =>
+                                  prev
+                                    ? {
+                                        ...prev,
+                                        myAnalysis: {
+                                          ...prev.myAnalysis,
+                                          quantitative: {
+                                            ...prev.myAnalysis.quantitative,
+                                            valuation: {
+                                              ...prev.myAnalysis.quantitative.valuation,
+                                              psr: val
+                                            }
+                                          }
+                                        }
+                                      }
+                                    : prev
+                                )
+                              }
+                            />
+                            <MetricInput
+                              label="목표가"
+                              value={detail.myAnalysis.quantitative.valuation.targetPrice}
+                              prefix="$"
+                              onChange={val =>
+                                setDraft(prev =>
+                                  prev
+                                    ? {
+                                        ...prev,
+                                        myAnalysis: {
+                                          ...prev.myAnalysis,
+                                          quantitative: {
+                                            ...prev.myAnalysis.quantitative,
+                                            valuation: {
+                                              ...prev.myAnalysis.quantitative.valuation,
+                                              targetPrice: val
+                                            }
+                                          }
+                                        }
+                                      }
+                                    : prev
+                                )
+                              }
+                            />
+                            <MetricInput
                               label="상승여력"
-                              value={selected.myAnalysis.quantitative.valuation.upside}
+                              value={detail.myAnalysis.quantitative.valuation.upside}
                               suffix="%"
+                              onChange={val =>
+                                setDraft(prev =>
+                                  prev
+                                    ? {
+                                        ...prev,
+                                        myAnalysis: {
+                                          ...prev.myAnalysis,
+                                          quantitative: {
+                                            ...prev.myAnalysis.quantitative,
+                                            valuation: {
+                                              ...prev.myAnalysis.quantitative.valuation,
+                                              upside: val
+                                            }
+                                          }
+                                        }
+                                      }
+                                    : prev
+                                )
+                              }
                             />
                           </CardContent>
                         </Card>
@@ -478,30 +694,153 @@ export default function AnalysisPage() {
                             <CardTitle className="text-lg">성장/재무</CardTitle>
                           </CardHeader>
                           <CardContent className="grid grid-cols-2 gap-3 text-sm">
-                            <Metric
+                            <MetricInput
                               label="매출 CAGR"
-                              value={selected.myAnalysis.quantitative.growth.revenueCagr}
+                              value={detail.myAnalysis.quantitative.growth.revenueCagr}
                               suffix="%"
+                              onChange={val =>
+                                setDraft(prev =>
+                                  prev
+                                    ? {
+                                        ...prev,
+                                        myAnalysis: {
+                                          ...prev.myAnalysis,
+                                          quantitative: {
+                                            ...prev.myAnalysis.quantitative,
+                                            growth: {
+                                              ...prev.myAnalysis.quantitative.growth,
+                                              revenueCagr: val
+                                            }
+                                          }
+                                        }
+                                      }
+                                    : prev
+                                )
+                              }
                             />
-                            <Metric
+                            <MetricInput
                               label="EPS CAGR"
-                              value={selected.myAnalysis.quantitative.growth.epsCagr}
+                              value={detail.myAnalysis.quantitative.growth.epsCagr}
                               suffix="%"
+                              onChange={val =>
+                                setDraft(prev =>
+                                  prev
+                                    ? {
+                                        ...prev,
+                                        myAnalysis: {
+                                          ...prev.myAnalysis,
+                                          quantitative: {
+                                            ...prev.myAnalysis.quantitative,
+                                            growth: {
+                                              ...prev.myAnalysis.quantitative.growth,
+                                              epsCagr: val
+                                            }
+                                          }
+                                        }
+                                      }
+                                    : prev
+                                )
+                              }
                             />
-                            <Metric
+                            <MetricInput
                               label="부채비율"
-                              value={selected.myAnalysis.quantitative.financial.debtRatio}
+                              value={detail.myAnalysis.quantitative.financial.debtRatio}
                               suffix="%"
+                              onChange={val =>
+                                setDraft(prev =>
+                                  prev
+                                    ? {
+                                        ...prev,
+                                        myAnalysis: {
+                                          ...prev.myAnalysis,
+                                          quantitative: {
+                                            ...prev.myAnalysis.quantitative,
+                                            financial: {
+                                              ...prev.myAnalysis.quantitative.financial,
+                                              debtRatio: val
+                                            }
+                                          }
+                                        }
+                                      }
+                                    : prev
+                                )
+                              }
                             />
-                            <Metric label="ROE" value={selected.myAnalysis.quantitative.financial.roe} suffix="%" />
-                            <Metric
-                              label="FCF 마진"
-                              value={selected.myAnalysis.quantitative.financial.fcfMargin}
+                            <MetricInput
+                              label="ROE"
+                              value={detail.myAnalysis.quantitative.financial.roe}
                               suffix="%"
+                              onChange={val =>
+                                setDraft(prev =>
+                                  prev
+                                    ? {
+                                        ...prev,
+                                        myAnalysis: {
+                                          ...prev.myAnalysis,
+                                          quantitative: {
+                                            ...prev.myAnalysis.quantitative,
+                                            financial: {
+                                              ...prev.myAnalysis.quantitative.financial,
+                                              roe: val
+                                            }
+                                          }
+                                        }
+                                      }
+                                    : prev
+                                )
+                              }
+                            />
+                            <MetricInput
+                              label="FCF 마진"
+                              value={detail.myAnalysis.quantitative.financial.fcfMargin}
+                              suffix="%"
+                              onChange={val =>
+                                setDraft(prev =>
+                                  prev
+                                    ? {
+                                        ...prev,
+                                        myAnalysis: {
+                                          ...prev.myAnalysis,
+                                          quantitative: {
+                                            ...prev.myAnalysis.quantitative,
+                                            financial: {
+                                              ...prev.myAnalysis.quantitative.financial,
+                                              fcfMargin: val
+                                            }
+                                          }
+                                        }
+                                      }
+                                    : prev
+                                )
+                              }
                             />
                           </CardContent>
                           <p className="px-6 pb-4 text-sm text-muted-foreground">
-                            전망: {selected.myAnalysis.quantitative.growth.outlook}
+                            <span className="text-xs text-muted-foreground">전망</span>
+                            <Textarea
+                              className="mt-1"
+                              value={detail.myAnalysis.quantitative.growth.outlook}
+                              onChange={e =>
+                                setDraft(prev =>
+                                  prev
+                                    ? {
+                                        ...prev,
+                                        myAnalysis: {
+                                          ...prev.myAnalysis,
+                                          quantitative: {
+                                            ...prev.myAnalysis.quantitative,
+                                            growth: {
+                                              ...prev.myAnalysis.quantitative.growth,
+                                              outlook: e.target.value
+                                            }
+                                          }
+                                        }
+                                      }
+                                    : prev
+                                )
+                              }
+                              rows={3}
+                            />
                           </p>
                         </Card>
                         <Card className="md:col-span-2 border-border">
@@ -509,9 +848,66 @@ export default function AnalysisPage() {
                             <CardTitle className="text-lg">점수 (1-5)</CardTitle>
                           </CardHeader>
                           <CardContent className="grid grid-cols-3 gap-4 text-sm">
-                            <ScoreBlock label="Value" value={selected.myAnalysis.quantitative.scores.value} />
-                            <ScoreBlock label="Growth" value={selected.myAnalysis.quantitative.scores.growth} />
-                            <ScoreBlock label="Quality" value={selected.myAnalysis.quantitative.scores.quality} />
+                            <MetricInput
+                              label="Value"
+                              value={detail.myAnalysis.quantitative.scores.value}
+                              onChange={val =>
+                                setDraft(prev =>
+                                  prev
+                                    ? {
+                                        ...prev,
+                                        myAnalysis: {
+                                          ...prev.myAnalysis,
+                                          quantitative: {
+                                            ...prev.myAnalysis.quantitative,
+                                            scores: { ...prev.myAnalysis.quantitative.scores, value: val ?? 0 }
+                                          }
+                                        }
+                                      }
+                                    : prev
+                                )
+                              }
+                            />
+                            <MetricInput
+                              label="Growth"
+                              value={detail.myAnalysis.quantitative.scores.growth}
+                              onChange={val =>
+                                setDraft(prev =>
+                                  prev
+                                    ? {
+                                        ...prev,
+                                        myAnalysis: {
+                                          ...prev.myAnalysis,
+                                          quantitative: {
+                                            ...prev.myAnalysis.quantitative,
+                                            scores: { ...prev.myAnalysis.quantitative.scores, growth: val ?? 0 }
+                                          }
+                                        }
+                                      }
+                                    : prev
+                                )
+                              }
+                            />
+                            <MetricInput
+                              label="Quality"
+                              value={detail.myAnalysis.quantitative.scores.quality}
+                              onChange={val =>
+                                setDraft(prev =>
+                                  prev
+                                    ? {
+                                        ...prev,
+                                        myAnalysis: {
+                                          ...prev.myAnalysis,
+                                          quantitative: {
+                                            ...prev.myAnalysis.quantitative,
+                                            scores: { ...prev.myAnalysis.quantitative.scores, quality: val ?? 0 }
+                                          }
+                                        }
+                                      }
+                                    : prev
+                                )
+                              }
+                            />
                           </CardContent>
                         </Card>
                       </div>
@@ -526,15 +922,76 @@ export default function AnalysisPage() {
                           <CardContent className="space-y-3 text-sm">
                             <div>
                               <p className="text-xs text-muted-foreground mb-1">모델</p>
-                              <p className="font-medium">{selected.myAnalysis.qualitative.businessModel}</p>
+                              <Textarea
+                                value={detail.myAnalysis.qualitative.businessModel}
+                                onChange={e =>
+                                  setDraft(prev =>
+                                    prev
+                                      ? {
+                                          ...prev,
+                                          myAnalysis: {
+                                            ...prev.myAnalysis,
+                                            qualitative: {
+                                              ...prev.myAnalysis.qualitative,
+                                              businessModel: e.target.value
+                                            }
+                                          }
+                                        }
+                                      : prev
+                                  )
+                                }
+                                rows={3}
+                              />
                             </div>
                             <div>
                               <p className="text-xs text-muted-foreground mb-1">Moat</p>
-                              <Badge variant="outline">{selected.myAnalysis.qualitative.moat}</Badge>
+                              <Select
+                                value={detail.myAnalysis.qualitative.moat}
+                                onValueChange={val =>
+                                  setDraft(prev =>
+                                    prev
+                                      ? {
+                                          ...prev,
+                                          myAnalysis: {
+                                            ...prev.myAnalysis,
+                                            qualitative: { ...prev.myAnalysis.qualitative, moat: val as QualitativeSection['moat'] }
+                                          }
+                                        }
+                                      : prev
+                                  )
+                                }
+                              >
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {moatOptions.map(opt => (
+                                    <SelectItem key={opt} value={opt}>
+                                      {opt}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
                             </div>
                             <div>
                               <p className="text-xs text-muted-foreground mb-1">경영진</p>
-                              <p>{selected.myAnalysis.qualitative.management}</p>
+                              <Textarea
+                                value={detail.myAnalysis.qualitative.management}
+                                onChange={e =>
+                                  setDraft(prev =>
+                                    prev
+                                      ? {
+                                          ...prev,
+                                          myAnalysis: {
+                                            ...prev.myAnalysis,
+                                            qualitative: { ...prev.myAnalysis.qualitative, management: e.target.value }
+                                          }
+                                        }
+                                      : prev
+                                  )
+                                }
+                                rows={2}
+                              />
                             </div>
                           </CardContent>
                         </Card>
@@ -546,36 +1003,147 @@ export default function AnalysisPage() {
                             <div className="space-y-2">
                               <p className="text-xs text-muted-foreground">리스크</p>
                               <div className="space-y-2">
-                                {selected.myAnalysis.qualitative.risks.map(risk => (
-                                  <div
-                                    key={`${risk.level}-${risk.item}`}
-                                    className="flex items-center justify-between rounded-md border border-dashed border-border bg-muted/30 px-3 py-2 text-sm"
-                                  >
-                                    <span>{risk.item}</span>
-                                    <Badge
-                                      variant="outline"
-                                      className={
-                                        risk.level === 'High'
-                                          ? 'border-rose-200 text-rose-700'
-                                          : risk.level === 'Medium'
-                                            ? 'border-amber-200 text-amber-700'
-                                            : 'border-emerald-200 text-emerald-700'
-                                      }
-                                    >
-                                      {risk.level}
-                                    </Badge>
+                                {detail.myAnalysis.qualitative.risks.map((risk, idx) => (
+                                  <div key={`${risk.level}-${risk.item}-${idx}`} className="space-y-1 rounded-md border border-dashed border-border bg-muted/30 px-3 py-2 text-sm">
+                                    <div className="flex items-center gap-2">
+                                      <Select
+                                        value={risk.level}
+                                        onValueChange={val =>
+                                          setDraft(prev =>
+                                            prev
+                                              ? {
+                                                  ...prev,
+                                                  myAnalysis: {
+                                                    ...prev.myAnalysis,
+                                                    qualitative: {
+                                                      ...prev.myAnalysis.qualitative,
+                                                      risks: prev.myAnalysis.qualitative.risks.map((r, i) =>
+                                                        i === idx ? { ...r, level: val as 'High' | 'Medium' | 'Low' } : r
+                                                      )
+                                                    }
+                                                  }
+                                                }
+                                              : prev
+                                          )
+                                        }
+                                      >
+                                        <SelectTrigger className="w-28">
+                                          <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="High">High</SelectItem>
+                                          <SelectItem value="Medium">Medium</SelectItem>
+                                          <SelectItem value="Low">Low</SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                      <Input
+                                        value={risk.item}
+                                        onChange={e =>
+                                          setDraft(prev =>
+                                            prev
+                                              ? {
+                                                  ...prev,
+                                                  myAnalysis: {
+                                                    ...prev.myAnalysis,
+                                                    qualitative: {
+                                                      ...prev.myAnalysis.qualitative,
+                                                      risks: prev.myAnalysis.qualitative.risks.map((r, i) =>
+                                                        i === idx ? { ...r, item: e.target.value } : r
+                                                      )
+                                                    }
+                                                  }
+                                                }
+                                              : prev
+                                          )
+                                        }
+                                        className="flex-1"
+                                        placeholder="리스크 항목"
+                                      />
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() =>
+                                          setDraft(prev =>
+                                            prev
+                                              ? {
+                                                  ...prev,
+                                                  myAnalysis: {
+                                                    ...prev.myAnalysis,
+                                                    qualitative: {
+                                                      ...prev.myAnalysis.qualitative,
+                                                      risks: prev.myAnalysis.qualitative.risks.filter((_, i) => i !== idx)
+                                                    }
+                                                  }
+                                                }
+                                              : prev
+                                          )
+                                        }
+                                      >
+                                        삭제
+                                      </Button>
+                                    </div>
                                   </div>
                                 ))}
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() =>
+                                    setDraft(prev =>
+                                      prev
+                                        ? {
+                                            ...prev,
+                                            myAnalysis: {
+                                              ...prev.myAnalysis,
+                                              qualitative: {
+                                                ...prev.myAnalysis.qualitative,
+                                                risks: [
+                                                  ...prev.myAnalysis.qualitative.risks,
+                                                  { level: 'Low', item: '새 리스크' }
+                                                ]
+                                              }
+                                            }
+                                          }
+                                        : prev
+                                    )
+                                  }
+                                >
+                                  리스크 추가
+                                </Button>
                               </div>
                             </div>
                             <div className="space-y-2">
                               <p className="text-xs text-muted-foreground">상승 촉매</p>
                               <div className="flex flex-wrap gap-2">
-                                {selected.myAnalysis.qualitative.catalysts.map(cat => (
-                                  <Badge key={cat} variant="secondary">
-                                    {cat}
-                                  </Badge>
-                                ))}
+                                <Input
+                                  placeholder="콤마로 구분해 입력"
+                                  value={detail.myAnalysis.qualitative.catalysts.join(', ')}
+                                  onChange={e =>
+                                    setDraft(prev =>
+                                      prev
+                                        ? {
+                                            ...prev,
+                                            myAnalysis: {
+                                              ...prev.myAnalysis,
+                                              qualitative: {
+                                                ...prev.myAnalysis.qualitative,
+                                                catalysts: e.target.value
+                                                  .split(',')
+                                                  .map(v => v.trim())
+                                                  .filter(Boolean)
+                                              }
+                                            }
+                                          }
+                                        : prev
+                                    )
+                                  }
+                                />
+                                <div className="flex flex-wrap gap-2">
+                                  {detail.myAnalysis.qualitative.catalysts.map(cat => (
+                                    <Badge key={cat} variant="secondary">
+                                      {cat}
+                                    </Badge>
+                                  ))}
+                                </div>
                               </div>
                             </div>
                           </CardContent>
@@ -592,22 +1160,142 @@ export default function AnalysisPage() {
                           <CardContent className="space-y-3 text-sm">
                             <div className="flex items-center justify-between">
                               <span>투자 의견</span>
-                              <Badge className={actionBadgeStyle[selected.myAnalysis.decision.action]}>
-                                {selected.myAnalysis.decision.action}
-                              </Badge>
+                              <Select
+                                value={detail.myAnalysis.decision.action}
+                                onValueChange={val =>
+                                  setDraft(prev =>
+                                    prev
+                                      ? {
+                                          ...prev,
+                                          myAnalysis: {
+                                            ...prev.myAnalysis,
+                                            decision: { ...prev.myAnalysis.decision, action: val as ActionType }
+                                          }
+                                        }
+                                      : prev
+                                  )
+                                }
+                              >
+                                <SelectTrigger className="w-28">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="매수">매수</SelectItem>
+                                  <SelectItem value="관망">관망</SelectItem>
+                                  <SelectItem value="매도">매도</SelectItem>
+                                </SelectContent>
+                              </Select>
                             </div>
                             <div className="flex items-center justify-between">
                               <span>확신도</span>
-                              <ConvictionDots level={selected.myAnalysis.decision.conviction} />
+                              <div className="flex items-center gap-2">
+                                <Input
+                                  type="number"
+                                  min={1}
+                                  max={5}
+                                  className="w-16"
+                                  value={detail.myAnalysis.decision.conviction}
+                                  onChange={e =>
+                                    setDraft(prev =>
+                                      prev
+                                        ? {
+                                            ...prev,
+                                            myAnalysis: {
+                                              ...prev.myAnalysis,
+                                              decision: {
+                                                ...prev.myAnalysis.decision,
+                                                conviction: Number(e.target.value) || 1
+                                              }
+                                            }
+                                          }
+                                        : prev
+                                    )
+                                  }
+                                />
+                                <ConvictionDots level={detail.myAnalysis.decision.conviction} />
+                              </div>
                             </div>
                             <div className="grid grid-cols-3 gap-3">
-                              <PriceBlock label="목표 매수가" value={selected.myAnalysis.decision.prices.buy} />
-                              <PriceBlock label="목표 매도가" value={selected.myAnalysis.decision.prices.sell} />
-                              <PriceBlock label="손절가" value={selected.myAnalysis.decision.prices.stop} />
+                              <PriceInput
+                                label="목표 매수가"
+                                value={detail.myAnalysis.decision.prices.buy}
+                                onChange={val =>
+                                  setDraft(prev =>
+                                    prev
+                                      ? {
+                                          ...prev,
+                                          myAnalysis: {
+                                            ...prev.myAnalysis,
+                                            decision: {
+                                              ...prev.myAnalysis.decision,
+                                              prices: { ...prev.myAnalysis.decision.prices, buy: val }
+                                            }
+                                          }
+                                        }
+                                      : prev
+                                  )
+                                }
+                              />
+                              <PriceInput
+                                label="목표 매도가"
+                                value={detail.myAnalysis.decision.prices.sell}
+                                onChange={val =>
+                                  setDraft(prev =>
+                                    prev
+                                      ? {
+                                          ...prev,
+                                          myAnalysis: {
+                                            ...prev.myAnalysis,
+                                            decision: {
+                                              ...prev.myAnalysis.decision,
+                                              prices: { ...prev.myAnalysis.decision.prices, sell: val }
+                                            }
+                                          }
+                                        }
+                                      : prev
+                                  )
+                                }
+                              />
+                              <PriceInput
+                                label="손절가"
+                                value={detail.myAnalysis.decision.prices.stop}
+                                onChange={val =>
+                                  setDraft(prev =>
+                                    prev
+                                      ? {
+                                          ...prev,
+                                          myAnalysis: {
+                                            ...prev.myAnalysis,
+                                            decision: {
+                                              ...prev.myAnalysis.decision,
+                                              prices: { ...prev.myAnalysis.decision.prices, stop: val }
+                                            }
+                                          }
+                                        }
+                                      : prev
+                                  )
+                                }
+                              />
                             </div>
                             <div>
                               <p className="text-xs text-muted-foreground mb-1">포지션 계획</p>
-                              <p className="font-medium">{selected.myAnalysis.decision.positionSize}</p>
+                              <Textarea
+                                value={detail.myAnalysis.decision.positionSize}
+                                onChange={e =>
+                                  setDraft(prev =>
+                                    prev
+                                      ? {
+                                          ...prev,
+                                          myAnalysis: {
+                                            ...prev.myAnalysis,
+                                            decision: { ...prev.myAnalysis.decision, positionSize: e.target.value }
+                                          }
+                                        }
+                                      : prev
+                                  )
+                                }
+                                rows={2}
+                              />
                             </div>
                           </CardContent>
                         </Card>
@@ -618,18 +1306,84 @@ export default function AnalysisPage() {
                           <CardContent className="space-y-3 text-sm">
                             <div>
                               <p className="text-xs text-muted-foreground mb-1">핵심 논지</p>
-                              <p>{selected.myAnalysis.decision.thesis}</p>
+                              <Textarea
+                                value={detail.myAnalysis.decision.thesis}
+                                onChange={e =>
+                                  setDraft(prev =>
+                                    prev
+                                      ? {
+                                          ...prev,
+                                          myAnalysis: {
+                                            ...prev.myAnalysis,
+                                            decision: { ...prev.myAnalysis.decision, thesis: e.target.value }
+                                          }
+                                        }
+                                      : prev
+                                  )
+                                }
+                                rows={4}
+                              />
                             </div>
-                            {selected.myAnalysis.decision.conditions?.length ? (
+                            {detail.myAnalysis.decision.conditions?.length ? (
                               <div>
                                 <p className="text-xs text-muted-foreground mb-1">조건부 매수/관리</p>
-                                <ul className="list-disc pl-4 space-y-1">
-                                  {selected.myAnalysis.decision.conditions.map(cond => (
+                                <Input
+                                  placeholder="콤마로 구분해 입력"
+                                  value={detail.myAnalysis.decision.conditions.join(', ')}
+                                  onChange={e =>
+                                    setDraft(prev =>
+                                      prev
+                                        ? {
+                                            ...prev,
+                                            myAnalysis: {
+                                              ...prev.myAnalysis,
+                                              decision: {
+                                                ...prev.myAnalysis.decision,
+                                                conditions: e.target.value
+                                                  .split(',')
+                                                  .map(v => v.trim())
+                                                  .filter(Boolean)
+                                              }
+                                            }
+                                          }
+                                        : prev
+                                    )
+                                  }
+                                />
+                                <ul className="list-disc pl-4 space-y-1 mt-2">
+                                  {detail.myAnalysis.decision.conditions.map(cond => (
                                     <li key={cond}>{cond}</li>
                                   ))}
                                 </ul>
                               </div>
-                            ) : null}
+                            ) : (
+                              <div>
+                                <p className="text-xs text-muted-foreground mb-1">조건부 매수/관리</p>
+                                <Input
+                                  placeholder="콤마로 구분해 입력"
+                                  value=""
+                                  onChange={e =>
+                                    setDraft(prev =>
+                                      prev
+                                        ? {
+                                            ...prev,
+                                            myAnalysis: {
+                                              ...prev.myAnalysis,
+                                              decision: {
+                                                ...prev.myAnalysis.decision,
+                                                conditions: e.target.value
+                                                  .split(',')
+                                                  .map(v => v.trim())
+                                                  .filter(Boolean)
+                                              }
+                                            }
+                                          }
+                                        : prev
+                                    )
+                                  }
+                                />
+                              </div>
+                            )}
                           </CardContent>
                         </Card>
                       </div>
@@ -642,10 +1396,30 @@ export default function AnalysisPage() {
                             <CardTitle className="text-lg">참고 자료</CardTitle>
                           </CardHeader>
                           <CardContent className="space-y-3 text-sm">
-                            {selected.references.length === 0 && (
+                            <Textarea
+                              placeholder="type|title|url|note 형식으로 줄마다 입력 (note는 옵션)"
+                              value={detail.references
+                                .map(ref => [ref.type, ref.title, ref.url, ref.note ?? ''].join('|'))
+                                .join('\n')}
+                              onChange={e => {
+                                const lines = e.target.value.split('\n').filter(Boolean);
+                                const parsed = lines.map(line => {
+                                  const [type, title, url, note] = line.split('|').map(part => part.trim());
+                                  return {
+                                    type: (type as ReferenceItem['type']) || '기사',
+                                    title: title || '제목 없음',
+                                    url: url || '#',
+                                    note: note || ''
+                                  };
+                                });
+                                setDraft(prev => (prev ? { ...prev, references: parsed } : prev));
+                              }}
+                              rows={4}
+                            />
+                            {detail.references.length === 0 && (
                               <p className="text-muted-foreground">자료를 추가해 주세요.</p>
                             )}
-                            {selected.references.map(ref => (
+                            {detail.references.map(ref => (
                               <div
                                 key={`${ref.title}-${ref.url}`}
                                 className="flex flex-col gap-1 rounded-md border border-dashed border-border bg-muted/40 p-3"
@@ -724,6 +1498,61 @@ function PriceBlock({ label, value }: { label: string; value?: number }) {
     <div className="rounded-md border border-border bg-muted/30 p-3">
       <p className="text-xs text-muted-foreground">{label}</p>
       <p className="font-semibold">{value ? `$${value}` : '-'}</p>
+    </div>
+  );
+}
+
+function MetricInput({
+  label,
+  value,
+  prefix,
+  suffix,
+  onChange
+}: {
+  label: string;
+  value?: number;
+  prefix?: string;
+  suffix?: string;
+  onChange: (val: number | undefined) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-1 rounded-md border border-border bg-muted/30 p-3">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <Input
+        type="number"
+        value={value ?? ''}
+        onChange={e => onChange(e.target.value === '' ? undefined : Number(e.target.value))}
+        className="h-9"
+      />
+      {value !== undefined && (
+        <p className="text-[11px] text-muted-foreground">
+          {prefix ?? ''}
+          {value}
+          {suffix ?? ''}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function PriceInput({
+  label,
+  value,
+  onChange
+}: {
+  label: string;
+  value?: number;
+  onChange: (val: number | undefined) => void;
+}) {
+  return (
+    <div className="rounded-md border border-border bg-muted/30 p-3">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <Input
+        type="number"
+        value={value ?? ''}
+        onChange={e => onChange(e.target.value === '' ? undefined : Number(e.target.value))}
+        className="mt-1"
+      />
     </div>
   );
 }
