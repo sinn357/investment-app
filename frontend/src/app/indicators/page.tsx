@@ -4,8 +4,9 @@ import { useState, useEffect } from 'react';
 import Navigation from '@/components/Navigation';
 import CyclePanel from '@/components/CyclePanel';
 import IndicatorGrid from '@/components/IndicatorGrid';
-import EconomicIndicatorsSection from '@/components/EconomicIndicatorsSection';
-import DataSection from '@/components/DataSection';
+import IndicatorChartPanel from '@/components/IndicatorChartPanel';
+// import EconomicIndicatorsSection from '@/components/EconomicIndicatorsSection'; // 통합으로 비활성화
+// import DataSection from '@/components/DataSection'; // 통합으로 비활성화
 import NewsNarrative from '@/components/NewsNarrative';
 import RiskRadar from '@/components/RiskRadar';
 import CyclePanelSkeleton from '@/components/skeletons/CyclePanelSkeleton';
@@ -122,6 +123,7 @@ export default function IndicatorsPage() {
   const [cycleScore, setCycleScore] = useState<ReturnType<typeof calculateCycleScore> | null>(null);
   const [allIndicators, setAllIndicators] = useState<GridIndicator[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedIndicatorId, setSelectedIndicatorId] = useState<string | null>(null);
   const [narrative, setNarrative] = useState<EconomicNarrative>({
     articles: [],
     myNarrative: '',
@@ -452,12 +454,25 @@ export default function IndicatorsPage() {
         ) : allIndicators.length > 0 ? (
           <IndicatorGrid
             indicators={allIndicators}
+            selectedId={selectedIndicatorId}
             onIndicatorClick={(indicator) => {
-              console.log('지표 클릭:', indicator);
-              // TODO: 상세 모달/패널 표시
+              setSelectedIndicatorId(indicator.id);
+              // 하단 차트 영역으로 스크롤
+              setTimeout(() => {
+                document.getElementById('chart-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }, 100);
             }}
           />
         ) : null}
+
+        {/* 선택된 지표 상세 차트 */}
+        {selectedIndicatorId && allIndicators.length > 0 && (
+          <IndicatorChartPanel
+            selectedIndicatorId={selectedIndicatorId}
+            allIndicators={allIndicators}
+            onSelectIndicator={setSelectedIndicatorId}
+          />
+        )}
 
         {/* 사이클 보조 입력: 신용/심리 */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-6">
@@ -519,9 +534,9 @@ export default function IndicatorsPage() {
           </Card>
         </div>
 
-        {/* 상세 지표 섹션 (Raw Data + History Table) */}
-        <EconomicIndicatorsSection />
-        <DataSection />
+        {/* 상세 지표 섹션 (Raw Data + History Table) - 통합으로 비활성화 */}
+        {/* <EconomicIndicatorsSection /> */}
+        {/* <DataSection /> */}
 
         {/* 날짜 선택 및 저장 버튼 */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">

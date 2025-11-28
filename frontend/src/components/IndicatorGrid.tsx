@@ -26,6 +26,7 @@ interface Indicator {
 
 interface IndicatorGridProps {
   indicators: Indicator[];
+  selectedId?: string | null;
   onIndicatorClick?: (indicator: Indicator) => void;
 }
 
@@ -47,7 +48,7 @@ const SORT_OPTIONS = [
   { id: 'impact' as SortOption, name: '영향력순', icon: '⚡' },
 ];
 
-export default function IndicatorGrid({ indicators, onIndicatorClick }: IndicatorGridProps) {
+export default function IndicatorGrid({ indicators, selectedId, onIndicatorClick }: IndicatorGridProps) {
   const [activeFilter, setActiveFilter] = useState<FilterCategory>('all');
   const [sortOption, setSortOption] = useState<SortOption>('default');
 
@@ -173,6 +174,7 @@ export default function IndicatorGrid({ indicators, onIndicatorClick }: Indicato
                 category={indicator.category}
                 sparklineData={indicator.sparklineData}
                 reverseColor={indicator.reverseColor}
+                isSelected={selectedId === indicator.id}
                 onClick={() => onIndicatorClick?.(indicator)}
               />
             ))}

@@ -28,6 +28,7 @@ export interface EnhancedIndicatorCardProps {
   category: string;
   sparklineData?: number[];
   reverseColor?: boolean;
+  isSelected?: boolean;
   onClick?: () => void;
 }
 
@@ -42,6 +43,7 @@ const EnhancedIndicatorCard = React.memo(function EnhancedIndicatorCard({
   category,
   sparklineData = [],
   reverseColor = false,
+  isSelected = false,
   onClick,
 }: EnhancedIndicatorCardProps) {
   const [showModal, setShowModal] = useState(false);
@@ -133,7 +135,9 @@ const EnhancedIndicatorCard = React.memo(function EnhancedIndicatorCard({
   return (
     <>
       <div
-        className={`${CARD_CLASSES.container} cursor-pointer hover:shadow-lg transition-all duration-200`}
+        className={`${CARD_CLASSES.container} cursor-pointer hover:shadow-lg transition-all duration-200 ${
+          isSelected ? 'ring-2 ring-primary shadow-xl scale-105' : ''
+        }`}
         onClick={handleCardClick}
       >
         {/* 헤더: 카테고리 태그 + 상태 배지 */}
