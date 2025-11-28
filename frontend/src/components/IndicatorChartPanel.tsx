@@ -77,6 +77,7 @@ const IndicatorChartPanel: React.FC<IndicatorChartPanelProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedIndex, allIndicators]);
 
   // 지표 데이터 페칭
