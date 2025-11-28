@@ -1,0 +1,77 @@
+name: Auto Update Economic Indicators
+
+on:
+  schedule:
+    # 매 25분마다 실행 (Keep-Alive와 동일)
+    - cron: '*/25 * * * *'
+  workflow_dispatch:
+    # 수동 실행도 가능
+
+jobs:
+  auto-update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check KST Time
+        id: time-check
+        run: |
+          CURRENT_HOUR_KST=$(TZ=Asia/Seoul date '+%H')
+          echo "KST Hour: $CURRENT_HOUR_KST"
+          # 활성 시간: 오전 10시 ~ 새벽 4시 (KST)
+          if [[ $CURRENT_HOUR_KST -ge 10 || $CURRENT_HOUR_KST -lt 4 ]]; then
+            echo "should_update=true" >> $GITHUB_OUTPUT
+          else
+            echo "should_update=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Trigger Indicator Update
+        if: steps.time-check.outputs.should_update == 'true'
+        run: |
+          echo "Triggering indicator update at $(TZ=Asia/Seoul date)"
+
+          # 업데이트 API 호출
+          RESPONSE=$(curl -s -X POST \
+            -w "\nHTTP_STATUS:%{http_code}" \
+            https://investment-app-backend-x166.onrender.com/api/v2/update-indicators)
+
+          HTTP_STATUS=$(echo "$RESPONSE" | grep "HTTP_STATUS" | cut -d: -f2)
+          BODY=$(echo "$RESPONSE" | sed '/HTTP_STATUS/d')
+
+          echo "Response Status: $HTTP_STATUS"
+          echo "Response Body: $BODY"
+
+          if [ "$HTTP_STATUS" = "200" ] || [ "$HTTP_STATUS" = "201" ]; then
+            echo "✅ Update triggered successfully"
+
+            # 업데이트 상태 확인 (최대 5분 대기)
+            MAX_CHECKS=30  # 30회 * 10초 = 5분
+            CHECK_COUNT=0
+
+            while [ $CHECK_COUNT -lt $MAX_CHECKS ]; do
+              sleep 10
+              CHECK_COUNT=$((CHECK_COUNT + 1))
+
+              STATUS_RESPONSE=$(curl -s https://investment-app-backend-x166.onrender.com/api/v2/update-status)
+              IS_UPDATING=$(echo "$STATUS_RESPONSE" | grep -o '"is_updating":[^,}]*' | cut -d: -f2 | tr -d ' ')
+
+              echo "Check $CHECK_COUNT/$MAX_CHECKS - is_updating: $IS_UPDATING"
+
+              if [ "$IS_UPDATING" = "false" ]; then
+                echo "✅ Update completed successfully"
+                exit 0
+              fi
+            done
+
+            echo "⚠️ Update timeout after 5 minutes"
+            exit 0
+          else
+            echo "❌ Update trigger failed - Status: $HTTP_STATUS"
+            # Keep-Alive 폴백
+            curl -s https://investment-app-backend-x166.onrender.com/ || true
+            exit 0
+          fi
+
+      - name: Skip Update (Sleep Hours)
+        if: steps.time-check.outputs.should_update == 'false'
+        run: |
+          echo "Currently in sleep hours (KST 04:00-10:00) - Update skipped"
+          echo "Next active time: 10:00 AM KST"
