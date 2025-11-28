@@ -23,6 +23,13 @@ interface Interpretation {
   additional_info: string;
 }
 
+interface HistoryData {
+  date: string;
+  actual: number | string;
+  forecast?: number | string | null;
+  previous: number | string;
+}
+
 interface Indicator {
   id: string;
   name: string;
@@ -32,8 +39,15 @@ interface Indicator {
   forecast?: number | string | null;
   surprise?: number | null;
   category: string;
+  sparklineData?: number[];
+  reverseColor?: boolean;
   interpretation?: Interpretation;
   data?: {
+    latest_release?: {
+      actual: number | string | null;
+      forecast?: number | string | null;
+      previous: number | string;
+    };
     history?: HistoryData[];
   };
 }
@@ -42,13 +56,6 @@ interface IndicatorChartPanelProps {
   selectedIndicatorId: string;
   allIndicators: Indicator[];
   onSelectIndicator: (id: string) => void;
-}
-
-interface HistoryData {
-  date: string;
-  actual: number | string;
-  forecast: number | string | null;
-  previous: number | string;
 }
 
 const IndicatorChartPanel: React.FC<IndicatorChartPanelProps> = ({
