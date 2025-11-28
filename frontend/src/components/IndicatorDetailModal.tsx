@@ -202,24 +202,23 @@ const IndicatorDetailModal = React.memo(function IndicatorDetailModal({
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={chartData} margin={CHART_THEME.margin}>
-                    <CartesianGrid strokeDasharray="3 3" stroke={CHART_THEME.grid.stroke} />
+                    <CartesianGrid strokeDasharray="3 3" stroke={CHART_THEME.colors.grid} />
                     <XAxis
                       dataKey="date"
-                      tick={{ fill: CHART_THEME.axis.tick.fill, fontSize: 12 }}
+                      tick={{ fill: CHART_THEME.colors.axis, fontSize: 12 }}
                     />
                     <YAxis
-                      tick={{ fill: CHART_THEME.axis.tick.fill, fontSize: 12 }}
+                      tick={{ fill: CHART_THEME.colors.axis, fontSize: 12 }}
                     />
                     <Tooltip
-                      contentStyle={CHART_THEME.tooltip.style}
-                      labelStyle={CHART_THEME.tooltip.labelStyle}
+                      contentStyle={CHART_THEME.tooltip.contentStyle}
                     />
                     <Legend />
                     <Line
                       type="monotone"
                       dataKey="actual"
                       name="실제값"
-                      stroke={CHART_THEME.colors.primary}
+                      stroke={CHART_THEME.colors.bar}
                       strokeWidth={2}
                       dot={{ r: 4 }}
                     />
@@ -228,7 +227,7 @@ const IndicatorDetailModal = React.memo(function IndicatorDetailModal({
                         type="monotone"
                         dataKey="forecast"
                         name="예측값"
-                        stroke={CHART_THEME.colors.secondary}
+                        stroke={CHART_THEME.colors.line}
                         strokeWidth={2}
                         strokeDasharray="5 5"
                         dot={{ r: 4 }}
