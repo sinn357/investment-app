@@ -176,19 +176,7 @@ export default function IndicatorsPage() {
       try {
         setLoading(true);
 
-        // v3 API: 메타데이터 먼저 가져오기 (빠름, 크롤링 없음)
-        const metadataResult = await fetchJsonWithRetry(
-          'https://investment-app-backend-x166.onrender.com/api/v3/indicators',
-          {},
-          3,
-          1000
-        );
-
-        if (metadataResult.status !== 'success') {
-          throw new Error('Failed to fetch metadata');
-        }
-
-        // v2 API 호환성을 위해 기존 indicators 데이터 사용
+        // v2 API: 모든 데이터 한 번에 가져오기 (히스토리 + 메타데이터 포함)
         const result = await fetchJsonWithRetry(
           'https://investment-app-backend-x166.onrender.com/api/v2/indicators',
           {},
@@ -282,14 +270,10 @@ export default function IndicatorsPage() {
           const score = calculateCycleScore(indicators);
           setCycleScore(score);
 
-          // 그리드용 지표 데이터 생성 (v3 메타데이터 활용)
+          // 그리드용 지표 데이터 생성 (백엔드에서 메타데이터 포함됨)
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const gridIndicators: GridIndicator[] = result.indicators.map((item: any) => {
             const latest = item.data.latest_release;
-            const indicatorId = item.name.toLowerCase().replace(/\s+/g, '-').replace(/[()]/g, '');
-
-            // v3 메타데이터에서 추가 정보 가져오기
-            const metadata = metadataResult.data?.indicators?.[indicatorId];
 
             // 히스토리 데이터에서 스파크라인 데이터 추출 (최근 6개월)
             const sparklineData = item.data.history
@@ -302,16 +286,16 @@ export default function IndicatorsPage() {
               : [];
 
             return {
-              id: indicatorId,
+              id: item.indicator_id,
               name: item.name,
-              nameKo: metadata?.name_ko || item.name,
+              nameKo: item.name_ko || item.name,
               actual: latest.actual,
               previous: latest.previous,
               forecast: latest.forecast,
               surprise: latest.surprise ?? null,
-              category: metadata?.category || mapIndicatorToCategory(item.name),
+              category: item.category || mapIndicatorToCategory(item.name),
               sparklineData,
-              reverseColor: metadata?.reverse_color || false,
+              reverseColor: item.reverse_color || false,
             };
           });
           setAllIndicators(gridIndicators);
