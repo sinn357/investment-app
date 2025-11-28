@@ -7,7 +7,7 @@ from datetime import datetime
 
 # 통합 크롤러
 from crawlers.unified_crawler import crawl_indicator, crawl_category
-from crawlers.indicators_config import INDICATORS, CATEGORIES, get_all_enabled_indicators
+from crawlers.indicators_config import INDICATORS, CATEGORIES, get_all_enabled_indicators, get_indicator_config
 from services.database_service import DatabaseService
 from services.crawler_service import CrawlerService
 import threading
@@ -844,9 +844,6 @@ def get_participation_rate_history():
 def get_all_indicators_from_db():
     """데이터베이스에서 모든 지표 데이터 조회 (빠른 로딩용) - 히스토리 포함"""
     try:
-        # v3 메타데이터 가져오기 (딕셔너리 반환)
-        enabled_indicators = get_all_enabled_indicators()
-
         # CrawlerService에 정의된 모든 지표를 확인하고 데이터베이스에 저장된 것만 포함
         all_indicator_ids = list(CrawlerService.INDICATOR_URLS.keys())
         results = []
@@ -859,10 +856,13 @@ def get_all_indicators_from_db():
                 history_data = db_service.get_history_data(indicator_id)
                 history = []
                 if "error" not in history_data:
-                    history = history_data.get("history", [])[:12]
+                    if isinstance(history_data, dict):
+                        history = history_data.get("history", [])[:12]
+                    else:
+                        history = []
 
-                # 메타데이터 추가 (IndicatorConfig 객체에서 속성 접근)
-                metadata = enabled_indicators.get(indicator_id)
+                # 메타데이터 추가 - 안전한 방식으로 get_indicator_config 사용
+                metadata = get_indicator_config(indicator_id)
 
                 results.append({
                     "indicator_id": indicator_id,
