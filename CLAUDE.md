@@ -8,12 +8,12 @@
 - **Project:** Investment App - Economic Indicators Dashboard
 - **Repo Root:** /home/user/investment-app
 - **Owner:** Partner
-- **Last Updated:** 2025-11-21 23:00 KST
-- **Session Goal (2025-11-21):** ✅ 경제지표 페이지 개선 Phase 7-9 완전 구현 (경제 국면 판별 시스템 + 그리드 전환 + 로딩/에러/성능 최적화)
-  - Phase 7: cycleCalculator.ts + CyclePanel (4축 게이지, 국면 판별, 자산 추천)
-  - Phase 8: IndicatorGrid + CompactIndicatorCard (탭 제거, 3단계 정보 계층)
-  - Phase 9: Skeleton UI + ErrorBoundary + fetchWithRetry + React.memo
-- **Previous Session (2025-11-17):** ✅ 웹 애플리케이션 효율성 향상 플레이북 Phase 1-3 (shadcn/ui + TanStack Query + ErrorBoundary + Toast + Zustand + Playwright E2E)
+- **Last Updated:** 2025-11-29 02:30 KST
+- **Session Goal (2025-11-29):** ✅ 경제지표 해석 시스템 완전 구현 + 차트/히스토리 버그 수정 (Phase 5 완료)
+  - 정적 메타데이터 기반 5개 섹션 해석 시스템 (핵심정의, 해석법, 의미·맥락, 시장 반응, 확인 정보)
+  - 우선순위 6개 지표 해석 완료 (ISM Manufacturing, Nonfarm Payrolls, Unemployment Rate, CPI, GDP, Fed Funds Rate)
+  - 날짜 필드 매핑 오류 수정 (date → release_date)
+- **Previous Session (2025-11-21):** ✅ 경제지표 페이지 개선 Phase 7-9 완전 구현 (경제 국면 판별 시스템 + 그리드 전환 + 로딩/에러/성능 최적화)
 
 ---
 
@@ -125,7 +125,12 @@ investment-app/
 ### Active (in this session)
 - 없음
 
-### Recent Done (Current Session - 2025-11-21)
+### Recent Done (Current Session - 2025-11-29)
+- **T-098:** 경제지표 해석 시스템 Phase 5 완전 구현 ✅ (2025-11-29) - 백엔드: backend/metadata/indicator_metadata.py 생성 (500+ 줄, IndicatorMetadata 클래스, 5개 섹션 구조) + 우선순위 6개 지표 완전 작성 (ISM Manufacturing, Nonfarm Payrolls, Unemployment Rate, CPI, GDP, Federal Funds Rate) + 나머지 10개 지표 템플릿 준비 + /api/v2/indicators에 interpretation 필드 통합 | 프론트엔드: IndicatorChartPanel.tsx 해석 탭 완전 구현 (5개 색상 구분 섹션: 📌핵심정의, 📊해석법, 🔍의미·맥락, 💰시장 반응, ℹ️확인 정보) + API 호출 제거 (/api/history-table/{id} 삭제) + props 데이터 재활용 | 문서화: INDICATOR_INTERPRETATION_SYSTEM.md (전체 시스템 설계) + INDICATOR_METADATA_GUIDE.md (나머지 10개 지표 작성 가이드) | 성능: 카드 클릭 시 API 호출 1회 → 0회 (100% 감소), 해석 탭 즉시 로딩 | 커밋 1개 (feat: 경제지표 해석 시스템 완전 구현)
+- **T-099:** 경제지표 히스토리 데이터 표시 오류 수정 ✅ (2025-11-29) - 백엔드 /api/v2/indicators 히스토리 배열 처리 로직 수정 (isinstance(history_data, list) 체크 추가) + surprise 계산 로직 추가 (actual - forecast, %, K 단위 처리) + interpretation 필드를 최상위 레벨에 추가 | 프론트엔드: GridIndicator 타입 확장 (interpretation, data 필드 추가) + surprise를 item.surprise로 정확히 가져오기 + IndicatorChartPanel에 interpretation과 data 전달 | 커밋 3개 (fix: v2/indicators 히스토리 데이터 배열 처리 로직 수정, fix: surprise 계산 및 데이터 전달 완전 수정, fix: IndicatorChartPanel 타입 호환성 수정)
+- **T-100:** 경제지표 날짜 필드 매핑 오류 수정 ✅ (2025-11-29) - HistoryData 인터페이스 수정 (date → release_date, time 필드 추가, actual null 허용) + 차트 데이터 변환 로직 수정 (item.date → item.release_date) + 히스토리 테이블 렌더링 수정 (row.date → row.release_date) + indicators/page.tsx GridIndicator 타입 일치성 수정 | 문제 해결: 차트 X축 날짜 표시 안 되는 문제, 히스토리 테이블 날짜 컬럼 빈값 문제 완전 해결 | 커밋 2개 (fix: 날짜 필드 매핑 오류 수정, fix: indicators/page.tsx 히스토리 타입 일치성 수정)
+
+### Recent Done (Previous Session - 2025-11-21)
 - **T-097:** Phase 8 옵셔널 IndicatorGrid 정렬 기능 완전 구현 ✅ (2025-11-21) - 3가지 정렬 옵션 추가 (기본순/가나다순/영향력순) + localeCompare 한글 정렬 + 서프라이즈 절대값 내림차순 정렬 + 정렬 UI (초록색 버튼, 아이콘) + useMemo로 필터링+정렬 최적화 + 커밋 2개 (23081d2, 3eec642 docs)
 - **T-096:** Phase 7-3 실제 CPI/금리 데이터 크롤링 연동 완전 구현 ✅ (2025-11-21) - 기존 백엔드 크롤러 활용 (cpi.py, ten_year_treasury.py, federal_funds_rate.py) + API 엔드포인트 활용 (/api/rawdata/cpi, /api/rawdata/ten-year-treasury, /api/rawdata/federal-funds-rate) + indicators/page.tsx 하드코딩 제거 (CPI 2.8, nominalRate 4.5, fedRate 5.25 → 실시간 페칭) + fetchJsonWithRetry로 3번 재시도 로직 적용 + 실패 시 폴백값으로 안정성 보장 + 문자열(%) 및 숫자 타입 모두 처리 + 커밋 2개 (96dad96 rebased to c23d0fe, 89b402c docs)
 - **T-095:** Phase 9 로딩/에러/성능 최적화 완전 구현 ✅ (2025-11-21) - Phase 9-1: Skeleton UI (CyclePanelSkeleton + IndicatorGridSkeleton, 로딩 중 실제 레이아웃 미리보기) + Phase 9-2: ErrorBoundary (전역 에러 캐치, 개발/프로덕션 구분, 페이지 새로고침/이전 페이지 버튼) + Phase 9-3: fetchWithRetry (최대 3번 재시도, 지수 백오프, Render cold start 복구) + Phase 9-4: React 성능 최적화 (CompactIndicatorCard/GaugeCard React.memo, IndicatorGrid useMemo/useCallback) + 커밋 5개 (ad7f6e3, ae6309c, b854e50, e6a3ec5, 2fb4864)
