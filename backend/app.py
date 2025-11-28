@@ -844,7 +844,7 @@ def get_participation_rate_history():
 def get_all_indicators_from_db():
     """데이터베이스에서 모든 지표 데이터 조회 (빠른 로딩용) - 히스토리 포함"""
     try:
-        # v3 메타데이터 가져오기
+        # v3 메타데이터 가져오기 (딕셔너리 반환)
         enabled_indicators = get_all_enabled_indicators()
 
         # CrawlerService에 정의된 모든 지표를 확인하고 데이터베이스에 저장된 것만 포함
@@ -861,8 +861,8 @@ def get_all_indicators_from_db():
                 if "error" not in history_data:
                     history = history_data.get("history", [])[:12]
 
-                # 메타데이터 추가
-                metadata = enabled_indicators.get(indicator_id, {})
+                # 메타데이터 추가 (IndicatorConfig 객체에서 속성 접근)
+                metadata = enabled_indicators.get(indicator_id)
 
                 results.append({
                     "indicator_id": indicator_id,
@@ -885,6 +885,8 @@ def get_all_indicators_from_db():
         })
 
     except Exception as e:
+        import traceback
+        print(f"Error in get_all_indicators_from_db: {traceback.format_exc()}")
         return jsonify({
             "status": "error",
             "message": f"Database query failed: {str(e)}"
