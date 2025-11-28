@@ -133,7 +133,7 @@ const EnhancedIndicatorCard = React.memo(function EnhancedIndicatorCard({
   return (
     <>
       <div
-        className={`${CARD_CLASSES.base} cursor-pointer hover:shadow-lg transition-all duration-200`}
+        className={`${CARD_CLASSES.container} cursor-pointer hover:shadow-lg transition-all duration-200`}
         onClick={handleCardClick}
       >
         {/* 헤더: 카테고리 태그 + 상태 배지 */}
