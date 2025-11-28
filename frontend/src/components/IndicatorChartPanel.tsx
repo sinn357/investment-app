@@ -24,8 +24,9 @@ interface Interpretation {
 }
 
 interface HistoryData {
-  date: string;
-  actual: number | string;
+  release_date: string;
+  time?: string;
+  actual: number | string | null;
   forecast?: number | string | null;
   previous: number | string;
 }
@@ -127,7 +128,7 @@ const IndicatorChartPanel: React.FC<IndicatorChartPanelProps> = ({
           : undefined;
 
         return {
-          date: item.date,
+          date: item.release_date,
           actual: isNaN(actualNum as number) ? 0 : actualNum as number,
           forecast: forecastNum !== undefined && !isNaN(forecastNum as number) ? forecastNum as number : undefined,
         };
@@ -272,8 +273,8 @@ const IndicatorChartPanel: React.FC<IndicatorChartPanelProps> = ({
                     <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                       {historyData.map((row, index) => (
                         <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{row.date}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">{row.actual}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{row.release_date}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">{row.actual ?? '-'}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">{row.forecast || '-'}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">{row.previous}</td>
                         </tr>
