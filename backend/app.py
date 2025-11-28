@@ -847,6 +847,7 @@ def get_all_indicators_from_db():
         # CrawlerService에 정의된 모든 지표를 확인하고 데이터베이스에 저장된 것만 포함
         all_indicator_ids = list(CrawlerService.INDICATOR_URLS.keys())
         results = []
+        last_updated = None
 
         for indicator_id in all_indicator_ids:
             # 지표 데이터 조회
@@ -863,6 +864,12 @@ def get_all_indicators_from_db():
 
                 # 메타데이터 추가 - 안전한 방식으로 get_indicator_config 사용
                 metadata = get_indicator_config(indicator_id)
+
+                # last_updated 추출 (가장 최신 업데이트 시간)
+                indicator_updated = data.get("last_updated")
+                if indicator_updated:
+                    if not last_updated or indicator_updated > last_updated:
+                        last_updated = indicator_updated
 
                 results.append({
                     "indicator_id": indicator_id,
@@ -881,7 +888,8 @@ def get_all_indicators_from_db():
             "status": "success",
             "indicators": results,
             "total_count": len(results),
-            "source": "database"
+            "source": "database",
+            "last_updated": last_updated  # 가장 최신 업데이트 시간
         })
 
     except Exception as e:

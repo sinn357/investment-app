@@ -124,6 +124,8 @@ export default function IndicatorsPage() {
   const [allIndicators, setAllIndicators] = useState<GridIndicator[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedIndicatorId, setSelectedIndicatorId] = useState<string | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<string | null>(null);
+  const [isUpdating, setIsUpdating] = useState(false);
   const [narrative, setNarrative] = useState<EconomicNarrative>({
     articles: [],
     myNarrative: '',
@@ -170,6 +172,51 @@ export default function IndicatorsPage() {
     }
   }, []);
 
+  // 수동 업데이트 함수
+  const handleManualUpdate = async () => {
+    try {
+      setIsUpdating(true);
+
+      const response = await fetch('https://investment-app-backend-x166.onrender.com/api/v2/update-indicators', {
+        method: 'POST',
+      });
+
+      const result = await response.json();
+
+      if (result.status === 'success') {
+        // 업데이트 시작 성공, 상태 폴링 시작
+        const pollInterval = setInterval(async () => {
+          const statusResponse = await fetch('https://investment-app-backend-x166.onrender.com/api/v2/update-status');
+          const statusResult = await statusResponse.json();
+
+          if (statusResult.status === 'success' && statusResult.update_status) {
+            if (!statusResult.update_status.is_updating) {
+              // 업데이트 완료
+              clearInterval(pollInterval);
+              setIsUpdating(false);
+
+              // 데이터 다시 로드
+              window.location.reload();
+            }
+          }
+        }, 2000); // 2초마다 폴링
+
+        // 최대 5분 후 타임아웃
+        setTimeout(() => {
+          clearInterval(pollInterval);
+          setIsUpdating(false);
+        }, 300000);
+      } else {
+        setIsUpdating(false);
+        alert('업데이트 시작에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('Manual update error:', error);
+      setIsUpdating(false);
+      alert('업데이트 중 오류가 발생했습니다.');
+    }
+  };
+
   // 경제 지표 데이터 페칭 및 국면 계산
   useEffect(() => {
     async function fetchAndCalculateCycle() {
@@ -185,6 +232,11 @@ export default function IndicatorsPage() {
         );
 
         if (result.status === 'success' && result.indicators) {
+          // 최신 업데이트 시간 저장
+          if (result.last_updated) {
+            setLastUpdated(result.last_updated);
+          }
+
           // 필요한 지표 추출 (모든 지표가 v2/indicators 응답에 포함됨)
           const indicators: RawIndicators = {};
 
@@ -390,17 +442,58 @@ export default function IndicatorsPage() {
         {loading ? (
           <IndicatorGridSkeleton />
         ) : allIndicators.length > 0 ? (
-          <IndicatorGrid
-            indicators={allIndicators}
-            selectedId={selectedIndicatorId}
-            onIndicatorClick={(indicator) => {
-              setSelectedIndicatorId(indicator.id);
-              // 하단 차트 영역으로 스크롤
-              setTimeout(() => {
-                document.getElementById('chart-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-              }, 100);
-            }}
-          />
+          <>
+            {/* 업데이트 정보 및 수동 업데이트 버튼 */}
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-4">
+              <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
+                <div className="flex items-center gap-3">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                    {lastUpdated ? (
+                      <>
+                        마지막 업데이트: <span className="font-medium text-gray-900 dark:text-gray-100">{new Date(lastUpdated).toLocaleString('ko-KR', { month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                      </>
+                    ) : (
+                      '업데이트 정보 없음'
+                    )}
+                  </span>
+                </div>
+                <button
+                  onClick={handleManualUpdate}
+                  disabled={isUpdating}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg font-medium transition-colors"
+                >
+                  {isUpdating ? (
+                    <>
+                      <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                      <span>업데이트 중...</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                      <span>지금 업데이트</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <IndicatorGrid
+              indicators={allIndicators}
+              selectedId={selectedIndicatorId}
+              onIndicatorClick={(indicator) => {
+                setSelectedIndicatorId(indicator.id);
+                // 하단 차트 영역으로 스크롤
+                setTimeout(() => {
+                  document.getElementById('chart-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 100);
+              }}
+            />
+          </>
         ) : null}
 
         {/* 선택된 지표 상세 차트 */}
