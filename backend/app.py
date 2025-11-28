@@ -877,12 +877,28 @@ def get_all_indicators_from_db():
                 # 해석 메타데이터 추가
                 interpretation = IndicatorMetadata.get_interpretation(indicator_id)
 
+                # Surprise 계산 (actual - forecast)
+                latest = data.get("latest_release", {})
+                actual = latest.get("actual")
+                forecast = latest.get("forecast")
+                surprise = None
+
+                if actual is not None and forecast is not None:
+                    try:
+                        # 문자열 처리 (%, K 단위)
+                        actual_num = float(str(actual).replace('%', '').replace('K', '000')) if isinstance(actual, str) else float(actual)
+                        forecast_num = float(str(forecast).replace('%', '').replace('K', '000')) if isinstance(forecast, str) else float(forecast)
+                        surprise = round(actual_num - forecast_num, 2)
+                    except (ValueError, TypeError):
+                        surprise = None
+
                 results.append({
                     "indicator_id": indicator_id,
                     "name": CrawlerService.get_indicator_name(indicator_id),
                     "name_ko": metadata.name_ko if metadata else None,
                     "category": metadata.category if metadata else "business",
                     "reverse_color": metadata.reverse_color if metadata else False,
+                    "surprise": surprise,  # Surprise 값 추가
                     "interpretation": interpretation,  # 5개 섹션 해석 추가
                     "data": {
                         "latest_release": data.get("latest_release", {}),

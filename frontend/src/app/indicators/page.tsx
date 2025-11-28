@@ -20,6 +20,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import BigWaveSection, { BigWaveCard } from '@/components/BigWaveSection';
 
+interface Interpretation {
+  core_definition: string;
+  interpretation_guide: string;
+  context_meaning: string;
+  market_reaction: string;
+  additional_info: string;
+}
+
 interface GridIndicator {
   id: string;
   name: string;
@@ -31,6 +39,20 @@ interface GridIndicator {
   category: string;
   sparklineData?: number[];
   reverseColor?: boolean;
+  interpretation?: Interpretation;
+  data?: {
+    latest_release?: {
+      actual: number | string | null;
+      forecast?: number | string | null;
+      previous: number | string;
+    };
+    history?: Array<{
+      date: string;
+      actual: number | string;
+      forecast?: number | string | null;
+      previous: number | string;
+    }>;
+  };
 }
 
 // 지표명을 카테고리로 매핑하는 헬퍼 함수
@@ -298,10 +320,12 @@ export default function IndicatorsPage() {
               actual: latest.actual,
               previous: latest.previous,
               forecast: latest.forecast,
-              surprise: latest.surprise ?? null,
+              surprise: item.surprise ?? null,  // 최상위 레벨에서 가져옴
               category: item.category || mapIndicatorToCategory(item.name),
               sparklineData,
               reverseColor: item.reverse_color || false,
+              interpretation: item.interpretation,  // 해석 데이터 전달
+              data: item.data,  // 히스토리 포함한 전체 데이터 전달
             };
           });
           setAllIndicators(gridIndicators);
