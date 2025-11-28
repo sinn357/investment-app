@@ -47,8 +47,9 @@ interface GridIndicator {
       previous: number | string;
     };
     history?: Array<{
-      date: string;
-      actual: number | string;
+      release_date: string;
+      time?: string;
+      actual: number | string | null;
       forecast?: number | string | null;
       previous: number | string;
     }>;
