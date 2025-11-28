@@ -858,10 +858,12 @@ def get_all_indicators_from_db():
                 history_data = db_service.get_history_data(indicator_id)
                 history = []
                 if "error" not in history_data:
-                    if isinstance(history_data, dict):
+                    if isinstance(history_data, list):
+                        # get_history_data()는 배열을 직접 반환
+                        history = history_data[:12]
+                    elif isinstance(history_data, dict):
+                        # 혹시 딕셔너리 형태로 올 경우 대비
                         history = history_data.get("history", [])[:12]
-                    else:
-                        history = []
 
                 # 메타데이터 추가 - 안전한 방식으로 get_indicator_config 사용
                 metadata = get_indicator_config(indicator_id)
