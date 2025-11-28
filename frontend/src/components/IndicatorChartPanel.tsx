@@ -15,6 +15,14 @@ import React, { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { CHART_THEME, CARD_CLASSES } from '@/styles/theme';
 
+interface Interpretation {
+  core_definition: string;
+  interpretation_guide: string;
+  context_meaning: string;
+  market_reaction: string;
+  additional_info: string;
+}
+
 interface Indicator {
   id: string;
   name: string;
@@ -24,6 +32,10 @@ interface Indicator {
   forecast?: number | string | null;
   surprise?: number | null;
   category: string;
+  interpretation?: Interpretation;
+  data?: {
+    history?: HistoryData[];
+  };
 }
 
 interface IndicatorChartPanelProps {
@@ -80,55 +92,46 @@ const IndicatorChartPanel: React.FC<IndicatorChartPanelProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedIndex, allIndicators]);
 
-  // 지표 데이터 페칭
+  // 지표 변경 시 기존 데이터에서 히스토리 추출 (API 호출 제거)
   useEffect(() => {
-    const fetchIndicatorData = async () => {
-      if (!selectedIndicatorId) return;
+    if (!selectedIndicator || !selectedIndicator.data?.history) {
+      setHistoryData([]);
+      setChartData([]);
+      setLoading(false);
+      return;
+    }
 
-      setLoading(true);
-      try {
-        const response = await fetch(
-          `https://investment-app-backend-x166.onrender.com/api/history-table/${selectedIndicatorId}`
-        );
-        const result = await response.json();
+    setLoading(true);
+    try {
+      const history = selectedIndicator.data.history;
 
-        if (result.status === 'success' && result.data) {
-          const history: HistoryData[] = result.data.map((item: { date: string; actual: string | number; forecast: string | number | null; previous: string | number }) => ({
-            date: item.date,
-            actual: item.actual,
-            forecast: item.forecast,
-            previous: item.previous,
-          }));
-          setHistoryData(history.slice(0, 6));
+      // 히스토리 테이블용 데이터 (최근 6개월)
+      setHistoryData(history.slice(0, 6));
 
-          // 차트 데이터 변환
-          const chart = history.slice(0, 12).reverse().map(item => {
-            const actualNum = typeof item.actual === 'string'
-              ? parseFloat(item.actual.replace('%', '').replace('K', '000'))
-              : item.actual;
-            const forecastNum = item.forecast
-              ? typeof item.forecast === 'string'
-                ? parseFloat(item.forecast.replace('%', '').replace('K', '000'))
-                : item.forecast
-              : undefined;
+      // 차트용 데이터 변환 (최근 12개월, 역순)
+      const chart = history.slice(0, 12).reverse().map(item => {
+        const actualNum = typeof item.actual === 'string'
+          ? parseFloat(item.actual.replace('%', '').replace('K', '000'))
+          : item.actual;
+        const forecastNum = item.forecast
+          ? typeof item.forecast === 'string'
+            ? parseFloat(item.forecast.replace('%', '').replace('K', '000'))
+            : item.forecast
+          : undefined;
 
-            return {
-              date: item.date,
-              actual: isNaN(actualNum) ? 0 : actualNum,
-              forecast: forecastNum !== undefined && !isNaN(forecastNum) ? forecastNum : undefined,
-            };
-          });
-          setChartData(chart);
-        }
-      } catch (error) {
-        console.error('Failed to fetch indicator data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchIndicatorData();
-  }, [selectedIndicatorId]);
+        return {
+          date: item.date,
+          actual: isNaN(actualNum as number) ? 0 : actualNum as number,
+          forecast: forecastNum !== undefined && !isNaN(forecastNum as number) ? forecastNum as number : undefined,
+        };
+      });
+      setChartData(chart);
+    } catch (error) {
+      console.error('Failed to process indicator data:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedIndicator]);
 
   if (!selectedIndicator) return null;
 
@@ -275,14 +278,69 @@ const IndicatorChartPanel: React.FC<IndicatorChartPanelProps> = ({
 
               {/* 해석 탭 */}
               {activeTab === 'interpretation' && (
-                <div className="prose dark:prose-invert max-w-none">
-                  <h3>지표 개요</h3>
-                  <p className="text-gray-600 dark:text-gray-400">
-                    {selectedIndicator.nameKo || selectedIndicator.name} 지표에 대한 상세 정보 및 투자 시사점이 여기에 표시됩니다.
-                  </p>
-                  <p className="text-sm text-gray-500 dark:text-gray-500">
-                    (향후 지표별 메타데이터 API 연동 예정)
-                  </p>
+                <div className="space-y-6 p-6">
+                  {selectedIndicator.interpretation ? (
+                    <>
+                      {/* 1. 핵심 정의 */}
+                      <div className="border-l-4 border-blue-500 dark:border-blue-400 pl-4">
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">
+                          📌 핵심 정의
+                        </h3>
+                        <p className="text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-line">
+                          {selectedIndicator.interpretation.core_definition.trim()}
+                        </p>
+                      </div>
+
+                      {/* 2. 해석법 */}
+                      <div className="border-l-4 border-green-500 dark:border-green-400 pl-4">
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">
+                          📊 해석법
+                        </h3>
+                        <p className="text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-line">
+                          {selectedIndicator.interpretation.interpretation_guide.trim()}
+                        </p>
+                      </div>
+
+                      {/* 3. 의미·맥락 */}
+                      <div className="border-l-4 border-purple-500 dark:border-purple-400 pl-4">
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">
+                          🔍 의미·맥락
+                        </h3>
+                        <p className="text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-line">
+                          {selectedIndicator.interpretation.context_meaning.trim()}
+                        </p>
+                      </div>
+
+                      {/* 4. 시장 반응·투자 적용 */}
+                      <div className="border-l-4 border-orange-500 dark:border-orange-400 pl-4">
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">
+                          💰 시장 반응·투자 적용
+                        </h3>
+                        <p className="text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-line">
+                          {selectedIndicator.interpretation.market_reaction.trim()}
+                        </p>
+                      </div>
+
+                      {/* 5. 확인 정보 */}
+                      <div className="border-l-4 border-gray-500 dark:border-gray-400 pl-4">
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">
+                          ℹ️ 확인 정보
+                        </h3>
+                        <p className="text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-line">
+                          {selectedIndicator.interpretation.additional_info.trim()}
+                        </p>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-center py-12">
+                      <p className="text-gray-500 dark:text-gray-400 mb-2">
+                        📝 이 지표의 해석 정보가 아직 작성되지 않았습니다.
+                      </p>
+                      <p className="text-sm text-gray-400 dark:text-gray-500">
+                        우선순위 지표부터 순차적으로 추가될 예정입니다.
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
             </>

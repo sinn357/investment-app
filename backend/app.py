@@ -10,6 +10,7 @@ from crawlers.unified_crawler import crawl_indicator, crawl_category
 from crawlers.indicators_config import INDICATORS, CATEGORIES, get_all_enabled_indicators, get_indicator_config
 from services.database_service import DatabaseService
 from services.crawler_service import CrawlerService
+from metadata.indicator_metadata import IndicatorMetadata
 import threading
 import time
 
@@ -871,12 +872,16 @@ def get_all_indicators_from_db():
                     if not last_updated or indicator_updated > last_updated:
                         last_updated = indicator_updated
 
+                # 해석 메타데이터 추가
+                interpretation = IndicatorMetadata.get_interpretation(indicator_id)
+
                 results.append({
                     "indicator_id": indicator_id,
                     "name": CrawlerService.get_indicator_name(indicator_id),
                     "name_ko": metadata.name_ko if metadata else None,
                     "category": metadata.category if metadata else "business",
                     "reverse_color": metadata.reverse_color if metadata else False,
+                    "interpretation": interpretation,  # 5개 섹션 해석 추가
                     "data": {
                         "latest_release": data.get("latest_release", {}),
                         "next_release": data.get("next_release", {}),
