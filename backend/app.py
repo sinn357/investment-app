@@ -2504,18 +2504,21 @@ def get_core_cpi_history():
 def get_ten_year_treasury_rawdata():
     """Get 10-Year Treasury raw data"""
     try:
-        data = get_ten_year_treasury()
+        result = CrawlerService.crawl_indicator('ten-year-treasury')
 
-        if "error" in data:
+        if "error" in result:
             return jsonify({
                 "status": "error",
-                "message": data["error"]
+                "message": result["error"]
             }), 500
 
         return jsonify({
             "status": "success",
-            "data": data,
-            "source": "investing.com",
+            "data": {
+                "latest_release": result["latest_release"],
+                "next_release": result.get("next_release")
+            },
+            "source": "rates-bonds",
             "indicator": "10-Year Treasury"
         })
 
@@ -2528,20 +2531,19 @@ def get_ten_year_treasury_rawdata():
 @app.route('/api/history-table/ten-year-treasury')
 def get_ten_year_treasury_history():
     try:
-        url = "https://www.investing.com/economic-calendar/10-year-note-auction-239"
-        html_content = fetch_html(url)
-        if html_content:
-            history_data = parse_history_table(html_content)
-            return jsonify({
-                "status": "success",
-                "data": history_data,
-                "source": "investing.com"
-            })
-        else:
+        result = CrawlerService.crawl_indicator('ten-year-treasury')
+
+        if "error" in result:
             return jsonify({
                 "status": "error",
-                "message": "Failed to fetch history data"
+                "message": result["error"]
             }), 500
+
+        return jsonify({
+            "status": "success",
+            "data": result["history_table"],
+            "source": "rates-bonds"
+        })
     except Exception as e:
         return jsonify({
             "status": "error",
@@ -2552,18 +2554,21 @@ def get_ten_year_treasury_history():
 def get_two_year_treasury_rawdata():
     """Get 2-Year Treasury raw data"""
     try:
-        data = get_two_year_treasury()
+        result = CrawlerService.crawl_indicator('two-year-treasury')
 
-        if "error" in data:
+        if "error" in result:
             return jsonify({
                 "status": "error",
-                "message": data["error"]
+                "message": result["error"]
             }), 500
 
         return jsonify({
             "status": "success",
-            "data": data,
-            "source": "investing.com",
+            "data": {
+                "latest_release": result["latest_release"],
+                "next_release": result.get("next_release")
+            },
+            "source": "rates-bonds",
             "indicator": "2-Year Treasury"
         })
 
@@ -2576,20 +2581,119 @@ def get_two_year_treasury_rawdata():
 @app.route('/api/history-table/two-year-treasury')
 def get_two_year_treasury_history():
     try:
-        url = "https://www.investing.com/economic-calendar/2-year-treasury-auction-91"
-        html_content = fetch_html(url)
-        if html_content:
-            history_data = parse_history_table(html_content)
-            return jsonify({
-                "status": "success",
-                "data": history_data,
-                "source": "investing.com"
-            })
-        else:
+        result = CrawlerService.crawl_indicator('two-year-treasury')
+
+        if "error" in result:
             return jsonify({
                 "status": "error",
-                "message": "Failed to fetch history data"
+                "message": result["error"]
             }), 500
+
+        return jsonify({
+            "status": "success",
+            "data": result["history_table"],
+            "source": "rates-bonds"
+        })
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": f"Internal server error: {str(e)}"
+        }), 500
+
+@app.route('/api/rawdata/yield-curve-10y-2y')
+def get_yield_curve_rawdata():
+    """Get Yield Curve (10Y-2Y) raw data"""
+    try:
+        result = CrawlerService.crawl_indicator('yield-curve-10y-2y')
+
+        if "error" in result:
+            return jsonify({
+                "status": "error",
+                "message": result["error"]
+            }), 500
+
+        return jsonify({
+            "status": "success",
+            "data": {
+                "latest_release": result["latest_release"],
+                "next_release": result.get("next_release")
+            },
+            "source": "fred",
+            "indicator": "Yield Curve (10Y-2Y)"
+        })
+
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": f"Internal server error: {str(e)}"
+        }), 500
+
+@app.route('/api/history-table/yield-curve-10y-2y')
+def get_yield_curve_history():
+    try:
+        result = CrawlerService.crawl_indicator('yield-curve-10y-2y')
+
+        if "error" in result:
+            return jsonify({
+                "status": "error",
+                "message": result["error"]
+            }), 500
+
+        return jsonify({
+            "status": "success",
+            "data": result["history_table"],
+            "source": "fred"
+        })
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": f"Internal server error: {str(e)}"
+        }), 500
+
+@app.route('/api/rawdata/real-yield-tips')
+def get_real_yield_rawdata():
+    """Get Real Yield (TIPS) raw data"""
+    try:
+        result = CrawlerService.crawl_indicator('real-yield-tips')
+
+        if "error" in result:
+            return jsonify({
+                "status": "error",
+                "message": result["error"]
+            }), 500
+
+        return jsonify({
+            "status": "success",
+            "data": {
+                "latest_release": result["latest_release"],
+                "next_release": result.get("next_release")
+            },
+            "source": "fred",
+            "indicator": "Real Yield (TIPS)"
+        })
+
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": f"Internal server error: {str(e)}"
+        }), 500
+
+@app.route('/api/history-table/real-yield-tips')
+def get_real_yield_history():
+    try:
+        result = CrawlerService.crawl_indicator('real-yield-tips')
+
+        if "error" in result:
+            return jsonify({
+                "status": "error",
+                "message": result["error"]
+            }), 500
+
+        return jsonify({
+            "status": "success",
+            "data": result["history_table"],
+            "source": "fred"
+        })
     except Exception as e:
         return jsonify({
             "status": "error",
