@@ -1,4 +1,6 @@
 from crawlers.investing_crawler import fetch_html, parse_history_table, extract_raw_data
+from crawlers.rates_bonds_crawler import crawl_rate_indicator
+from crawlers.fred_crawler import crawl_fred_indicator
 from crawlers.indicators_config import INDICATORS, get_all_enabled_indicators
 from typing import Dict, Any
 import time
@@ -21,7 +23,7 @@ class CrawlerService:
 
     @classmethod
     def crawl_indicator(cls, indicator_id: str) -> Dict[str, Any]:
-        """단일 지표 크롤링"""
+        """단일 지표 크롤링 (URL 유형에 따라 적절한 크롤러 자동 선택)"""
         config = INDICATORS.get(indicator_id)
         if not config or not config.enabled:
             return {"error": f"Unknown or disabled indicator: {indicator_id}"}
@@ -29,28 +31,49 @@ class CrawlerService:
         url = config.url
 
         try:
-            # HTML 페이지 가져오기
-            html = fetch_html(url)
+            # URL 유형에 따라 크롤러 선택
+            if "fred.stlouisfed.org" in url:
+                # FRED CSV API 크롤러
+                series_id = url.split('/')[-1]  # URL에서 시리즈 ID 추출 (예: T10Y2Y, DFII10)
+                result = crawl_fred_indicator(series_id)
 
-            # History Table 파싱
-            history_rows = parse_history_table(html)
+                if "error" in result:
+                    return result
 
-            # Raw Data 추출 (latest_release, next_release)
-            raw_data = extract_raw_data(history_rows)
+                # 통합 데이터 구조에 메타데이터 추가
+                result["crawl_timestamp"] = time.time()
+                result["url"] = url
+                return result
 
-            if "error" in raw_data:
-                return raw_data
+            elif "rates-bonds" in url:
+                # Investing.com Rates-Bonds Historical Data 크롤러
+                result = crawl_rate_indicator(url)
 
-            # 통합 데이터 구조 생성
-            result = {
-                "latest_release": raw_data.get("latest_release"),
-                "next_release": raw_data.get("next_release"),
-                "history_table": history_rows,  # 전체 히스토리 데이터
-                "crawl_timestamp": time.time(),
-                "url": url
-            }
+                if "error" in result:
+                    return result
 
-            return result
+                # 통합 데이터 구조에 메타데이터 추가
+                result["crawl_timestamp"] = time.time()
+                result["url"] = url
+                return result
+
+            else:
+                # Investing.com Economic Calendar 크롤러 (기존 방식)
+                html = fetch_html(url)
+                history_rows = parse_history_table(html)
+                raw_data = extract_raw_data(history_rows)
+
+                if "error" in raw_data:
+                    return raw_data
+
+                result = {
+                    "latest_release": raw_data.get("latest_release"),
+                    "next_release": raw_data.get("next_release"),
+                    "history_table": history_rows,
+                    "crawl_timestamp": time.time(),
+                    "url": url
+                }
+                return result
 
         except Exception as e:
             return {"error": f"Crawling failed for {indicator_id}: {str(e)}"}
