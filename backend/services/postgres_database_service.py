@@ -399,7 +399,7 @@ class PostgresDatabaseService:
                         ))
 
                     # 다음 릴리즈 데이터 저장
-                    if 'next_release' in crawled_data:
+                    if 'next_release' in crawled_data and crawled_data['next_release'] is not None:
                         next_rel = crawled_data['next_release']
                         cur.execute("""
                             INSERT INTO next_releases
