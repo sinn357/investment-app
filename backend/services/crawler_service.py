@@ -1,39 +1,32 @@
 from crawlers.investing_crawler import fetch_html, parse_history_table, extract_raw_data
+from crawlers.indicators_config import INDICATORS, get_all_enabled_indicators
 from typing import Dict, Any
 import time
 
 class CrawlerService:
-    """크롤링 서비스 통합 클래스"""
+    """크롤링 서비스 통합 클래스 - indicators_config.py 기반"""
 
-    # 지표별 URL 매핑
-    INDICATOR_URLS = {
-        # 경기지표
-        'ism-manufacturing': 'https://www.investing.com/economic-calendar/ism-manufacturing-pmi-173',
-        'ism-non-manufacturing': 'https://www.investing.com/economic-calendar/ism-non-manufacturing-pmi-176',
-        'sp-global-composite': 'https://www.investing.com/economic-calendar/s-p-global-composite-pmi-1492',
-        'industrial-production': 'https://www.investing.com/economic-calendar/industrial-production-161',
-        'industrial-production-1755': 'https://www.investing.com/economic-calendar/industrial-production-1755',
-        'retail-sales': 'https://www.investing.com/economic-calendar/retail-sales-256',
-        'retail-sales-yoy': 'https://www.investing.com/economic-calendar/retail-sales-1878',
-        'gdp': 'https://www.investing.com/economic-calendar/gdp-375',
-        'cb-consumer-confidence': 'https://www.investing.com/economic-calendar/cb-consumer-confidence-48',
-        'michigan-consumer-sentiment': 'https://www.investing.com/economic-calendar/michigan-consumer-sentiment-320',
-        # 고용지표
-        'unemployment-rate': 'https://www.investing.com/economic-calendar/unemployment-rate-300',
-        'nonfarm-payrolls': 'https://www.investing.com/economic-calendar/nonfarm-payrolls-227',
-        'initial-jobless-claims': 'https://www.investing.com/economic-calendar/initial-jobless-claims-294',
-        'average-hourly-earnings': 'https://www.investing.com/economic-calendar/average-hourly-earnings-297',
-        'average-hourly-earnings-1777': 'https://www.investing.com/economic-calendar/average-hourly-earnings-1777',
-        'participation-rate': 'https://www.investing.com/economic-calendar/participation-rate-1581'
-    }
+    # indicators_config.py의 설정을 사용
+    @classmethod
+    def get_indicator_urls(cls) -> Dict[str, str]:
+        """활성화된 모든 지표의 URL 딕셔너리 반환"""
+        return {id: config.url for id, config in get_all_enabled_indicators().items()}
+
+    # 레거시 호환성을 위한 속성
+    @classmethod
+    @property
+    def INDICATOR_URLS(cls) -> Dict[str, str]:
+        """레거시 코드 호환성을 위한 속성"""
+        return cls.get_indicator_urls()
 
     @classmethod
     def crawl_indicator(cls, indicator_id: str) -> Dict[str, Any]:
         """단일 지표 크롤링"""
-        if indicator_id not in cls.INDICATOR_URLS:
-            return {"error": f"Unknown indicator: {indicator_id}"}
+        config = INDICATORS.get(indicator_id)
+        if not config or not config.enabled:
+            return {"error": f"Unknown or disabled indicator: {indicator_id}"}
 
-        url = cls.INDICATOR_URLS[indicator_id]
+        url = config.url
 
         try:
             # HTML 페이지 가져오기
@@ -67,7 +60,7 @@ class CrawlerService:
         """모든 지표 크롤링 (배치 처리용)"""
         results = {}
 
-        for indicator_id in cls.INDICATOR_URLS.keys():
+        for indicator_id in get_all_enabled_indicators().keys():
             print(f"Crawling {indicator_id}...")
             results[indicator_id] = cls.crawl_indicator(indicator_id)
 
@@ -78,17 +71,6 @@ class CrawlerService:
 
     @classmethod
     def get_indicator_name(cls, indicator_id: str) -> str:
-        """지표 ID에서 표시명 반환"""
-        name_mapping = {
-            'ism-manufacturing': 'ISM Manufacturing PMI',
-            'ism-non-manufacturing': 'ISM Non-Manufacturing PMI',
-            'sp-global-composite': 'S&P Global Composite PMI',
-            'industrial-production': 'Industrial Production',
-            'industrial-production-1755': 'Industrial Production YoY',
-            'retail-sales': 'Retail Sales MoM',
-            'retail-sales-yoy': 'Retail Sales YoY',
-            'gdp': 'GDP QoQ',
-            'cb-consumer-confidence': 'CB Consumer Confidence',
-            'michigan-consumer-sentiment': 'Michigan Consumer Sentiment'
-        }
-        return name_mapping.get(indicator_id, indicator_id)
+        """지표 ID에서 표시명 반환 (indicators_config.py 사용)"""
+        config = INDICATORS.get(indicator_id)
+        return config.name if config else indicator_id

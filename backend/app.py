@@ -845,8 +845,9 @@ def get_participation_rate_history():
 def get_all_indicators_from_db():
     """데이터베이스에서 모든 지표 데이터 조회 (빠른 로딩용) - 히스토리 포함"""
     try:
-        # CrawlerService에 정의된 모든 지표를 확인하고 데이터베이스에 저장된 것만 포함
-        all_indicator_ids = list(CrawlerService.INDICATOR_URLS.keys())
+        # indicators_config.py에서 활성화된 모든 지표 가져오기
+        from crawlers.indicators_config import get_all_enabled_indicators
+        all_indicator_ids = list(get_all_enabled_indicators().keys())
         results = []
         last_updated = None
 
@@ -979,8 +980,9 @@ def update_all_indicators_background():
         update_status["completed_indicators"] = []
         update_status["failed_indicators"] = []
 
-        # CrawlerService에 정의된 모든 지표 사용 (신규 지표 포함)
-        indicators = list(CrawlerService.INDICATOR_URLS.keys())
+        # indicators_config.py에서 활성화된 모든 지표 사용
+        from crawlers.indicators_config import get_all_enabled_indicators
+        indicators = list(get_all_enabled_indicators().keys())
         total_indicators = len(indicators)
 
         for i, indicator_id in enumerate(indicators):
