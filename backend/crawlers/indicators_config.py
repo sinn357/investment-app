@@ -177,11 +177,32 @@ INDICATORS: Dict[str, IndicatorConfig] = {
         url="https://www.investing.com/economic-calendar/interest-rate-decision-168",
         category="interest",
     ),
+    "two-year-treasury": IndicatorConfig(
+        id="two-year-treasury",
+        name="2-Year Treasury Yield",
+        name_ko="2년물 국채금리",
+        url="https://www.investing.com/rates-bonds/u.s.-2-year-bond-yield",
+        category="interest",
+    ),
     "ten-year-treasury": IndicatorConfig(
         id="ten-year-treasury",
         name="10-Year Treasury Yield",
         name_ko="10년물 국채금리",
-        url="https://www.investing.com/economic-calendar/10-year-note-auction-200",
+        url="https://www.investing.com/rates-bonds/u.s.-10-year-bond-yield",
+        category="interest",
+    ),
+    "yield-curve-10y-2y": IndicatorConfig(
+        id="yield-curve-10y-2y",
+        name="Yield Curve (10Y-2Y)",
+        name_ko="장단기금리차 (10Y-2Y)",
+        url="https://fred.stlouisfed.org/series/T10Y2Y",
+        category="interest",
+    ),
+    "real-yield-tips": IndicatorConfig(
+        id="real-yield-tips",
+        name="Real Yield (TIPS)",
+        name_ko="실질금리 (TIPS)",
+        url="https://fred.stlouisfed.org/series/DFII10",
         category="interest",
     ),
 
