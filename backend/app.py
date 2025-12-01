@@ -1053,6 +1053,20 @@ def get_update_status():
         "update_status": update_status
     })
 
+@app.route('/api/v2/reset-update-status', methods=['POST'])
+def reset_update_status():
+    """업데이트 상태 강제 리셋 (stuck 상태 해결용)"""
+    global update_status
+    update_status["is_updating"] = False
+    update_status["current_indicator"] = ""
+    update_status["progress"] = 100
+
+    return jsonify({
+        "status": "success",
+        "message": "Update status has been reset",
+        "update_status": update_status
+    })
+
 @app.route('/api/v2/crawl-info')
 def get_all_crawl_info():
     """모든 지표의 크롤링 정보 조회"""
