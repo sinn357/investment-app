@@ -304,9 +304,15 @@ INDICATORS: Dict[str, IndicatorConfig] = {
         url="https://fred.stlouisfed.org/series/BOPSTB",
         category="trade",
     ),
+    "terms-of-trade": IndicatorConfig(
+        id="terms-of-trade",
+        name="Terms of Trade",
+        name_ko="교역조건지수",
+        url="https://tradingeconomics.com/united-states/terms-of-trade",
+        category="trade",
+    ),
 
     # 향후 추가 예정 (크롤러 개발 필요):
-    # - Terms of Trade (BLS/TradingEconomics)
     # - GSCPI (FRED - 대체: S&P GSCI 이미 추가됨)
     # - Freightos Baltic Index (Freightos)
     # - Current Account Balance (BEA)

@@ -1,6 +1,7 @@
 from crawlers.investing_crawler import fetch_html, parse_history_table, extract_raw_data
 from crawlers.rates_bonds_crawler import crawl_rate_indicator
 from crawlers.fred_crawler import crawl_fred_indicator
+from crawlers.tradingeconomics_crawler import crawl_tradingeconomics_indicator
 from crawlers.indicators_config import INDICATORS, get_all_enabled_indicators
 from typing import Dict, Any
 import time
@@ -48,6 +49,18 @@ class CrawlerService:
             elif any(pattern in url for pattern in ["rates-bonds", "commodities", "indices", "currencies"]):
                 # Investing.com Historical Data 크롤러 (rates-bonds, commodities, indices, currencies)
                 result = crawl_rate_indicator(url)
+
+                if "error" in result:
+                    return result
+
+                # 통합 데이터 구조에 메타데이터 추가
+                result["crawl_timestamp"] = time.time()
+                result["url"] = url
+                return result
+
+            elif "tradingeconomics.com" in url:
+                # TradingEconomics 크롤러
+                result = crawl_tradingeconomics_indicator(url)
 
                 if "error" in result:
                     return result
