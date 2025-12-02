@@ -8,12 +8,15 @@
 - **Project:** Investment App - Economic Indicators Dashboard
 - **Repo Root:** /home/user/investment-app
 - **Owner:** Partner
-- **Last Updated:** 2025-11-29 02:30 KST
-- **Session Goal (2025-11-29):** ✅ 경제지표 해석 시스템 완전 구현 + 차트/히스토리 버그 수정 (Phase 5 완료)
-  - 정적 메타데이터 기반 5개 섹션 해석 시스템 (핵심정의, 해석법, 의미·맥락, 시장 반응, 확인 정보)
-  - 우선순위 6개 지표 해석 완료 (ISM Manufacturing, Nonfarm Payrolls, Unemployment Rate, CPI, GDP, Fed Funds Rate)
-  - 날짜 필드 매핑 오류 수정 (date → release_date)
-- **Previous Session (2025-11-21):** ✅ 경제지표 페이지 개선 Phase 7-9 완전 구현 (경제 국면 판별 시스템 + 그리드 전환 + 로딩/에러/성능 최적화)
+- **Last Updated:** 2025-12-02 18:30 KST
+- **Session Goal (2025-12-02):** ✅ 무역지표 5개 추가 + TradingEconomics 크롤러 개발 완료
+  - REER 실질실효환율 (FRED) + Baltic Dry Index 발틱운임지수 (Investing.com)
+  - Goods/Services Trade Balance 상품/서비스 무역수지 (FRED)
+  - Terms of Trade 교역조건지수 (TradingEconomics 신규 크롤러)
+  - 전체 지표: 42개 → 47개 (+5개), 무역 카테고리: 9개 → 14개 (+5개)
+  - 크롤러: 3개 → 4개 (investing, rates_bonds, fred, tradingeconomics)
+- **Previous Session (2025-12-01):** ✅ 금리지표 5개 크롤링 시스템 완전 구현
+- **Previous Session (2025-11-29):** ✅ 경제지표 해석 시스템 완전 구현 + 차트/히스토리 버그 수정 (Phase 5 완료)
 
 ---
 
@@ -125,7 +128,10 @@ investment-app/
 ### Active (in this session)
 - 없음
 
-### Recent Done (Current Session - 2025-12-01)
+### Recent Done (Current Session - 2025-12-02)
+- **T-102:** 무역지표 확장 시스템 완전 구현 ✅ (2025-12-02) - **Phase 1-2 기존 크롤러 활용 (4개)**: REER 실질실효환율 (FRED RBUSBIS, 108.73) + Baltic Dry Index 발틱운임지수 (Investing.com indices, 2,583) + Goods Trade Balance 상품 무역수지 (FRED BOPGTB, -85,608M) + Services Trade Balance 서비스 무역수지 (FRED BOPSTB, +26,058M) | **Phase 3-4 신규 크롤러 개발 (1개)**: tradingeconomics_crawler.py 생성 (표준 테이블 파싱, Actual/Previous/Unit/Frequency 추출, User-Agent 헤더로 봇 차단 우회, 자동 surprise 계산) + Terms of Trade 교역조건지수 (TradingEconomics, 109.04 points) + CrawlerService 통합 (tradingeconomics.com URL 패턴 자동 라우팅) | **rates_bonds_crawler 확장**: fetch_historical_data 함수에 4가지 패턴 처리 (/rates-bonds/, /commodities/, /indices/, /currencies/) + -historical-data 자동 변환 로직 추가 | **커밋 3개**: 48066a3 (REER + BDI), 7be3952 (상품/서비스 무역수지), 70e3b4f (TradingEconomics 크롤러 + Terms of Trade) | **결과**: 전체 지표 42개→47개 (+5개), 무역 카테고리 9개→14개 (+5개), 크롤러 3개→4개 (investing, rates_bonds, fred, tradingeconomics) | **남은 작업**: Freightos Baltic Index (Freightos 사이트), Current Account Balance (BEA API 키 필요)
+
+### Recent Done (Previous Session - 2025-12-01)
 - **T-101:** 금리지표 5개 크롤링 시스템 완전 구현 ✅ (2025-12-01) - 백엔드: rates_bonds_crawler.py (Investing.com rates-bonds Historical Data 크롤링, "Dec 01, 2025" 날짜 형식 처리, 일별 가격→전날 대비 변화 계산) + fred_crawler.py (FRED CSV API 크롤링, observation_date,value 형식 파싱, 최근 14일 데이터 수집) + CrawlerService URL 기반 자동 라우팅 (fred.stlouisfed.org→fred_crawler, rates-bonds→rates_bonds_crawler, economic-calendar→investing_crawler) | 데이터 표준화: Option 1 전략 (actual=오늘값, previous=어제값, surprise=today-yesterday, forecast=null) | API 엔드포인트: 4개 기존 엔드포인트 CrawlerService 전환 + 4개 신규 엔드포인트 추가 (yield-curve-10y-2y, real-yield-tips rawdata/history-table) | 버그 수정: next_release=None 처리 오류 (postgres_database_service.py Line 402에 None 체크 추가) + 업데이트 상태 리셋 엔드포인트 추가 (/api/v2/reset-update-status) | 테스트 결과: Federal Funds Rate 4.00%, 2Y Treasury 3.493%, 10Y Treasury 4.047%, Yield Curve 0.55%, Real Yield 1.77% 정상 작동 | 커밋 4개 (86ddd72 feat crawlers, 113d479 fix endpoints, aff034e fix database, 544ed9b feat reset) | 전체 지표: 23개→27개 증가
 
 ### Recent Done (Previous Session - 2025-11-29)
@@ -246,17 +252,10 @@ investment-app/
 
 **권장 다음 작업 순서**:
 1. **Phase 10 홈페이지 대시보드** (사용자에게 가장 눈에 띄는 개선)
-2. **Phase 7-3 크롤링 추가** (임시 하드코딩 제거)
-3. **Phase 8 선택적 개선** (스파크라인, 상세 모달)
+2. **Phase 8 선택적 개선** (스파크라인, 상세 모달)
+3. **추가 크롤러 개발** (BEA API, Freightos)
 
-**최우선 순위 (Phase 7-3 또는 Phase 10)**:
-- **B-015:** Phase 7-3: CPI/금리 크롤링 추가 (낮은 우선순위)
-  - CPI 크롤러 추가 (`/backend/crawlers/cpi_crawler.py`)
-  - 10년물 국채금리 크롤러 (`/backend/crawlers/treasury_crawler.py`)
-  - 연준 기준금리 크롤러 (`/backend/crawlers/fed_rate_crawler.py`)
-  - `/api/v2/indicators` 응답에 3개 지표 추가
-  - 프론트엔드 하드코딩 제거 (indicators.cpi, nominalRate, fedRate)
-
+**최우선 순위**:
 - **B-016:** Phase 10: 홈페이지 대시보드 구현 (높은 우선순위)
   - `/frontend/src/app/page.tsx` 대시보드 레이아웃
   - 3개 요약 카드: 경제 국면/내 자산/가계부 지출
@@ -266,10 +265,20 @@ investment-app/
 **Phase 8 선택적 개선**:
 - **B-017:** Mini 스파크라인 차트 (CompactIndicatorCard에 추가)
 - **B-018:** 상세 모달/패널 (onIndicatorClick 핸들러 구현)
-- **B-019:** 정렬 기능 (최신순, 중요도순, 알파벳순)
+- **B-019:** 정렬 기능 완료 (✅ 기본순/가나다순/영향력순 구현됨 - 2025-11-21)
+
+**추가 크롤러 개발** (낮은 우선순위):
+- **B-020:** BEA API 크롤러 개발
+  - BEA API 키 발급 (apps.bea.gov/API/signup)
+  - bea_crawler.py 생성 (JSON API 파싱)
+  - Current Account Balance 추가 (BEA API)
+
+- **B-021:** Freightos 크롤러 개발
+  - Freightos Baltic Index 크롤링 가능성 조사
+  - freightos_crawler.py 생성 (필요 시)
 
 **장기 Backlog**:
-- **B-010:** 추가 경제지표 확장 (목표: 20개 지표, 6개 탭 각각 3-5개)
+- **B-010:** 추가 경제지표 확장 (현재 47개 → 목표 50개+)
 - **B-011:** 데이터 알림 및 임계값 설정 기능
 - **B-012:** 고급 차트 시각화 (비교 차트, 상관관계 분석)
 - **B-013:** 사용자 대시보드 커스터마이징
@@ -279,7 +288,56 @@ investment-app/
 
 ---
 
-## 12.1) Session Summary (2025-11-21)
+## 12.1) Session Summary (2025-12-02)
+
+### 세션 목표
+무역지표 5개 추가 + TradingEconomics 크롤러 개발
+
+### 완료된 작업 (커밋 3개)
+
+**Phase 1-2: 기존 크롤러 활용 (4개 지표)**
+- `48066a3` - feat: 무역지표 2개 추가 (REER + 발틱운임지수)
+  - REER 실질실효환율 (FRED RBUSBIS) - 108.73 (2025-10-01)
+  - Baltic Dry Index 발틱운임지수 (Investing.com) - 2,583 (2025-12-01)
+  - rates_bonds_crawler 확장: /indices/ 패턴 추가
+
+- `7be3952` - feat: 무역지표 2개 추가 (상품/서비스 무역수지)
+  - Goods Trade Balance 상품 무역수지 (FRED BOPGTB) - -85,608M (2025-08-01)
+  - Services Trade Balance 서비스 무역수지 (FRED BOPSTB) - +26,058M (2025-08-01)
+
+**Phase 3-4: 신규 크롤러 개발 (1개 지표)**
+- `70e3b4f` - feat: TradingEconomics 크롤러 개발 + 교역조건지수 추가
+  - tradingeconomics_crawler.py 생성 (163줄)
+  - 표준 테이블 파싱 (Actual/Previous/Unit/Frequency)
+  - User-Agent 헤더로 봇 차단 우회
+  - CrawlerService 통합 (tradingeconomics.com URL 패턴)
+  - Terms of Trade 교역조건지수 - 109.04 points (2025-12-02)
+
+### 생성된 파일 (1개)
+- `/backend/crawlers/tradingeconomics_crawler.py` (163줄) - TradingEconomics 표준 테이블 크롤러
+
+### 수정된 파일 (3개)
+- `/backend/crawlers/indicators_config.py` - 무역지표 9개 → 14개 확장
+- `/backend/crawlers/rates_bonds_crawler.py` - URL 패턴 4가지 처리 (rates-bonds, commodities, indices, currencies)
+- `/backend/services/crawler_service.py` - tradingeconomics_crawler 통합
+
+### 성과
+- **전체 지표**: 42개 → 47개 (+5개)
+- **무역 카테고리**: 9개 → 14개 (+5개)
+- **크롤러**: 3개 → 4개 (investing, rates_bonds, fred, **tradingeconomics**)
+- **프론트엔드**: 자동 통합 (IndicatorGrid에 5개 지표 자동 표시)
+
+### 남은 작업
+- Freightos Baltic Index (Freightos 사이트 - 별도 크롤러 필요)
+- Current Account Balance (BEA API - API 키 필요)
+
+### 브랜치
+- **작업 브랜치**: `main`
+- **커밋**: 48066a3, 7be3952, 70e3b4f
+
+---
+
+## 12.2) Session Summary (2025-11-21)
 
 ### 세션 목표
 경제지표 페이지 개선 Phase 7-9 완전 구현
