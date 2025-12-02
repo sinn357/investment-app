@@ -276,16 +276,28 @@ INDICATORS: Dict[str, IndicatorConfig] = {
         url="https://www.investing.com/currencies/usd-krw",
         category="trade",
     ),
+    "reer": IndicatorConfig(
+        id="reer",
+        name="Real Effective Exchange Rate",
+        name_ko="실질실효환율 (REER)",
+        url="https://fred.stlouisfed.org/series/RBUSBIS",
+        category="trade",
+    ),
+    "baltic-dry-index": IndicatorConfig(
+        id="baltic-dry-index",
+        name="Baltic Dry Index",
+        name_ko="발틱운임지수 (BDI)",
+        url="https://www.investing.com/indices/baltic-dry",
+        category="trade",
+    ),
 
     # 향후 추가 예정 (크롤러 개발 필요):
     # - Terms of Trade (BLS/TradingEconomics)
-    # - GSCPI (FRED)
-    # - Baltic Dry Index (TradingEconomics)
+    # - GSCPI (FRED - 대체: S&P GSCI 이미 추가됨)
     # - Freightos Baltic Index (Freightos)
     # - Goods Trade Balance (TradingEconomics)
     # - Services Trade Balance (BEA)
     # - Current Account Balance (BEA)
-    # - REER (BIS/FRED)
 
     # ========== 물가지표 (Inflation) ==========
     "cpi": IndicatorConfig(

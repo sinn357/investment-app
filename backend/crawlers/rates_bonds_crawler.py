@@ -11,8 +11,9 @@ from datetime import datetime
 
 def fetch_historical_data(url: str) -> str:
     """Historical Data 페이지 HTML 가져오기"""
-    # rates-bonds 페이지를 Historical Data 페이지로 변환
-    if "/rates-bonds/" in url and "-historical-data" not in url:
+    # rates-bonds, commodities, indices, currencies 페이지를 Historical Data 페이지로 변환
+    patterns = ["/rates-bonds/", "/commodities/", "/indices/", "/currencies/"]
+    if any(pattern in url for pattern in patterns) and "-historical-data" not in url:
         url = url + "-historical-data"
 
     headers = {
