@@ -273,6 +273,49 @@ INDICATORS: Dict[str, IndicatorConfig] = {
         url="https://www.investing.com/economic-calendar/core-pce-prices-326",
         category="inflation",
     ),
+
+    # ========== 기대 인플레이션 ==========
+    "michigan-1y-inflation": IndicatorConfig(
+        id="michigan-1y-inflation",
+        name="Michigan 1-Year Inflation Expectations",
+        name_ko="미시간 1년 기대 인플레",
+        url="https://www.investing.com/economic-calendar/michigan-inflation-expectations-1650",
+        category="inflation",
+        threshold={"target": 2.0, "high": 3.0},
+    ),
+    "michigan-5y-inflation": IndicatorConfig(
+        id="michigan-5y-inflation",
+        name="Michigan 5-Year Inflation Expectations",
+        name_ko="미시간 5년 기대 인플레",
+        url="https://www.investing.com/economic-calendar/michigan-5-year-inflation-expectations-1568",
+        category="inflation",
+        threshold={"target": 2.0, "high": 2.5},
+    ),
+
+    # ========== 국제유가 ==========
+    "brent-oil": IndicatorConfig(
+        id="brent-oil",
+        name="Brent Crude Oil",
+        name_ko="브렌트유",
+        url="https://www.investing.com/commodities/brent-oil",
+        category="inflation",
+    ),
+    "wti-oil": IndicatorConfig(
+        id="wti-oil",
+        name="WTI Crude Oil",
+        name_ko="WTI 원유",
+        url="https://www.investing.com/commodities/crude-oil",
+        category="inflation",
+    ),
+
+    # ========== 원자재지수 ==========
+    "sp-gsci": IndicatorConfig(
+        id="sp-gsci",
+        name="S&P GSCI Commodity Index",
+        name_ko="S&P GSCI 원자재지수",
+        url="https://www.investing.com/indices/s-p-gsci",
+        category="inflation",
+    ),
 }
 
 # 정책지표 제거됨 (GDP, FOMC 등)
