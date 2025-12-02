@@ -290,13 +290,25 @@ INDICATORS: Dict[str, IndicatorConfig] = {
         url="https://www.investing.com/indices/baltic-dry",
         category="trade",
     ),
+    "goods-trade-balance": IndicatorConfig(
+        id="goods-trade-balance",
+        name="Goods Trade Balance",
+        name_ko="상품 무역수지",
+        url="https://fred.stlouisfed.org/series/BOPGTB",
+        category="trade",
+    ),
+    "services-trade-balance": IndicatorConfig(
+        id="services-trade-balance",
+        name="Services Trade Balance",
+        name_ko="서비스 무역수지",
+        url="https://fred.stlouisfed.org/series/BOPSTB",
+        category="trade",
+    ),
 
     # 향후 추가 예정 (크롤러 개발 필요):
     # - Terms of Trade (BLS/TradingEconomics)
     # - GSCPI (FRED - 대체: S&P GSCI 이미 추가됨)
     # - Freightos Baltic Index (Freightos)
-    # - Goods Trade Balance (TradingEconomics)
-    # - Services Trade Balance (BEA)
     # - Current Account Balance (BEA)
 
     # ========== 물가지표 (Inflation) ==========
