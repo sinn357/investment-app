@@ -236,6 +236,57 @@ INDICATORS: Dict[str, IndicatorConfig] = {
         category="trade",
     ),
 
+    # ========== 수출입물가 ==========
+    "export-price-index-mom": IndicatorConfig(
+        id="export-price-index-mom",
+        name="Export Price Index MoM",
+        name_ko="수출물가지수 (MoM)",
+        url="https://www.investing.com/economic-calendar/export-price-index-892",
+        category="trade",
+    ),
+    "export-price-index-yoy": IndicatorConfig(
+        id="export-price-index-yoy",
+        name="Export Price Index YoY",
+        name_ko="수출물가지수 (YoY)",
+        url="https://www.investing.com/economic-calendar/export-price-index-1748",
+        category="trade",
+    ),
+
+    # ========== 재고/공급망 ==========
+    "business-inventories-trade": IndicatorConfig(
+        id="business-inventories-trade",
+        name="Business Inventories",
+        name_ko="재고순환지표",
+        url="https://www.investing.com/economic-calendar/business-inventories-29",
+        category="trade",
+    ),
+
+    # ========== 환율 (Historical Data) ==========
+    "usd-index": IndicatorConfig(
+        id="usd-index",
+        name="US Dollar Index (DXY)",
+        name_ko="달러 인덱스",
+        url="https://www.investing.com/indices/usdollar",
+        category="trade",
+    ),
+    "usd-krw": IndicatorConfig(
+        id="usd-krw",
+        name="USD/KRW Exchange Rate",
+        name_ko="원/달러 환율",
+        url="https://www.investing.com/currencies/usd-krw",
+        category="trade",
+    ),
+
+    # 향후 추가 예정 (크롤러 개발 필요):
+    # - Terms of Trade (BLS/TradingEconomics)
+    # - GSCPI (FRED)
+    # - Baltic Dry Index (TradingEconomics)
+    # - Freightos Baltic Index (Freightos)
+    # - Goods Trade Balance (TradingEconomics)
+    # - Services Trade Balance (BEA)
+    # - Current Account Balance (BEA)
+    # - REER (BIS/FRED)
+
     # ========== 물가지표 (Inflation) ==========
     "cpi": IndicatorConfig(
         id="cpi",

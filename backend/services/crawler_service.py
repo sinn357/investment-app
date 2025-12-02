@@ -45,8 +45,8 @@ class CrawlerService:
                 result["url"] = url
                 return result
 
-            elif any(pattern in url for pattern in ["rates-bonds", "commodities", "indices"]):
-                # Investing.com Historical Data 크롤러 (rates-bonds, commodities, indices)
+            elif any(pattern in url for pattern in ["rates-bonds", "commodities", "indices", "currencies"]):
+                # Investing.com Historical Data 크롤러 (rates-bonds, commodities, indices, currencies)
                 result = crawl_rate_indicator(url)
 
                 if "error" in result:
