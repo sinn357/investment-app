@@ -60,9 +60,6 @@ class SentimentCycleService:
         # 1. 최신 데이터 조회
         indicators_data = self._fetch_latest_indicators()
 
-        if not indicators_data:
-            return self._error_response("심리지표 데이터를 불러올 수 없습니다")
-
         # 2. 개별 지표 점수 계산
         scores = self._calculate_indicator_scores(indicators_data)
 

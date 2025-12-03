@@ -1,5 +1,15 @@
 # Investment App Changelog
 
+## 2025-12-03
+
+### Fixed
+- Render 배포 타임아웃으로 `/api/v2/macro-cycle`, `/api/v2/credit-cycle`, `/api/v2/sentiment-cycle`가 404를 반환하던 문제를 재배포 가능하도록 조치: Flask가 `$PORT`로 리슨하도록 수정 + `gunicorn` 의존성 추가
+- 신용/유동성·심리 사이클 API가 데이터 미존재 시 503을 반환하던 문제를 기본 중립 점수(50점)로 응답하도록 변경
+
+### Notes
+- Render 설정 가이드: Workdir `projects/investment-app/backend`, Start command `gunicorn app:app --bind 0.0.0.0:$PORT --workers 2 --timeout 120`
+- 배포 후 헬스체크: `curl https://investment-app-backend-x166.onrender.com/api/v2/macro-cycle` (credit/sentiment 동일)
+
 ## 2025-11-27
 
 ### Added
@@ -63,4 +73,4 @@
 
 ---
 
-**Last Updated**: 2025-11-18
+**Last Updated**: 2025-12-03
