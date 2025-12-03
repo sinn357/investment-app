@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import Navigation from '@/components/Navigation';
 import MacroCycleCard from '@/components/MacroCycleCard';
+import CreditCycleCard from '@/components/CreditCycleCard';
+import SentimentCycleCard from '@/components/SentimentCycleCard';
 import CyclePanel from '@/components/CyclePanel';
 import IndicatorGrid from '@/components/IndicatorGrid';
 import IndicatorChartPanel from '@/components/IndicatorChartPanel';
@@ -464,10 +466,17 @@ export default function IndicatorsPage() {
           </div>
         )}
 
-        {/* 거시경제 사이클 카드 (3대 사이클 중 첫 번째) */}
+        {/* 3대 사이클 카드 */}
         {!loading && allIndicators.length > 0 && (
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8 space-y-6">
+            {/* 거시경제 사이클 */}
             <MacroCycleCard />
+
+            {/* 신용/유동성 사이클 */}
+            <CreditCycleCard />
+
+            {/* 심리/밸류에이션 사이클 */}
+            <SentimentCycleCard />
           </div>
         )}
 

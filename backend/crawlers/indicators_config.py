@@ -429,6 +429,52 @@ INDICATORS: Dict[str, IndicatorConfig] = {
         category="credit",
         threshold={"low": 2, "normal": 5, "high": 10},
     ),
+
+    # ========== 심리/밸류에이션지표 (Sentiment) ==========
+    "vix": IndicatorConfig(
+        id="vix",
+        name="CBOE Volatility Index",
+        name_ko="VIX 변동성지수",
+        url="https://fred.stlouisfed.org/series/VIXCLS",
+        category="sentiment",
+        threshold={"low": 15, "normal": 20, "high": 30},
+    ),
+    "aaii-bull": IndicatorConfig(
+        id="aaii-bull",
+        name="AAII Bull Sentiment",
+        name_ko="AAII 강세 심리",
+        url="https://www.aaii.com/sentimentsurvey",
+        category="sentiment",
+        threshold={"low": 25, "normal": 35, "high": 45},
+        enabled=False,  # API 접근 제한으로 비활성화
+    ),
+    "sp500-pe": IndicatorConfig(
+        id="sp500-pe",
+        name="S&P 500 P/E Ratio",
+        name_ko="S&P 500 주가수익비율",
+        url="https://fred.stlouisfed.org/series/MULTPL/SP500_PE_RATIO_MONTH",
+        category="sentiment",
+        threshold={"undervalued": 15, "fair": 20, "overvalued": 25},
+        enabled=False,  # FRED 대체 데이터 소스 필요
+    ),
+    "shiller-pe": IndicatorConfig(
+        id="shiller-pe",
+        name="Shiller P/E Ratio (CAPE)",
+        name_ko="실러 CAPE 비율",
+        url="https://fred.stlouisfed.org/series/CAPE",
+        category="sentiment",
+        threshold={"undervalued": 20, "fair": 25, "overvalued": 30},
+        enabled=False,  # FRED 대체 데이터 소스 필요
+    ),
+    "put-call-ratio": IndicatorConfig(
+        id="put-call-ratio",
+        name="CBOE Put/Call Ratio",
+        name_ko="풋/콜 비율",
+        url="https://fred.stlouisfed.org/series/PCERATIO",
+        category="sentiment",
+        threshold={"bullish": 0.7, "neutral": 1.0, "bearish": 1.3},
+        enabled=False,  # CBOE 데이터 접근 제한
+    ),
 }
 
 # 정책지표 제거됨 (GDP, FOMC 등)
@@ -460,6 +506,7 @@ CATEGORIES = {
     "trade": "무역지표",
     "inflation": "물가지표",
     "credit": "신용지표",
+    "sentiment": "심리지표",
 }
 
 # 통계

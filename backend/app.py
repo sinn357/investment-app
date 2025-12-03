@@ -11,6 +11,7 @@ from crawlers.indicators_config import INDICATORS, CATEGORIES, get_all_enabled_i
 from services.database_service import DatabaseService
 from services.crawler_service import CrawlerService
 from services.macro_cycle_service import MacroCycleService
+from services.credit_cycle_service import CreditCycleService
 from metadata.indicator_metadata import IndicatorMetadata
 import threading
 import time
@@ -3230,7 +3231,7 @@ def get_all_indicators_metadata():
             "message": f"Internal server error: {str(e)}"
         }), 500
 
-# ========== 거시경제 사이클 API ==========
+# ========== 경제 사이클 API ==========
 
 @app.route('/api/v2/macro-cycle', methods=['GET'])
 def get_macro_cycle():
@@ -3277,6 +3278,102 @@ def get_macro_cycle():
         return jsonify({
             "status": "error",
             "message": f"사이클 계산 실패: {str(e)}"
+        }), 500
+
+@app.route('/api/v2/credit-cycle', methods=['GET'])
+def get_credit_cycle():
+    """
+    신용/유동성 사이클 계산 및 국면 판별
+
+    Returns:
+        {
+            "status": "success",
+            "data": {
+                "score": 0-100,
+                "phase": "신용 경색|정상화|신용 과잉",
+                "phase_en": "Credit Crunch|Normalizing|Credit Excess",
+                "color": "red|amber|green",
+                "description": "현재 국면 설명",
+                "action": "투자 행동 추천",
+                "confidence": 0-100,
+                "indicators": {...},
+                "last_updated": "ISO timestamp"
+            }
+        }
+    """
+    try:
+        # CreditCycleService 초기화
+        cycle_service = CreditCycleService(db_service)
+
+        # 사이클 계산
+        result = cycle_service.calculate_cycle()
+
+        if result.get('score') is None:
+            return jsonify({
+                "status": "error",
+                "message": result.get('description', '데이터를 불러올 수 없습니다')
+            }), 503
+
+        return jsonify({
+            "status": "success",
+            "data": result
+        })
+
+    except Exception as e:
+        import traceback
+        print(f"Error in get_credit_cycle: {traceback.format_exc()}")
+        return jsonify({
+            "status": "error",
+            "message": f"신용 사이클 계산 실패: {str(e)}"
+        }), 500
+
+# ===== 심리/밸류에이션 사이클 API =====
+@app.route('/api/v2/sentiment-cycle', methods=['GET'])
+def get_sentiment_cycle():
+    """
+    심리/밸류에이션 사이클 정보 반환 (VIX 기반)
+
+    Returns:
+        JSON: {
+            status: "success",
+            data: {
+                score: 0-100,
+                phase: "극단적 공포|중립|극단적 탐욕",
+                phase_en: "Extreme Fear|Neutral|Extreme Greed",
+                color: "green|amber|red",
+                description: str,
+                action: str,
+                confidence: 0-100,
+                indicators: {vix: 0-100},
+                raw_data: {...},
+                last_updated: ISO timestamp
+            }
+        }
+    """
+    try:
+        from services.sentiment_cycle_service import SentimentCycleService
+
+        cycle_service = SentimentCycleService(db_service)
+        result = cycle_service.calculate_cycle()
+
+        # 에러 응답인 경우
+        if result.get('score') is None:
+            return jsonify({
+                "status": "error",
+                "message": result.get('description')
+            }), 503
+
+        return jsonify({
+            "status": "success",
+            "data": result
+        })
+
+    except Exception as e:
+        import traceback
+        print(f"Error in get_sentiment_cycle: {traceback.format_exc()}")
+        return jsonify({
+            "status": "error",
+            "message": f"심리 사이클 계산 실패: {str(e)}"
         }), 500
 
 if __name__ == '__main__':
