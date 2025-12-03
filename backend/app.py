@@ -10,6 +10,7 @@ from crawlers.unified_crawler import crawl_indicator, crawl_category
 from crawlers.indicators_config import INDICATORS, CATEGORIES, get_all_enabled_indicators, get_indicator_config
 from services.database_service import DatabaseService
 from services.crawler_service import CrawlerService
+from services.macro_cycle_service import MacroCycleService
 from metadata.indicator_metadata import IndicatorMetadata
 import threading
 import time
@@ -3227,6 +3228,55 @@ def get_all_indicators_metadata():
         return jsonify({
             "status": "error",
             "message": f"Internal server error: {str(e)}"
+        }), 500
+
+# ========== 거시경제 사이클 API ==========
+
+@app.route('/api/v2/macro-cycle', methods=['GET'])
+def get_macro_cycle():
+    """
+    거시경제 사이클 계산 및 국면 판별
+
+    Returns:
+        {
+            "status": "success",
+            "data": {
+                "score": 0-100,
+                "phase": "침체|회복|확장|둔화",
+                "phase_en": "Recession|Early Expansion|...",
+                "color": "red|green|emerald|amber",
+                "description": "현재 국면 설명",
+                "action": "투자 행동 추천",
+                "confidence": 0-100,
+                "indicators": {...},
+                "last_updated": "ISO timestamp"
+            }
+        }
+    """
+    try:
+        # MacroCycleService 초기화
+        cycle_service = MacroCycleService(db_service)
+
+        # 사이클 계산
+        result = cycle_service.calculate_cycle()
+
+        if result.get('score') is None:
+            return jsonify({
+                "status": "error",
+                "message": result.get('description', '데이터를 불러올 수 없습니다')
+            }), 503
+
+        return jsonify({
+            "status": "success",
+            "data": result
+        })
+
+    except Exception as e:
+        import traceback
+        print(f"Error in get_macro_cycle: {traceback.format_exc()}")
+        return jsonify({
+            "status": "error",
+            "message": f"사이클 계산 실패: {str(e)}"
         }), 500
 
 if __name__ == '__main__':

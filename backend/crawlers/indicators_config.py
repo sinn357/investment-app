@@ -2,7 +2,7 @@
 경제지표 통합 설정 파일
 - 모든 지표의 메타데이터 중앙 관리
 - 정책지표 제거 (GDP, FOMC 등)
-- 5개 카테고리: business, employment, interest, trade, inflation
+- 7개 카테고리: business, employment, interest, trade, inflation, credit, sentiment
 """
 
 from typing import Dict, Any, Optional
@@ -395,6 +395,40 @@ INDICATORS: Dict[str, IndicatorConfig] = {
         url="https://www.investing.com/indices/s-p-gsci",
         category="inflation",
     ),
+
+    # ========== 신용/유동성지표 (Credit) ==========
+    "hy-spread": IndicatorConfig(
+        id="hy-spread",
+        name="High Yield Spread",
+        name_ko="하이일드 스프레드",
+        url="https://fred.stlouisfed.org/series/BAMLH0A0HYM2",
+        category="credit",
+        threshold={"tight": 250, "normal": 500, "wide": 700},
+    ),
+    "ig-spread": IndicatorConfig(
+        id="ig-spread",
+        name="Investment Grade Spread",
+        name_ko="투자등급 스프레드",
+        url="https://fred.stlouisfed.org/series/BAMLC0A0CM",
+        category="credit",
+        threshold={"tight": 100, "normal": 150, "wide": 200},
+    ),
+    "fci": IndicatorConfig(
+        id="fci",
+        name="Financial Conditions Index",
+        name_ko="금융여건지수",
+        url="https://fred.stlouisfed.org/series/NFCI",
+        category="credit",
+        threshold={"loose": -0.5, "neutral": 0, "tight": 0.5},
+    ),
+    "m2-yoy": IndicatorConfig(
+        id="m2-yoy",
+        name="M2 Money Supply YoY",
+        name_ko="통화량 M2 증가율",
+        url="https://fred.stlouisfed.org/series/M2SL",
+        category="credit",
+        threshold={"low": 2, "normal": 5, "high": 10},
+    ),
 }
 
 # 정책지표 제거됨 (GDP, FOMC 등)
@@ -425,6 +459,7 @@ CATEGORIES = {
     "interest": "금리지표",
     "trade": "무역지표",
     "inflation": "물가지표",
+    "credit": "신용지표",
 }
 
 # 통계
