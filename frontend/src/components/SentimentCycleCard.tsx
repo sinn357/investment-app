@@ -242,7 +242,7 @@ export default function SentimentCycleCard() {
                   </h4>
                   <p className="text-xs text-gray-700 dark:text-gray-300">
                     VIX(Volatility Index)는 S&P 500 옵션 가격을 기반으로 한 시장 변동성 지수입니다.
-                    "공포 지수"라고도 불리며, 투자자들의 불안감을 측정합니다.
+                    &quot;공포 지수&quot;라고도 불리며, 투자자들의 불안감을 측정합니다.
                   </p>
                   <ul className="space-y-1 text-xs ml-4 mt-2">
                     <li>• VIX ↓ = 시장 안정 = 투자자 낙관 = 탐욕</li>
@@ -258,7 +258,7 @@ export default function SentimentCycleCard() {
                     <li>• 66-100점: <span className="text-red-600 font-bold">극단적 탐욕</span> (Extreme Greed) - 위험 신호</li>
                   </ul>
                   <p className="text-xs mt-3 text-gray-600 dark:text-gray-400">
-                    💡 투자 전략: "남들이 두려워할 때 탐욕을, 남들이 탐욕스러울 때 두려움을" (워렌 버핏)
+                    💡 투자 전략: &quot;남들이 두려워할 때 탐욕을, 남들이 탐욕스러울 때 두려움을&quot; (워렌 버핏)
                   </p>
                 </div>
 

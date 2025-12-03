@@ -36,7 +36,7 @@ export default function IndicatorTableView({ indicators, selectedId, onIndicator
 
   // 필터링 및 정렬
   const filteredAndSortedIndicators = useMemo(() => {
-    let filtered = selectedCategory === 'all'
+    const filtered = selectedCategory === 'all'
       ? indicators
       : indicators.filter(ind => ind.category === selectedCategory);
 
@@ -99,7 +99,7 @@ export default function IndicatorTableView({ indicators, selectedId, onIndicator
           <span className="text-sm text-gray-600 dark:text-gray-400">정렬:</span>
           <select
             value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as any)}
+            onChange={(e) => setSortBy(e.target.value as 'name' | 'surprise' | 'category')}
             className="px-3 py-1.5 rounded-lg text-sm bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300"
           >
             <option value="category">카테고리</option>
