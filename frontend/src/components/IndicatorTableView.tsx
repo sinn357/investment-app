@@ -58,7 +58,7 @@ export default function IndicatorTableView({ indicators, selectedId, onIndicator
   }, [indicators, selectedCategory, sortBy]);
 
   // 서프라이즈 색상
-  const getSurpriseColor = (surprise: number | null, reverseColor?: boolean) => {
+  const getSurpriseColor = (surprise: number | null | undefined, reverseColor?: boolean) => {
     if (surprise === null || surprise === undefined) return 'text-gray-500';
 
     const isPositive = surprise > 0;
