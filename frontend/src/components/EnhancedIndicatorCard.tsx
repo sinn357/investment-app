@@ -38,7 +38,6 @@ const EnhancedIndicatorCard = React.memo(function EnhancedIndicatorCard({
   nameKo,
   actual,
   previous,
-  forecast,
   surprise,
   category,
   sparklineData = [],

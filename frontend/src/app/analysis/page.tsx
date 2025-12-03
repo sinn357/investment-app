@@ -204,7 +204,6 @@ function ConvictionDots({ level }: { level: number }) {
     <div className="flex items-center gap-1">
       {Array.from({ length: 5 }).map((_, idx) => (
         <span
-          // eslint-disable-next-line react/no-array-index-key
           key={idx}
           className={`h-2.5 w-2.5 rounded-full ${idx < level ? 'bg-primary' : 'bg-muted'}`}
         />
@@ -262,8 +261,6 @@ export default function AnalysisPage() {
       setSaveState('idle');
     }
   }, [selected]);
-
-  const toNumber = (value: string) => (value === '' ? undefined : Number(value));
 
   const persistAnalyses = (updated: AssetAnalysis[]) => {
     setAnalyses(updated);
@@ -1500,47 +1497,6 @@ export default function AnalysisPage() {
           </div>
         </section>
       </main>
-    </div>
-  );
-}
-
-function Metric({
-  label,
-  value,
-  prefix,
-  suffix
-}: {
-  label: string;
-  value?: number;
-  prefix?: string;
-  suffix?: string;
-}) {
-  return (
-    <div className="flex flex-col gap-1 rounded-md border border-border bg-muted/30 p-3">
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="font-semibold">
-        {value !== undefined && value !== null && !Number.isNaN(value)
-          ? `${prefix ?? ''}${value}${suffix ?? ''}`
-          : '-'}
-      </p>
-    </div>
-  );
-}
-
-function ScoreBlock({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="rounded-md border border-dashed border-primary/30 bg-primary/5 p-3">
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="text-2xl font-bold">{value}/5</p>
-    </div>
-  );
-}
-
-function PriceBlock({ label, value }: { label: string; value?: number }) {
-  return (
-    <div className="rounded-md border border-border bg-muted/30 p-3">
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="font-semibold">{value ? `$${value}` : '-'}</p>
     </div>
   );
 }

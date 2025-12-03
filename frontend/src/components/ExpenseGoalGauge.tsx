@@ -21,15 +21,6 @@ const expenseCategories: Record<string, string[]> = {
   "기타": ["기타"]
 };
 
-const CATEGORY_COLORS: Record<string, string> = {
-  '생활': 'bg-blue-500',
-  '건강': 'bg-green-500',
-  '사회': 'bg-yellow-500',
-  '여가': 'bg-orange-500',
-  '쇼핑': 'bg-purple-500',
-  '기타': 'bg-gray-500'
-};
-
 export default function ExpenseGoalGauge({ expenseData, goals, onSaveGoals }: ExpenseGoalGaugeProps) {
   const [showDetails, setShowDetails] = useState(false);
   const [editingGoals, setEditingGoals] = useState<Record<string, Record<string, number>>>(goals);

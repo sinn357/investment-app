@@ -24,12 +24,11 @@ interface User {
 }
 
 interface EnhancedPortfolioFormProps {
-  onAddItem: () => void;
   user: User;
   onExpandedChange?: (expanded: boolean) => void;
 }
 
-export default function EnhancedPortfolioForm({ onAddItem, user, onExpandedChange }: EnhancedPortfolioFormProps) {
+export default function EnhancedPortfolioForm({ user, onExpandedChange }: EnhancedPortfolioFormProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   // TanStack Query mutation
@@ -82,10 +81,6 @@ export default function EnhancedPortfolioForm({ onAddItem, user, onExpandedChang
   // 조건부 렌더링에 필요한 필드만 watch (성능 최적화)
   const assetType = form.watch('assetType');
   const subCategory = form.watch('subCategory');
-  const quantity = form.watch('quantity');
-  const avgPrice = form.watch('avgPrice');
-  const principal = form.watch('principal');
-  const evaluationAmount = form.watch('evaluationAmount');
 
   // 기존 로직 호환성을 위한 formData (전체 watch)
   const formData = form.watch();
@@ -255,7 +250,8 @@ export default function EnhancedPortfolioForm({ onAddItem, user, onExpandedChang
   };
 
   // React Hook Form submit handler - Zod validation is already done at this point
-  const onSubmit = async (data: PortfolioFormInput) => {
+  const onSubmit = async (_data: PortfolioFormInput) => {
+    void _data; // react-hook-form signature 호환
     // 데이터 정리 및 출력
     const submitData: Record<string, unknown> = {
       assetType: assetTypes.find(type => type.value === formData.assetType)?.label || formData.assetType,

@@ -10,10 +10,10 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { CHART_THEME } from '@/styles/theme';
 
 interface IndicatorDetailModalProps {
@@ -55,11 +55,7 @@ const IndicatorDetailModal = React.memo(function IndicatorDetailModal({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchIndicatorData();
-  }, [id]);
-
-  const fetchIndicatorData = async () => {
+  const fetchIndicatorData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -78,7 +74,11 @@ const IndicatorDetailModal = React.memo(function IndicatorDetailModal({
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
+
+  useEffect(() => {
+    fetchIndicatorData();
+  }, [fetchIndicatorData]);
 
   // 서프라이즈 계산
   const calculateSurprise = () => {

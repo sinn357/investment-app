@@ -150,7 +150,7 @@ export default function IndicatorsPage() {
   const [cycleScore, setCycleScore] = useState<ReturnType<typeof calculateCycleScore> | null>(null);
   const [allIndicators, setAllIndicators] = useState<GridIndicator[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedIndicatorId, setSelectedIndicatorId] = useState<string | null>(null);
+  const [selectedIndicatorId, setSelectedIndicatorId] = useState<string | undefined>(undefined);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
   const [narrative, setNarrative] = useState<EconomicNarrative>({

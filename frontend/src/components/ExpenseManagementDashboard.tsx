@@ -176,8 +176,6 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
     expense_goals: {},
     income_goals: {}
   });
-  const [showExpenseGoals, setShowExpenseGoals] = useState(false);
-  const [showIncomeGoals, setShowIncomeGoals] = useState(false);
 
   // API URL 설정
   const API_BASE_URL = 'https://investment-app-backend-x166.onrender.com';

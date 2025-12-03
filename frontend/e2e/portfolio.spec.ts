@@ -97,6 +97,7 @@ test.describe('Portfolio Management', () => {
 
     // 로딩 인디케이터 확인 (Skeleton 또는 Spinner)
     const loadingIndicator = page.locator('text=로딩 중').or(page.locator('[role="status"]'))
+    await expect(loadingIndicator).toBeVisible({ timeout: 10000 })
 
     // 로딩 완료 후 데이터 표시 확인
     await expect(page.locator('text=포트폴리오')).toBeVisible({ timeout: 10000 })

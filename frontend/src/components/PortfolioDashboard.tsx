@@ -538,7 +538,7 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
     return configs[fieldName] || { label: fieldName, placeholder: '' };
   };
 
-  const getFilteredAssets = () => {
+  const getFilteredAssets = useCallback(() => {
     if (!portfolioData) return [];
 
     let filtered = portfolioData.data;
@@ -577,11 +577,9 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
     });
 
     return filtered;
-  };
+  }, [portfolioData, selectedCategory, sortBy, sortOrder]);
 
   const getGroupedAssets = useCallback(() => {
-    if (!portfolioData) return {};
-
     const filtered = getFilteredAssets();
     const grouped: Record<string, Record<string, typeof filtered>> = {};
 
@@ -599,7 +597,7 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
     });
 
     return grouped;
-  }, [portfolioData, selectedCategory, sortBy, sortOrder]);
+  }, [getFilteredAssets]);
 
   const getPieChartData = () => {
     if (!portfolioData) return [];
@@ -833,7 +831,7 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
     let cumulativeEvalAmount = 0;
 
     // 각 자산의 등록일을 기준으로 누적 자산흐름 생성
-    sortedAssets.forEach((asset, index) => {
+    sortedAssets.forEach((asset) => {
       const assetDate = new Date(asset.date);
       cumulativePrincipal += asset.principal || asset.amount || 0;
       cumulativeEvalAmount += asset.eval_amount || asset.amount || 0;

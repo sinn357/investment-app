@@ -170,11 +170,6 @@ export default function PortfolioPage() {
     setRefreshKey(prev => prev + 1); // 대시보드 초기화
   };
 
-  const handleAssetAdded = () => {
-    // 자산 추가 후 대시보드 새로고침
-    setRefreshKey(prev => prev + 1);
-  };
-
   const persistTradePlans = (plans: TradePlan[]) => {
     setTradePlans(plans);
     if (user) localStorage.setItem(storageKey('plans'), JSON.stringify(plans));
@@ -377,7 +372,6 @@ export default function PortfolioPage() {
             <div className={isFormExpanded ? 'lg:col-span-1' : 'lg:col-span-1'}>
               <EnhancedPortfolioForm
                 user={user}
-                onAddItem={handleAssetAdded}
                 onExpandedChange={handleFormExpandedChange}
               />
             </div>

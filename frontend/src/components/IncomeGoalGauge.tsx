@@ -19,13 +19,6 @@ const incomeCategories: Record<string, string[]> = {
   "기타소득": ["용돈", "선물", "환급"]
 };
 
-const CATEGORY_COLORS: Record<string, string> = {
-  '근로소득': 'bg-blue-500',
-  '사업소득': 'bg-green-500',
-  '투자소득': 'bg-purple-500',
-  '기타소득': 'bg-gray-500'
-};
-
 export default function IncomeGoalGauge({ incomeData, goals, onSaveGoals }: IncomeGoalGaugeProps) {
   const [showDetails, setShowDetails] = useState(false);
   const [editingGoals, setEditingGoals] = useState<Record<string, Record<string, number>>>(goals);
