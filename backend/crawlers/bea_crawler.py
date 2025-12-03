@@ -23,12 +23,12 @@ def get_bea_api_key() -> str:
         raise ValueError("BEA_API_KEY not found in environment variables. Please sign up at https://apps.bea.gov/API/signup/")
     return api_key
 
-def fetch_bea_data(indicator: str, frequency: str = "Q", year: str = "ALL") -> Dict[str, Any]:
+def fetch_bea_data(indicator: str, frequency: str = "QSA", year: str = "ALL") -> Dict[str, Any]:
     """BEA API에서 데이터 가져오기
 
     Args:
-        indicator: BEA 지표 코드 (예: "BalCurAct" for Current Account Balance)
-        frequency: 데이터 빈도 ("Q" = Quarterly, "A" = Annual)
+        indicator: BEA 지표 코드 (예: "BalCurrAcct" for Current Account Balance)
+        frequency: 데이터 빈도 ("QSA" = Quarterly Seasonally Adjusted, "A" = Annual)
         year: 데이터 연도 ("ALL" 또는 특정 연도)
 
     Returns:
@@ -87,7 +87,7 @@ def parse_bea_response(json_data: Dict[str, Any]) -> List[Dict[str, Any]]:
 
         for item in data_list:
             try:
-                period = item.get('TimeLabel', '')  # "2025Q2"
+                period = item.get('TimePeriod', '')  # "2025Q2"
                 value_str = item.get('DataValue', '')
 
                 # BEA는 천 단위로 제공 (예: "-251300" = -251.3B)
@@ -178,13 +178,13 @@ def extract_bea_data(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
         ]
     }
 
-def crawl_bea_indicator(indicator: str, frequency: str = "Q") -> Dict[str, Any]:
+def crawl_bea_indicator(indicator: str, frequency: str = "QSA") -> Dict[str, Any]:
     """BEA 지표 크롤링 (Main Entry Point)
 
     Args:
         indicator: BEA 지표 코드
-            - BalCurAct: Current Account Balance (경상수지)
-        frequency: "Q" (Quarterly) 또는 "A" (Annual)
+            - BalCurrAcct: Current Account Balance (경상수지)
+        frequency: "QSA" (Quarterly Seasonally Adjusted) 또는 "A" (Annual)
     """
     try:
         json_data = fetch_bea_data(indicator, frequency=frequency)
@@ -206,7 +206,7 @@ def crawl_bea_indicator(indicator: str, frequency: str = "Q") -> Dict[str, Any]:
 if __name__ == "__main__":
     # 테스트: Current Account Balance
     print("Testing Current Account Balance...")
-    result = crawl_bea_indicator("BalCurAct")
+    result = crawl_bea_indicator("BalCurrAcct")
 
     if "error" in result:
         print(f"❌ Error: {result['error']}")

@@ -73,9 +73,9 @@ class CrawlerService:
 
             elif "apps.bea.gov" in url:
                 # BEA API 크롤러
-                # current-account-balance -> BalCurAct
+                # current-account-balance -> BalCurrAcct
                 bea_indicators = {
-                    "current-account-balance": "BalCurAct"
+                    "current-account-balance": "BalCurrAcct"
                 }
 
                 bea_code = bea_indicators.get(indicator_id)
