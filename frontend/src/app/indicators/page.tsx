@@ -7,6 +7,7 @@ import CreditCycleCard from '@/components/CreditCycleCard';
 import SentimentCycleCard from '@/components/SentimentCycleCard';
 import CyclePanel from '@/components/CyclePanel';
 import IndicatorGrid from '@/components/IndicatorGrid';
+import IndicatorTableView from '@/components/IndicatorTableView';
 import IndicatorChartPanel from '@/components/IndicatorChartPanel';
 // import EconomicIndicatorsSection from '@/components/EconomicIndicatorsSection'; // 통합으로 비활성화
 // import DataSection from '@/components/DataSection'; // 통합으로 비활성화
@@ -171,6 +172,7 @@ export default function IndicatorsPage() {
   const [bigWave, setBigWave] = useState<BigWaveData>({ cards: [] });
   const [isSavingNarrative, setIsSavingNarrative] = useState(false);
   const [savingRisk, setSavingRisk] = useState(false);
+  const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
 
   // 리스크 레이더 로드 (로컬 스토리지)
   useEffect(() => {
@@ -468,15 +470,18 @@ export default function IndicatorsPage() {
 
         {/* 3대 사이클 카드 */}
         {!loading && allIndicators.length > 0 && (
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8 space-y-6">
-            {/* 거시경제 사이클 */}
-            <MacroCycleCard />
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
+            {/* 3대 사이클 - 3열 그리드 레이아웃 */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {/* 거시경제 사이클 */}
+              <MacroCycleCard />
 
-            {/* 신용/유동성 사이클 */}
-            <CreditCycleCard />
+              {/* 신용/유동성 사이클 */}
+              <CreditCycleCard />
 
-            {/* 심리/밸류에이션 사이클 */}
-            <SentimentCycleCard />
+              {/* 심리/밸류에이션 사이클 */}
+              <SentimentCycleCard />
+            </div>
           </div>
         )}
 
@@ -485,7 +490,7 @@ export default function IndicatorsPage() {
           <IndicatorGridSkeleton />
         ) : allIndicators.length > 0 ? (
           <>
-            {/* 업데이트 정보 및 수동 업데이트 버튼 */}
+            {/* 업데이트 정보 및 뷰 토글 */}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-4">
               <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
                 <div className="flex items-center gap-3">
@@ -499,42 +504,88 @@ export default function IndicatorsPage() {
                     )}
                   </span>
                 </div>
-                <button
-                  onClick={handleManualUpdate}
-                  disabled={isUpdating}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg font-medium transition-colors"
-                >
-                  {isUpdating ? (
-                    <>
-                      <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                      </svg>
-                      <span>업데이트 중...</span>
-                    </>
-                  ) : (
-                    <>
+                <div className="flex items-center gap-3">
+                  {/* 뷰 토글 버튼 */}
+                  <div className="flex items-center gap-2 bg-white dark:bg-gray-700 rounded-lg p-1 border border-gray-300 dark:border-gray-600">
+                    <button
+                      onClick={() => setViewMode('card')}
+                      className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                        viewMode === 'card'
+                          ? 'bg-blue-600 text-white'
+                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
+                      }`}
+                      title="카드 뷰"
+                    >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
                       </svg>
-                      <span>지금 업데이트</span>
-                    </>
-                  )}
-                </button>
+                      카드
+                    </button>
+                    <button
+                      onClick={() => setViewMode('table')}
+                      className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                        viewMode === 'table'
+                          ? 'bg-blue-600 text-white'
+                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
+                      }`}
+                      title="테이블 뷰"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                      테이블
+                    </button>
+                  </div>
+                  <button
+                    onClick={handleManualUpdate}
+                    disabled={isUpdating}
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg font-medium transition-colors"
+                  >
+                    {isUpdating ? (
+                      <>
+                        <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                        </svg>
+                        <span>업데이트 중...</span>
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        <span>지금 업데이트</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
 
-            <IndicatorGrid
-              indicators={allIndicators}
-              selectedId={selectedIndicatorId}
-              onIndicatorClick={(indicator) => {
-                setSelectedIndicatorId(indicator.id);
-                // 하단 차트 영역으로 스크롤
-                setTimeout(() => {
-                  document.getElementById('chart-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }, 100);
-              }}
-            />
+            {/* 조건부 렌더링: 카드 뷰 vs 테이블 뷰 */}
+            {viewMode === 'card' ? (
+              <IndicatorGrid
+                indicators={allIndicators}
+                selectedId={selectedIndicatorId}
+                onIndicatorClick={(indicator) => {
+                  setSelectedIndicatorId(indicator.id);
+                  setTimeout(() => {
+                    document.getElementById('chart-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }, 100);
+                }}
+              />
+            ) : (
+              <IndicatorTableView
+                indicators={allIndicators}
+                selectedId={selectedIndicatorId}
+                onIndicatorClick={(indicator) => {
+                  setSelectedIndicatorId(indicator.id);
+                  setTimeout(() => {
+                    document.getElementById('chart-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }, 100);
+                }}
+              />
+            )}
           </>
         ) : null}
 
