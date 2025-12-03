@@ -8,11 +8,12 @@
 - **Project:** Investment App - Economic Indicators Dashboard
 - **Repo Root:** /home/user/investment-app
 - **Owner:** Partner
-- **Last Updated:** 2025-12-03 10:45 KST
-- **Session Goal (2025-12-03):** ✅ B-020 BEA API 크롤러 완료 + B-021 Freightos 조사 (크롤링 불가)
+- **Last Updated:** 2025-12-03 14:30 KST
+- **Session Goal (2025-12-03):** ✅ B-020 BEA API 크롤러 완료 + BEA 파라미터 수정 + B-021 Freightos 조사
   - Current Account Balance 경상수지 (BEA API 신규 크롤러)
-  - bea_crawler.py 생성 (JSON API, 분기별 데이터, 백만 단위)
-  - Freightos Baltic Index 크롤링 불가능 확인 (API Enterprise 전용, MacroMicro 403 차단)
+  - bea_crawler.py 생성 및 파라미터 수정 (BalCurAct→BalCurrAcct, Q→QSA, TimeLabel→TimePeriod)
+  - 실제 데이터 크롤링 성공 (2025Q2: -$251.3B, surprise: +$188.5B)
+  - Freightos Baltic Index 크롤링 불가능 확인 (API Enterprise 전용, MacroMicro 403 차단, Investing.com FBX 데이터 없음)
   - 크롤러: 4개 → 5개 (investing, rates_bonds, fred, tradingeconomics, bea)
   - 무역지표: 14개 유지 (current-account → current-account-balance 교체)
 - **Previous Session (2025-12-02):** ✅ 무역지표 5개 추가 + TradingEconomics 크롤러 개발 완료
@@ -129,7 +130,7 @@ investment-app/
 - 없음
 
 ### Recent Done (Current Session - 2025-12-03)
-- **T-103:** BEA API 크롤러 개발 + Current Account Balance 지표 추가 ✅ (2025-12-03) - **Phase 1 크롤러**: bea_crawler.py 생성 (205줄, ITA 데이터셋, BalCurAct 지표 코드, 분기별 데이터 2025Q2/Q1, 백만 단위 -251,300M, surprise=current-previous, 최근 8분기 히스토리) | **Phase 2 설정**: indicators_config.py에 current-account-balance 지표 추가 (Investing.com → BEA API 교체, apps.bea.gov URL) | **Phase 3 통합**: crawler_service.py에 BEA 라우팅 추가 (apps.bea.gov 패턴 자동 감지, indicator_id→BEA code 매핑) | **Phase 4 환경**: .env.example에 BEA_API_KEY 필드 추가 (발급: apps.bea.gov/API/signup, 36자 UserID 무료, 이메일 인증) | **Freightos 조사**: B-021 크롤링 불가능 확인 (공식 API Enterprise 전용, MacroMicro 403 차단, Baltic Dry Index로 대체 충분) | **커밋**: 0d9a388 | **결과**: 크롤러 4개→5개 (investing, rates_bonds, fred, tradingeconomics, **bea**), 무역지표 14개 유지
+- **T-103:** BEA API 크롤러 개발 + Current Account Balance 지표 추가 + 파라미터 수정 ✅ (2025-12-03) - **Phase 1 크롤러**: bea_crawler.py 생성 (205줄, ITA 데이터셋, 분기별 데이터 2025Q2/Q1, 백만 단위 -251,300M, surprise=current-previous, 최근 8분기 히스토리) | **Phase 2 설정**: indicators_config.py에 current-account-balance 지표 추가 (Investing.com → BEA API 교체, apps.bea.gov URL) | **Phase 3 통합**: crawler_service.py에 BEA 라우팅 추가 (apps.bea.gov 패턴 자동 감지, indicator_id→BEA code 매핑) | **Phase 4 환경**: .env.example에 BEA_API_KEY 필드 추가 (발급: apps.bea.gov/API/signup, 36자 UserID 무료, 이메일 인증) | **Phase 5 파라미터 수정**: BalCurAct→BalCurrAcct (올바른 indicator), Q→QSA (Quarterly Seasonally Adjusted), TimeLabel→TimePeriod (실제 API 응답 필드), .env 파일 형식 수정 (DATABASE_URL과 BEA_API_KEY 분리) | **테스트 성공**: 2025Q2 -$251.3B, surprise +$188.5B, 8개 분기 데이터 크롤링 확인 | **Freightos 조사**: B-021 크롤링 불가능 확인 (공식 API Enterprise 전용, MacroMicro 403 차단, Investing.com FBX 데이터 없음, Baltic Dry Index로 대체 충분) | **커밋 2개**: 0d9a388 (크롤러 개발), cefefb9 (파라미터 수정) | **결과**: 크롤러 4개→5개 (investing, rates_bonds, fred, tradingeconomics, **bea**), 무역지표 14개 유지
 
 ### Recent Done (Previous Session - 2025-12-02)
 - **T-102:** 무역지표 확장 시스템 완전 구현 ✅ (2025-12-02) - **Phase 1-2 기존 크롤러 활용 (4개)**: REER 실질실효환율 (FRED RBUSBIS, 108.73) + Baltic Dry Index 발틱운임지수 (Investing.com indices, 2,583) + Goods Trade Balance 상품 무역수지 (FRED BOPGTB, -85,608M) + Services Trade Balance 서비스 무역수지 (FRED BOPSTB, +26,058M) | **Phase 3-4 신규 크롤러 개발 (1개)**: tradingeconomics_crawler.py 생성 (표준 테이블 파싱, Actual/Previous/Unit/Frequency 추출, User-Agent 헤더로 봇 차단 우회, 자동 surprise 계산) + Terms of Trade 교역조건지수 (TradingEconomics, 109.04 points) + CrawlerService 통합 (tradingeconomics.com URL 패턴 자동 라우팅) | **rates_bonds_crawler 확장**: fetch_historical_data 함수에 4가지 패턴 처리 (/rates-bonds/, /commodities/, /indices/, /currencies/) + -historical-data 자동 변환 로직 추가 | **커밋 3개**: 48066a3 (REER + BDI), 7be3952 (상품/서비스 무역수지), 70e3b4f (TradingEconomics 크롤러 + Terms of Trade) | **결과**: 전체 지표 42개→47개 (+5개), 무역 카테고리 9개→14개 (+5개), 크롤러 3개→4개 (investing, rates_bonds, fred, tradingeconomics) | **남은 작업**: Freightos Baltic Index (Freightos 사이트), Current Account Balance (BEA API 키 필요)
