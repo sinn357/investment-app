@@ -228,11 +228,11 @@ INDICATORS: Dict[str, IndicatorConfig] = {
         url="https://www.investing.com/economic-calendar/imports-1780",
         category="trade",
     ),
-    "current-account": IndicatorConfig(
-        id="current-account",
-        name="Current Account",
+    "current-account-balance": IndicatorConfig(
+        id="current-account-balance",
+        name="Current Account Balance",
         name_ko="경상수지",
-        url="https://www.investing.com/economic-calendar/current-account-n-s-a--961",
+        url="https://apps.bea.gov/iTable/?reqid=62&step=1#eyJhcHBpZCI6NjIsInN0ZXBzIjpbMSwyLDNdLCJkYXRhIjpbWyJwcm9kdWN0IiwiMTAiXV19",
         category="trade",
     ),
 
@@ -313,9 +313,7 @@ INDICATORS: Dict[str, IndicatorConfig] = {
     ),
 
     # 향후 추가 예정 (크롤러 개발 필요):
-    # - GSCPI (FRED - 대체: S&P GSCI 이미 추가됨)
     # - Freightos Baltic Index (Freightos)
-    # - Current Account Balance (BEA)
 
     # ========== 물가지표 (Inflation) ==========
     "cpi": IndicatorConfig(

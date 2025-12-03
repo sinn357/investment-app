@@ -2,6 +2,7 @@ from crawlers.investing_crawler import fetch_html, parse_history_table, extract_
 from crawlers.rates_bonds_crawler import crawl_rate_indicator
 from crawlers.fred_crawler import crawl_fred_indicator
 from crawlers.tradingeconomics_crawler import crawl_tradingeconomics_indicator
+from crawlers.bea_crawler import crawl_bea_indicator
 from crawlers.indicators_config import INDICATORS, get_all_enabled_indicators
 from typing import Dict, Any
 import time
@@ -61,6 +62,27 @@ class CrawlerService:
             elif "tradingeconomics.com" in url:
                 # TradingEconomics 크롤러
                 result = crawl_tradingeconomics_indicator(url)
+
+                if "error" in result:
+                    return result
+
+                # 통합 데이터 구조에 메타데이터 추가
+                result["crawl_timestamp"] = time.time()
+                result["url"] = url
+                return result
+
+            elif "apps.bea.gov" in url:
+                # BEA API 크롤러
+                # current-account-balance -> BalCurAct
+                bea_indicators = {
+                    "current-account-balance": "BalCurAct"
+                }
+
+                bea_code = bea_indicators.get(indicator_id)
+                if not bea_code:
+                    return {"error": f"BEA indicator code not found for {indicator_id}"}
+
+                result = crawl_bea_indicator(bea_code)
 
                 if "error" in result:
                     return result
