@@ -153,6 +153,7 @@ export default function IndicatorsPage() {
   const [selectedIndicatorId, setSelectedIndicatorId] = useState<string | undefined>(undefined);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [loadingTime, setLoadingTime] = useState<number | null>(null); // ✅ 로딩 시간 측정
   // ✅ 3대 사이클 state 추가 (통합 API에서 받을 데이터)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [macroCycleData, setMacroCycleData] = useState<any>(null);
@@ -257,6 +258,7 @@ export default function IndicatorsPage() {
     async function fetchAndCalculateCycle() {
       try {
         setLoading(true);
+        const startTime = performance.now(); // ✅ 로딩 시작 시간 측정
 
         // v2 API: 모든 데이터 한 번에 가져오기 (47개 지표 + 3대 사이클)
         const result = await fetchJsonWithRetry(
@@ -353,6 +355,11 @@ export default function IndicatorsPage() {
             };
           });
           setAllIndicators(gridIndicators);
+
+          // ✅ 로딩 완료 시간 계산 (소수점 2자리)
+          const endTime = performance.now();
+          const loadTime = (endTime - startTime) / 1000; // 밀리초 → 초
+          setLoadingTime(Number(loadTime.toFixed(2)));
         }
       } catch (error) {
         console.error('Failed to fetch cycle data:', error);
@@ -521,6 +528,15 @@ export default function IndicatorsPage() {
                       '업데이트 정보 없음'
                     )}
                   </span>
+                  {/* ✅ 로딩 시간 배지 */}
+                  {loadingTime !== null && (
+                    <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 text-xs font-semibold rounded-full border border-green-300 dark:border-green-700">
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                      로딩: {loadingTime}초
+                    </span>
+                  )}
                 </div>
                 <div className="flex items-center gap-3">
                   {/* 뷰 토글 버튼 */}
