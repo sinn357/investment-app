@@ -154,8 +154,11 @@ export default function IndicatorsPage() {
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
   // ✅ 3대 사이클 state 추가 (통합 API에서 받을 데이터)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [macroCycleData, setMacroCycleData] = useState<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [creditCycleData, setCreditCycleData] = useState<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [sentimentCycleData, setSentimentCycleData] = useState<any>(null);
   const [narrative, setNarrative] = useState<EconomicNarrative>({
     articles: [],

@@ -200,7 +200,7 @@ export default function SentimentCycleCard({ data }: SentimentCycleCardProps) {
 
               <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg border-l-4 border-yellow-500">
                 <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                  <strong>💡 워렌 버핏 명언:</strong> "남들이 탐욕스러울 때 두려워하고, 남들이 두려워할 때 탐욕스러워라"<br />
+                  <strong>💡 워렌 버핏 명언:</strong> &ldquo;남들이 탐욕스러울 때 두려워하고, 남들이 두려워할 때 탐욕스러워라&rdquo;<br />
                   → VIX 높을 때(공포) = 매수, VIX 낮을 때(탐욕) = 매도
                 </p>
               </div>

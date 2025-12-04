@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 
 interface MacroCycleData {
   score: number;
@@ -19,11 +19,6 @@ interface MacroCycleData {
     yield_curve: number;
   };
   last_updated: string;
-}
-
-interface MacroCycleResponse {
-  status: string;
-  data: MacroCycleData;
 }
 
 const colorClasses = {
