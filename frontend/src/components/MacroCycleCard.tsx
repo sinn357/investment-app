@@ -41,66 +41,26 @@ const phaseEmojis = {
   '둔화': '⚠️',
 };
 
-export default function MacroCycleCard() {
-  const [data, setData] = useState<MacroCycleData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+interface MacroCycleCardProps {
+  data?: MacroCycleData | null;  // ✅ props로 데이터를 받음
+}
+
+export default function MacroCycleCard({ data }: MacroCycleCardProps) {
   const [showFormula, setShowFormula] = useState(false);
 
-  const fetchCycleData = async () => {
-    setLoading(true);
-    setError(null);
+  // ✅ API 호출 로직 제거 (부모 컴포넌트에서 통합 API로 받음)
+  // const fetchCycleData = async () => { ... } 삭제
 
-    try {
-      const response = await fetch('https://investment-app-backend-x166.onrender.com/api/v2/macro-cycle');
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-
-      const result: MacroCycleResponse = await response.json();
-
-      if (result.status === 'success' && result.data) {
-        setData(result.data);
-      } else {
-        throw new Error('데이터 형식 오류');
-      }
-    } catch (err) {
-      console.error('거시경제 사이클 조회 실패:', err);
-      setError(err instanceof Error ? err.message : '데이터 로딩 실패');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchCycleData();
-  }, []);
-
-  if (loading) {
+  // ✅ loading state 제거 (부모가 관리)
+  if (!data) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 animate-pulse">
-        <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-4"></div>
-        <div className="h-32 bg-gray-200 dark:bg-gray-700 rounded"></div>
-      </div>
-    );
-  }
-
-  if (error || !data) {
-    return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 border-l-4 border-red-500">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 border-l-4 border-gray-400">
         <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-2">
-          ⚠️ 거시경제 사이클
+          📊 거시경제 사이클
         </h3>
-        <p className="text-red-600 dark:text-red-400">
-          {error || '데이터를 불러올 수 없습니다'}
+        <p className="text-gray-600 dark:text-gray-400">
+          데이터를 불러오는 중...
         </p>
-        <button
-          onClick={fetchCycleData}
-          className="mt-4 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition"
-        >
-          다시 시도
-        </button>
       </div>
     );
   }

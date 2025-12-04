@@ -153,6 +153,10 @@ export default function IndicatorsPage() {
   const [selectedIndicatorId, setSelectedIndicatorId] = useState<string | undefined>(undefined);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
+  // ✅ 3대 사이클 state 추가 (통합 API에서 받을 데이터)
+  const [macroCycleData, setMacroCycleData] = useState<any>(null);
+  const [creditCycleData, setCreditCycleData] = useState<any>(null);
+  const [sentimentCycleData, setSentimentCycleData] = useState<any>(null);
   const [narrative, setNarrative] = useState<EconomicNarrative>({
     articles: [],
     myNarrative: '',
@@ -245,13 +249,13 @@ export default function IndicatorsPage() {
     }
   };
 
-  // 경제 지표 데이터 페칭 및 국면 계산
+  // 경제 지표 데이터 페칭 및 국면 계산 (✅ 통합 API - 4개 요청 → 1개 요청)
   useEffect(() => {
     async function fetchAndCalculateCycle() {
       try {
         setLoading(true);
 
-        // v2 API: 모든 데이터 한 번에 가져오기 (히스토리 + 메타데이터 포함)
+        // v2 API: 모든 데이터 한 번에 가져오기 (47개 지표 + 3대 사이클)
         const result = await fetchJsonWithRetry(
           'https://investment-app-backend-x166.onrender.com/api/v2/indicators',
           {},
@@ -263,6 +267,17 @@ export default function IndicatorsPage() {
           // 최신 업데이트 시간 저장
           if (result.last_updated) {
             setLastUpdated(result.last_updated);
+          }
+
+          // ✅ 3대 사이클 데이터 저장 (통합 API에서 받음)
+          if (result.macro_cycle) {
+            setMacroCycleData(result.macro_cycle);
+          }
+          if (result.credit_cycle) {
+            setCreditCycleData(result.credit_cycle);
+          }
+          if (result.sentiment_cycle) {
+            setSentimentCycleData(result.sentiment_cycle);
           }
 
           // 필요한 지표 추출 (모든 지표가 v2/indicators 응답에 포함됨)
@@ -468,19 +483,19 @@ export default function IndicatorsPage() {
           </div>
         )}
 
-        {/* 3대 사이클 카드 */}
+        {/* 3대 사이클 카드 (✅ 통합 API에서 받은 데이터를 props로 전달) */}
         {!loading && allIndicators.length > 0 && (
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
             {/* 3대 사이클 - 3열 그리드 레이아웃 */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {/* 거시경제 사이클 */}
-              <MacroCycleCard />
+              <MacroCycleCard data={macroCycleData} />
 
               {/* 신용/유동성 사이클 */}
-              <CreditCycleCard />
+              <CreditCycleCard data={creditCycleData} />
 
               {/* 심리/밸류에이션 사이클 */}
-              <SentimentCycleCard />
+              <SentimentCycleCard data={sentimentCycleData} />
             </div>
           </div>
         )}

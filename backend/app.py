@@ -910,12 +910,39 @@ def get_all_indicators_from_db():
                     }
                 })
 
+        # 3대 사이클 계산 (추가 API 호출 없이 한 번에 반환)
+        try:
+            macro_cycle_service = MacroCycleService(db_service)
+            macro_cycle = macro_cycle_service.calculate_cycle()
+        except Exception as e:
+            print(f"Macro cycle calculation error: {e}")
+            macro_cycle = None
+
+        try:
+            credit_cycle_service = CreditCycleService(db_service)
+            credit_cycle = credit_cycle_service.calculate_cycle()
+        except Exception as e:
+            print(f"Credit cycle calculation error: {e}")
+            credit_cycle = None
+
+        try:
+            from services.sentiment_cycle_service import SentimentCycleService
+            sentiment_cycle_service = SentimentCycleService(db_service)
+            sentiment_cycle = sentiment_cycle_service.calculate_cycle()
+        except Exception as e:
+            print(f"Sentiment cycle calculation error: {e}")
+            sentiment_cycle = None
+
         return jsonify({
             "status": "success",
             "indicators": results,
             "total_count": len(results),
             "source": "database",
-            "last_updated": last_updated  # 가장 최신 업데이트 시간
+            "last_updated": last_updated,  # 가장 최신 업데이트 시간
+            # ✅ 3대 사이클 데이터 추가 (4개 요청 → 1개 요청 최적화)
+            "macro_cycle": macro_cycle,
+            "credit_cycle": credit_cycle,
+            "sentiment_cycle": sentiment_cycle
         })
 
     except Exception as e:
