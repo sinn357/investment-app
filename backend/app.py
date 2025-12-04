@@ -910,17 +910,24 @@ def get_all_indicators_from_db():
                     }
                 })
 
-        # 3대 사이클 계산 (추가 API 호출 없이 한 번에 반환)
+        # ✅ results 배열을 딕셔너리로 변환 (중복 DB 조회 방지)
+        indicators_dict = {}
+        for item in results:
+            indicator_id = item.get('indicator_id')
+            if indicator_id and item.get('data', {}).get('latest_release'):
+                indicators_dict[indicator_id] = item['data']['latest_release']
+
+        # 3대 사이클 계산 (✅ DB 재조회 없이 results 데이터 재사용)
         try:
             macro_cycle_service = MacroCycleService(db_service)
-            macro_cycle = macro_cycle_service.calculate_cycle()
+            macro_cycle = macro_cycle_service.calculate_cycle_from_data(indicators_dict)
         except Exception as e:
             print(f"Macro cycle calculation error: {e}")
             macro_cycle = None
 
         try:
             credit_cycle_service = CreditCycleService(db_service)
-            credit_cycle = credit_cycle_service.calculate_cycle()
+            credit_cycle = credit_cycle_service.calculate_cycle_from_data(indicators_dict)
         except Exception as e:
             print(f"Credit cycle calculation error: {e}")
             credit_cycle = None
@@ -928,7 +935,7 @@ def get_all_indicators_from_db():
         try:
             from services.sentiment_cycle_service import SentimentCycleService
             sentiment_cycle_service = SentimentCycleService(db_service)
-            sentiment_cycle = sentiment_cycle_service.calculate_cycle()
+            sentiment_cycle = sentiment_cycle_service.calculate_cycle_from_data(indicators_dict)
         except Exception as e:
             print(f"Sentiment cycle calculation error: {e}")
             sentiment_cycle = None

@@ -46,6 +46,37 @@ class CreditCycleService:
         """
         self.db = db_service
 
+    def calculate_cycle_from_data(self, indicators_dict: Dict) -> Dict:
+        """
+        ✅ 외부에서 전달받은 데이터로 사이클 계산 (DB 재조회 없음)
+
+        Args:
+            indicators_dict: {indicator_id: latest_release_data} 딕셔너리
+        """
+        indicator_ids = ['hy-spread', 'ig-spread', 'fci', 'm2-yoy']
+        indicators_data = {}
+        for ind_id in indicator_ids:
+            if ind_id in indicators_dict:
+                indicators_data[ind_id] = indicators_dict[ind_id]
+
+        # 기존 계산 로직 재사용
+        scores = self._calculate_indicator_scores(indicators_data)
+        total_score = sum(scores[key] * self.WEIGHTS[key] for key in self.WEIGHTS.keys() if key in scores)
+        phase_info = self._determine_phase(total_score)
+        confidence = self._calculate_confidence(indicators_data)
+
+        return {
+            'score': total_score,
+            'phase': phase_info['name'],
+            'phase_en': phase_info['name_en'],
+            'color': phase_info['color'],
+            'description': phase_info['description'],
+            'action': phase_info['action'],
+            'confidence': confidence,
+            'indicators': scores,
+            'last_updated': datetime.now().isoformat()
+        }
+
     def calculate_cycle(self) -> Dict:
         """
         신용/유동성 사이클 점수 및 국면 계산
