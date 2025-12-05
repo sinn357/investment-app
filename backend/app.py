@@ -2700,6 +2700,162 @@ def get_yield_curve_history():
             "message": f"Internal server error: {str(e)}"
         }), 500
 
+# =============================================================================
+# Phase 2 Sentiment Indicators API
+# =============================================================================
+
+@app.route('/api/rawdata/sp500-pe')
+def get_sp500_pe_rawdata():
+    """Get S&P 500 P/E Ratio raw data"""
+    try:
+        result = CrawlerService.crawl_indicator('sp500-pe')
+
+        if "error" in result:
+            return jsonify({
+                "status": "error",
+                "message": result["error"]
+            }), 500
+
+        return jsonify({
+            "status": "success",
+            "data": {
+                "latest_release": result["latest_release"],
+                "next_release": result.get("next_release")
+            },
+            "source": "multpl.com",
+            "indicator": "S&P 500 P/E Ratio"
+        })
+
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": f"Internal server error: {str(e)}"
+        }), 500
+
+@app.route('/api/history-table/sp500-pe')
+def get_sp500_pe_history():
+    try:
+        result = CrawlerService.crawl_indicator('sp500-pe')
+
+        if "error" in result:
+            return jsonify({
+                "status": "error",
+                "message": result["error"]
+            }), 500
+
+        return jsonify({
+            "status": "success",
+            "data": result.get("history", []),
+            "source": "multpl.com"
+        })
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": f"Internal server error: {str(e)}"
+        }), 500
+
+@app.route('/api/rawdata/shiller-pe')
+def get_shiller_pe_rawdata():
+    """Get Shiller P/E Ratio (CAPE) raw data"""
+    try:
+        result = CrawlerService.crawl_indicator('shiller-pe')
+
+        if "error" in result:
+            return jsonify({
+                "status": "error",
+                "message": result["error"]
+            }), 500
+
+        return jsonify({
+            "status": "success",
+            "data": {
+                "latest_release": result["latest_release"],
+                "next_release": result.get("next_release")
+            },
+            "source": "multpl.com",
+            "indicator": "Shiller P/E Ratio (CAPE)"
+        })
+
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": f"Internal server error: {str(e)}"
+        }), 500
+
+@app.route('/api/history-table/shiller-pe')
+def get_shiller_pe_history():
+    try:
+        result = CrawlerService.crawl_indicator('shiller-pe')
+
+        if "error" in result:
+            return jsonify({
+                "status": "error",
+                "message": result["error"]
+            }), 500
+
+        return jsonify({
+            "status": "success",
+            "data": result.get("history", []),
+            "source": "multpl.com"
+        })
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": f"Internal server error: {str(e)}"
+        }), 500
+
+@app.route('/api/rawdata/put-call-ratio')
+def get_put_call_ratio_rawdata():
+    """Get CBOE Put/Call Ratio raw data"""
+    try:
+        result = CrawlerService.crawl_indicator('put-call-ratio')
+
+        if "error" in result:
+            return jsonify({
+                "status": "error",
+                "message": result["error"]
+            }), 500
+
+        return jsonify({
+            "status": "success",
+            "data": {
+                "latest_release": result["latest_release"],
+                "next_release": result.get("next_release")
+            },
+            "source": "cboe (fallback)",
+            "indicator": "CBOE Put/Call Ratio",
+            "note": result.get("note", "")
+        })
+
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": f"Internal server error: {str(e)}"
+        }), 500
+
+@app.route('/api/history-table/put-call-ratio')
+def get_put_call_ratio_history():
+    try:
+        result = CrawlerService.crawl_indicator('put-call-ratio')
+
+        if "error" in result:
+            return jsonify({
+                "status": "error",
+                "message": result["error"]
+            }), 500
+
+        return jsonify({
+            "status": "success",
+            "data": result.get("history", []),
+            "source": "cboe (fallback)",
+            "note": result.get("note", "")
+        })
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": f"Internal server error: {str(e)}"
+        }), 500
+
 @app.route('/api/rawdata/real-yield-tips')
 def get_real_yield_rawdata():
     """Get Real Yield (TIPS) raw data"""

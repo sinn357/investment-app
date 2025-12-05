@@ -452,28 +452,28 @@ INDICATORS: Dict[str, IndicatorConfig] = {
         id="sp500-pe",
         name="S&P 500 P/E Ratio",
         name_ko="S&P 500 주가수익비율",
-        url="https://fred.stlouisfed.org/series/MULTPL/SP500_PE_RATIO_MONTH",
+        url="https://www.multpl.com/s-p-500-pe-ratio",  # Phase 2: Multpl.com 크롤링
         category="sentiment",
         threshold={"undervalued": 15, "fair": 20, "overvalued": 25},
-        enabled=False,  # FRED 대체 데이터 소스 필요
+        enabled=True,  # ✅ Phase 2: 활성화
     ),
     "shiller-pe": IndicatorConfig(
         id="shiller-pe",
         name="Shiller P/E Ratio (CAPE)",
         name_ko="실러 CAPE 비율",
-        url="https://fred.stlouisfed.org/series/CAPE",
+        url="https://www.multpl.com/shiller-pe",  # Phase 2: Multpl.com 크롤링
         category="sentiment",
         threshold={"undervalued": 20, "fair": 25, "overvalued": 30},
-        enabled=False,  # FRED 대체 데이터 소스 필요
+        enabled=True,  # ✅ Phase 2: 활성화
     ),
     "put-call-ratio": IndicatorConfig(
         id="put-call-ratio",
         name="CBOE Put/Call Ratio",
         name_ko="풋/콜 비율",
-        url="https://fred.stlouisfed.org/series/PCERATIO",
+        url="https://www.cboe.com",  # Phase 2: 폴백 (1.0 중립값)
         category="sentiment",
         threshold={"bullish": 0.7, "neutral": 1.0, "bearish": 1.3},
-        enabled=False,  # CBOE 데이터 접근 제한
+        enabled=True,  # ✅ Phase 2: 활성화 (폴백)
     ),
 }
 

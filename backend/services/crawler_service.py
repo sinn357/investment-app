@@ -3,6 +3,9 @@ from crawlers.rates_bonds_crawler import crawl_rate_indicator
 from crawlers.fred_crawler import crawl_fred_indicator
 from crawlers.tradingeconomics_crawler import crawl_tradingeconomics_indicator
 from crawlers.bea_crawler import crawl_bea_indicator
+from crawlers.sp500_pe_crawler import crawl_sp500_pe
+from crawlers.shiller_pe_crawler import crawl_shiller_pe
+from crawlers.put_call_crawler import crawl_put_call_ratio
 from crawlers.indicators_config import INDICATORS, get_all_enabled_indicators
 from typing import Dict, Any
 import time
@@ -88,6 +91,39 @@ class CrawlerService:
                     return result
 
                 # 통합 데이터 구조에 메타데이터 추가
+                result["crawl_timestamp"] = time.time()
+                result["url"] = url
+                return result
+
+            elif "multpl.com/s-p-500-pe-ratio" in url:
+                # S&P 500 PE Ratio 크롤러
+                result = crawl_sp500_pe()
+
+                if "error" in result:
+                    return result
+
+                result["crawl_timestamp"] = time.time()
+                result["url"] = url
+                return result
+
+            elif "multpl.com/shiller-pe" in url:
+                # Shiller PE (CAPE) 크롤러
+                result = crawl_shiller_pe()
+
+                if "error" in result:
+                    return result
+
+                result["crawl_timestamp"] = time.time()
+                result["url"] = url
+                return result
+
+            elif "cboe.com" in url or indicator_id == "put-call-ratio":
+                # Put/Call Ratio 크롤러 (Phase 2: 폴백)
+                result = crawl_put_call_ratio()
+
+                if "error" in result:
+                    return result
+
                 result["crawl_timestamp"] = time.time()
                 result["url"] = url
                 return result
