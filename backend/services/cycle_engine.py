@@ -148,7 +148,75 @@ CREDIT_INDICATORS = {
 
 
 # ========================================
-# 3. CORE SCORING FUNCTIONS
+# 3. SENTIMENT CYCLE CONFIGURATION
+# ========================================
+
+SENTIMENT_INDICATORS = {
+    'vix': {
+        'weight': 0.20,
+        'thresholds': {
+            'low': 12,
+            'neutral': 18,
+            'high': 30
+        },
+        'reverse': True,  # 낮을수록 좋음 (공포 낮음)
+        'name': 'VIX'
+    },
+    'sp500-pe': {
+        'weight': 0.20,
+        'thresholds': {
+            'cheap': 15,
+            'fair': 20,
+            'expensive': 25
+        },
+        'reverse': True,  # 낮을수록 좋음 (저평가)
+        'name': 'S&P500 PER'
+    },
+    'shiller-pe': {
+        'weight': 0.15,
+        'thresholds': {
+            'cheap': 20,
+            'fair': 25,
+            'expensive': 30
+        },
+        'reverse': True,  # 낮을수록 좋음 (저평가)
+        'name': 'Shiller CAPE'
+    },
+    'put-call-ratio': {
+        'weight': 0.15,
+        'thresholds': {
+            'bullish': 0.7,
+            'neutral': 1.0,
+            'bearish': 1.3
+        },
+        'reverse': False,  # 높을수록 공포 (기회)
+        'name': 'Put/Call Ratio'
+    },
+    'michigan-consumer-sentiment': {
+        'weight': 0.15,
+        'thresholds': {
+            'low': 70,
+            'neutral': 85,
+            'high': 100
+        },
+        'reverse': False,  # 높을수록 좋음
+        'name': '미시간 소비자심리'
+    },
+    'cb-consumer-confidence': {
+        'weight': 0.15,
+        'thresholds': {
+            'low': 90,
+            'neutral': 100,
+            'high': 110
+        },
+        'reverse': False,  # 높을수록 좋음
+        'name': 'CB 소비자신뢰'
+    }
+}
+
+
+# ========================================
+# 4. CORE SCORING FUNCTIONS
 # ========================================
 
 def calculate_threshold_score(
@@ -426,14 +494,106 @@ def get_credit_state(score: float) -> str:
 
 
 # ========================================
-# 6. MASTER MARKET CYCLE (Phase 1 임시 버전)
+# 6. SENTIMENT CYCLE CALCULATOR (Phase 2)
+# ========================================
+
+def calculate_sentiment_score(db_service) -> Dict[str, Any]:
+    """
+    심리/밸류에이션 사이클 점수 계산 (0-100)
+
+    Args:
+        db_service: PostgreSQL 데이터베이스 서비스
+
+    Returns:
+        {
+            "score": 42.5,
+            "state": "과열 경계",
+            "signals": ["VIX 18", "S&P500 PE 31", "CAPE 40.5"],
+            "indicators": {...}
+        }
+    """
+    scores = {}
+    signals = []
+    indicator_details = {}
+
+    for indicator_id, config in SENTIMENT_INDICATORS.items():
+        try:
+            latest = db_service.get_latest_indicator(indicator_id)
+
+            if not latest or 'actual' not in latest:
+                logger.warning(f"Sentiment indicator {indicator_id} not found in DB")
+                continue
+
+            value = parse_indicator_value(latest['actual'])
+            if value is None:
+                continue
+
+            score = calculate_threshold_score(
+                value,
+                config['thresholds'],
+                config['reverse']
+            )
+
+            scores[indicator_id] = score
+            indicator_details[indicator_id] = {
+                'value': value,
+                'score': score,
+                'name': config['name'],
+                'weight': config['weight']
+            }
+
+            if len(signals) < 3:
+                signals.append(f"{config['name']} {value}")
+
+        except Exception as e:
+            logger.error(f"Error calculating sentiment score for {indicator_id}: {e}")
+            continue
+
+    if not scores:
+        return {
+            "score": 50.0,
+            "state": "데이터 부족",
+            "signals": ["데이터 수집 중"],
+            "indicators": {}
+        }
+
+    total_weight = sum(SENTIMENT_INDICATORS[k]['weight'] for k in scores.keys())
+    weighted_score = sum(
+        scores[k] * SENTIMENT_INDICATORS[k]['weight']
+        for k in scores.keys()
+    ) / total_weight
+
+    state = get_sentiment_state(weighted_score)
+
+    return {
+        "score": round(weighted_score, 1),
+        "state": state,
+        "signals": signals[:3],
+        "indicators": indicator_details
+    }
+
+
+def get_sentiment_state(score: float) -> str:
+    """심리 점수 → 상태 판단"""
+    if score >= 70:
+        return "극심한 공포 (바닥 근접)"
+    elif score >= 50:
+        return "약세 심리"
+    elif score >= 30:
+        return "과열 경계"
+    else:
+        return "극심한 탐욕 (고점 경계)"
+
+
+# ========================================
+# 7. MASTER MARKET CYCLE (Phase 2 완전 버전)
 # ========================================
 
 def calculate_master_cycle_v1(db_service) -> Dict[str, Any]:
     """
-    Phase 1: Master Market Cycle 임시 버전
+    Phase 2: Master Market Cycle 완전 버전
 
-    Sentiment는 50점 고정 (Phase 2에서 실제 계산)
+    3대 사이클 완전 통합
     MMC = 0.5*Sentiment + 0.3*Credit + 0.2*Macro
 
     Args:
@@ -445,32 +605,25 @@ def calculate_master_cycle_v1(db_service) -> Dict[str, Any]:
             "phase": "확장기",
             "macro": {...},
             "credit": {...},
-            "sentiment": {"score": 50, "note": "Phase 2에서 활성화"},
+            "sentiment": {...},
             "recommendation": "중립 포지션 유지",
             "updated_at": "2025-12-05T10:30:00"
         }
     """
     try:
-        # 1. 각 사이클 계산
+        # 1. 각 사이클 계산 (3개 모두 실제 계산)
         macro = calculate_macro_score(db_service)
         credit = calculate_credit_score(db_service)
+        sentiment = calculate_sentiment_score(db_service)  # ✅ Phase 2: 실제 계산
 
-        # 2. Sentiment 임시값 (Phase 2에서 실제 계산)
-        sentiment = {
-            "score": 50.0,
-            "state": "Phase 2 예정",
-            "signals": ["VIX, PER, CAPE 등 추가 예정"],
-            "indicators": {}
-        }
-
-        # 3. MMC 계산 (가중치: Sentiment 50%, Credit 30%, Macro 20%)
+        # 2. MMC 계산 (가중치: Sentiment 50%, Credit 30%, Macro 20%)
         mmc_score = (
             0.50 * sentiment['score'] +
             0.30 * credit['score'] +
             0.20 * macro['score']
         )
 
-        # 4. 투자 국면 판단
+        # 3. 투자 국면 판단
         phase = get_investment_phase(mmc_score)
         recommendation = get_investment_recommendation(
             mmc_score,
@@ -487,7 +640,7 @@ def calculate_master_cycle_v1(db_service) -> Dict[str, Any]:
             "sentiment": sentiment,
             "recommendation": recommendation,
             "updated_at": datetime.now().isoformat(),
-            "version": "v1.0-phase1"
+            "version": "v2.0-phase2"  # ✅ Phase 2 버전
         }
 
     except Exception as e:
