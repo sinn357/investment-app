@@ -72,11 +72,11 @@ def crawl_shiller_pe() -> Dict[str, Any]:
 
         return {
             "latest_release": {
+                "release_date": today,
+                "time": None,
                 "actual": str(current_cape),
                 "forecast": None,
-                "previous": str(previous_cape),
-                "latest_release": today,
-                "next_release": None
+                "previous": str(previous_cape)
             },
             "history": []
         }

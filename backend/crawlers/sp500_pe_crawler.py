@@ -78,11 +78,11 @@ def crawl_sp500_pe() -> Dict[str, Any]:
 
         return {
             "latest_release": {
+                "release_date": today,
+                "time": None,
                 "actual": str(current_pe),
                 "forecast": None,  # PE Ratio는 forecast 없음
-                "previous": str(previous_pe),
-                "latest_release": today,
-                "next_release": None  # 일일 업데이트
+                "previous": str(previous_pe)
             },
             "history": []  # Phase 2에서는 히스토리 불필요
         }
