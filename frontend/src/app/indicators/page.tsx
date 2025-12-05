@@ -6,7 +6,7 @@ import MasterCycleCard from '@/components/MasterCycleCard';
 import MacroCycleCard from '@/components/MacroCycleCard';
 import CreditCycleCard from '@/components/CreditCycleCard';
 import SentimentCycleCard from '@/components/SentimentCycleCard';
-import CyclePanel from '@/components/CyclePanel';
+// import CyclePanel from '@/components/CyclePanel'; // ✅ 제거: Master Cycle로 대체
 import IndicatorGrid from '@/components/IndicatorGrid';
 import IndicatorTableView from '@/components/IndicatorTableView';
 import IndicatorChartPanel from '@/components/IndicatorChartPanel';
@@ -14,11 +14,11 @@ import IndicatorChartPanel from '@/components/IndicatorChartPanel';
 // import DataSection from '@/components/DataSection'; // 통합으로 비활성화
 import NewsNarrative from '@/components/NewsNarrative';
 import RiskRadar from '@/components/RiskRadar';
-import CyclePanelSkeleton from '@/components/skeletons/CyclePanelSkeleton';
+// import CyclePanelSkeleton from '@/components/skeletons/CyclePanelSkeleton'; // ✅ 제거: Master Cycle로 대체
 import IndicatorGridSkeleton from '@/components/skeletons/IndicatorGridSkeleton';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { CARD_CLASSES } from '@/styles/theme';
-import { calculateCycleScore, RawIndicators } from '@/utils/cycleCalculator';
+// import { calculateCycleScore, RawIndicators } from '@/utils/cycleCalculator'; // ✅ 제거: Master Cycle로 대체
 import { fetchJsonWithRetry } from '@/utils/fetchWithRetry';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -148,7 +148,7 @@ const BIGWAVE_STORAGE_KEY = 'bigwave_v1';
 export default function IndicatorsPage() {
   const [userId] = useState(1); // 임시 user_id
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
-  const [cycleScore, setCycleScore] = useState<ReturnType<typeof calculateCycleScore> | null>(null);
+  // const [cycleScore, setCycleScore] = useState<ReturnType<typeof calculateCycleScore> | null>(null); // ✅ 제거: Master Cycle로 대체
   const [allIndicators, setAllIndicators] = useState<GridIndicator[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedIndicatorId, setSelectedIndicatorId] = useState<string | undefined>(undefined);
@@ -289,44 +289,7 @@ export default function IndicatorsPage() {
             setSentimentCycleData(result.sentiment_cycle);
           }
 
-          // 필요한 지표 추출 (모든 지표가 v2/indicators 응답에 포함됨)
-          const indicators: RawIndicators = {};
-
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          result.indicators.forEach((item: any) => {
-            const latest = item.data.latest_release;
-            const actualValue = typeof latest.actual === 'string'
-              ? parseFloat(latest.actual.replace('%', '').replace('K', '000'))
-              : latest.actual;
-
-            // 지표별 매핑 (indicator_id 기준)
-            if (item.indicator_id === 'ism-manufacturing') {
-              indicators.ismManufacturing = actualValue;
-            } else if (item.indicator_id === 'ism-non-manufacturing') {
-              indicators.ismNonManufacturing = actualValue;
-            } else if (item.indicator_id === 'unemployment-rate') {
-              indicators.unemploymentRate = actualValue;
-            } else if (item.indicator_id === 'industrial-production-yoy') {
-              indicators.industrialProduction = actualValue;
-            } else if (item.indicator_id === 'retail-sales-yoy') {
-              indicators.retailSales = actualValue;
-            } else if (item.indicator_id === 'cpi') {
-              indicators.cpi = actualValue;
-            } else if (item.indicator_id === 'ten-year-treasury') {
-              indicators.nominalRate = actualValue;
-            } else if (item.indicator_id === 'federal-funds-rate') {
-              indicators.fedRate = actualValue;
-            }
-          });
-
-          // 폴백값 설정 (데이터가 없는 경우)
-          indicators.cpi = indicators.cpi || 2.8;
-          indicators.nominalRate = indicators.nominalRate || 4.5;
-          indicators.fedRate = indicators.fedRate || 5.25;
-
-          // 국면 점수 계산
-          const score = calculateCycleScore(indicators);
-          setCycleScore(score);
+          // ✅ 제거: cycleCalculator 로직 - Master Cycle로 대체
 
           // 그리드용 지표 데이터 생성 (백엔드에서 메타데이터 포함됨)
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
