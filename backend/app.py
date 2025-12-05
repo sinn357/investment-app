@@ -3410,6 +3410,124 @@ def get_sentiment_cycle():
             "message": f"심리 사이클 계산 실패: {str(e)}"
         }), 500
 
+# ========================================
+# V3 API: Master Market Cycle System
+# ========================================
+
+@app.route('/api/v3/cycles/master', methods=['GET'])
+def get_master_market_cycle():
+    """
+    Master Market Cycle 점수 조회 (Phase 1 임시 버전)
+
+    Returns:
+        {
+            "status": "success",
+            "data": {
+                "mmc_score": 64.2,
+                "phase": "확장기 (포지션 유지)",
+                "macro": {...},
+                "credit": {...},
+                "sentiment": {"score": 50, "note": "Phase 2 예정"},
+                "recommendation": "중립 포지션 유지",
+                "updated_at": "2025-12-05T10:30:00"
+            }
+        }
+    """
+    try:
+        from services.cycle_engine import calculate_master_cycle_v1
+
+        result = calculate_master_cycle_v1(db_service)
+
+        if 'error' in result:
+            return jsonify({
+                "status": "error",
+                "message": result['error']
+            }), 500
+
+        return jsonify({
+            "status": "success",
+            "data": result
+        })
+
+    except Exception as e:
+        import traceback
+        print(f"Error in get_master_market_cycle: {traceback.format_exc()}")
+        return jsonify({
+            "status": "error",
+            "message": f"Master cycle 계산 실패: {str(e)}"
+        }), 500
+
+
+@app.route('/api/v3/cycles/macro', methods=['GET'])
+def get_macro_cycle_v3():
+    """
+    거시경제 사이클 점수 조회
+
+    Returns:
+        {
+            "status": "success",
+            "data": {
+                "score": 72.5,
+                "phase": "확장기",
+                "signals": ["ISM 제조업 52.8", "실업률 3.8%"],
+                "indicators": {...}
+            }
+        }
+    """
+    try:
+        from services.cycle_engine import calculate_macro_score
+
+        result = calculate_macro_score(db_service)
+
+        return jsonify({
+            "status": "success",
+            "data": result
+        })
+
+    except Exception as e:
+        import traceback
+        print(f"Error in get_macro_cycle_v3: {traceback.format_exc()}")
+        return jsonify({
+            "status": "error",
+            "message": f"Macro cycle 계산 실패: {str(e)}"
+        }), 500
+
+
+@app.route('/api/v3/cycles/credit', methods=['GET'])
+def get_credit_cycle_v3():
+    """
+    신용/유동성 사이클 점수 조회
+
+    Returns:
+        {
+            "status": "success",
+            "data": {
+                "score": 58.3,
+                "state": "중립",
+                "signals": ["HY 350bp", "FCI -0.2"],
+                "indicators": {...}
+            }
+        }
+    """
+    try:
+        from services.cycle_engine import calculate_credit_score
+
+        result = calculate_credit_score(db_service)
+
+        return jsonify({
+            "status": "success",
+            "data": result
+        })
+
+    except Exception as e:
+        import traceback
+        print(f"Error in get_credit_cycle_v3: {traceback.format_exc()}")
+        return jsonify({
+            "status": "error",
+            "message": f"Credit cycle 계산 실패: {str(e)}"
+        }), 500
+
+
 if __name__ == '__main__':
     # Render 등 PaaS 환경에서 주어지는 동적 포트를 우선 사용
     port = int(os.environ.get("PORT", 5001))

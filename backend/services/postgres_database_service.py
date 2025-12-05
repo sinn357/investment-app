@@ -2589,3 +2589,50 @@ class PostgresDatabaseService:
                 "status": "error",
                 "message": f"관심 종목 삭제 중 오류: {str(e)}"
             }
+
+    # ========================================
+    # Cycle Engine Support Methods
+    # ========================================
+
+    def get_latest_indicator(self, indicator_id: str) -> Optional[Dict]:
+        """
+        특정 지표의 최신값 조회 (Cycle Engine용)
+
+        Args:
+            indicator_id: 지표 ID (예: 'ism-manufacturing', 'hy-spread')
+
+        Returns:
+            {
+                'indicator_id': str,
+                'actual': str/float,
+                'forecast': str/float,
+                'previous': str/float,
+                'latest_release': str,
+                'next_release': str
+            } or None
+        """
+        try:
+            with self.get_connection() as conn:
+                with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                    cur.execute("""
+                        SELECT
+                            indicator_id,
+                            actual,
+                            forecast,
+                            previous,
+                            latest_release,
+                            next_release
+                        FROM latest_releases
+                        WHERE indicator_id = %s
+                    """, (indicator_id,))
+
+                    result = cur.fetchone()
+
+                    if result:
+                        return dict(result)
+                    else:
+                        return None
+
+        except Exception as e:
+            print(f"PostgreSQL get_latest_indicator error for {indicator_id}: {e}")
+            return None

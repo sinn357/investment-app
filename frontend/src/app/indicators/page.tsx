@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Navigation from '@/components/Navigation';
+import MasterCycleCard from '@/components/MasterCycleCard';
 import MacroCycleCard from '@/components/MacroCycleCard';
 import CreditCycleCard from '@/components/CreditCycleCard';
 import SentimentCycleCard from '@/components/SentimentCycleCard';
@@ -161,6 +162,9 @@ export default function IndicatorsPage() {
   const [creditCycleData, setCreditCycleData] = useState<any>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [sentimentCycleData, setSentimentCycleData] = useState<any>(null);
+  // ✅ NEW: Master Market Cycle state (Phase 1)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [masterCycleData, setMasterCycleData] = useState<any>(null);
   const [narrative, setNarrative] = useState<EconomicNarrative>({
     articles: [],
     myNarrative: '',
@@ -361,6 +365,23 @@ export default function IndicatorsPage() {
           const loadTime = (endTime - startTime) / 1000; // 밀리초 → 초
           setLoadingTime(Number(loadTime.toFixed(2)));
         }
+
+        // ✅ NEW: Master Market Cycle API 호출 (Phase 1)
+        try {
+          const masterResult = await fetchJsonWithRetry(
+            'https://investment-app-backend-x166.onrender.com/api/v3/cycles/master',
+            {},
+            3,
+            1000
+          );
+
+          if (masterResult.status === 'success' && masterResult.data) {
+            setMasterCycleData(masterResult.data);
+          }
+        } catch (error) {
+          console.warn('Master Cycle API 호출 실패 (Phase 1):', error);
+        }
+
       } catch (error) {
         console.error('Failed to fetch cycle data:', error);
       } finally {
@@ -490,6 +511,13 @@ export default function IndicatorsPage() {
                 경제 국면 데이터를 불러올 수 없습니다. 나중에 다시 시도해주세요.
               </p>
             </div>
+          </div>
+        )}
+
+        {/* ✅ NEW: Master Market Cycle (Phase 1) */}
+        {!loading && masterCycleData && (
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
+            <MasterCycleCard data={masterCycleData} />
           </div>
         )}
 
