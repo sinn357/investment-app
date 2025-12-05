@@ -458,25 +458,6 @@ export default function IndicatorsPage() {
       /> */}
 
       <main>
-        {/* 경제 국면 판별 패널 */}
-        {loading ? (
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-            <CyclePanelSkeleton />
-          </div>
-        ) : cycleScore ? (
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-            <CyclePanel score={cycleScore} />
-          </div>
-        ) : (
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-            <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
-              <p className="text-yellow-800 dark:text-yellow-200">
-                경제 국면 데이터를 불러올 수 없습니다. 나중에 다시 시도해주세요.
-              </p>
-            </div>
-          </div>
-        )}
-
         {/* ✅ NEW: Master Market Cycle (Phase 1) */}
         {!loading && masterCycleData && (
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
