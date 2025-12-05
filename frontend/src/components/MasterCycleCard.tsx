@@ -31,7 +31,7 @@ interface MasterCycleCardProps {
  * Master Market Cycle Card
  * 3대 사이클(Macro, Credit, Sentiment)을 통합한 종합 투자 타이밍 점수 표시
  *
- * Phase 1: Sentiment는 50점 고정 (Phase 2에서 활성화)
+ * Phase 2 완료: Sentiment 실시간 점수 활성화 (VIX, S&P PE, CAPE, P/C Ratio, Michigan, CB)
  */
 export default function MasterCycleCard({ data }: MasterCycleCardProps) {
   // MMC 점수에 따른 색상 결정
@@ -191,10 +191,10 @@ export default function MasterCycleCard({ data }: MasterCycleCardProps) {
         </div>
       </div>
 
-      {/* Phase 1 안내 (Sentiment 비활성 시) */}
-      {data.sentiment.score === 50 && data.sentiment.note && (
+      {/* 데이터 부족 안내 (DB에 데이터 없을 때만) */}
+      {data.sentiment.score === 50 && data.sentiment.state === "데이터 부족" && (
         <div className="mt-4 text-xs text-gray-500 dark:text-gray-400 text-center bg-gray-100 dark:bg-gray-700 p-2 rounded">
-          ⚠️ Sentiment 사이클은 Phase 2에서 활성화됩니다
+          ℹ️ Sentiment 지표 데이터 수집 중 (S&P PE, CAPE, P/C Ratio)
         </div>
       )}
 
