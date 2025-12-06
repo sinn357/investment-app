@@ -2722,13 +2722,7 @@ def get_sp500_pe_rawdata():
         return jsonify({
             "status": "success",
             "data": {
-                "latest_release": {
-                    "release_date": result.get("release_date"),
-                    "time": result.get("time"),
-                    "actual": result.get("actual"),
-                    "forecast": result.get("forecast"),
-                    "previous": result.get("previous")
-                },
+                "latest_release": result.get("latest_release"),
                 "next_release": result.get("next_release")
             },
             "source": "multpl.com",
@@ -2781,13 +2775,7 @@ def get_shiller_pe_rawdata():
         return jsonify({
             "status": "success",
             "data": {
-                "latest_release": {
-                    "release_date": result.get("release_date"),
-                    "time": result.get("time"),
-                    "actual": result.get("actual"),
-                    "forecast": result.get("forecast"),
-                    "previous": result.get("previous")
-                },
+                "latest_release": result.get("latest_release"),
                 "next_release": result.get("next_release")
             },
             "source": "multpl.com",
@@ -2840,13 +2828,7 @@ def get_put_call_ratio_rawdata():
         return jsonify({
             "status": "success",
             "data": {
-                "latest_release": {
-                    "release_date": result.get("release_date"),
-                    "time": result.get("time"),
-                    "actual": result.get("actual"),
-                    "forecast": result.get("forecast"),
-                    "previous": result.get("previous")
-                },
+                "latest_release": result.get("latest_release"),
                 "next_release": result.get("next_release")
             },
             "source": "cboe (fallback)",

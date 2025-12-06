@@ -71,12 +71,15 @@ def crawl_shiller_pe() -> Dict[str, Any]:
         previous_cape = round(current_cape - 0.03, 2)
 
         return {
-            "release_date": today,
-            "time": None,
-            "actual": str(current_cape),
-            "forecast": None,
-            "previous": str(previous_cape),
-            "history": []
+            "latest_release": {
+                "release_date": today,
+                "time": None,
+                "actual": str(current_cape),
+                "forecast": None,
+                "previous": str(previous_cape)
+            },
+            "next_release": None,
+            "history_table": []
         }
 
     except requests.RequestException as e:
