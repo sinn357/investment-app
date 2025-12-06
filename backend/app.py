@@ -1088,10 +1088,9 @@ def update_all_indicators_background():
             "error": f"Update process failed: {str(e)}"
         })
     finally:
-        # ✅ 지표 업데이트 후 캐시 무효화
+        # ✅ 지표 업데이트 후 캐시 무효화 + 상태 리셋
         INDICATORS_CACHE["data"] = None
         INDICATORS_CACHE["timestamp"] = 0
-    finally:
         update_status["is_updating"] = False
 
 @app.route('/api/v2/update-indicators', methods=['POST'])
