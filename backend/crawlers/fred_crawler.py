@@ -5,7 +5,7 @@ FRED (Federal Reserve Economic Data) CSV 크롤러
 """
 
 import requests
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from datetime import datetime, timedelta
 
 def fetch_fred_csv(series_id: str, days: int = 14) -> str:
@@ -125,20 +125,98 @@ def extract_fred_data(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
         ]
     }
 
-def crawl_fred_indicator(series_id: str) -> Dict[str, Any]:
+
+def _find_year_ago_row(rows: List[Dict[str, Any]], index: int) -> Optional[Dict[str, Any]]:
+    """주어진 인덱스의 날짜 기준으로 1년 전 데이터 찾기"""
+    if index >= len(rows):
+        return None
+
+    target_date = datetime.fromisoformat(rows[index]['date']) - timedelta(days=365)
+    for row in rows[index + 1:]:
+        row_date = datetime.fromisoformat(row['date'])
+        if row_date <= target_date:
+            return row
+    return None
+
+
+def _extract_yoy_data(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """
+    FRED 데이터에서 전년동기 대비(%)를 계산하여 반환
+    - latest_release.actual: YoY %
+    - history_table.actual: 각 포인트의 YoY %
+    """
+    if not rows:
+        return {"error": "No FRED data found"}
+
+    # 최신 관측값 기준 YoY 계산
+    year_ago_row = _find_year_ago_row(rows, 0)
+    if not year_ago_row:
+        return {"error": "Insufficient FRED data for YoY calculation"}
+
+    latest = rows[0]
+    try:
+        yoy = round((latest['value'] - year_ago_row['value']) / year_ago_row['value'] * 100, 2)
+    except ZeroDivisionError:
+        return {"error": "Year-ago value is zero, cannot compute YoY"}
+
+    # 직전 관측치 기준 YoY (previous)
+    previous_yoy = None
+    if len(rows) > 1:
+        prev_year_ago = _find_year_ago_row(rows, 1)
+        if prev_year_ago:
+            try:
+                previous_yoy = round((rows[1]['value'] - prev_year_ago['value']) / prev_year_ago['value'] * 100, 2)
+            except ZeroDivisionError:
+                previous_yoy = None
+
+    history = []
+    # 최근 12개 관측치에 대해 YoY 변환
+    for i, row in enumerate(rows[:12]):
+        year_ago = _find_year_ago_row(rows, i)
+        if not year_ago or year_ago['value'] == 0:
+            continue
+        yoy_value = round((row['value'] - year_ago['value']) / year_ago['value'] * 100, 2)
+        history.append({
+            "release_date": row['date'],
+            "time": "N/A",
+            "actual": yoy_value,
+            "forecast": None,
+            "previous": None
+        })
+
+    return {
+        "latest_release": {
+            "release_date": latest['date'],
+            "time": "N/A",
+            "actual": yoy,
+            "forecast": None,
+            "previous": previous_yoy
+        },
+        "next_release": None,
+        "surprise": None,
+        "history_table": history
+    }
+
+
+def crawl_fred_indicator(series_id: str, calculate_yoy: bool = False) -> Dict[str, Any]:
     """FRED 지표 크롤링 (Main Entry Point)
 
     Args:
         series_id: FRED 시리즈 ID
             - T10Y2Y: 10년물-2년물 장단기금리차
             - DFII10: 10년물 TIPS 실질금리
+        calculate_yoy: True면 전년동기 대비 %로 변환 (M2 등 레벨 데이터용)
     """
     try:
-        csv_text = fetch_fred_csv(series_id, days=14)
+        days = 500 if calculate_yoy else 14  # YoY 계산 시 최소 1년치 이상 확보
+        csv_text = fetch_fred_csv(series_id, days=days)
         rows = parse_fred_csv(csv_text)
 
         if not rows:
             return {"error": "No FRED data found"}
+
+        if calculate_yoy:
+            return _extract_yoy_data(rows)
 
         return extract_fred_data(rows)
 

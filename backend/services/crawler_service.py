@@ -40,7 +40,8 @@ class CrawlerService:
             if "fred.stlouisfed.org" in url:
                 # FRED CSV API 크롤러
                 series_id = url.split('/')[-1]  # URL에서 시리즈 ID 추출 (예: T10Y2Y, DFII10)
-                result = crawl_fred_indicator(series_id)
+                calculate_yoy = indicator_id == "m2-yoy"
+                result = crawl_fred_indicator(series_id, calculate_yoy=calculate_yoy)
 
                 if "error" in result:
                     return result
