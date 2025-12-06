@@ -2716,10 +2716,19 @@ def get_sp500_pe_rawdata():
                 "message": result["error"]
             }), 500
 
+        # 데이터베이스에 저장
+        db_service.save_indicator_data('sp500-pe', result)
+
         return jsonify({
             "status": "success",
             "data": {
-                "latest_release": result["latest_release"],
+                "latest_release": {
+                    "release_date": result.get("release_date"),
+                    "time": result.get("time"),
+                    "actual": result.get("actual"),
+                    "forecast": result.get("forecast"),
+                    "previous": result.get("previous")
+                },
                 "next_release": result.get("next_release")
             },
             "source": "multpl.com",
@@ -2772,7 +2781,13 @@ def get_shiller_pe_rawdata():
         return jsonify({
             "status": "success",
             "data": {
-                "latest_release": result,
+                "latest_release": {
+                    "release_date": result.get("release_date"),
+                    "time": result.get("time"),
+                    "actual": result.get("actual"),
+                    "forecast": result.get("forecast"),
+                    "previous": result.get("previous")
+                },
                 "next_release": result.get("next_release")
             },
             "source": "multpl.com",
@@ -2825,7 +2840,13 @@ def get_put_call_ratio_rawdata():
         return jsonify({
             "status": "success",
             "data": {
-                "latest_release": result,
+                "latest_release": {
+                    "release_date": result.get("release_date"),
+                    "time": result.get("time"),
+                    "actual": result.get("actual"),
+                    "forecast": result.get("forecast"),
+                    "previous": result.get("previous")
+                },
                 "next_release": result.get("next_release")
             },
             "source": "cboe (fallback)",
