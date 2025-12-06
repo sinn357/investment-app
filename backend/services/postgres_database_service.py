@@ -2620,10 +2620,12 @@ class PostgresDatabaseService:
                             actual,
                             forecast,
                             previous,
-                            latest_release,
-                            next_release
+                            release_date,
+                            time
                         FROM latest_releases
                         WHERE indicator_id = %s
+                        ORDER BY created_at DESC
+                        LIMIT 1
                     """, (indicator_id,))
 
                     result = cur.fetchone()
