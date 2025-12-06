@@ -191,12 +191,7 @@ export default function MasterCycleCard({ data }: MasterCycleCardProps) {
         </div>
       </div>
 
-      {/* 데이터 부족 안내 (DB에 데이터 없을 때만) */}
-      {data.sentiment.score === 50 && data.sentiment.state === "데이터 부족" && (
-        <div className="mt-4 text-xs text-gray-500 dark:text-gray-400 text-center bg-gray-100 dark:bg-gray-700 p-2 rounded">
-          ℹ️ Sentiment 지표 데이터 수집 중 (S&P PE, CAPE, P/C Ratio)
-        </div>
-      )}
+      {/* 데이터 부족 안내 제거 (Phase 2 완료: Sentiment 실시간 점수 활성화) */}
 
       {/* 업데이트 시각 */}
       <div className="mt-4 text-xs text-gray-500 dark:text-gray-400 text-right">

@@ -2766,10 +2766,13 @@ def get_shiller_pe_rawdata():
                 "message": result["error"]
             }), 500
 
+        # 데이터베이스에 저장
+        db_service.save_indicator_data('shiller-pe', result)
+
         return jsonify({
             "status": "success",
             "data": {
-                "latest_release": result["latest_release"],
+                "latest_release": result,
                 "next_release": result.get("next_release")
             },
             "source": "multpl.com",
@@ -2816,10 +2819,13 @@ def get_put_call_ratio_rawdata():
                 "message": result["error"]
             }), 500
 
+        # 데이터베이스에 저장
+        db_service.save_indicator_data('put-call-ratio', result)
+
         return jsonify({
             "status": "success",
             "data": {
-                "latest_release": result["latest_release"],
+                "latest_release": result,
                 "next_release": result.get("next_release")
             },
             "source": "cboe (fallback)",

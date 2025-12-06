@@ -47,13 +47,11 @@ def crawl_put_call_ratio() -> Dict[str, Any]:
     previous_pcr = 1.02
 
     return {
-        "latest_release": {
-            "release_date": today,
-            "time": None,
-            "actual": str(current_pcr),
-            "forecast": None,
-            "previous": str(previous_pcr)
-        },
+        "release_date": today,
+        "time": None,
+        "actual": str(current_pcr),
+        "forecast": None,
+        "previous": str(previous_pcr),
         "history": [],
         "note": "Phase 2: Fallback value (neutral). Phase 3: CBOE API integration planned."
     }
