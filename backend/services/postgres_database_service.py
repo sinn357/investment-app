@@ -495,17 +495,29 @@ class PostgresDatabaseService:
             print(f"Error getting indicator data for {indicator_id}: {e}")
             return {"error": f"Database error: {str(e)}"}
 
-    def get_history_data(self, indicator_id: str) -> List[Dict[str, Any]]:
-        """히스토리 데이터 조회"""
+    def get_history_data(self, indicator_id: str, limit: int = None) -> List[Dict[str, Any]]:
+        """히스토리 데이터 조회
+
+        Args:
+            indicator_id: 지표 ID
+            limit: 가져올 최대 행 수 (None이면 전체)
+        """
         try:
             with self.get_connection() as conn:
                 with conn.cursor() as cur:
-                    cur.execute("""
+                    query = """
                         SELECT release_date, time, actual, forecast, previous
                         FROM history_data
                         WHERE indicator_id = %s
                         ORDER BY release_date DESC
-                    """, (indicator_id,))
+                    """
+                    params = [indicator_id]
+
+                    if limit and limit > 0:
+                        query += " LIMIT %s"
+                        params.append(limit)
+
+                    cur.execute(query, tuple(params))
                     rows = cur.fetchall()
 
                     return [

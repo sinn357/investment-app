@@ -853,6 +853,11 @@ def get_all_indicators_from_db():
     try:
         force_refresh = request.args.get("force") == "1"
         now_ts = time.time()
+        # 히스토리 개수 제한 (기본 6개). 0이면 히스토리 스킵.
+        try:
+            history_limit = int(request.args.get("history_limit", "6"))
+        except ValueError:
+            history_limit = 6
 
         # ✅ 최근 캐시가 있으면 즉시 반환 (5분)
         if not force_refresh and INDICATORS_CACHE["data"] and (now_ts - INDICATORS_CACHE["timestamp"] < INDICATORS_CACHE_TTL):
@@ -869,15 +874,19 @@ def get_all_indicators_from_db():
             data = db_service.get_indicator_data(indicator_id)
             if "error" not in data:
                 # 히스토리 데이터 조회 (최근 12개월)
-                history_data = db_service.get_history_data(indicator_id)
                 history = []
-                if "error" not in history_data:
+                if history_limit > 0:
+                    history_data = db_service.get_history_data(indicator_id, limit=history_limit)
+                else:
+                    history_data = []
+                history = []
+                if history_limit > 0 and "error" not in history_data:
                     if isinstance(history_data, list):
                         # get_history_data()는 배열을 직접 반환
-                        history = history_data[:12]
+                        history = history_data[:history_limit]
                     elif isinstance(history_data, dict):
                         # 혹시 딕셔너리 형태로 올 경우 대비
-                        history = history_data.get("history", [])[:12]
+                        history = history_data.get("history", [])[:history_limit]
 
                 # 메타데이터 추가 - 안전한 방식으로 get_indicator_config 사용
                 metadata = get_indicator_config(indicator_id)
@@ -1006,7 +1015,12 @@ def get_indicator_from_db(indicator_id):
 def get_history_from_db(indicator_id):
     """데이터베이스에서 히스토리 데이터 조회"""
     try:
-        history_data = db_service.get_history_data(indicator_id)
+        try:
+            limit = int(request.args.get("limit")) if request.args.get("limit") else None
+        except ValueError:
+            limit = None
+
+        history_data = db_service.get_history_data(indicator_id, limit=limit)
 
         return jsonify({
             "status": "success",
