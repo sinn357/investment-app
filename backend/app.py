@@ -119,6 +119,10 @@ update_status = {
     "start_time": None
 }
 
+# 인메모리 캐시 (지표 전체 조회용)
+INDICATORS_CACHE = {"data": None, "timestamp": 0}
+INDICATORS_CACHE_TTL = 300  # seconds
+
 # Import test
 try:
     print("Testing retail sales import...")
@@ -847,6 +851,13 @@ def get_participation_rate_history():
 def get_all_indicators_from_db():
     """데이터베이스에서 모든 지표 데이터 조회 (빠른 로딩용) - 히스토리 포함"""
     try:
+        force_refresh = request.args.get("force") == "1"
+        now_ts = time.time()
+
+        # ✅ 최근 캐시가 있으면 즉시 반환 (5분)
+        if not force_refresh and INDICATORS_CACHE["data"] and (now_ts - INDICATORS_CACHE["timestamp"] < INDICATORS_CACHE_TTL):
+            return jsonify(INDICATORS_CACHE["data"])
+
         # indicators_config.py에서 활성화된 모든 지표 가져오기
         from crawlers.indicators_config import get_all_enabled_indicators
         all_indicator_ids = list(get_all_enabled_indicators().keys())
@@ -940,7 +951,7 @@ def get_all_indicators_from_db():
             print(f"Sentiment cycle calculation error: {e}")
             sentiment_cycle = None
 
-        return jsonify({
+        response_data = {
             "status": "success",
             "indicators": results,
             "total_count": len(results),
@@ -950,7 +961,13 @@ def get_all_indicators_from_db():
             "macro_cycle": macro_cycle,
             "credit_cycle": credit_cycle,
             "sentiment_cycle": sentiment_cycle
-        })
+        }
+
+        # ✅ 캐시 저장
+        INDICATORS_CACHE["data"] = response_data
+        INDICATORS_CACHE["timestamp"] = now_ts
+
+        return jsonify(response_data)
 
     except Exception as e:
         import traceback
@@ -1007,7 +1024,7 @@ def get_history_from_db(indicator_id):
 
 def update_all_indicators_background():
     """백그라운드에서 모든 지표 업데이트 실행"""
-    global update_status
+    global update_status, INDICATORS_CACHE
 
     try:
         update_status["is_updating"] = True
@@ -1056,6 +1073,10 @@ def update_all_indicators_background():
             "indicator_id": "system",
             "error": f"Update process failed: {str(e)}"
         })
+    finally:
+        # ✅ 지표 업데이트 후 캐시 무효화
+        INDICATORS_CACHE["data"] = None
+        INDICATORS_CACHE["timestamp"] = 0
     finally:
         update_status["is_updating"] = False
 
