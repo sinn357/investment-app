@@ -3,9 +3,6 @@
 import { useState, useEffect } from 'react';
 import Navigation from '@/components/Navigation';
 import MasterCycleCard from '@/components/MasterCycleCard';
-import MacroCycleCard from '@/components/MacroCycleCard';
-import CreditCycleCard from '@/components/CreditCycleCard';
-import SentimentCycleCard from '@/components/SentimentCycleCard';
 // import CyclePanel from '@/components/CyclePanel'; // ✅ 제거: Master Cycle로 대체
 import IndicatorGrid from '@/components/IndicatorGrid';
 import IndicatorTableView from '@/components/IndicatorTableView';
@@ -155,13 +152,6 @@ export default function IndicatorsPage() {
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
   const [loadingTime, setLoadingTime] = useState<number | null>(null); // ✅ 로딩 시간 측정
-  // ✅ 3대 사이클 state 추가 (통합 API에서 받을 데이터)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [macroCycleData, setMacroCycleData] = useState<any>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [creditCycleData, setCreditCycleData] = useState<any>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [sentimentCycleData, setSentimentCycleData] = useState<any>(null);
   // ✅ NEW: Master Market Cycle state (Phase 1)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [masterCycleData, setMasterCycleData] = useState<any>(null);
@@ -276,17 +266,6 @@ export default function IndicatorsPage() {
           // 최신 업데이트 시간 저장
           if (result.last_updated) {
             setLastUpdated(result.last_updated);
-          }
-
-          // ✅ 3대 사이클 데이터 저장 (통합 API에서 받음)
-          if (result.macro_cycle) {
-            setMacroCycleData(result.macro_cycle);
-          }
-          if (result.credit_cycle) {
-            setCreditCycleData(result.credit_cycle);
-          }
-          if (result.sentiment_cycle) {
-            setSentimentCycleData(result.sentiment_cycle);
           }
 
           // ✅ 제거: cycleCalculator 로직 - Master Cycle로 대체
@@ -462,23 +441,6 @@ export default function IndicatorsPage() {
         {!loading && masterCycleData && (
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
             <MasterCycleCard data={masterCycleData} />
-          </div>
-        )}
-
-        {/* 3대 사이클 카드 (✅ 통합 API에서 받은 데이터를 props로 전달) */}
-        {!loading && allIndicators.length > 0 && (
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
-            {/* 3대 사이클 - 3열 그리드 레이아웃 */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {/* 거시경제 사이클 */}
-              <MacroCycleCard data={macroCycleData} />
-
-              {/* 신용/유동성 사이클 */}
-              <CreditCycleCard data={creditCycleData} />
-
-              {/* 심리/밸류에이션 사이클 */}
-              <SentimentCycleCard data={sentimentCycleData} />
-            </div>
           </div>
         )}
 
