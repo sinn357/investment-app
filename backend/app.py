@@ -122,6 +122,7 @@ update_status = {
 # 인메모리 캐시 (지표 전체 조회용)
 INDICATORS_CACHE = {"data": None, "timestamp": 0}
 INDICATORS_CACHE_TTL = 300  # seconds
+MAX_UPDATE_DURATION = 600  # seconds, 오래 걸리면 스테일 처리
 
 # Import test
 try:
@@ -1094,11 +1095,21 @@ def trigger_update_indicators():
     """모든 지표 업데이트 트리거 (백그라운드 실행)"""
     global update_status
 
+    # 이전 업데이트가 비정상적으로 오래 걸리는 경우 스테일 처리 (10분 초과 시 리셋)
     if update_status["is_updating"]:
-        return jsonify({
-            "status": "error",
-            "message": "Update is already in progress"
-        }), 409
+        now_ts = time.time()
+        start_ts = update_status.get("start_time") or 0
+        if start_ts and (now_ts - start_ts) > MAX_UPDATE_DURATION:
+            update_status["is_updating"] = False
+            update_status["progress"] = 0
+            update_status["current_indicator"] = ""
+            update_status["completed_indicators"] = []
+            update_status["failed_indicators"] = []
+        else:
+            return jsonify({
+                "status": "error",
+                "message": "Update is already in progress"
+            }), 409
 
     # 백그라운드 스레드로 업데이트 실행
     thread = threading.Thread(target=update_all_indicators_background)
