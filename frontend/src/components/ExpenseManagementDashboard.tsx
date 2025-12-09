@@ -171,6 +171,7 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
   const [compositionMode, setCompositionMode] = useState<'지출' | '수입'>('지출');
   const [compositionCategory, setCompositionCategory] = useState<string>('전체');
   const [compositionSubCategory, setCompositionSubCategory] = useState<string | null>(null);
+  const [goalMode, setGoalMode] = useState<'지출' | '수입'>('지출');
 
   // 시계열 차트 탭 상태
   const [timeSeriesTab, setTimeSeriesTab] = useState<'일별' | '비율'>('일별');
@@ -1082,7 +1083,7 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
 
               {timeSeriesTab === '일별' && (
                 dailyData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={190}>
+                  <ResponsiveContainer width="100%" height={180}>
                     <BarChart data={dailyData}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                       <XAxis dataKey="날짜" tick={{ fontSize: 10, fill: '#475569' }} />
@@ -1104,13 +1105,13 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
                     </BarChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div className="h-[190px] flex items-center justify-center text-slate-400">데이터가 없습니다</div>
+                  <div className="h-[180px] flex items-center justify-center text-slate-400">데이터가 없습니다</div>
                 )
               )}
 
               {timeSeriesTab === '비율' && (
                 ratioData.length > 0 && (ratioData[0].value > 0 || ratioData[1].value > 0) ? (
-                  <ResponsiveContainer width="100%" height={190}>
+                  <ResponsiveContainer width="100%" height={180}>
                     <PieChart>
                       <Pie
                         data={ratioData}
@@ -1133,7 +1134,7 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
                     </PieChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div className="h-[190px] flex items-center justify-center text-slate-400">데이터가 없습니다</div>
+                  <div className="h-[180px] flex items-center justify-center text-slate-400">데이터가 없습니다</div>
                 )
               )}
             </div>
@@ -1226,43 +1227,54 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
 
         {/* 예산/목표 */}
         {expenseData && (
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-2.5">
-            <div className="bg-white border border-gray-200 rounded-lg p-2.5 shadow-sm">
-              <div className="flex items-center justify-between mb-2">
+          <div className="bg-white border border-gray-200 rounded-lg p-2.5 shadow-sm">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">🎯</span>
                 <div>
-                  <p className="text-xs text-slate-500">예산 진행도</p>
-                  <h3 className="text-base font-semibold text-slate-900">지출 목표</h3>
+                  <p className="text-xs text-slate-500">목표</p>
+                  <h3 className="text-base font-semibold text-slate-900">{goalMode === '지출' ? '지출 목표' : '수입 목표'}</h3>
                 </div>
-                <span className="text-[11px] px-2 py-0.5 rounded-full bg-gray-100 text-slate-700">카테고리별</span>
               </div>
-              <ExpenseGoalGauge
-                expenseData={expenseData.by_category.filter(item => item.transaction_type === '지출')}
-                goals={budgetGoals.expense_goals}
-                onSaveGoals={(goals) => {
-                  const newGoals = { ...budgetGoals, expense_goals: goals };
-                  setBudgetGoals(newGoals);
-                  saveBudgetGoals(newGoals);
-                }}
-              />
+              <div className="flex bg-gray-100 rounded-xl p-1 gap-1">
+                {(['지출', '수입'] as const).map((mode) => (
+                  <button
+                    key={mode}
+                    onClick={() => setGoalMode(mode)}
+                    className={`px-2.5 py-1.5 text-xs rounded-lg transition-colors ${
+                      goalMode === mode
+                        ? 'bg-[var(--secondary)] text-[var(--secondary-foreground)] font-semibold'
+                        : 'text-slate-700 hover:bg-white'
+                    }`}
+                  >
+                    {mode} 목표
+                  </button>
+                ))}
+              </div>
             </div>
-
-            <div className="bg-white border border-gray-200 rounded-lg p-2.5 shadow-sm">
-              <div className="flex items-center justify-between mb-2">
-                <div>
-                  <p className="text-xs text-slate-500">목표 달성률</p>
-                  <h3 className="text-base font-semibold text-slate-900">수입 목표</h3>
-                </div>
-                <span className="text-[11px] px-2 py-0.5 rounded-full bg-gray-100 text-slate-700">카테고리별</span>
-              </div>
-              <IncomeGoalGauge
-                incomeData={expenseData.by_category.filter(item => item.transaction_type === '수입')}
-                goals={budgetGoals.income_goals}
-                onSaveGoals={(goals) => {
-                  const newGoals = { ...budgetGoals, income_goals: goals };
-                  setBudgetGoals(newGoals);
-                  saveBudgetGoals(newGoals);
-                }}
-              />
+            <div className="text-[11px] text-slate-500 mb-2">카테고리별 진행 상황</div>
+            <div className="scale-[0.9] origin-top">
+              {goalMode === '지출' ? (
+                <ExpenseGoalGauge
+                  expenseData={expenseData.by_category.filter(item => item.transaction_type === '지출')}
+                  goals={budgetGoals.expense_goals}
+                  onSaveGoals={(goals) => {
+                    const newGoals = { ...budgetGoals, expense_goals: goals };
+                    setBudgetGoals(newGoals);
+                    saveBudgetGoals(newGoals);
+                  }}
+                />
+              ) : (
+                <IncomeGoalGauge
+                  incomeData={expenseData.by_category.filter(item => item.transaction_type === '수입')}
+                  goals={budgetGoals.income_goals}
+                  onSaveGoals={(goals) => {
+                    const newGoals = { ...budgetGoals, income_goals: goals };
+                    setBudgetGoals(newGoals);
+                    saveBudgetGoals(newGoals);
+                  }}
+                />
+              )}
             </div>
           </div>
         )}
