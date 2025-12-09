@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Navigation from '@/components/Navigation';
 import MasterCycleCard from '@/components/MasterCycleCard';
+import MMCScoreCard from '@/components/MMCScoreCard';
 // import CyclePanel from '@/components/CyclePanel'; // ✅ 제거: Master Cycle로 대체
 import IndicatorGrid from '@/components/IndicatorGrid';
 import IndicatorTableView from '@/components/IndicatorTableView';
@@ -17,9 +18,6 @@ import ErrorBoundary from '@/components/ErrorBoundary';
 import { CARD_CLASSES } from '@/styles/theme';
 // import { calculateCycleScore, RawIndicators } from '@/utils/cycleCalculator'; // ✅ 제거: Master Cycle로 대체
 import { fetchJsonWithRetry } from '@/utils/fetchWithRetry';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
 import BigWaveSection, { BigWaveCard } from '@/components/BigWaveSection';
 
 interface Interpretation {
@@ -127,13 +125,6 @@ interface RiskRadarData {
   executionTags: string[];
 }
 
-type CycleLevel = '완화' | '중립' | '긴축';
-interface CycleScoreInput {
-  credit: CycleLevel;
-  sentiment: CycleLevel;
-  notes?: string;
-}
-
 interface BigWaveData {
   cards: BigWaveCard[];
 }
@@ -165,11 +156,6 @@ export default function IndicatorsPage() {
     cycle: [],
     portfolio: [],
     executionTags: []
-  });
-  const [cycleInputs, setCycleInputs] = useState<CycleScoreInput>({
-    credit: '중립',
-    sentiment: '중립',
-    notes: ''
   });
   const [bigWave, setBigWave] = useState<BigWaveData>({ cards: [] });
   const [isSavingNarrative, setIsSavingNarrative] = useState(false);
@@ -566,66 +552,6 @@ export default function IndicatorsPage() {
           />
         )}
 
-        {/* 사이클 보조 입력: 신용/심리 */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-6">
-          <Card className="border border-primary/20 bg-card">
-            <CardHeader>
-              <CardTitle className="text-xl">사이클 보조 스코어 (수동)</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                신용·유동성 / 심리·밸류에이션을 수동으로 선택해 국면 판단 보조에 활용하세요.
-              </p>
-            </CardHeader>
-            <CardContent className="grid gap-4 md:grid-cols-3">
-              <div className="space-y-2">
-                <p className="text-xs text-muted-foreground">신용·유동성</p>
-                <Select
-                  value={cycleInputs.credit}
-                  onValueChange={val => setCycleInputs(prev => ({ ...prev, credit: val as CycleLevel }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="완화">완화</SelectItem>
-                    <SelectItem value="중립">중립</SelectItem>
-                    <SelectItem value="긴축">긴축</SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  하이일드/IG 스프레드, 금융여건지수, 은행대출태도, M2, QE/QT를 종합 판단
-                </p>
-              </div>
-              <div className="space-y-2">
-                <p className="text-xs text-muted-foreground">심리·밸류에이션</p>
-                <Select
-                  value={cycleInputs.sentiment}
-                  onValueChange={val => setCycleInputs(prev => ({ ...prev, sentiment: val as CycleLevel }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="완화">탐욕/비싸</SelectItem>
-                    <SelectItem value="중립">중립</SelectItem>
-                    <SelectItem value="긴축">공포/싸다</SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  VIX, AAII, PER/CAPE, ETF·연금 Flow 등 체감/밸류 지표 기반
-                </p>
-              </div>
-              <div className="space-y-2 md:col-span-1">
-                <p className="text-xs text-muted-foreground">메모</p>
-                <Input
-                  placeholder="근거 요약"
-                  value={cycleInputs.notes ?? ''}
-                  onChange={e => setCycleInputs(prev => ({ ...prev, notes: e.target.value }))}
-                />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
         {/* 상세 지표 섹션 (Raw Data + History Table) - 통합으로 비활성화 */}
         {/* <EconomicIndicatorsSection /> */}
         {/* <DataSection /> */}
@@ -650,6 +576,11 @@ export default function IndicatorsPage() {
               {isSavingNarrative ? '저장 중...' : '💾 담론 저장'}
             </button>
           </div>
+        </div>
+
+        {/* MMC 점수 카드 (뉴스 섹션 위) */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-6">
+          {masterCycleData && <MMCScoreCard {...masterCycleData} />}
         </div>
 
         {/* 뉴스 & 담론 섹션 */}
