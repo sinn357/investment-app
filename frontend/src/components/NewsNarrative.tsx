@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import NarrativeGuide from './NarrativeGuide';
 
 interface Article {
   title: string;
@@ -13,9 +14,15 @@ interface NewsNarrativeProps {
   articles: Article[];
   myNarrative: string;
   onChange: (data: { articles: Article[]; myNarrative: string }) => void;
+  mmcScore?: number;
+  phase?: string;
+  topChanges?: {
+    increases: string[];
+    decreases: string[];
+  };
 }
 
-export default function NewsNarrative({ articles, myNarrative, onChange }: NewsNarrativeProps) {
+export default function NewsNarrative({ articles, myNarrative, onChange, mmcScore, phase, topChanges }: NewsNarrativeProps) {
   const [isAdding, setIsAdding] = useState(false);
   const [newArticle, setNewArticle] = useState({
     title: '',
@@ -165,6 +172,16 @@ export default function NewsNarrative({ articles, myNarrative, onChange }: NewsN
       {/* 내 담론 섹션 */}
       <div>
         <h3 className="text-sm font-semibold text-muted-foreground mb-3">내 담론 (경제 전망)</h3>
+
+        {/* 담론 작성 가이드 (Phase 3) */}
+        {mmcScore !== undefined && phase && topChanges && (
+          <NarrativeGuide
+            mmcScore={mmcScore}
+            phase={phase}
+            topChanges={topChanges}
+          />
+        )}
+
         <textarea
           value={myNarrative}
           onChange={(e) => handleNarrativeChange(e.target.value)}

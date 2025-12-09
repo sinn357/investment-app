@@ -621,6 +621,12 @@ export default function IndicatorsPage() {
             articles={narrative.articles}
             myNarrative={narrative.myNarrative}
             onChange={(data) => setNarrative({ ...narrative, ...data })}
+            mmcScore={masterCycleData?.mmc_score}
+            phase={masterCycleData?.phase}
+            topChanges={{
+              increases: indicatorChanges.increases.map(item => item.indicator),
+              decreases: indicatorChanges.decreases.map(item => item.indicator)
+            }}
           />
         </div>
 
