@@ -167,13 +167,10 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
   const [sortBy, setSortBy] = useState<'transaction_date' | 'amount' | 'category'>('transaction_date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
-  // 자산 구성 분석 차트 뷰 상태
-  const [chartViewType, setChartViewType] = useState<'전체' | '생활' | '건강' | '사회' | '여가' | '쇼핑' | '기타'>('전체');
-  const [subViewType, setSubViewType] = useState<string | null>(null);
-
-  // 수입 구성 분석 차트 뷰 상태
-  const [incomeChartViewType, setIncomeChartViewType] = useState<'전체' | '근로소득' | '사업소득' | '투자소득' | '기타소득'>('전체');
-  const [incomeSubViewType, setIncomeSubViewType] = useState<string | null>(null);
+  // 구성 차트 뷰 상태 (지출/수입 통합)
+  const [compositionMode, setCompositionMode] = useState<'지출' | '수입'>('지출');
+  const [compositionCategory, setCompositionCategory] = useState<string>('전체');
+  const [compositionSubCategory, setCompositionSubCategory] = useState<string | null>(null);
 
   // 시계열 차트 탭 상태
   const [timeSeriesTab, setTimeSeriesTab] = useState<'일별' | '비율'>('일별');
@@ -442,124 +439,6 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
     }
   };
 
-  // 자산 구성 분석 데이터 준비 (새로운 차트용)
-  const prepareAssetCompositionData = () => {
-    if (!expenseData) return { pieData: [], barData: [] };
-
-    const expenseCategories = expenseData.by_category.filter(item => item.transaction_type === '지출');
-
-    // 대분류별 합계 계산
-    const categoryTotals: Record<string, number> = {};
-    expenseCategories.forEach(item => {
-      if (!categoryTotals[item.category]) {
-        categoryTotals[item.category] = 0;
-      }
-      categoryTotals[item.category] += Number(item.total_amount);
-    });
-
-    let pieData: Array<{ name: string; value: number }> = [];
-    let barData: Array<{ name: string; 금액: number }> = [];
-
-    if (chartViewType === '전체') {
-      // 전체 모드: 대분류별 합계 표시
-      pieData = Object.entries(categoryTotals).map(([category, amount]) => ({
-        name: category,
-        value: amount
-      }));
-      barData = Object.entries(categoryTotals).map(([category, amount]) => ({
-        name: category,
-        금액: amount
-      }));
-    } else if (subViewType) {
-      // 소분류 선택 시: 해당 소분류의 개별 거래내역 표시
-      const filteredExpenses = expenses.filter(
-        exp => exp.transaction_type === '지출' &&
-               exp.category === chartViewType &&
-               exp.subcategory === subViewType
-      );
-      pieData = filteredExpenses.map(exp => ({
-        name: `${exp.name} (${formatDate(exp.transaction_date)})`,
-        value: Number(exp.amount)
-      }));
-      barData = filteredExpenses.map(exp => ({
-        name: `${exp.name.substring(0, 10)}...`,
-        금액: Number(exp.amount)
-      }));
-    } else {
-      // 특정 대분류 선택 시: 해당 대분류의 소분류별 합계 표시
-      const filtered = expenseCategories.filter(item => item.category === chartViewType);
-      pieData = filtered.map(item => ({
-        name: item.subcategory,
-        value: Number(item.total_amount)
-      }));
-      barData = filtered.map(item => ({
-        name: item.subcategory,
-        금액: Number(item.total_amount)
-      }));
-    }
-
-    return { pieData, barData };
-  };
-
-  // 수입 구성 분석 데이터 준비
-  const prepareIncomeCompositionData = () => {
-    if (!expenseData) return { pieData: [], barData: [] };
-
-    const incomeData = expenseData.by_category.filter(item => item.transaction_type === '수입');
-
-    // 대분류별 합계 계산
-    const categoryTotals: Record<string, number> = {};
-    incomeData.forEach(item => {
-      if (!categoryTotals[item.category]) {
-        categoryTotals[item.category] = 0;
-      }
-      categoryTotals[item.category] += Number(item.total_amount);
-    });
-
-    let pieData: Array<{ name: string; value: number }> = [];
-    let barData: Array<{ name: string; 금액: number }> = [];
-
-    if (incomeChartViewType === '전체') {
-      // 전체 모드: 대분류별 합계 표시
-      pieData = Object.entries(categoryTotals).map(([category, amount]) => ({
-        name: category,
-        value: amount
-      }));
-      barData = Object.entries(categoryTotals).map(([category, amount]) => ({
-        name: category,
-        금액: amount
-      }));
-    } else if (incomeSubViewType) {
-      // 소분류 선택 시: 해당 소분류의 개별 거래내역 표시
-      const filteredIncomes = expenses.filter(
-        exp => exp.transaction_type === '수입' &&
-               exp.category === incomeChartViewType &&
-               exp.subcategory === incomeSubViewType
-      );
-      pieData = filteredIncomes.map(exp => ({
-        name: `${exp.name} (${formatDate(exp.transaction_date)})`,
-        value: Number(exp.amount)
-      }));
-      barData = filteredIncomes.map(exp => ({
-        name: `${exp.name.substring(0, 10)}...`,
-        금액: Number(exp.amount)
-      }));
-    } else {
-      // 특정 대분류 선택 시: 해당 대분류의 소분류별 합계 표시
-      const filtered = incomeData.filter(item => item.category === incomeChartViewType);
-      pieData = filtered.map(item => ({
-        name: item.subcategory,
-        value: Number(item.total_amount)
-      }));
-      barData = filtered.map(item => ({
-        name: item.subcategory,
-        금액: Number(item.total_amount)
-      }));
-    }
-
-    return { pieData, barData };
-  };
-
   // 일별 지출/수입 데이터 준비
   const prepareDailyData = () => {
     if (!expenses || expenses.length === 0) return [];
@@ -674,8 +553,51 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
     }
   });
 
-  const { pieData: compositionPieData } = prepareAssetCompositionData();
-  const { pieData: incomePieData } = prepareIncomeCompositionData();
+  const buildCompositionData = () => {
+    if (!expenseData) return [];
+
+    const isExpenseMode = compositionMode === '지출';
+    const categoryData = expenseData.by_category.filter(
+      item => item.transaction_type === (isExpenseMode ? '지출' : '수입')
+    );
+
+    // 대분류 합계
+    const categoryTotals: Record<string, number> = {};
+    categoryData.forEach(item => {
+      if (!categoryTotals[item.category]) categoryTotals[item.category] = 0;
+      categoryTotals[item.category] += Number(item.total_amount);
+    });
+
+    let pieData: Array<{ name: string; value: number }> = [];
+
+    if (compositionCategory === '전체') {
+      pieData = Object.entries(categoryTotals).map(([category, amount]) => ({
+        name: category,
+        value: amount
+      }));
+    } else if (compositionSubCategory) {
+      const filtered = expenses.filter(
+        exp =>
+          exp.transaction_type === (isExpenseMode ? '지출' : '수입') &&
+          exp.category === compositionCategory &&
+          exp.subcategory === compositionSubCategory
+      );
+      pieData = filtered.map(exp => ({
+        name: exp.name.length > 10 ? `${exp.name.substring(0, 10)}...` : exp.name,
+        value: Number(exp.amount)
+      }));
+    } else {
+      const filtered = categoryData.filter(item => item.category === compositionCategory);
+      pieData = filtered.map(item => ({
+        name: item.subcategory,
+        value: Number(item.total_amount)
+      }));
+    }
+
+    return pieData;
+  };
+
+  const compositionPieData = buildCompositionData();
   const dailyData = prepareDailyData();
   const ratioData = prepareExpenseIncomeRatioData();
   const monthLabel = `${selectedYear}년 ${selectedMonth}월`;
@@ -1022,78 +944,101 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
 
         {/* 차트 섹션 */}
         {expenseData && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div className="bg-white border border-gray-200 rounded-xl p-3 shadow-sm">
-              <div className="flex items-center justify-between mb-3">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
+            <div className="bg-white border border-gray-200 rounded-lg p-2.5 shadow-sm">
+              <div className="flex items-center justify-between mb-2">
                 <div>
-                  <p className="text-xs text-slate-500">{chartViewType === '전체' ? '지출 구성' : `${chartViewType} 상세`}</p>
+                  <p className="text-xs text-slate-500">구성</p>
                   <h3 className="text-base font-semibold text-slate-900">{monthLabel}</h3>
                 </div>
                 <div className="flex bg-gray-100 rounded-xl p-1 gap-1">
-                  {['전체', '생활', '건강', '사회', '여가', '쇼핑', '기타'].map((viewType) => (
+                  {(['지출', '수입'] as const).map((mode) => (
                     <button
-                      key={viewType}
+                      key={mode}
                       onClick={() => {
-                        setChartViewType(viewType as '전체' | '생활' | '건강' | '사회' | '여가' | '쇼핑' | '기타');
-                        setSubViewType(null);
+                        setCompositionMode(mode);
+                        setCompositionCategory('전체');
+                        setCompositionSubCategory(null);
                       }}
                       className={`px-2.5 py-1.5 text-xs rounded-lg transition-colors ${
-                        chartViewType === viewType
+                        compositionMode === mode
                           ? 'bg-[var(--primary)] text-[var(--primary-foreground)] font-semibold'
                           : 'text-slate-700 hover:bg-white'
                       }`}
                     >
-                      {viewType}
+                      {mode}
                     </button>
                   ))}
                 </div>
               </div>
 
-              {chartViewType !== '전체' && expenseCategories[chartViewType] && (
-                <div className="flex flex-wrap gap-1 mb-3">
+              <div className="flex flex-wrap gap-1 mb-2">
+                {(compositionMode === '지출'
+                  ? ['전체', '생활', '건강', '사회', '여가', '쇼핑', '기타']
+                  : ['전체', '근로소득', '사업소득', '투자소득', '기타소득']
+                ).map((category) => (
                   <button
-                    onClick={() => setSubViewType(null)}
-                    className={`px-2.5 py-1 text-xs rounded-full border ${
-                      !subViewType ? 'bg-[var(--secondary)] text-[var(--secondary-foreground)] border-transparent' : 'border-gray-200 text-slate-700 hover:bg-gray-100'
+                    key={category}
+                    onClick={() => {
+                      setCompositionCategory(category);
+                      setCompositionSubCategory(null);
+                    }}
+                    className={`px-2.5 py-1 text-[11px] rounded-full border ${
+                      compositionCategory === category
+                        ? 'bg-[var(--secondary)] text-[var(--secondary-foreground)] border-transparent'
+                        : 'border-gray-200 text-slate-700 hover:bg-gray-100'
+                    }`}
+                  >
+                    {category}
+                  </button>
+                ))}
+              </div>
+
+              {compositionCategory !== '전체' && (
+                <div className="flex flex-wrap gap-1 mb-2">
+                  <button
+                    onClick={() => setCompositionSubCategory(null)}
+                    className={`px-2.5 py-1 text-[11px] rounded-full border ${
+                      !compositionSubCategory ? 'bg-[var(--primary)] text-[var(--primary-foreground)] border-transparent' : 'border-gray-200 text-slate-700 hover:bg-gray-100'
                     }`}
                   >
                     전체
                   </button>
-                  {expenseCategories[chartViewType].map((subCategory) => (
+                  {(compositionMode === '지출' ? expenseCategories : incomeCategories)[compositionCategory]?.map((sub) => (
                     <button
-                      key={subCategory}
-                      onClick={() => setSubViewType(subCategory)}
-                      className={`px-2.5 py-1 text-xs rounded-full border ${
-                        subViewType === subCategory ? 'bg-[var(--secondary)] text-[var(--secondary-foreground)] border-transparent' : 'border-gray-200 text-slate-700 hover:bg-gray-100'
+                      key={sub}
+                      onClick={() => setCompositionSubCategory(sub)}
+                      className={`px-2.5 py-1 text-[11px] rounded-full border ${
+                        compositionSubCategory === sub ? 'bg-[var(--primary)] text-[var(--primary-foreground)] border-transparent' : 'border-gray-200 text-slate-700 hover:bg-gray-100'
                       }`}
                     >
-                      {subCategory}
+                      {sub}
                     </button>
                   ))}
                 </div>
               )}
 
               {compositionPieData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={160}>
+                <ResponsiveContainer width="100%" height={180}>
                   <PieChart>
                     <Pie
                       data={compositionPieData}
                       cx="50%"
                       cy="50%"
-                      innerRadius={50}
-                      outerRadius={95}
-                      paddingAngle={5}
+                      innerRadius={40}
+                      outerRadius={70}
+                      paddingAngle={4}
                       dataKey="value"
                       label={(entry) => `${Number(entry.value).toLocaleString()}원`}
                     >
                       {compositionPieData.map((_entry, index) => {
-                        if (chartViewType === '전체') {
+                        if (compositionCategory === '전체') {
                           return <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />;
-                        } else if (subViewType) {
+                        } else if (compositionSubCategory) {
                           const extendedColors = [...COLORS, PALETTE.coral, '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F'];
                           return <Cell key={`cell-${index}`} fill={extendedColors[index % extendedColors.length]} />;
                         } else {
-                          const categoryColors = CATEGORY_COLORS[chartViewType as keyof typeof CATEGORY_COLORS] || COLORS;
+                          const categoryColors = CATEGORY_COLORS[compositionCategory as keyof typeof CATEGORY_COLORS] || COLORS;
                           return <Cell key={`cell-${index}`} fill={categoryColors[index % categoryColors.length]} />;
                         }
                       })}
@@ -1102,94 +1047,94 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
                       contentStyle={{ backgroundColor: '#ffffff', borderRadius: 12, border: '1px solid #e2e8f0', color: '#0f172a' }}
                       formatter={(value: number) => [`${value.toLocaleString()}원`, '금액']}
                     />
-                    <Legend wrapperStyle={{ fontSize: '12px', color: '#475569' }} />
+                    <Legend wrapperStyle={{ fontSize: '10px', color: '#475569' }} />
                   </PieChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="h-[160px] flex items-center justify-center text-slate-400">
+                <div className="h-[180px] flex items-center justify-center text-slate-400">
                   데이터가 없습니다
                 </div>
               )}
             </div>
 
-            <div className="bg-white border border-gray-200 rounded-xl p-3 shadow-sm">
-              <div className="flex items-center justify-between mb-3">
+            <div className="bg-white border border-gray-200 rounded-lg p-2.5 shadow-sm">
+              <div className="flex items-center justify-between mb-2">
                 <div>
-                  <p className="text-xs text-slate-500">{incomeChartViewType === '전체' ? '수입 구성' : `${incomeChartViewType} 상세`}</p>
+                  <p className="text-xs text-slate-500">지출/수입 흐름</p>
                   <h3 className="text-base font-semibold text-slate-900">{monthLabel}</h3>
                 </div>
                 <div className="flex bg-gray-100 rounded-xl p-1 gap-1">
-                  {['전체', '근로소득', '사업소득', '투자소득', '기타소득'].map((viewType) => (
+                  {['일별', '비율'].map((tab) => (
                     <button
-                      key={viewType}
-                      onClick={() => {
-                        setIncomeChartViewType(viewType as '전체' | '근로소득' | '사업소득' | '투자소득' | '기타소득');
-                        setIncomeSubViewType(null);
-                      }}
+                      key={tab}
+                      onClick={() => setTimeSeriesTab(tab as '일별' | '비율')}
                       className={`px-2.5 py-1.5 text-xs rounded-lg transition-colors ${
-                        incomeChartViewType === viewType
-                          ? 'bg-[var(--secondary)] text-[var(--secondary-foreground)] font-semibold'
+                        timeSeriesTab === tab
+                          ? 'bg-[var(--primary)] text-[var(--primary-foreground)] font-semibold'
                           : 'text-slate-700 hover:bg-white'
                       }`}
                     >
-                      {viewType}
+                      {tab}
                     </button>
                   ))}
                 </div>
               </div>
 
-              {incomeChartViewType !== '전체' && incomeCategories[incomeChartViewType] && (
-                <div className="flex flex-wrap gap-1 mb-3">
-                  <button
-                    onClick={() => setIncomeSubViewType(null)}
-                    className={`px-2.5 py-1 text-xs rounded-full border ${
-                      !incomeSubViewType ? 'bg-[var(--primary)] text-[var(--primary-foreground)] border-transparent' : 'border-gray-200 text-slate-700 hover:bg-gray-100'
-                    }`}
-                  >
-                    전체
-                  </button>
-                  {incomeCategories[incomeChartViewType].map((subCategory) => (
-                    <button
-                      key={subCategory}
-                      onClick={() => setIncomeSubViewType(subCategory)}
-                      className={`px-2.5 py-1 text-xs rounded-full border ${
-                        incomeSubViewType === subCategory ? 'bg-[var(--primary)] text-[var(--primary-foreground)] border-transparent' : 'border-gray-200 text-slate-700 hover:bg-gray-100'
-                      }`}
-                    >
-                      {subCategory}
-                    </button>
-                  ))}
-                </div>
+              {timeSeriesTab === '일별' && (
+                dailyData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={190}>
+                    <BarChart data={dailyData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                      <XAxis dataKey="날짜" tick={{ fontSize: 10, fill: '#475569' }} />
+                      <YAxis
+                        tick={{ fontSize: 10, fill: '#475569' }}
+                        tickFormatter={(value) => {
+                          if (value >= 1000000) return `${(value / 1000000).toFixed(0)}M`;
+                          if (value >= 1000) return `${(value / 1000).toFixed(0)}K`;
+                          return value.toString();
+                        }}
+                      />
+                      <Tooltip
+                        contentStyle={{ backgroundColor: '#ffffff', borderRadius: 12, border: '1px solid #e2e8f0', color: '#0f172a' }}
+                        formatter={(value: number) => [`${value.toLocaleString()}원`]}
+                      />
+                      <Legend wrapperStyle={{ color: '#475569', fontSize: 10 }} />
+                      <Bar dataKey="지출" fill={PALETTE.coral} radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="수입" fill={PALETTE.emerald} radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="h-[190px] flex items-center justify-center text-slate-400">데이터가 없습니다</div>
+                )
               )}
 
-              {incomePieData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={160}>
-                  <PieChart>
-                    <Pie
-                      data={incomePieData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={50}
-                      outerRadius={95}
-                      paddingAngle={5}
-                      dataKey="value"
-                      label={(entry) => `${Number(entry.value).toLocaleString()}원`}
-                    >
-                      {incomePieData.map((_entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      contentStyle={{ backgroundColor: '#ffffff', borderRadius: 12, border: '1px solid #e2e8f0', color: '#0f172a' }}
-                      formatter={(value: number) => [`${value.toLocaleString()}원`, '금액']}
-                    />
-                    <Legend wrapperStyle={{ fontSize: '12px', color: '#475569' }} />
-                  </PieChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="h-[160px] flex items-center justify-center text-slate-400">
-                  데이터가 없습니다
-                </div>
+              {timeSeriesTab === '비율' && (
+                ratioData.length > 0 && (ratioData[0].value > 0 || ratioData[1].value > 0) ? (
+                  <ResponsiveContainer width="100%" height={190}>
+                    <PieChart>
+                      <Pie
+                        data={ratioData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={55}
+                        outerRadius={80}
+                        paddingAngle={4}
+                        dataKey="value"
+                        label={(entry) => `${Number(entry.value).toLocaleString()}원`}
+                      >
+                        <Cell fill={PALETTE.coral} />
+                        <Cell fill={PALETTE.emerald} />
+                      </Pie>
+                      <Tooltip
+                        contentStyle={{ backgroundColor: '#ffffff', borderRadius: 12, border: '1px solid #e2e8f0', color: '#0f172a' }}
+                        formatter={(value: number) => [`${value.toLocaleString()}원`, '금액']}
+                      />
+                      <Legend wrapperStyle={{ color: '#475569', fontSize: 10 }} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="h-[190px] flex items-center justify-center text-slate-400">데이터가 없습니다</div>
+                )
               )}
             </div>
           </div>
