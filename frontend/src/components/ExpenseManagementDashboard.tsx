@@ -1059,84 +1059,85 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
             </div>
 
             <div className="bg-white border border-gray-200 rounded-xl p-2 shadow-sm">
-            <div className="flex items-center justify-between mb-2">
-              <div>
-                <p className="text-xs text-slate-500">지출/수입 흐름</p>
-                <h3 className="text-base font-semibold text-slate-900">{monthLabel}</h3>
-              </div>
-              <div className="flex bg-gray-100 rounded-xl p-1 gap-1">
-                {['일별', '비율'].map((tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => setTimeSeriesTab(tab as '일별' | '비율')}
-                    className={`px-2.5 py-1.5 text-xs rounded-lg transition-colors ${
-                      timeSeriesTab === tab
-                        ? 'bg-[var(--primary)] text-[var(--primary-foreground)] font-semibold'
-                        : 'text-slate-700 hover:bg-white'
-                    }`}
-                  >
-                    {tab}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {timeSeriesTab === '일별' && (
-              dailyData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={160}>
-                  <BarChart data={dailyData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                    <XAxis dataKey="날짜" tick={{ fontSize: 10, fill: '#475569' }} />
-                    <YAxis
-                      tick={{ fontSize: 10, fill: '#475569' }}
-                      tickFormatter={(value) => {
-                        if (value >= 1000000) return `${(value / 1000000).toFixed(0)}M`;
-                        if (value >= 1000) return `${(value / 1000).toFixed(0)}K`;
-                        return value.toString();
-                      }}
-                    />
-                    <Tooltip
-                      contentStyle={{ backgroundColor: '#ffffff', borderRadius: 12, border: '1px solid #e2e8f0', color: '#0f172a' }}
-                      formatter={(value: number) => [`${value.toLocaleString()}원`]}
-                    />
-                    <Legend wrapperStyle={{ color: '#475569', fontSize: 10 }} />
-                    <Bar dataKey="지출" fill={PALETTE.coral} radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="수입" fill={PALETTE.emerald} radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="h-[160px] flex items-center justify-center text-slate-400">데이터가 없습니다</div>
-              )
-            )}
-
-            {timeSeriesTab === '비율' && (
-              ratioData.length > 0 && (ratioData[0].value > 0 || ratioData[1].value > 0) ? (
-                <ResponsiveContainer width="100%" height={160}>
-                  <PieChart>
-                    <Pie
-                      data={ratioData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={50}
-                      outerRadius={75}
-                      paddingAngle={4}
-                      dataKey="value"
-                      label={(entry) => `${Number(entry.value).toLocaleString()}원`}
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <p className="text-xs text-slate-500">지출/수입 흐름</p>
+                  <h3 className="text-base font-semibold text-slate-900">{monthLabel}</h3>
+                </div>
+                <div className="flex bg-gray-100 rounded-xl p-1 gap-1">
+                  {['일별', '비율'].map((tab) => (
+                    <button
+                      key={tab}
+                      onClick={() => setTimeSeriesTab(tab as '일별' | '비율')}
+                      className={`px-2.5 py-1.5 text-xs rounded-lg transition-colors ${
+                        timeSeriesTab === tab
+                          ? 'bg-[var(--primary)] text-[var(--primary-foreground)] font-semibold'
+                          : 'text-slate-700 hover:bg-white'
+                      }`}
                     >
-                      <Cell fill={PALETTE.coral} />
-                      <Cell fill={PALETTE.emerald} />
-                    </Pie>
-                    <Tooltip
-                      contentStyle={{ backgroundColor: '#ffffff', borderRadius: 12, border: '1px solid #e2e8f0', color: '#0f172a' }}
-                      formatter={(value: number) => [`${value.toLocaleString()}원`, '금액']}
-                    />
-                    <Legend wrapperStyle={{ color: '#475569', fontSize: 10 }} />
-                  </PieChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="h-[160px] flex items-center justify-center text-slate-400">데이터가 없습니다</div>
-              )
-            )}
+                      {tab}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {timeSeriesTab === '일별' && (
+                dailyData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={160}>
+                    <BarChart data={dailyData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                      <XAxis dataKey="날짜" tick={{ fontSize: 10, fill: '#475569' }} />
+                      <YAxis
+                        tick={{ fontSize: 10, fill: '#475569' }}
+                        tickFormatter={(value) => {
+                          if (value >= 1000000) return `${(value / 1000000).toFixed(0)}M`;
+                          if (value >= 1000) return `${(value / 1000).toFixed(0)}K`;
+                          return value.toString();
+                        }}
+                      />
+                      <Tooltip
+                        contentStyle={{ backgroundColor: '#ffffff', borderRadius: 12, border: '1px solid #e2e8f0', color: '#0f172a' }}
+                        formatter={(value: number) => [`${value.toLocaleString()}원`]}
+                      />
+                      <Legend wrapperStyle={{ color: '#475569', fontSize: 10 }} />
+                      <Bar dataKey="지출" fill={PALETTE.coral} radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="수입" fill={PALETTE.emerald} radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="h-[160px] flex items-center justify-center text-slate-400">데이터가 없습니다</div>
+                )
+              )}
+
+              {timeSeriesTab === '비율' && (
+                ratioData.length > 0 && (ratioData[0].value > 0 || ratioData[1].value > 0) ? (
+                  <ResponsiveContainer width="100%" height={160}>
+                    <PieChart>
+                      <Pie
+                        data={ratioData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={50}
+                        outerRadius={75}
+                        paddingAngle={4}
+                        dataKey="value"
+                        label={(entry) => `${Number(entry.value).toLocaleString()}원`}
+                      >
+                        <Cell fill={PALETTE.coral} />
+                        <Cell fill={PALETTE.emerald} />
+                      </Pie>
+                      <Tooltip
+                        contentStyle={{ backgroundColor: '#ffffff', borderRadius: 12, border: '1px solid #e2e8f0', color: '#0f172a' }}
+                        formatter={(value: number) => [`${value.toLocaleString()}원`, '금액']}
+                      />
+                      <Legend wrapperStyle={{ color: '#475569', fontSize: 10 }} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="h-[160px] flex items-center justify-center text-slate-400">데이터가 없습니다</div>
+                )
+              )}
+            </div>
           </div>
         )}
 
