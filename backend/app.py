@@ -3502,6 +3502,44 @@ def get_indicator_changes():
         logger.error(f"지표 변화 조회 실패: {e}")
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
+@app.route('/api/v3/news/auto-fetch', methods=['GET'])
+def auto_fetch_news():
+    """
+    RSS 피드에서 최근 뉴스 자동 수집
+
+    Query Parameters:
+        hours: 수집 기간 (기본값: 24시간)
+
+    Returns:
+        {
+            "status": "success",
+            "data": {
+                "news": [...],
+                "count": 10
+            },
+            "timestamp": "2025-12-10T..."
+        }
+    """
+    try:
+        from crawlers.rss_news_crawler import RSSNewsCrawler
+
+        hours = request.args.get('hours', 24, type=int)
+
+        crawler = RSSNewsCrawler()
+        news = crawler.fetch_recent_news(hours=hours)
+
+        return jsonify({
+            'status': 'success',
+            'data': {
+                'news': news,
+                'count': len(news)
+            },
+            'timestamp': datetime.utcnow().isoformat()
+        })
+    except Exception as e:
+        logger.error(f"뉴스 자동 수집 실패: {e}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
 # ========== 경제 사이클 API ==========
 
 @app.route('/api/v2/macro-cycle', methods=['GET'])
