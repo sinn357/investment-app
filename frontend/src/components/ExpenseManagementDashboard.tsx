@@ -1058,7 +1058,7 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
               )}
             </div>
 
-            <div className="bg-white border border-gray-200 rounded-xl p-2 shadow-sm">
+            <div className="bg-white border border-gray-200 rounded-xl p-3 shadow-sm min-h-[210px]">
               <div className="flex items-center justify-between mb-2">
                 <div>
                   <p className="text-xs text-slate-500">지출/수입 흐름</p>
@@ -1083,7 +1083,7 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
 
               {timeSeriesTab === '일별' && (
                 dailyData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={160}>
+                  <ResponsiveContainer width="100%" height={150}>
                     <BarChart data={dailyData}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                       <XAxis dataKey="날짜" tick={{ fontSize: 10, fill: '#475569' }} />
@@ -1096,29 +1096,29 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
                         }}
                       />
                       <Tooltip
-                        contentStyle={{ backgroundColor: '#ffffff', borderRadius: 12, border: '1px solid #e2e8f0', color: '#0f172a' }}
+                        contentStyle={{ backgroundColor: '#ffffff', borderRadius: 10, border: '1px solid #e2e8f0', color: '#0f172a' }}
                         formatter={(value: number) => [`${value.toLocaleString()}원`]}
                       />
-                      <Legend wrapperStyle={{ color: '#475569', fontSize: 10 }} />
+                      <Legend layout="vertical" align="right" verticalAlign="middle" wrapperStyle={{ color: '#475569', fontSize: 9 }} />
                       <Bar dataKey="지출" fill={PALETTE.coral} radius={[4, 4, 0, 0]} />
                       <Bar dataKey="수입" fill={PALETTE.emerald} radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div className="h-[160px] flex items-center justify-center text-slate-400">데이터가 없습니다</div>
+                  <div className="h-[150px] flex items-center justify-center text-slate-400">데이터가 없습니다</div>
                 )
               )}
 
               {timeSeriesTab === '비율' && (
                 ratioData.length > 0 && (ratioData[0].value > 0 || ratioData[1].value > 0) ? (
-                  <ResponsiveContainer width="100%" height={160}>
+                  <ResponsiveContainer width="100%" height={150}>
                     <PieChart>
                       <Pie
                         data={ratioData}
                         cx="50%"
                         cy="50%"
-                        innerRadius={50}
-                        outerRadius={75}
+                        innerRadius={45}
+                        outerRadius={68}
                         paddingAngle={4}
                         dataKey="value"
                         label={(entry) => `${Number(entry.value).toLocaleString()}원`}
@@ -1127,14 +1127,14 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
                         <Cell fill={PALETTE.emerald} />
                       </Pie>
                       <Tooltip
-                        contentStyle={{ backgroundColor: '#ffffff', borderRadius: 12, border: '1px solid #e2e8f0', color: '#0f172a' }}
+                        contentStyle={{ backgroundColor: '#ffffff', borderRadius: 10, border: '1px solid #e2e8f0', color: '#0f172a' }}
                         formatter={(value: number) => [`${value.toLocaleString()}원`, '금액']}
                       />
-                      <Legend wrapperStyle={{ color: '#475569', fontSize: 10 }} />
+                      <Legend layout="vertical" align="right" verticalAlign="middle" wrapperStyle={{ color: '#475569', fontSize: 9 }} />
                     </PieChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div className="h-[160px] flex items-center justify-center text-slate-400">데이터가 없습니다</div>
+                  <div className="h-[150px] flex items-center justify-center text-slate-400">데이터가 없습니다</div>
                 )
               )}
             </div>
@@ -1143,7 +1143,7 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
 
         {/* 예산/목표 */}
         {expenseData && (
-          <div className="bg-white border border-gray-200 rounded-lg p-2 shadow-sm">
+          <div className="bg-white border border-gray-200 rounded-lg p-3 shadow-sm">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
                 <span className="text-base">🎯</span>
@@ -1169,27 +1169,54 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
               </div>
             </div>
             <div className="text-[10px] text-slate-500 mb-2">카테고리별 진행</div>
-            <div className="origin-top-left scale-[0.8] max-h-[170px] overflow-hidden">
-              {goalMode === '지출' ? (
-                <ExpenseGoalGauge
-                  expenseData={expenseData.by_category.filter(item => item.transaction_type === '지출')}
-                  goals={budgetGoals.expense_goals}
-                  onSaveGoals={(goals) => {
-                    const newGoals = { ...budgetGoals, expense_goals: goals };
-                    setBudgetGoals(newGoals);
-                    saveBudgetGoals(newGoals);
-                  }}
-                />
-              ) : (
-                <IncomeGoalGauge
-                  incomeData={expenseData.by_category.filter(item => item.transaction_type === '수입')}
-                  goals={budgetGoals.income_goals}
-                  onSaveGoals={(goals) => {
-                    const newGoals = { ...budgetGoals, income_goals: goals };
-                    setBudgetGoals(newGoals);
-                    saveBudgetGoals(newGoals);
-                  }}
-                />
+            <div className="space-y-2">
+              {(() => {
+                const list =
+                  goalMode === '지출'
+                    ? expenseData.by_category.filter(item => item.transaction_type === '지출')
+                    : expenseData.by_category.filter(item => item.transaction_type === '수입');
+
+                const topList = list.slice(0, 5);
+
+                return topList.map((item, idx) => {
+                  const total = Number(item.total_amount);
+                  const goal =
+                    goalMode === '지출'
+                      ? budgetGoals.expense_goals[item.category]?.[item.subcategory] || 0
+                      : budgetGoals.income_goals[item.category]?.[item.subcategory] || 0;
+                  const pct = goal > 0 ? Math.min(100, Math.round((total / goal) * 100)) : 0;
+                  return (
+                    <div key={`${item.category}-${item.subcategory}-${idx}`} className="space-y-1">
+                      <div className="flex items-center justify-between text-[11px] text-slate-700">
+                        <span className="truncate">
+                          {item.category} / {item.subcategory}
+                        </span>
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] ${
+                          pct >= 100 ? 'bg-red-100 text-red-700' : pct >= 80 ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'
+                        }`}>
+                          {pct}%
+                        </span>
+                      </div>
+                      <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full ${goalMode === '지출' ? 'bg-[var(--primary)]' : 'bg-[var(--secondary)]'}`}
+                          style={{ width: `${goal > 0 ? Math.min(100, (total / goal) * 100) : 0}%` }}
+                        />
+                      </div>
+                      <div className="flex items-center justify-between text-[10px] text-slate-500">
+                        <span>누적 {total.toLocaleString()}원</span>
+                        <span>목표 {goal.toLocaleString()}원</span>
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
+              {(
+                goalMode === '지출'
+                  ? expenseData.by_category.filter(item => item.transaction_type === '지출').length
+                  : expenseData.by_category.filter(item => item.transaction_type === '수입').length
+              ) > 5 && (
+                <div className="text-[11px] text-slate-500">더 많은 카테고리는 목표 설정 화면에서 확인하세요.</div>
               )}
             </div>
           </div>
