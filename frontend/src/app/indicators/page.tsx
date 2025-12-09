@@ -12,6 +12,7 @@ import IndicatorChartPanel from '@/components/IndicatorChartPanel';
 // import EconomicIndicatorsSection from '@/components/EconomicIndicatorsSection'; // 통합으로 비활성화
 // import DataSection from '@/components/DataSection'; // 통합으로 비활성화
 import NewsNarrative from '@/components/NewsNarrative';
+import NarrativeReview from '@/components/NarrativeReview';
 import RiskRadar from '@/components/RiskRadar';
 // import CyclePanelSkeleton from '@/components/skeletons/CyclePanelSkeleton'; // ✅ 제거: Master Cycle로 대체
 import IndicatorGridSkeleton from '@/components/skeletons/IndicatorGridSkeleton';
@@ -668,6 +669,11 @@ export default function IndicatorsPage() {
             cards={bigWave.cards}
             onChange={(cards) => setBigWave({ cards })}
           />
+        </div>
+
+        {/* 과거 담론 리뷰 섹션 (Phase 5) */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-10">
+          <NarrativeReview userId={userId} />
         </div>
       </main>
       </div>

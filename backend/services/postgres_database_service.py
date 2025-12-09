@@ -2353,6 +2353,46 @@ class PostgresDatabaseService:
                 "message": f"거시경제 담론 저장 중 오류: {str(e)}"
             }
 
+    def get_narrative_history(self, user_id: int, limit: int = 10) -> Dict:
+        """과거 담론 히스토리 조회"""
+        try:
+            with self.get_connection() as conn:
+                with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                    cur.execute("""
+                        SELECT date, my_narrative, articles
+                        FROM economic_narrative
+                        WHERE user_id = %s
+                        ORDER BY date DESC
+                        LIMIT %s
+                    """, (user_id, limit))
+
+                    results = cur.fetchall()
+
+                    history = []
+                    for row in results:
+                        # articles JSON 파싱
+                        articles = row['articles']
+                        if isinstance(articles, str):
+                            articles = json.loads(articles) if articles else []
+
+                        history.append({
+                            'date': row['date'].isoformat() if hasattr(row['date'], 'isoformat') else str(row['date']),
+                            'narrative': row['my_narrative'] or '',
+                            'articles_count': len(articles)
+                        })
+
+                    return {
+                        "status": "success",
+                        "data": history
+                    }
+
+        except Exception as e:
+            print(f"PostgreSQL get_narrative_history error: {e}")
+            return {
+                "status": "error",
+                "message": f"담론 히스토리 조회 중 오류: {str(e)}"
+            }
+
     # ========== Page 3: Industries (섹터 & 종목 분석) ==========
 
     def get_sector_performance(self, user_id: int, date: str) -> Dict:

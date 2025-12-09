@@ -1693,6 +1693,33 @@ def save_economic_narrative():
             "message": f"거시경제 담론 저장 실패: {str(e)}"
         }), 500
 
+@app.route('/api/economic-narrative/history', methods=['GET'])
+def get_narrative_history():
+    """과거 담론 히스토리 조회 API"""
+    try:
+        user_id = request.args.get('user_id', type=int)
+        limit = request.args.get('limit', 10, type=int)
+
+        if not user_id:
+            return jsonify({
+                "status": "error",
+                "message": "user_id가 필요합니다."
+            }), 400
+
+        result = db_service.get_narrative_history(user_id, limit)
+
+        if result.get('status') == 'success':
+            return jsonify(result)
+        else:
+            return jsonify(result), 500
+
+    except Exception as e:
+        print(f"Error getting narrative history: {e}")
+        return jsonify({
+            "status": "error",
+            "message": f"담론 히스토리 조회 실패: {str(e)}"
+        }), 500
+
 # === Page 3: Industries (섹터 & 종목 분석) API ===
 
 @app.route('/api/sector-performance', methods=['GET'])
