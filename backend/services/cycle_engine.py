@@ -165,9 +165,9 @@ SENTIMENT_INDICATORS = {
     'sp500-pe': {
         'weight': 0.20,
         'thresholds': {
-            'cheap': 15,
-            'fair': 20,
-            'expensive': 25
+            'cheap': 18,    # 18 이하: 저평가 (100점)
+            'fair': 25,     # 18-25: 적정 (50점)
+            'expensive': 35 # 25-35: 고평가 (0점), 역사적으로 35배까지 도달
         },
         'reverse': True,  # 낮을수록 좋음 (저평가)
         'name': 'S&P500 PER'
@@ -175,9 +175,9 @@ SENTIMENT_INDICATORS = {
     'shiller-pe': {
         'weight': 0.15,
         'thresholds': {
-            'cheap': 20,
-            'fair': 25,
-            'expensive': 30
+            'cheap': 20,    # 20 이하: 저평가 (100점)
+            'fair': 30,     # 20-30: 적정 (50점)
+            'expensive': 45 # 30-45: 고평가 (0점), 닷컴버블 45, 2021년 40
         },
         'reverse': True,  # 낮을수록 좋음 (저평가)
         'name': 'Shiller CAPE'
@@ -195,9 +195,9 @@ SENTIMENT_INDICATORS = {
     'michigan-consumer-sentiment': {
         'weight': 0.15,
         'thresholds': {
-            'low': 70,
-            'neutral': 85,
-            'high': 100
+            'low': 50,      # 50 이하: 극심한 비관 (0점), 2022년 저점 50
+            'neutral': 75,  # 50-75: 중립 (50점)
+            'high': 95      # 75-95: 낙관 (100점), 역사적 평균 85-90
         },
         'reverse': False,  # 높을수록 좋음
         'name': '미시간 소비자심리'
@@ -205,9 +205,9 @@ SENTIMENT_INDICATORS = {
     'cb-consumer-confidence': {
         'weight': 0.15,
         'thresholds': {
-            'low': 90,
-            'neutral': 100,
-            'high': 110
+            'low': 75,      # 75 이하: 극심한 비관 (0점), 2022년 저점 98
+            'neutral': 95,  # 75-95: 중립 (50점)
+            'high': 110     # 95-110: 낙관 (100점), 역사적 평균 100
         },
         'reverse': False,  # 높을수록 좋음
         'name': 'CB 소비자신뢰'
