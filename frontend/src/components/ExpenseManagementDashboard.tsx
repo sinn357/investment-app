@@ -1058,8 +1058,7 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
               )}
             </div>
 
-        {expenseData && (
-          <div className="bg-white border border-gray-200 rounded-xl p-2 shadow-sm">
+            <div className="bg-white border border-gray-200 rounded-xl p-2 shadow-sm">
             <div className="flex items-center justify-between mb-2">
               <div>
                 <p className="text-xs text-slate-500">지출/수입 흐름</p>
