@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Navigation from '@/components/Navigation';
 import MasterCycleCard from '@/components/MasterCycleCard';
 import MMCScoreCard from '@/components/MMCScoreCard';
+import IndicatorChanges from '@/components/IndicatorChanges';
 // import CyclePanel from '@/components/CyclePanel'; // ✅ 제거: Master Cycle로 대체
 import IndicatorGrid from '@/components/IndicatorGrid';
 import IndicatorTableView from '@/components/IndicatorTableView';
@@ -146,6 +147,12 @@ export default function IndicatorsPage() {
   // ✅ NEW: Master Market Cycle state (Phase 1)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [masterCycleData, setMasterCycleData] = useState<any>(null);
+  // ✅ NEW: Indicator Changes state (Phase 2)
+  const [indicatorChanges, setIndicatorChanges] = useState<{
+    increases: Array<{ indicator: string; from: number; to: number; change: number; impact: 'low' | 'medium' | 'high' }>;
+    decreases: Array<{ indicator: string; from: number; to: number; change: number; impact: 'low' | 'medium' | 'high' }>;
+    unchanged: Array<{ indicator: string; from: number; to: number; change: number; impact: 'low' | 'medium' | 'high' }>;
+  }>({ increases: [], decreases: [], unchanged: [] });
   const [narrative, setNarrative] = useState<EconomicNarrative>({
     articles: [],
     myNarrative: '',
@@ -308,6 +315,22 @@ export default function IndicatorsPage() {
           }
         } catch (error) {
           console.warn('Master Cycle API 호출 실패 (Phase 1):', error);
+        }
+
+        // ✅ NEW: Indicator Changes API 호출 (Phase 2)
+        try {
+          const changesResult = await fetchJsonWithRetry(
+            'https://investment-app-backend-x166.onrender.com/api/v3/indicators/changes',
+            {},
+            3,
+            1000
+          );
+
+          if (changesResult.status === 'success' && changesResult.data) {
+            setIndicatorChanges(changesResult.data);
+          }
+        } catch (error) {
+          console.warn('Indicator Changes API 호출 실패 (Phase 2):', error);
         }
 
       } catch (error) {
@@ -581,6 +604,15 @@ export default function IndicatorsPage() {
         {/* MMC 점수 카드 (뉴스 섹션 위) */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-6">
           {masterCycleData && <MMCScoreCard {...masterCycleData} />}
+        </div>
+
+        {/* 지표 변화 추적 (Phase 2) */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-6">
+          <IndicatorChanges
+            increases={indicatorChanges.increases}
+            decreases={indicatorChanges.decreases}
+            unchanged={indicatorChanges.unchanged}
+          />
         </div>
 
         {/* 뉴스 & 담론 섹션 */}

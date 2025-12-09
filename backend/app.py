@@ -3471,6 +3471,37 @@ def get_all_indicators_metadata():
             "message": f"Internal server error: {str(e)}"
         }), 500
 
+@app.route('/api/v3/indicators/changes', methods=['GET'])
+def get_indicator_changes():
+    """
+    주요 지표 변화 요약 (전일 대비)
+
+    Returns:
+        {
+            "status": "success",
+            "data": {
+                "increases": [...],
+                "decreases": [...],
+                "unchanged": [...]
+            },
+            "timestamp": "2025-12-10T..."
+        }
+    """
+    try:
+        from services.indicator_changes_service import IndicatorChangesService
+
+        service = IndicatorChangesService(db)
+        changes = service.get_top_changes(limit=5)
+
+        return jsonify({
+            'status': 'success',
+            'data': changes,
+            'timestamp': datetime.utcnow().isoformat()
+        })
+    except Exception as e:
+        logger.error(f"지표 변화 조회 실패: {e}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
 # ========== 경제 사이클 API ==========
 
 @app.route('/api/v2/macro-cycle', methods=['GET'])
