@@ -98,8 +98,19 @@ const transferCategories: Record<string, string[]> = {
 
 const paymentMethods = ["현금", "신용카드", "체크카드", "계좌이체", "기타"];
 
-// 색상 팔레트 (포트폴리오와 동일)
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D', '#FFC658', '#8DD1E1', '#D084D0'];
+// 2025 핀테크 톤 팔레트
+const PALETTE = {
+  navy: '#0b1224',
+  midnight: '#0f172a',
+  jade: '#22b8a7',
+  mint: '#6ee7d0',
+  sky: '#7cc8f8',
+  coral: '#f16b6f',
+  sand: '#f4e8d8',
+  slate: '#e5e7eb',
+};
+
+const COLORS = [PALETTE.jade, PALETTE.mint, PALETTE.sky, PALETTE.coral, '#94a3b8', '#f59e0b', '#a78bfa', '#cbd5e1', '#0ea5e9'];
 
 // 대분류별 색상 그룹 (자산 구성 분석용)
 const CATEGORY_COLORS: Record<string, string[]> = {
@@ -668,290 +679,358 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
   const { pieData: incomePieData } = prepareIncomeCompositionData();
   const dailyData = prepareDailyData();
   const ratioData = prepareExpenseIncomeRatioData();
+  const monthLabel = `${selectedYear}년 ${selectedMonth}월`;
+  const expenseSummary = expenseData ? {
+    income: expenseData.summary.total_income,
+    expense: expenseData.summary.total_expense,
+    net: expenseData.summary.net_amount,
+    transactions: expenseData.summary.total_transactions,
+  } : {
+    income: 0,
+    expense: 0,
+    net: 0,
+    transactions: 0,
+  };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">거래내역을 불러오는 중...</p>
+      <div className="min-h-screen bg-gradient-to-b from-[#0b1224] via-[#0e1425] to-[#0b1224] text-slate-100 p-6">
+        <div className="max-w-7xl mx-auto space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {Array.from({ length: 3 }).map((_, idx) => (
+              <div key={idx} className="h-28 rounded-2xl bg-white/5 border border-white/10 animate-pulse" />
+            ))}
+          </div>
+          <div className="h-64 rounded-2xl bg-white/5 border border-white/10 animate-pulse" />
+          <div className="h-96 rounded-2xl bg-white/5 border border-white/10 animate-pulse" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-7xl mx-auto">
-        {/* 헤더 */}
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">가계부 관리</h1>
-            <p className="text-gray-600 mt-1">수입과 지출을 체계적으로 관리하세요</p>
-          </div>
-          <button
-            onClick={() => setIsFormVisible(!isFormVisible)}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
-          >
-            {isFormVisible ? '폼 닫기' : '거래내역 추가'}
-          </button>
-        </div>
-
-        {/* 연도/월 선택기 */}
-        <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-          <div className="flex items-center justify-between">
-            <button
-              onClick={handlePrevMonth}
-              className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-            >
-              ← 이전 달
-            </button>
-
-            <div className="flex items-center gap-4">
-              <select
-                value={selectedYear}
-                onChange={(e) => setSelectedYear(Number(e.target.value))}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                {Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - 5 + i).map(year => (
-                  <option key={year} value={year}>{year}년</option>
-                ))}
-              </select>
-
-              <select
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(Number(e.target.value))}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                {Array.from({ length: 12 }, (_, i) => i + 1).map(month => (
-                  <option key={month} value={month}>{month}월</option>
-                ))}
-              </select>
-            </div>
-
-            <button
-              onClick={handleNextMonth}
-              className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-            >
-              다음 달 →
-            </button>
-          </div>
-        </div>
-
-        {/* 요약 카드 */}
-        {expenseData && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div className="bg-white rounded-xl shadow-sm p-6 border-l-4 border-green-500">
-              <h3 className="text-sm font-medium text-gray-600 mb-2">총 수입</h3>
-              <p className="text-2xl font-bold text-green-600">
-                {expenseData.summary.total_income.toLocaleString()}원
-              </p>
-            </div>
-            <div className="bg-white rounded-xl shadow-sm p-6 border-l-4 border-red-500">
-              <h3 className="text-sm font-medium text-gray-600 mb-2">총 지출</h3>
-              <p className="text-2xl font-bold text-red-600">
-                {expenseData.summary.total_expense.toLocaleString()}원
-              </p>
-            </div>
-            <div className={`bg-white rounded-xl shadow-sm p-6 border-l-4 ${
-              expenseData.summary.net_amount >= 0 ? 'border-blue-500' : 'border-orange-500'
-            }`}>
-              <h3 className="text-sm font-medium text-gray-600 mb-2">순수입</h3>
-              <p className={`text-2xl font-bold ${
-                expenseData.summary.net_amount >= 0 ? 'text-blue-600' : 'text-orange-600'
-              }`}>
-                {expenseData.summary.net_amount.toLocaleString()}원
-              </p>
-            </div>
-            <div className="bg-white rounded-xl shadow-sm p-6 border-l-4 border-purple-500">
-              <h3 className="text-sm font-medium text-gray-600 mb-2">총 거래 건수</h3>
-              <p className="text-2xl font-bold text-purple-600">
-                {expenseData.summary.total_transactions}건
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* 거래내역 입력 폼 */}
-        {isFormVisible && (
-          <div className="bg-white rounded-xl shadow-sm p-6 mb-8">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">새 거래내역 추가</h2>
-            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div className="min-h-screen bg-gradient-to-b from-[#0b1224] via-[#0e1425] to-[#0b1224] text-slate-100">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+        {/* 히어로 + 기간/필터 스위치 */}
+        <div className="sticky top-0 z-30 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 pt-4 pb-6 bg-gradient-to-b from-[#0b1224]/95 via-[#0e1425]/92 to-[#0b1224]/88 backdrop-blur">
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">거래 유형</label>
-                <select
-                  value={formData.transaction_type}
-                  onChange={(e) => {
-                    const newType = e.target.value as '수입' | '지출' | '이체';
-                    setFormData(prev => ({
-                      ...prev,
-                      transaction_type: newType,
-                      category: '', // 유형 변경 시 카테고리 초기화
-                      subcategory: '',
-                      payment_method: newType === '지출' ? '현금' : '' // 수입/이체는 결제수단 빈칸
-                    }));
-                  }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="지출">지출</option>
-                  <option value="수입">수입</option>
-                  <option value="이체">이체</option>
-                </select>
+                <p className="text-sm text-slate-400">가계부</p>
+                <h1 className="text-3xl font-bold text-white">이번 달 현황</h1>
+                <p className="text-slate-400 text-sm mt-1">빠른 입력과 정돈된 차트로 한눈에 확인하세요.</p>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">금액</label>
-                <div className="flex gap-2">
-                  <input
-                    type="number"
-                    value={formData.amount}
-                    onChange={(e) => setFormData(prev => ({ ...prev, amount: e.target.value }))}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="금액을 입력하세요"
-                    step="1"
-                    min="0"
-                  />
-                  <select
-                    value={formData.currency}
-                    onChange={(e) => setFormData(prev => ({ ...prev, currency: e.target.value }))}
-                    className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="flex items-center gap-2 bg-white/5 border border-white/10 px-3 py-2 rounded-2xl">
+                  <button
+                    onClick={handlePrevMonth}
+                    className="px-2 py-1 rounded-full text-slate-200 hover:bg-white/10 transition-colors"
                   >
-                    <option value="KRW">원</option>
-                    <option value="USD">달러</option>
-                  </select>
+                    ←
+                  </button>
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={selectedYear}
+                      onChange={(e) => setSelectedYear(Number(e.target.value))}
+                      className="bg-transparent text-white text-sm focus:outline-none"
+                    >
+                      {Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - 5 + i).map(year => (
+                        <option key={year} value={year} className="bg-slate-900 text-white">{year}년</option>
+                      ))}
+                    </select>
+                    <select
+                      value={selectedMonth}
+                      onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                      className="bg-transparent text-white text-sm focus:outline-none"
+                    >
+                      {Array.from({ length: 12 }, (_, i) => i + 1).map(month => (
+                        <option key={month} value={month} className="bg-slate-900 text-white">{month}월</option>
+                      ))}
+                    </select>
+                  </div>
+                  <button
+                    onClick={handleNextMonth}
+                    className="px-2 py-1 rounded-full text-slate-200 hover:bg-white/10 transition-colors"
+                  >
+                    →
+                  </button>
                 </div>
-              </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">대분류</label>
-                <select
-                  value={formData.category}
-                  onChange={(e) => setFormData(prev => ({
-                    ...prev,
-                    category: e.target.value,
-                    subcategory: '' // 대분류 변경 시 소분류 초기화
-                  }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">대분류 선택</option>
-                  {Object.keys(
-                    formData.transaction_type === '수입' ? incomeCategories :
-                    formData.transaction_type === '이체' ? transferCategories :
-                    expenseCategories
-                  ).map(category => (
-                    <option key={category} value={category}>{category}</option>
+                <div className="flex bg-white/5 border border-white/10 rounded-2xl p-1">
+                  {(['전체', '수입', '지출', '이체'] as const).map((tab) => (
+                    <button
+                      key={tab}
+                      onClick={() => setTypeFilter(tab)}
+                      className={`px-3 py-2 text-sm rounded-xl transition-all ${
+                        typeFilter === tab
+                          ? 'bg-gradient-to-r from-[#22b8a7] to-[#6ee7d0] text-slate-900 font-semibold'
+                          : 'text-slate-200 hover:bg-white/5'
+                      }`}
+                    >
+                      {tab}
+                    </button>
                   ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">소분류</label>
-                <select
-                  value={formData.subcategory}
-                  onChange={(e) => setFormData(prev => ({ ...prev, subcategory: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  disabled={!formData.category}
-                >
-                  <option value="">소분류 선택</option>
-                  {formData.category && (
-                    formData.transaction_type === '수입' ? incomeCategories :
-                    formData.transaction_type === '이체' ? transferCategories :
-                    expenseCategories
-                  )[formData.category]?.map(subcategory => (
-                    <option key={subcategory} value={subcategory}>{subcategory}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">결제 수단</label>
-                <select
-                  value={formData.payment_method}
-                  onChange={(e) => setFormData(prev => ({ ...prev, payment_method: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  disabled={formData.transaction_type === '수입' || formData.transaction_type === '이체'}
-                >
-                  {(formData.transaction_type === '수입' || formData.transaction_type === '이체') && (
-                    <option value="">-</option>
-                  )}
-                  {paymentMethods.map(method => (
-                    <option key={method} value={method}>{method}</option>
-                  ))}
-                </select>
-              </div>
-
-              {formData.transaction_type === '지출' && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">결제수단 이름</label>
-                  <input
-                    type="text"
-                    value={formData.payment_method_name}
-                    onChange={(e) => setFormData(prev => ({ ...prev, payment_method_name: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="예: KB카드, 신한은행"
-                  />
                 </div>
-              )}
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">거래 날짜</label>
-                <input
-                  type="date"
-                  value={formData.transaction_date}
-                  onChange={(e) => setFormData(prev => ({ ...prev, transaction_date: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">이름 *</label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="거래내역 이름"
-                  required
-                />
-              </div>
-
-              <div className="md:col-span-2 lg:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">메모</label>
-                <input
-                  type="text"
-                  value={formData.memo}
-                  onChange={(e) => setFormData(prev => ({ ...prev, memo: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="추가 메모 (선택사항)"
-                />
-              </div>
-
-              <div className="md:col-span-2 lg:col-span-3">
                 <button
-                  type="submit"
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-medium transition-colors"
+                  onClick={() => setIsFormVisible(true)}
+                  className="inline-flex items-center gap-2 bg-gradient-to-r from-[#22b8a7] to-[#6ee7d0] text-slate-900 font-semibold px-4 py-2 rounded-xl shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 transition-all"
                 >
-                  거래내역 저장
+                  + 거래 추가
                 </button>
               </div>
-            </form>
+            </div>
+
+            {expenseData && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
+                  <p className="text-sm text-slate-400">총 수입</p>
+                  <p className="text-2xl font-bold text-[#6ee7d0] mt-2">{expenseSummary.income.toLocaleString()}원</p>
+                </div>
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
+                  <p className="text-sm text-slate-400">총 지출</p>
+                  <p className="text-2xl font-bold text-[#f16b6f] mt-2">{expenseSummary.expense.toLocaleString()}원</p>
+                </div>
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
+                  <p className="text-sm text-slate-400">순수입</p>
+                  <p className={`text-2xl font-bold mt-2 ${expenseSummary.net >= 0 ? 'text-[#22b8a7]' : 'text-[#f16b6f]'}`}>
+                    {expenseSummary.net.toLocaleString()}원
+                  </p>
+                </div>
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
+                  <p className="text-sm text-slate-400">총 거래</p>
+                  <p className="text-2xl font-bold text-white mt-2">{expenseSummary.transactions}건</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* 거래 추가 슬라이드 패널 */}
+        {isFormVisible && (
+          <div className="fixed inset-0 z-40">
+            <div
+              className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+              onClick={() => setIsFormVisible(false)}
+            />
+            <div className="absolute right-0 top-0 h-full w-full sm:w-[480px] bg-[#0f172a] text-slate-100 border-l border-white/10 shadow-2xl overflow-y-auto">
+              <div className="sticky top-0 bg-[#0f172a] border-b border-white/10 px-5 py-4 flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-slate-400">새 거래 추가</p>
+                  <h3 className="text-lg font-semibold">입력 패널</h3>
+                </div>
+                <button
+                  onClick={() => setIsFormVisible(false)}
+                  className="text-slate-300 hover:text-white"
+                >
+                  닫기
+                </button>
+              </div>
+
+              <form onSubmit={handleSubmit} className="p-5 space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="flex flex-col gap-2">
+                    <label className="text-sm text-slate-300">거래 유형</label>
+                    <div className="flex bg-white/5 rounded-xl p-1">
+                      {(['지출', '수입', '이체'] as const).map((type) => (
+                        <button
+                          key={type}
+                          type="button"
+                          onClick={() => setFormData(prev => ({
+                            ...prev,
+                            transaction_type: type,
+                            category: '',
+                            subcategory: '',
+                            payment_method: type === '지출' ? '현금' : ''
+                          }))}
+                          className={`flex-1 px-3 py-2 rounded-lg text-sm ${
+                            formData.transaction_type === type
+                              ? 'bg-white text-slate-900 font-semibold'
+                              : 'text-slate-200 hover:bg-white/10'
+                          }`}
+                        >
+                          {type}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <label className="text-sm text-slate-300">금액</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="number"
+                        value={formData.amount}
+                        onChange={(e) => setFormData(prev => ({ ...prev, amount: e.target.value }))}
+                        className="flex-1 px-3 py-2 rounded-lg bg-white/5 border border-white/10 focus:outline-none"
+                        placeholder="금액"
+                        step="1"
+                        min="0"
+                      />
+                      <select
+                        value={formData.currency}
+                        onChange={(e) => setFormData(prev => ({ ...prev, currency: e.target.value }))}
+                        className="w-24 px-3 py-2 rounded-lg bg-white/5 border border-white/10 focus:outline-none"
+                      >
+                        <option value="KRW">원</option>
+                        <option value="USD">달러</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <label className="text-sm text-slate-300">대분류</label>
+                    <select
+                      value={formData.category}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        category: e.target.value,
+                        subcategory: ''
+                      }))}
+                      className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 focus:outline-none"
+                    >
+                      <option value="">대분류 선택</option>
+                      {Object.keys(
+                        formData.transaction_type === '수입' ? incomeCategories :
+                        formData.transaction_type === '이체' ? transferCategories :
+                        expenseCategories
+                      ).map(category => (
+                        <option key={category} value={category}>{category}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <label className="text-sm text-slate-300">소분류</label>
+                    <select
+                      value={formData.subcategory}
+                      onChange={(e) => setFormData(prev => ({ ...prev, subcategory: e.target.value }))}
+                      className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 focus:outline-none"
+                      disabled={!formData.category}
+                    >
+                      <option value="">소분류 선택</option>
+                      {formData.category && (
+                        formData.transaction_type === '수입' ? incomeCategories :
+                        formData.transaction_type === '이체' ? transferCategories :
+                        expenseCategories
+                      )[formData.category]?.map(subcategory => (
+                        <option key={subcategory} value={subcategory}>{subcategory}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <label className="text-sm text-slate-300">결제 수단</label>
+                    <select
+                      value={formData.payment_method}
+                      onChange={(e) => setFormData(prev => ({ ...prev, payment_method: e.target.value }))}
+                      className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 focus:outline-none disabled:opacity-40"
+                      disabled={formData.transaction_type === '수입' || formData.transaction_type === '이체'}
+                    >
+                      {(formData.transaction_type === '수입' || formData.transaction_type === '이체') && (
+                        <option value="">-</option>
+                      )}
+                      {paymentMethods.map(method => (
+                        <option key={method} value={method}>{method}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {formData.transaction_type === '지출' && (
+                    <div className="flex flex-col gap-2">
+                      <label className="text-sm text-slate-300">결제수단 이름</label>
+                      <input
+                        type="text"
+                        value={formData.payment_method_name}
+                        onChange={(e) => setFormData(prev => ({ ...prev, payment_method_name: e.target.value }))}
+                        className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 focus:outline-none"
+                        placeholder="예: KB카드, 신한은행"
+                      />
+                    </div>
+                  )}
+
+                  <div className="flex flex-col gap-2">
+                    <label className="text-sm text-slate-300">거래 날짜</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="date"
+                        value={formData.transaction_date}
+                        onChange={(e) => setFormData(prev => ({ ...prev, transaction_date: e.target.value }))}
+                        className="flex-1 px-3 py-2 rounded-lg bg-white/5 border border-white/10 focus:outline-none"
+                      />
+                      <div className="flex flex-col gap-1">
+                        {[
+                          { label: '오늘', value: new Date().toISOString().split('T')[0] },
+                          { label: '어제', value: new Date(Date.now() - 86400000).toISOString().split('T')[0] }
+                        ].map((item) => (
+                          <button
+                            key={item.label}
+                            type="button"
+                            onClick={() => setFormData(prev => ({ ...prev, transaction_date: item.value }))}
+                            className="px-2 py-1 text-xs rounded-lg bg-white/5 border border-white/10 hover:bg-white/10"
+                          >
+                            {item.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm text-slate-300">이름 *</label>
+                  <input
+                    type="text"
+                    value={formData.name}
+                    onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 focus:outline-none"
+                    placeholder="거래내역 이름"
+                    required
+                  />
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm text-slate-300">메모</label>
+                  <input
+                    type="text"
+                    value={formData.memo}
+                    onChange={(e) => setFormData(prev => ({ ...prev, memo: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 focus:outline-none"
+                    placeholder="추가 메모 (선택사항)"
+                  />
+                </div>
+
+                <div className="flex gap-2 pt-2">
+                  <button
+                    type="submit"
+                    className="flex-1 bg-gradient-to-r from-[#22b8a7] to-[#6ee7d0] text-slate-900 font-semibold py-3 rounded-xl shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 transition-all"
+                  >
+                    거래내역 저장
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsFormVisible(false)}
+                    className="px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-slate-200 hover:bg-white/10"
+                  >
+                    취소
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         )}
 
-        {/* 지출/수입 구성 분석 섹션 (나란히 배치) */}
+        {/* 차트 섹션 */}
         {expenseData && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-            {/* 지출 구성 분석 */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-              <div className="mb-4">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
-                  {chartViewType === '전체' ? '지출 구성 분석' :
-                   subViewType ? `${subViewType} 상세 분석` :
-                   `${chartViewType} 세부 분석`}
-                </h3>
-
-                {/* 1단계: 대분류 버튼 */}
-                <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1 flex-wrap gap-1 mb-2">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <p className="text-sm text-slate-400">{chartViewType === '전체' ? '지출 구성' : `${chartViewType} 상세`}</p>
+                  <h3 className="text-lg font-semibold text-white">{monthLabel}</h3>
+                </div>
+                <div className="flex bg-white/5 rounded-xl p-1 gap-1">
                   {['전체', '생활', '건강', '사회', '여가', '쇼핑', '기타'].map((viewType) => (
                     <button
                       key={viewType}
@@ -959,66 +1038,60 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
                         setChartViewType(viewType as '전체' | '생활' | '건강' | '사회' | '여가' | '쇼핑' | '기타');
                         setSubViewType(null);
                       }}
-                      className={`px-2 py-1 text-xs rounded transition-colors ${
+                      className={`px-2.5 py-1.5 text-xs rounded-lg transition-colors ${
                         chartViewType === viewType
-                          ? 'bg-blue-500 text-white'
-                          : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                          ? 'bg-white text-slate-900 font-semibold'
+                          : 'text-slate-200 hover:bg-white/10'
                       }`}
                     >
                       {viewType}
                     </button>
                   ))}
                 </div>
-
-                {/* 2단계: 소분류 버튼 (대분류 선택 시에만 표시) */}
-                {chartViewType !== '전체' && expenseCategories[chartViewType] && (
-                  <div className="flex bg-gray-50 dark:bg-gray-600 rounded-lg p-1 flex-wrap gap-1">
-                    <button
-                      onClick={() => setSubViewType(null)}
-                      className={`px-2 py-1 text-xs rounded transition-colors ${
-                        !subViewType
-                          ? 'bg-green-500 text-white'
-                          : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-500'
-                      }`}
-                    >
-                      전체
-                    </button>
-                    {expenseCategories[chartViewType].map((subCategory) => (
-                      <button
-                        key={subCategory}
-                        onClick={() => setSubViewType(subCategory)}
-                        className={`px-2 py-1 text-xs rounded transition-colors ${
-                          subViewType === subCategory
-                            ? 'bg-green-500 text-white'
-                            : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-500'
-                        }`}
-                      >
-                        {subCategory}
-                      </button>
-                    ))}
-                  </div>
-                )}
               </div>
 
-              {/* 도넛 차트만 표시 */}
+              {chartViewType !== '전체' && expenseCategories[chartViewType] && (
+                <div className="flex flex-wrap gap-1 mb-3">
+                  <button
+                    onClick={() => setSubViewType(null)}
+                    className={`px-2.5 py-1 text-xs rounded-full border ${
+                      !subViewType ? 'bg-[#22b8a7] text-slate-900 border-transparent' : 'border-white/20 text-slate-200 hover:bg-white/10'
+                    }`}
+                  >
+                    전체
+                  </button>
+                  {expenseCategories[chartViewType].map((subCategory) => (
+                    <button
+                      key={subCategory}
+                      onClick={() => setSubViewType(subCategory)}
+                      className={`px-2.5 py-1 text-xs rounded-full border ${
+                        subViewType === subCategory ? 'bg-[#22b8a7] text-slate-900 border-transparent' : 'border-white/20 text-slate-200 hover:bg-white/10'
+                      }`}
+                    >
+                      {subCategory}
+                    </button>
+                  ))}
+                </div>
+              )}
+
               {compositionPieData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={300}>
+                <ResponsiveContainer width="100%" height={320}>
                   <PieChart>
                     <Pie
                       data={compositionPieData}
                       cx="50%"
                       cy="50%"
-                      innerRadius={50}
-                      outerRadius={100}
+                      innerRadius={60}
+                      outerRadius={110}
                       paddingAngle={5}
                       dataKey="value"
                       label={(entry) => `${Number(entry.value).toLocaleString()}원`}
                     >
-                      {compositionPieData.map((entry, index) => {
+                      {compositionPieData.map((_entry, index) => {
                         if (chartViewType === '전체') {
                           return <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />;
                         } else if (subViewType) {
-                          const extendedColors = [...COLORS, '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F', '#BB8FCE'];
+                          const extendedColors = [...COLORS, PALETTE.coral, '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F'];
                           return <Cell key={`cell-${index}`} fill={extendedColors[index % extendedColors.length]} />;
                         } else {
                           const categoryColors = CATEGORY_COLORS[chartViewType as keyof typeof CATEGORY_COLORS] || COLORS;
@@ -1026,28 +1099,27 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
                         }
                       })}
                     </Pie>
-                    <Tooltip formatter={(value: number) => [`${value.toLocaleString()}원`, '금액']} />
-                    <Legend wrapperStyle={{ fontSize: '11px' }} />
+                    <Tooltip
+                      contentStyle={{ backgroundColor: '#0f172a', borderRadius: 12, border: '1px solid rgba(255,255,255,0.08)' }}
+                      formatter={(value: number) => [`${value.toLocaleString()}원`, '금액']}
+                    />
+                    <Legend wrapperStyle={{ fontSize: '12px', color: '#cbd5e1' }} />
                   </PieChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="h-[300px] flex items-center justify-center text-gray-500">
+                <div className="h-[320px] flex items-center justify-center text-slate-400">
                   데이터가 없습니다
                 </div>
               )}
             </div>
 
-            {/* 수입 구성 분석 */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-              <div className="mb-4">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
-                  {incomeChartViewType === '전체' ? '수입 구성 분석' :
-                   incomeSubViewType ? `${incomeSubViewType} 상세 분석` :
-                   `${incomeChartViewType} 세부 분석`}
-                </h3>
-
-                {/* 1단계: 대분류 버튼 */}
-                <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1 flex-wrap gap-1 mb-2">
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <p className="text-sm text-slate-400">{incomeChartViewType === '전체' ? '수입 구성' : `${incomeChartViewType} 상세`}</p>
+                  <h3 className="text-lg font-semibold text-white">{monthLabel}</h3>
+                </div>
+                <div className="flex bg-white/5 rounded-xl p-1 gap-1">
                   {['전체', '근로소득', '사업소득', '투자소득', '기타소득'].map((viewType) => (
                     <button
                       key={viewType}
@@ -1055,57 +1127,51 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
                         setIncomeChartViewType(viewType as '전체' | '근로소득' | '사업소득' | '투자소득' | '기타소득');
                         setIncomeSubViewType(null);
                       }}
-                      className={`px-2 py-1 text-xs rounded transition-colors ${
+                      className={`px-2.5 py-1.5 text-xs rounded-lg transition-colors ${
                         incomeChartViewType === viewType
-                          ? 'bg-green-500 text-white'
-                          : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                          ? 'bg-white text-slate-900 font-semibold'
+                          : 'text-slate-200 hover:bg-white/10'
                       }`}
                     >
                       {viewType}
                     </button>
                   ))}
                 </div>
-
-                {/* 2단계: 소분류 버튼 (대분류 선택 시에만 표시) */}
-                {incomeChartViewType !== '전체' && incomeCategories[incomeChartViewType] && (
-                  <div className="flex bg-gray-50 dark:bg-gray-600 rounded-lg p-1 flex-wrap gap-1">
-                    <button
-                      onClick={() => setIncomeSubViewType(null)}
-                      className={`px-2 py-1 text-xs rounded transition-colors ${
-                        !incomeSubViewType
-                          ? 'bg-purple-500 text-white'
-                          : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-500'
-                      }`}
-                    >
-                      전체
-                    </button>
-                    {incomeCategories[incomeChartViewType].map((subCategory) => (
-                      <button
-                        key={subCategory}
-                        onClick={() => setIncomeSubViewType(subCategory)}
-                        className={`px-2 py-1 text-xs rounded transition-colors ${
-                          incomeSubViewType === subCategory
-                            ? 'bg-purple-500 text-white'
-                            : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-500'
-                        }`}
-                      >
-                        {subCategory}
-                      </button>
-                    ))}
-                  </div>
-                )}
               </div>
 
-              {/* 도넛 차트만 표시 */}
+              {incomeChartViewType !== '전체' && incomeCategories[incomeChartViewType] && (
+                <div className="flex flex-wrap gap-1 mb-3">
+                  <button
+                    onClick={() => setIncomeSubViewType(null)}
+                    className={`px-2.5 py-1 text-xs rounded-full border ${
+                      !incomeSubViewType ? 'bg-[#22b8a7] text-slate-900 border-transparent' : 'border-white/20 text-slate-200 hover:bg-white/10'
+                    }`}
+                  >
+                    전체
+                  </button>
+                  {incomeCategories[incomeChartViewType].map((subCategory) => (
+                    <button
+                      key={subCategory}
+                      onClick={() => setIncomeSubViewType(subCategory)}
+                      className={`px-2.5 py-1 text-xs rounded-full border ${
+                        incomeSubViewType === subCategory ? 'bg-[#22b8a7] text-slate-900 border-transparent' : 'border-white/20 text-slate-200 hover:bg-white/10'
+                      }`}
+                    >
+                      {subCategory}
+                    </button>
+                  ))}
+                </div>
+              )}
+
               {incomePieData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={300}>
+                <ResponsiveContainer width="100%" height={320}>
                   <PieChart>
                     <Pie
                       data={incomePieData}
                       cx="50%"
                       cy="50%"
-                      innerRadius={50}
-                      outerRadius={100}
+                      innerRadius={60}
+                      outerRadius={110}
                       paddingAngle={5}
                       dataKey="value"
                       label={(entry) => `${Number(entry.value).toLocaleString()}원`}
@@ -1114,12 +1180,15 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
-                    <Tooltip formatter={(value: number) => [`${value.toLocaleString()}원`, '금액']} />
-                    <Legend wrapperStyle={{ fontSize: '11px' }} />
+                    <Tooltip
+                      contentStyle={{ backgroundColor: '#0f172a', borderRadius: 12, border: '1px solid rgba(255,255,255,0.08)' }}
+                      formatter={(value: number) => [`${value.toLocaleString()}원`, '금액']}
+                    />
+                    <Legend wrapperStyle={{ fontSize: '12px', color: '#cbd5e1' }} />
                   </PieChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="h-[300px] flex items-center justify-center text-gray-500">
+                <div className="h-[320px] flex items-center justify-center text-slate-400">
                   데이터가 없습니다
                 </div>
               )}
@@ -1127,22 +1196,23 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
           </div>
         )}
 
-        {/* 시계열 차트 (일별/월별/비율 탭) */}
+        {/* 시계열 + 비율 */}
         {expenseData && (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8">
-            <div className="mb-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">지출/수입 분석</h3>
-
-              {/* 탭 버튼 */}
-              <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1 gap-1">
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <p className="text-sm text-slate-400">지출/수입 흐름</p>
+                <h3 className="text-lg font-semibold text-white">{monthLabel}</h3>
+              </div>
+              <div className="flex bg-white/5 rounded-xl p-1 gap-1">
                 {['일별', '비율'].map((tab) => (
                   <button
                     key={tab}
                     onClick={() => setTimeSeriesTab(tab as '일별' | '비율')}
-                    className={`flex-1 px-4 py-2 text-sm rounded transition-colors ${
+                    className={`px-3 py-2 text-sm rounded-lg transition-colors ${
                       timeSeriesTab === tab
-                        ? 'bg-blue-500 text-white font-medium'
-                        : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                        ? 'bg-white text-slate-900 font-semibold'
+                        : 'text-slate-200 hover:bg-white/10'
                     }`}
                   >
                     {tab}
@@ -1151,228 +1221,240 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
               </div>
             </div>
 
-            {/* 일별 차트 */}
             {timeSeriesTab === '일별' && (
               dailyData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={300}>
+                <ResponsiveContainer width="100%" height={320}>
                   <BarChart data={dailyData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="날짜" tick={{ fontSize: 10 }} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                    <XAxis dataKey="날짜" tick={{ fontSize: 11, fill: '#cbd5e1' }} />
                     <YAxis
-                      tick={{ fontSize: 10 }}
+                      tick={{ fontSize: 11, fill: '#cbd5e1' }}
                       tickFormatter={(value) => {
                         if (value >= 1000000) return `${(value / 1000000).toFixed(0)}M`;
                         if (value >= 1000) return `${(value / 1000).toFixed(0)}K`;
                         return value.toString();
                       }}
                     />
-                    <Tooltip formatter={(value: number) => [`${value.toLocaleString()}원`]} />
-                    <Legend />
-                    <Bar dataKey="지출" fill="#ef4444" />
-                    <Bar dataKey="수입" fill="#10b981" />
+                    <Tooltip
+                      contentStyle={{ backgroundColor: '#0f172a', borderRadius: 12, border: '1px solid rgba(255,255,255,0.08)' }}
+                      formatter={(value: number) => [`${value.toLocaleString()}원`]}
+                    />
+                    <Legend wrapperStyle={{ color: '#cbd5e1' }} />
+                    <Bar dataKey="지출" fill={PALETTE.coral} radius={[6, 6, 0, 0]} />
+                    <Bar dataKey="수입" fill={PALETTE.jade} radius={[6, 6, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="h-[300px] flex items-center justify-center text-gray-500">
-                  데이터가 없습니다
-                </div>
+                <div className="h-[320px] flex items-center justify-center text-slate-400">데이터가 없습니다</div>
               )
             )}
 
-            {/* 비율 차트 */}
             {timeSeriesTab === '비율' && (
               ratioData.length > 0 && (ratioData[0].value > 0 || ratioData[1].value > 0) ? (
-                <ResponsiveContainer width="100%" height={300}>
+                <ResponsiveContainer width="100%" height={320}>
                   <PieChart>
                     <Pie
                       data={ratioData}
                       cx="50%"
                       cy="50%"
-                      innerRadius={60}
-                      outerRadius={100}
+                      innerRadius={70}
+                      outerRadius={110}
                       paddingAngle={5}
                       dataKey="value"
                       label={(entry) => `${Number(entry.value).toLocaleString()}원`}
                     >
-                      <Cell fill="#ef4444" />
-                      <Cell fill="#10b981" />
+                      <Cell fill={PALETTE.coral} />
+                      <Cell fill={PALETTE.jade} />
                     </Pie>
-                    <Tooltip formatter={(value: number) => [`${value.toLocaleString()}원`, '금액']} />
-                    <Legend />
+                    <Tooltip
+                      contentStyle={{ backgroundColor: '#0f172a', borderRadius: 12, border: '1px solid rgba(255,255,255,0.08)' }}
+                      formatter={(value: number) => [`${value.toLocaleString()}원`, '금액']}
+                    />
+                    <Legend wrapperStyle={{ color: '#cbd5e1' }} />
                   </PieChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="h-[300px] flex items-center justify-center text-gray-500">
-                  데이터가 없습니다
-                </div>
+                <div className="h-[320px] flex items-center justify-center text-slate-400">데이터가 없습니다</div>
               )
             )}
           </div>
         )}
 
-        {/* 게이지 섹션 - 목표 지출/수입 */}
+        {/* 예산/목표 */}
         {expenseData && (
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-8">
-            {/* 목표 지출 게이지 */}
-            <ExpenseGoalGauge
-              expenseData={expenseData.by_category.filter(item => item.transaction_type === '지출')}
-              goals={budgetGoals.expense_goals}
-              onSaveGoals={(goals) => {
-                const newGoals = { ...budgetGoals, expense_goals: goals };
-                setBudgetGoals(newGoals);
-                saveBudgetGoals(newGoals);
-              }}
-            />
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <p className="text-sm text-slate-400">예산 진행도</p>
+                  <h3 className="text-lg font-semibold text-white">지출 목표</h3>
+                </div>
+                <span className="text-xs px-2 py-1 rounded-full bg-white/10 text-slate-200">카테고리별</span>
+              </div>
+              <ExpenseGoalGauge
+                expenseData={expenseData.by_category.filter(item => item.transaction_type === '지출')}
+                goals={budgetGoals.expense_goals}
+                onSaveGoals={(goals) => {
+                  const newGoals = { ...budgetGoals, expense_goals: goals };
+                  setBudgetGoals(newGoals);
+                  saveBudgetGoals(newGoals);
+                }}
+              />
+            </div>
 
-            {/* 목표 수입 게이지 */}
-            <IncomeGoalGauge
-              incomeData={expenseData.by_category.filter(item => item.transaction_type === '수입')}
-              goals={budgetGoals.income_goals}
-              onSaveGoals={(goals) => {
-                const newGoals = { ...budgetGoals, income_goals: goals };
-                setBudgetGoals(newGoals);
-                saveBudgetGoals(newGoals);
-              }}
-            />
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <p className="text-sm text-slate-400">목표 달성률</p>
+                  <h3 className="text-lg font-semibold text-white">수입 목표</h3>
+                </div>
+                <span className="text-xs px-2 py-1 rounded-full bg-white/10 text-slate-200">카테고리별</span>
+              </div>
+              <IncomeGoalGauge
+                incomeData={expenseData.by_category.filter(item => item.transaction_type === '수입')}
+                goals={budgetGoals.income_goals}
+                onSaveGoals={(goals) => {
+                  const newGoals = { ...budgetGoals, income_goals: goals };
+                  setBudgetGoals(newGoals);
+                  saveBudgetGoals(newGoals);
+                }}
+              />
+            </div>
           </div>
         )}
 
-        {/* 필터링 및 정렬 */}
-        <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-          <div className="flex flex-wrap gap-4 items-center">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">카테고리 필터</label>
+        {/* 필터 바 */}
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex flex-col">
+              <span className="text-xs text-slate-400 mb-1">카테고리</span>
               <select
                 value={categoryFilter}
                 onChange={(e) => setCategoryFilter(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-sm text-white focus:outline-none"
               >
-                <option value="전체">전체</option>
+                <option value="전체" className="bg-slate-900 text-white">전체</option>
                 {Array.from(new Set(expenses.map(e => e.category))).map(category => (
-                  <option key={category} value={category}>{category}</option>
+                  <option key={category} value={category} className="bg-slate-900 text-white">{category}</option>
                 ))}
               </select>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">거래 유형</label>
-              <select
-                value={typeFilter}
-                onChange={(e) => setTypeFilter(e.target.value as '전체' | '수입' | '지출' | '이체')}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="전체">전체</option>
-                <option value="수입">수입</option>
-                <option value="지출">지출</option>
-                <option value="이체">이체</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">정렬 기준</label>
+            <div className="flex flex-col">
+              <span className="text-xs text-slate-400 mb-1">정렬 기준</span>
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as 'transaction_date' | 'amount' | 'category')}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-sm text-white focus:outline-none"
               >
-                <option value="transaction_date">날짜</option>
-                <option value="amount">금액</option>
-                <option value="category">카테고리</option>
+                <option value="transaction_date" className="bg-slate-900 text-white">날짜</option>
+                <option value="amount" className="bg-slate-900 text-white">금액</option>
+                <option value="category" className="bg-slate-900 text-white">카테고리</option>
               </select>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">정렬 순서</label>
+            <div className="flex flex-col">
+              <span className="text-xs text-slate-400 mb-1">정렬</span>
               <select
                 value={sortOrder}
                 onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-sm text-white focus:outline-none"
               >
-                <option value="desc">내림차순</option>
-                <option value="asc">오름차순</option>
+                <option value="desc" className="bg-slate-900 text-white">내림차순</option>
+                <option value="asc" className="bg-slate-900 text-white">오름차순</option>
               </select>
             </div>
           </div>
         </div>
 
         {/* 거래내역 테이블 */}
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h3 className="text-xl font-bold text-gray-900">거래내역</h3>
-            <p className="text-gray-600 mt-1">{sortedExpenses.length}건의 거래내역</p>
+        <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
+          <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between">
+            <div>
+              <h3 className="text-xl font-semibold text-white">거래내역</h3>
+              <p className="text-slate-400 text-sm">{sortedExpenses.length}건</p>
+            </div>
+            <button
+              onClick={() => setIsFormVisible(true)}
+              className="text-sm px-3 py-2 rounded-lg border border-white/20 text-white hover:bg-white/10 transition-colors"
+            >
+              + 추가
+            </button>
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50">
+            <table className="w-full text-sm text-slate-100">
+              <thead className="bg-white/5">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">날짜</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">구분</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">금액</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">카테고리</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">이름</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">메모</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">결제수단</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">작업</th>
+                  <th className="px-6 py-3 text-left font-medium uppercase tracking-wider text-xs text-slate-400 sticky left-0 bg-white/5 backdrop-blur z-10">날짜</th>
+                  <th className="px-6 py-3 text-left font-medium uppercase tracking-wider text-xs text-slate-400">구분</th>
+                  <th className="px-6 py-3 text-left font-medium uppercase tracking-wider text-xs text-slate-400">금액</th>
+                  <th className="px-6 py-3 text-left font-medium uppercase tracking-wider text-xs text-slate-400">카테고리</th>
+                  <th className="px-6 py-3 text-left font-medium uppercase tracking-wider text-xs text-slate-400">이름</th>
+                  <th className="px-6 py-3 text-left font-medium uppercase tracking-wider text-xs text-slate-400">메모</th>
+                  <th className="px-6 py-3 text-left font-medium uppercase tracking-wider text-xs text-slate-400">결제수단</th>
+                  <th className="px-6 py-3 text-left font-medium uppercase tracking-wider text-xs text-slate-400">작업</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody>
                 {sortedExpenses.map((expense) => (
-                  <tr key={expense.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {formatDate(expense.transaction_date)}
+                  <tr key={expense.id} className="group hover:bg-white/5 transition-colors">
+                    <td className="px-6 py-4 whitespace-nowrap sticky left-0 bg-[#0e1425] z-10">
+                      <div className="text-slate-100 font-medium">{formatDate(expense.transaction_date)}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                         expense.transaction_type === '수입'
-                          ? 'bg-green-100 text-green-800'
+                          ? 'bg-[#22b8a7]/20 text-[#6ee7d0]'
                           : expense.transaction_type === '이체'
-                          ? 'bg-blue-100 text-blue-800'
-                          : 'bg-red-100 text-red-800'
+                          ? 'bg-[#7cc8f8]/20 text-[#7cc8f8]'
+                          : 'bg-[#f16b6f]/20 text-[#f16b6f]'
                       }`}>
                         {expense.transaction_type}
                       </span>
                     </td>
-                    <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${
-                      expense.transaction_type === '수입' ? 'text-green-600' :
-                      expense.transaction_type === '이체' ? 'text-blue-600' :
-                      'text-red-600'
+                    <td className={`px-6 py-4 whitespace-nowrap font-semibold ${
+                      expense.transaction_type === '수입' ? 'text-[#6ee7d0]' :
+                      expense.transaction_type === '이체' ? 'text-[#7cc8f8]' :
+                      'text-[#f16b6f]'
                     }`}>
                       {expense.transaction_type === '수입' ? '+' : expense.transaction_type === '이체' ? '' : '-'}{Number(expense.amount).toLocaleString()}{expense.currency === 'USD' ? '$' : '원'}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      <div>
-                        <div className="font-medium">{expense.category}</div>
-                        <div className="text-gray-500 text-xs">{expense.subcategory}</div>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex flex-col gap-1">
+                        <span className="inline-flex w-fit px-2 py-1 text-xs rounded-full bg-white/5 text-slate-100">{expense.category}</span>
+                        <span className="text-xs text-slate-400">{expense.subcategory}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-900 max-w-xs truncate">
-                      {expense.name}
+                    <td className="px-6 py-4 max-w-xs">
+                      <div className="text-slate-100 truncate">{expense.name}</div>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
-                      {expense.memo || '-'}
+                    <td className="px-6 py-4 max-w-xs">
+                      <div className="text-slate-400 truncate">{expense.memo || '-'}</div>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-500">
-                      <div>
+                    <td className="px-6 py-4">
+                      <div className="text-slate-200">
                         <div>{expense.payment_method || '-'}</div>
                         {expense.payment_method_name && (
-                          <div className="text-xs text-gray-400">({expense.payment_method_name})</div>
+                          <div className="text-xs text-slate-500">({expense.payment_method_name})</div>
                         )}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                      <button
-                        onClick={() => handleEdit(expense)}
-                        className="text-indigo-600 hover:text-indigo-900"
-                      >
-                        수정
-                      </button>
-                      <button
-                        onClick={() => handleDelete(expense.id)}
-                        className="text-red-600 hover:text-red-900"
-                      >
-                        삭제
-                      </button>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <div className="flex items-center gap-3 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => handleEdit(expense)}
+                          className="text-[#7cc8f8] hover:text-white"
+                        >
+                          수정
+                        </button>
+                        <button
+                          onClick={() => handleDelete(expense.id)}
+                          className="text-[#f16b6f] hover:text-white"
+                        >
+                          삭제
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -1381,8 +1463,8 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
           </div>
 
           {sortedExpenses.length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-gray-500">거래내역이 없습니다.</p>
+            <div className="text-center py-10 text-slate-400">
+              거래내역이 없습니다.
             </div>
           )}
         </div>
