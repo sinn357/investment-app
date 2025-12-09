@@ -782,24 +782,24 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
             </div>
 
             {expenseData && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-            <div className="bg-white border border-gray-200 rounded-xl p-3 shadow-sm">
-              <p className="text-sm text-slate-500">총 수입</p>
-              <p className="text-2xl font-bold text-[var(--secondary)] mt-2">{expenseSummary.income.toLocaleString()}원</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
+            <div className="bg-white border border-gray-200 rounded-lg p-2.5 shadow-sm">
+              <p className="text-xs text-slate-500">총 수입</p>
+              <p className="text-xl font-bold text-[var(--secondary)] mt-1">{expenseSummary.income.toLocaleString()}원</p>
             </div>
-            <div className="bg-white border border-gray-200 rounded-xl p-3 shadow-sm">
-              <p className="text-sm text-slate-500">총 지출</p>
-              <p className="text-2xl font-bold text-[var(--primary)] mt-2">{expenseSummary.expense.toLocaleString()}원</p>
+            <div className="bg-white border border-gray-200 rounded-lg p-2.5 shadow-sm">
+              <p className="text-xs text-slate-500">총 지출</p>
+              <p className="text-xl font-bold text-[var(--primary)] mt-1">{expenseSummary.expense.toLocaleString()}원</p>
             </div>
-            <div className="bg-white border border-gray-200 rounded-xl p-3 shadow-sm">
-              <p className="text-sm text-slate-500">순수입</p>
-              <p className={`text-2xl font-bold mt-2 ${expenseSummary.net >= 0 ? 'text-[var(--secondary)]' : 'text-[var(--destructive)]'}`}>
+            <div className="bg-white border border-gray-200 rounded-lg p-2.5 shadow-sm">
+              <p className="text-xs text-slate-500">순수입</p>
+              <p className={`text-xl font-bold mt-1 ${expenseSummary.net >= 0 ? 'text-[var(--secondary)]' : 'text-[var(--destructive)]'}`}>
                 {expenseSummary.net.toLocaleString()}원
               </p>
             </div>
-            <div className="bg-white border border-gray-200 rounded-xl p-3 shadow-sm">
-              <p className="text-sm text-slate-500">총 거래</p>
-              <p className="text-2xl font-bold text-slate-900 mt-2">{expenseSummary.transactions}건</p>
+            <div className="bg-white border border-gray-200 rounded-lg p-2.5 shadow-sm">
+              <p className="text-xs text-slate-500">총 거래</p>
+              <p className="text-xl font-bold text-slate-900 mt-1">{expenseSummary.transactions}건</p>
             </div>
           </div>
             )}
@@ -1023,11 +1023,11 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
         {/* 차트 섹션 */}
         {expenseData && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm">
+            <div className="bg-white border border-gray-200 rounded-xl p-3 shadow-sm">
               <div className="flex items-center justify-between mb-3">
                 <div>
-                  <p className="text-sm text-slate-500">{chartViewType === '전체' ? '지출 구성' : `${chartViewType} 상세`}</p>
-                  <h3 className="text-lg font-semibold text-slate-900">{monthLabel}</h3>
+                  <p className="text-xs text-slate-500">{chartViewType === '전체' ? '지출 구성' : `${chartViewType} 상세`}</p>
+                  <h3 className="text-base font-semibold text-slate-900">{monthLabel}</h3>
                 </div>
                 <div className="flex bg-gray-100 rounded-xl p-1 gap-1">
                   {['전체', '생활', '건강', '사회', '여가', '쇼핑', '기타'].map((viewType) => (
@@ -1074,7 +1074,7 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
               )}
 
               {compositionPieData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={220}>
+                <ResponsiveContainer width="100%" height={160}>
                   <PieChart>
                     <Pie
                       data={compositionPieData}
@@ -1106,17 +1106,17 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
                   </PieChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="h-[220px] flex items-center justify-center text-slate-400">
+                <div className="h-[160px] flex items-center justify-center text-slate-400">
                   데이터가 없습니다
                 </div>
               )}
             </div>
 
-            <div className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm">
+            <div className="bg-white border border-gray-200 rounded-xl p-3 shadow-sm">
               <div className="flex items-center justify-between mb-3">
                 <div>
-                  <p className="text-sm text-slate-500">{incomeChartViewType === '전체' ? '수입 구성' : `${incomeChartViewType} 상세`}</p>
-                  <h3 className="text-lg font-semibold text-slate-900">{monthLabel}</h3>
+                  <p className="text-xs text-slate-500">{incomeChartViewType === '전체' ? '수입 구성' : `${incomeChartViewType} 상세`}</p>
+                  <h3 className="text-base font-semibold text-slate-900">{monthLabel}</h3>
                 </div>
                 <div className="flex bg-gray-100 rounded-xl p-1 gap-1">
                   {['전체', '근로소득', '사업소득', '투자소득', '기타소득'].map((viewType) => (
@@ -1163,7 +1163,7 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
               )}
 
               {incomePieData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={220}>
+                <ResponsiveContainer width="100%" height={160}>
                   <PieChart>
                     <Pie
                       data={incomePieData}
@@ -1187,7 +1187,7 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
                   </PieChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="h-[220px] flex items-center justify-center text-slate-400">
+                <div className="h-[160px] flex items-center justify-center text-slate-400">
                   데이터가 없습니다
                 </div>
               )}
@@ -1197,11 +1197,11 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
 
         {/* 시계열 + 비율 */}
         {expenseData && (
-          <div className="bg-white border border-gray-200 rounded-2xl p-3 shadow-sm">
+          <div className="bg-white border border-gray-200 rounded-xl p-2.5 shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <p className="text-sm text-slate-500">지출/수입 흐름</p>
-                <h3 className="text-lg font-semibold text-slate-900">{monthLabel}</h3>
+                <p className="text-xs text-slate-500">지출/수입 흐름</p>
+                <h3 className="text-base font-semibold text-slate-900">{monthLabel}</h3>
               </div>
               <div className="flex bg-gray-100 rounded-xl p-1 gap-1">
                 {['일별', '비율'].map((tab) => (
@@ -1222,7 +1222,7 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
 
             {timeSeriesTab === '일별' && (
               dailyData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={220}>
+                <ResponsiveContainer width="100%" height={170}>
                   <BarChart data={dailyData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                     <XAxis dataKey="날짜" tick={{ fontSize: 11, fill: '#475569' }} />
@@ -1244,13 +1244,13 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="h-[220px] flex items-center justify-center text-slate-400">데이터가 없습니다</div>
+                <div className="h-[170px] flex items-center justify-center text-slate-400">데이터가 없습니다</div>
               )
             )}
 
             {timeSeriesTab === '비율' && (
               ratioData.length > 0 && (ratioData[0].value > 0 || ratioData[1].value > 0) ? (
-                <ResponsiveContainer width="100%" height={220}>
+                <ResponsiveContainer width="100%" height={170}>
                   <PieChart>
                     <Pie
                       data={ratioData}
@@ -1273,7 +1273,7 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
                   </PieChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="h-[220px] flex items-center justify-center text-slate-400">데이터가 없습니다</div>
+                <div className="h-[170px] flex items-center justify-center text-slate-400">데이터가 없습니다</div>
               )
             )}
           </div>
@@ -1281,53 +1281,49 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
 
         {/* 예산/목표 */}
         {expenseData && (
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
-            <div className="bg-white border border-gray-200 rounded-2xl p-3 shadow-sm">
-              <div className="flex items-center justify-between mb-3">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-2.5">
+            <div className="bg-white border border-gray-200 rounded-lg p-2.5 shadow-sm">
+              <div className="flex items-center justify-between mb-2">
                 <div>
-                  <p className="text-sm text-slate-500">예산 진행도</p>
-                  <h3 className="text-lg font-semibold text-slate-900">지출 목표</h3>
+                  <p className="text-xs text-slate-500">예산 진행도</p>
+                  <h3 className="text-base font-semibold text-slate-900">지출 목표</h3>
                 </div>
-                <span className="text-xs px-2 py-1 rounded-full bg-gray-100 text-slate-700">카테고리별</span>
+                <span className="text-[11px] px-2 py-0.5 rounded-full bg-gray-100 text-slate-700">카테고리별</span>
               </div>
-              <div className="max-h-[260px] overflow-auto">
-                <ExpenseGoalGauge
-                  expenseData={expenseData.by_category.filter(item => item.transaction_type === '지출')}
-                  goals={budgetGoals.expense_goals}
-                  onSaveGoals={(goals) => {
-                    const newGoals = { ...budgetGoals, expense_goals: goals };
-                    setBudgetGoals(newGoals);
-                    saveBudgetGoals(newGoals);
-                  }}
-                />
-              </div>
+              <ExpenseGoalGauge
+                expenseData={expenseData.by_category.filter(item => item.transaction_type === '지출')}
+                goals={budgetGoals.expense_goals}
+                onSaveGoals={(goals) => {
+                  const newGoals = { ...budgetGoals, expense_goals: goals };
+                  setBudgetGoals(newGoals);
+                  saveBudgetGoals(newGoals);
+                }}
+              />
             </div>
 
-            <div className="bg-white border border-gray-200 rounded-2xl p-3 shadow-sm">
-              <div className="flex items-center justify-between mb-3">
+            <div className="bg-white border border-gray-200 rounded-lg p-2.5 shadow-sm">
+              <div className="flex items-center justify-between mb-2">
                 <div>
-                  <p className="text-sm text-slate-500">목표 달성률</p>
-                  <h3 className="text-lg font-semibold text-slate-900">수입 목표</h3>
+                  <p className="text-xs text-slate-500">목표 달성률</p>
+                  <h3 className="text-base font-semibold text-slate-900">수입 목표</h3>
                 </div>
-                <span className="text-xs px-2 py-1 rounded-full bg-gray-100 text-slate-700">카테고리별</span>
+                <span className="text-[11px] px-2 py-0.5 rounded-full bg-gray-100 text-slate-700">카테고리별</span>
               </div>
-              <div className="max-h-[260px] overflow-auto">
-                <IncomeGoalGauge
-                  incomeData={expenseData.by_category.filter(item => item.transaction_type === '수입')}
-                  goals={budgetGoals.income_goals}
-                  onSaveGoals={(goals) => {
-                    const newGoals = { ...budgetGoals, income_goals: goals };
-                    setBudgetGoals(newGoals);
-                    saveBudgetGoals(newGoals);
-                  }}
-                />
-              </div>
+              <IncomeGoalGauge
+                incomeData={expenseData.by_category.filter(item => item.transaction_type === '수입')}
+                goals={budgetGoals.income_goals}
+                onSaveGoals={(goals) => {
+                  const newGoals = { ...budgetGoals, income_goals: goals };
+                  setBudgetGoals(newGoals);
+                  saveBudgetGoals(newGoals);
+                }}
+              />
             </div>
           </div>
         )}
 
         {/* 필터 바 */}
-        <div className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm">
+        <div className="bg-white border border-gray-200 rounded-xl p-3 shadow-sm">
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex flex-col">
               <span className="text-xs text-slate-400 mb-1">카테고리</span>
