@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import NarrativeGuide from './NarrativeGuide';
-import AutoNewsPanel from './AutoNewsPanel';
 
 interface Article {
   title: string;
@@ -65,16 +64,6 @@ export default function NewsNarrative({ articles, myNarrative, onChange, mmcScor
         <span className="text-2xl mr-2">📰</span>
         뉴스 & 담론
       </h2>
-
-      {/* 자동 수집 뉴스 섹션 (Phase 4) */}
-      <AutoNewsPanel
-        onAddArticle={(article) => {
-          onChange({
-            articles: [...articles, article],
-            myNarrative
-          });
-        }}
-      />
 
       {/* 기사 스크랩 섹션 */}
       <div className="mb-6">
