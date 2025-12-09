@@ -599,6 +599,49 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
   };
 
   const compositionPieData = buildCompositionData();
+  const buildGoalList = (mode: '지출' | '수입') => {
+    const isExpenseMode = mode === '지출';
+    const baseCategories = isExpenseMode ? expenseCategories : incomeCategories;
+    const goalsMap = isExpenseMode ? budgetGoals.expense_goals : budgetGoals.income_goals;
+    const totalsMap = new Map<string, number>();
+
+    expenseData?.by_category
+      .filter(item => item.transaction_type === (isExpenseMode ? '지출' : '수입'))
+      .forEach(item => {
+        totalsMap.set(`${item.category}::${item.subcategory}`, Number(item.total_amount));
+      });
+
+    const list: Array<{ category: string; subcategory: string; total: number; goal: number }> = [];
+
+    Object.entries(baseCategories).forEach(([cat, subs]) => {
+      subs.forEach(sub => {
+        const key = `${cat}::${sub}`;
+        list.push({
+          category: cat,
+          subcategory: sub,
+          total: totalsMap.get(key) || 0,
+          goal: goalsMap[cat]?.[sub] || 0
+        });
+      });
+    });
+
+    Object.entries(goalsMap).forEach(([cat, subs]) => {
+      Object.entries(subs).forEach(([sub, goal]) => {
+        const key = `${cat}::${sub}`;
+        if (!list.find(item => `${item.category}::${item.subcategory}` === key)) {
+          list.push({
+            category: cat,
+            subcategory: sub,
+            total: totalsMap.get(key) || 0,
+            goal
+          });
+        }
+      });
+    });
+
+    return list;
+  };
+
   const dailyData = prepareDailyData();
   const ratioData = prepareExpenseIncomeRatioData();
   const monthLabel = `${selectedYear}년 ${selectedMonth}월`;
@@ -1058,7 +1101,7 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
               )}
             </div>
 
-            <div className="bg-white border border-gray-200 rounded-xl p-3 shadow-sm min-h-[220px]">
+            <div className="bg-white border border-gray-200 rounded-xl p-3 shadow-sm min-h-[240px] flex flex-col gap-2">
               <div className="flex items-center justify-between mb-2">
                 <div>
                   <p className="text-xs text-slate-500">지출/수입 흐름</p>
@@ -1081,69 +1124,71 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
                 </div>
               </div>
 
-              {timeSeriesTab === '일별' && (
-                dailyData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={170}>
-                    <BarChart data={dailyData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                      <XAxis dataKey="날짜" tick={{ fontSize: 10, fill: '#475569' }} />
-                      <YAxis
-                        tick={{ fontSize: 10, fill: '#475569' }}
-                        tickFormatter={(value) => {
-                          if (value >= 1000000) return `${(value / 1000000).toFixed(0)}M`;
-                          if (value >= 1000) return `${(value / 1000).toFixed(0)}K`;
-                          return value.toString();
-                        }}
-                      />
-                      <Tooltip
-                        contentStyle={{ backgroundColor: '#ffffff', borderRadius: 10, border: '1px solid #e2e8f0', color: '#0f172a' }}
-                        formatter={(value: number) => [`${value.toLocaleString()}원`]}
-                      />
-                      <Legend layout="horizontal" align="center" verticalAlign="bottom" wrapperStyle={{ color: '#475569', fontSize: 10, paddingTop: 4 }} />
-                      <Bar dataKey="지출" fill={PALETTE.coral} radius={[4, 4, 0, 0]} />
-                      <Bar dataKey="수입" fill={PALETTE.emerald} radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="h-[170px] flex items-center justify-center text-slate-400">데이터가 없습니다</div>
-                )
-              )}
+              <div className="flex-1 flex items-center justify-center">
+                {timeSeriesTab === '일별' && (
+                  dailyData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={180}>
+                      <BarChart data={dailyData}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                        <XAxis dataKey="날짜" tick={{ fontSize: 10, fill: '#475569' }} />
+                        <YAxis
+                          tick={{ fontSize: 10, fill: '#475569' }}
+                          tickFormatter={(value) => {
+                            if (value >= 1000000) return `${(value / 1000000).toFixed(0)}M`;
+                            if (value >= 1000) return `${(value / 1000).toFixed(0)}K`;
+                            return value.toString();
+                          }}
+                        />
+                        <Tooltip
+                          contentStyle={{ backgroundColor: '#ffffff', borderRadius: 10, border: '1px solid #e2e8f0', color: '#0f172a' }}
+                          formatter={(value: number) => [`${value.toLocaleString()}원`]}
+                        />
+                        <Legend layout="horizontal" align="center" verticalAlign="bottom" wrapperStyle={{ color: '#475569', fontSize: 10 }} />
+                        <Bar dataKey="지출" fill={PALETTE.coral} radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="수입" fill={PALETTE.emerald} radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="h-[180px] flex items-center justify-center text-slate-400">데이터가 없습니다</div>
+                  )
+                )}
 
-              {timeSeriesTab === '비율' && (
-                ratioData.length > 0 && (ratioData[0].value > 0 || ratioData[1].value > 0) ? (
-                  <ResponsiveContainer width="100%" height={170}>
-                    <PieChart>
-                      <Pie
-                        data={ratioData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={50}
-                        outerRadius={78}
-                        paddingAngle={4}
-                        dataKey="value"
-                        label={(entry) => `${Number(entry.value).toLocaleString()}원`}
-                      >
-                        <Cell fill={PALETTE.coral} />
-                        <Cell fill={PALETTE.emerald} />
-                      </Pie>
-                      <Tooltip
-                        contentStyle={{ backgroundColor: '#ffffff', borderRadius: 10, border: '1px solid #e2e8f0', color: '#0f172a' }}
-                        formatter={(value: number) => [`${value.toLocaleString()}원`, '금액']}
-                      />
-                      <Legend layout="horizontal" align="center" verticalAlign="bottom" wrapperStyle={{ color: '#475569', fontSize: 10, paddingTop: 4 }} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="h-[170px] flex items-center justify-center text-slate-400">데이터가 없습니다</div>
-                )
-              )}
+                {timeSeriesTab === '비율' && (
+                  ratioData.length > 0 && (ratioData[0].value > 0 || ratioData[1].value > 0) ? (
+                    <ResponsiveContainer width="100%" height={180}>
+                      <PieChart>
+                        <Pie
+                          data={ratioData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={52}
+                          outerRadius={80}
+                          paddingAngle={4}
+                          dataKey="value"
+                          label={(entry) => `${Number(entry.value).toLocaleString()}원`}
+                        >
+                          <Cell fill={PALETTE.coral} />
+                          <Cell fill={PALETTE.emerald} />
+                        </Pie>
+                        <Tooltip
+                          contentStyle={{ backgroundColor: '#ffffff', borderRadius: 10, border: '1px solid #e2e8f0', color: '#0f172a' }}
+                          formatter={(value: number) => [`${value.toLocaleString()}원`, '금액']}
+                        />
+                        <Legend layout="horizontal" align="center" verticalAlign="bottom" wrapperStyle={{ color: '#475569', fontSize: 10 }} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="h-[180px] flex items-center justify-center text-slate-400">데이터가 없습니다</div>
+                  )
+                )}
+              </div>
             </div>
           </div>
         )}
 
         {/* 예산/목표 */}
         {expenseData && (
-          <div className="bg-white border border-gray-200 rounded-lg p-3 shadow-sm min-h-[220px]">
+          <div className="bg-white border border-gray-200 rounded-lg p-3 shadow-sm min-h-[260px]">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
                 <span className="text-base">🎯</span>
@@ -1171,19 +1216,11 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
             <div className="text-[11px] text-slate-500 mb-3">카테고리별 진행</div>
             <div className="space-y-2">
               {(() => {
-                const list =
-                  goalMode === '지출'
-                    ? expenseData.by_category.filter(item => item.transaction_type === '지출')
-                    : expenseData.by_category.filter(item => item.transaction_type === '수입');
+                const list = buildGoalList(goalMode);
 
-                const topList = list.slice(0, 6);
-
-                return topList.map((item, idx) => {
-                  const total = Number(item.total_amount);
-                  const goal =
-                    goalMode === '지출'
-                      ? budgetGoals.expense_goals[item.category]?.[item.subcategory] || 0
-                      : budgetGoals.income_goals[item.category]?.[item.subcategory] || 0;
+                return list.map((item, idx) => {
+                  const total = Number(item.total);
+                  const goal = item.goal;
                   const pct = goal > 0 ? Math.min(100, Math.round((total / goal) * 100)) : 0;
                   return (
                     <div key={`${item.category}-${item.subcategory}-${idx}`} className="space-y-1.5">
@@ -1211,13 +1248,6 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
                   );
                 });
               })()}
-              {(
-                goalMode === '지출'
-                  ? expenseData.by_category.filter(item => item.transaction_type === '지출').length
-                  : expenseData.by_category.filter(item => item.transaction_type === '수입').length
-              ) > 6 && (
-                <div className="text-[11px] text-slate-500">더 많은 카테고리는 목표 설정 화면에서 확인하세요.</div>
-              )}
             </div>
           </div>
         )}
