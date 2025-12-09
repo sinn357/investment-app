@@ -599,10 +599,10 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
   };
 
   const compositionPieData = buildCompositionData();
-  const buildGoalList = (mode: '지출' | '수입') => {
+  const [goalAccordion, setGoalAccordion] = useState<Record<string, boolean>>({});
+
+  const buildGoalTotals = (mode: '지출' | '수입') => {
     const isExpenseMode = mode === '지출';
-    const baseCategories = isExpenseMode ? expenseCategories : incomeCategories;
-    const goalsMap = isExpenseMode ? budgetGoals.expense_goals : budgetGoals.income_goals;
     const totalsMap = new Map<string, number>();
 
     expenseData?.by_category
@@ -611,35 +611,40 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
         totalsMap.set(`${item.category}::${item.subcategory}`, Number(item.total_amount));
       });
 
-    const list: Array<{ category: string; subcategory: string; total: number; goal: number }> = [];
+    return totalsMap;
+  };
 
-    Object.entries(baseCategories).forEach(([cat, subs]) => {
-      subs.forEach(sub => {
-        const key = `${cat}::${sub}`;
-        list.push({
-          category: cat,
-          subcategory: sub,
-          total: totalsMap.get(key) || 0,
-          goal: goalsMap[cat]?.[sub] || 0
-        });
-      });
-    });
-
-    Object.entries(goalsMap).forEach(([cat, subs]) => {
-      Object.entries(subs).forEach(([sub, goal]) => {
-        const key = `${cat}::${sub}`;
-        if (!list.find(item => `${item.category}::${item.subcategory}` === key)) {
-          list.push({
-            category: cat,
-            subcategory: sub,
-            total: totalsMap.get(key) || 0,
-            goal
-          });
-        }
-      });
-    });
-
-    return list;
+  const handleGoalChange = (
+    mode: '지출' | '수입',
+    category: string,
+    subcategory: string,
+    value: string
+  ) => {
+    const parsed = Math.max(0, Number(value) || 0);
+    const newGoals =
+      mode === '지출'
+        ? {
+            ...budgetGoals,
+            expense_goals: {
+              ...budgetGoals.expense_goals,
+              [category]: {
+                ...(budgetGoals.expense_goals[category] || {}),
+                [subcategory]: parsed
+              }
+            }
+          }
+        : {
+            ...budgetGoals,
+            income_goals: {
+              ...budgetGoals.income_goals,
+              [category]: {
+                ...(budgetGoals.income_goals[category] || {}),
+                [subcategory]: parsed
+              }
+            }
+          };
+    setBudgetGoals(newGoals);
+    saveBudgetGoals(newGoals);
   };
 
   const dailyData = prepareDailyData();
@@ -1188,7 +1193,7 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
 
         {/* 예산/목표 */}
         {expenseData && (
-          <div className="bg-white border border-gray-200 rounded-lg p-3 shadow-sm min-h-[260px]">
+          <div className="bg-white border border-gray-200 rounded-lg p-3 shadow-sm min-h-[280px]">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
                 <span className="text-base">🎯</span>
@@ -1216,34 +1221,67 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
             <div className="text-[11px] text-slate-500 mb-3">카테고리별 진행</div>
             <div className="space-y-2">
               {(() => {
-                const list = buildGoalList(goalMode);
+                const isExpenseMode = goalMode === '지출';
+                const baseCategories = isExpenseMode ? expenseCategories : incomeCategories;
+                const goalsMap = isExpenseMode ? budgetGoals.expense_goals : budgetGoals.income_goals;
+                const totalsMap = buildGoalTotals(goalMode);
 
-                return list.map((item, idx) => {
-                  const total = Number(item.total);
-                  const goal = item.goal;
-                  const pct = goal > 0 ? Math.min(100, Math.round((total / goal) * 100)) : 0;
+                return Object.entries(baseCategories).map(([cat, subs]) => {
+                  const open = goalAccordion[cat] ?? true;
                   return (
-                    <div key={`${item.category}-${item.subcategory}-${idx}`} className="space-y-1.5">
+                    <div key={cat} className="border border-gray-200 rounded-md p-2">
                       <div className="flex items-center justify-between text-[12px] text-slate-700">
-                        <span className="truncate">
-                          {item.category} / {item.subcategory}
-                        </span>
-                        <span className={`px-2 py-0.5 rounded-full text-[11px] ${
-                          pct >= 100 ? 'bg-red-100 text-red-700' : pct >= 80 ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'
-                        }`}>
-                          {pct}%
-                        </span>
+                        <button
+                          type="button"
+                          className="flex items-center gap-2"
+                          onClick={() => setGoalAccordion(prev => ({ ...prev, [cat]: !open }))}
+                        >
+                          <span className="font-semibold">{cat}</span>
+                          <span className="text-[10px] text-slate-500">{open ? '접기' : '펼치기'}</span>
+                        </button>
+                        <span className="text-[10px] text-slate-500">{subs.length} 개 소분류</span>
                       </div>
-                      <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full ${goalMode === '지출' ? 'bg-[var(--primary)]' : 'bg-[var(--secondary)]'}`}
-                          style={{ width: `${goal > 0 ? Math.min(100, (total / goal) * 100) : 0}%` }}
-                        />
-                      </div>
-                      <div className="flex items-center justify-between text-[11px] text-slate-500">
-                        <span>누적 {total.toLocaleString()}원</span>
-                        <span>목표 {goal.toLocaleString()}원</span>
-                      </div>
+                      {open && (
+                        <div className="mt-2 space-y-2">
+                          {subs.map((sub, idx) => {
+                            const total = totalsMap.get(`${cat}::${sub}`) || 0;
+                            const goal = goalsMap[cat]?.[sub] || 0;
+                            const pct = goal > 0 ? Math.min(100, Math.round((total / goal) * 100)) : 0;
+                            return (
+                              <div key={`${cat}-${sub}-${idx}`} className="space-y-1">
+                                <div className="flex items-center justify-between text-[12px] text-slate-700">
+                                  <span className="truncate">{sub}</span>
+                                  <span className={`px-2 py-0.5 rounded-full text-[11px] ${
+                                    pct >= 100 ? 'bg-red-100 text-red-700' : pct >= 80 ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'
+                                  }`}>
+                                    {pct}%
+                                  </span>
+                                </div>
+                                <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                                  <div
+                                    className={`h-full ${goalMode === '지출' ? 'bg-[var(--primary)]' : 'bg-[var(--secondary)]'}`}
+                                    style={{ width: `${goal > 0 ? Math.min(100, (total / goal) * 100) : 0}%` }}
+                                  />
+                                </div>
+                                <div className="flex items-center justify-between text-[11px] text-slate-500">
+                                  <span>누적 {total.toLocaleString()}원</span>
+                                  <span className="flex items-center gap-1">
+                                    목표
+                                    <input
+                                      type="number"
+                                      min={0}
+                                      className="w-20 px-2 py-1 text-[11px] border border-gray-200 rounded bg-white focus:outline-none"
+                                      value={goal || ''}
+                                      onChange={(e) => handleGoalChange(goalMode, cat, sub, e.target.value)}
+                                    />
+                                    원
+                                  </span>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   );
                 });
