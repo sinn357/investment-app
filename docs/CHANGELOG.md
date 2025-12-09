@@ -1,5 +1,60 @@
 # Investment App Changelog
 
+## 2025-12-10
+
+### Changed
+- **가계부 대시보드 리디자인** (expenses)
+  - 구성/흐름 섹션 압축: 지출/수입 탭 통합, 높이 축소, 범례 하단 배치로 차트 잘림 방지
+  - 목표 카드 재구성: 대분류(생활/건강 등) 아코디언 기본 접힘, 지출/수입 탭 전환, 소분류별 목표 입력 필드/진행도 표시, 전체 카테고리 노출
+  - 요약/차트/흐름/목표 모두 골드-에메랄드 라이트 팔레트 유지, 컴팩트 패딩/폰트 적용
+
+### Commits
+- `f37ae7d`: fix: balance flow chart layout and slightly enlarge goals list
+- `b98133b`: fix: show all goal categories and recenter flow chart
+- `6f0a3a5`: feat: group goals by category with inline inputs and stabilize flow chart
+- `2f07a2a`: feat: add accordion toggle for goals and default collapsed
+- `68b0a3e`: fix: prevent chart clipping and add compact goals list
+
+---
+
+## 2025-12-09
+
+### Fixed
+- **Sentiment 사이클 임계값 재조정** - 4개 지표(S&P500 PER, Shiller CAPE, Michigan, CB 신뢰)가 0점 처리되던 문제 해결
+  - S&P500 PER: 18/25/35 (역사적 35배까지 도달)
+  - Shiller CAPE: 20/30/45 (닷컴버블 45, 2021년 40)
+  - Michigan 소비자심리: 50/75/95 (2022년 저점 50, 평균 85-90)
+  - CB 소비자신뢰: 75/95/110 (역사적 평균 100)
+  - **결과**: Sentiment 21.8점 → 34.3점 (+57%), MMC 48.7점 → 53.6점 (+10%)
+
+### Verified
+- **Master Market Cycle 실전 검증 완료**
+  - 거시경제 사이클: 95% 일치 (2025년 12월 현재)
+  - 신용/유동성 사이클: 99% 일치
+  - 심리/밸류 사이클: 90% 일치 (임계값 수정 후)
+  - **MMC 종합**: 95% 실제 경제 상황 일치 ✅
+- **React2Shell 보안 점검** - Next.js 15.5.7 (CVE-2025-66478 패치 완료) ✅
+
+### Added
+- **뉴스 & 담론 섹션 개선 계획 문서** - `docs/NEWS_NARRATIVE_IMPROVEMENT_PLAN.md`
+  - Phase 1-5 상세 구현 계획 (AI 기능 제외)
+  - RSS 뉴스 자동 수집, 담론 작성 가이드, 과거 담론 검증 시스템
+  - 체크리스트 포함, 예상 소요 3-4시간
+- **문서 가이드** - `docs/README.md`
+  - 전체 문서 인덱스 및 빠른 참조
+  - 기능별 문서 분류 (Master Cycle, 경제지표, 성능 최적화, UI/UX)
+
+### Commits
+- `fc47803`: fix: Sentiment 사이클 임계값 재조정 - 역사적 데이터 기반
+- `52b3fce`: chore: trigger Render redeploy for sentiment threshold fix
+
+### Documentation
+- `2025-12-09_Master_Cycle_Verification_and_Docs.md` - 세션 전체 작업 내역
+- `NEWS_NARRATIVE_IMPROVEMENT_PLAN.md` - 뉴스 담론 개선 상세 계획 (35KB)
+- `docs/README.md` - 문서 가이드 및 인덱스
+
+---
+
 ## 2025-12-03
 
 ### Fixed
