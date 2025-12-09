@@ -1202,20 +1202,41 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
                   <h3 className="text-sm font-semibold text-slate-900">{goalMode === '지출' ? '지출 목표' : '수입 목표'}</h3>
                 </div>
               </div>
-              <div className="flex bg-gray-100 rounded-xl p-1 gap-1">
-                {(['지출', '수입'] as const).map((mode) => (
-                  <button
-                    key={mode}
-                    onClick={() => setGoalMode(mode)}
-                    className={`px-2 py-1 text-[11px] rounded-lg transition-colors ${
-                      goalMode === mode
-                        ? 'bg-[var(--secondary)] text-[var(--secondary-foreground)] font-semibold'
-                        : 'text-slate-700 hover:bg-white'
-                    }`}
-                  >
-                    {mode}
-                  </button>
-                ))}
+              <div className="flex items-center gap-2">
+                <div className="flex bg-gray-100 rounded-xl p-1 gap-1">
+                  {(['지출', '수입'] as const).map((mode) => (
+                    <button
+                      key={mode}
+                      onClick={() => setGoalMode(mode)}
+                      className={`px-2 py-1 text-[11px] rounded-lg transition-colors ${
+                        goalMode === mode
+                          ? 'bg-[var(--secondary)] text-[var(--secondary-foreground)] font-semibold'
+                          : 'text-slate-700 hover:bg-white'
+                      }`}
+                    >
+                      {mode}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  className="px-2 py-1 text-[11px] rounded-lg border border-gray-200 text-slate-700 hover:bg-gray-50"
+                  onClick={() => {
+                    const baseCategories = goalMode === '지출' ? expenseCategories : incomeCategories;
+                    const allOpen = Object.entries(baseCategories).every(([cat]) => goalAccordion[cat] ?? false);
+                    const next: Record<string, boolean> = {};
+                    Object.keys(baseCategories).forEach(cat => {
+                      next[cat] = !allOpen;
+                    });
+                    setGoalAccordion(next);
+                  }}
+                >
+                  모두 {(() => {
+                    const baseCategories = goalMode === '지출' ? expenseCategories : incomeCategories;
+                    const allOpen = Object.entries(baseCategories).every(([cat]) => goalAccordion[cat] ?? false);
+                    return allOpen ? '접기' : '펼치기';
+                  })()}
+                </button>
               </div>
             </div>
             <div className="text-[11px] text-slate-500 mb-3">카테고리별 진행</div>
@@ -1227,7 +1248,7 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
                 const totalsMap = buildGoalTotals(goalMode);
 
                 return Object.entries(baseCategories).map(([cat, subs]) => {
-                  const open = goalAccordion[cat] ?? true;
+                  const open = goalAccordion[cat] ?? false;
                   return (
                     <div key={cat} className="border border-gray-200 rounded-md p-2">
                       <div className="flex items-center justify-between text-[12px] text-slate-700">
