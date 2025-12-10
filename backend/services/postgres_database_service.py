@@ -283,6 +283,45 @@ class PostgresDatabaseService:
 
                     CREATE INDEX IF NOT EXISTS idx_economic_narrative_user_date ON economic_narrative(user_id, date DESC);
 
+                    -- 자산 개별분석 테이블
+                    CREATE TABLE IF NOT EXISTS asset_analysis (
+                        id SERIAL PRIMARY KEY,
+                        asset_id INTEGER REFERENCES assets(id) ON DELETE CASCADE,
+                        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+
+                        -- 기본적분석
+                        fundamental JSONB DEFAULT '{
+                            "investment_reason": "",
+                            "potential": "",
+                            "basic_info": {},
+                            "competitor_comparison": {},
+                            "financial_analysis": {}
+                        }',
+
+                        -- 기술적분석
+                        technical JSONB DEFAULT '{
+                            "chart_analysis": {},
+                            "quant_analysis": {},
+                            "sentiment_analysis": {}
+                        }',
+
+                        -- 총평
+                        summary JSONB DEFAULT '{
+                            "investment_considerations": {},
+                            "risk_points": {},
+                            "valuation": {},
+                            "investment_point": "",
+                            "my_thoughts": ""
+                        }',
+
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        UNIQUE(asset_id, user_id)
+                    );
+
+                    CREATE INDEX IF NOT EXISTS idx_asset_analysis_asset_id ON asset_analysis(asset_id);
+                    CREATE INDEX IF NOT EXISTS idx_asset_analysis_user_id ON asset_analysis(user_id);
+
                     -- 섹터 성과 테이블 (Page 3: Industries)
                     CREATE TABLE IF NOT EXISTS sector_performance (
                         id SERIAL PRIMARY KEY,

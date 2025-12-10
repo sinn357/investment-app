@@ -3761,6 +3761,162 @@ def get_credit_cycle_v3():
         }), 500
 
 
+# ===========================
+# 자산 개별분석 API
+# ===========================
+
+@app.route('/api/asset-analysis', methods=['GET'])
+def get_asset_analysis():
+    """
+    자산 개별분석 데이터 조회
+
+    Query Parameters:
+        - asset_id: 자산 ID (필수)
+        - user_id: 사용자 ID (필수)
+
+    Returns:
+        {
+            "status": "success",
+            "data": {
+                "fundamental": {...},
+                "technical": {...},
+                "summary": {...}
+            }
+        }
+    """
+    try:
+        asset_id = request.args.get('asset_id')
+        user_id = request.args.get('user_id')
+
+        if not asset_id or not user_id:
+            return jsonify({
+                "status": "error",
+                "message": "asset_id와 user_id가 필요합니다"
+            }), 400
+
+        # 데이터베이스에서 분석 데이터 조회
+        with db_service.get_connection() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute("""
+                    SELECT fundamental, technical, summary, updated_at
+                    FROM asset_analysis
+                    WHERE asset_id = %s AND user_id = %s
+                """, (asset_id, user_id))
+
+                result = cur.fetchone()
+
+                if result:
+                    return jsonify({
+                        "status": "success",
+                        "data": {
+                            "fundamental": result['fundamental'],
+                            "technical": result['technical'],
+                            "summary": result['summary'],
+                            "updated_at": result['updated_at'].isoformat() if result['updated_at'] else None
+                        }
+                    })
+                else:
+                    # 데이터가 없으면 기본 구조 반환
+                    return jsonify({
+                        "status": "success",
+                        "data": {
+                            "fundamental": {
+                                "investment_reason": "",
+                                "potential": "",
+                                "basic_info": {},
+                                "competitor_comparison": {},
+                                "financial_analysis": {}
+                            },
+                            "technical": {
+                                "chart_analysis": {},
+                                "quant_analysis": {},
+                                "sentiment_analysis": {}
+                            },
+                            "summary": {
+                                "investment_considerations": {},
+                                "risk_points": {},
+                                "valuation": {},
+                                "investment_point": "",
+                                "my_thoughts": ""
+                            },
+                            "updated_at": None
+                        }
+                    })
+
+    except Exception as e:
+        import traceback
+        print(f"Error in get_asset_analysis: {traceback.format_exc()}")
+        return jsonify({
+            "status": "error",
+            "message": f"분석 데이터 조회 실패: {str(e)}"
+        }), 500
+
+
+@app.route('/api/asset-analysis', methods=['POST'])
+def save_asset_analysis():
+    """
+    자산 개별분석 데이터 저장/업데이트
+
+    Request Body:
+        {
+            "asset_id": 123,
+            "user_id": 1,
+            "fundamental": {...},
+            "technical": {...},
+            "summary": {...}
+        }
+
+    Returns:
+        {
+            "status": "success",
+            "message": "분석 데이터가 저장되었습니다"
+        }
+    """
+    try:
+        data = request.get_json()
+
+        asset_id = data.get('asset_id')
+        user_id = data.get('user_id')
+        fundamental = data.get('fundamental', {})
+        technical = data.get('technical', {})
+        summary = data.get('summary', {})
+
+        if not asset_id or not user_id:
+            return jsonify({
+                "status": "error",
+                "message": "asset_id와 user_id가 필요합니다"
+            }), 400
+
+        # 데이터베이스에 저장 (UPSERT)
+        with db_service.get_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    INSERT INTO asset_analysis (asset_id, user_id, fundamental, technical, summary, updated_at)
+                    VALUES (%s, %s, %s, %s, %s, NOW())
+                    ON CONFLICT (asset_id, user_id)
+                    DO UPDATE SET
+                        fundamental = EXCLUDED.fundamental,
+                        technical = EXCLUDED.technical,
+                        summary = EXCLUDED.summary,
+                        updated_at = NOW()
+                """, (asset_id, user_id, json.dumps(fundamental), json.dumps(technical), json.dumps(summary)))
+
+                conn.commit()
+
+        return jsonify({
+            "status": "success",
+            "message": "분석 데이터가 저장되었습니다"
+        })
+
+    except Exception as e:
+        import traceback
+        print(f"Error in save_asset_analysis: {traceback.format_exc()}")
+        return jsonify({
+            "status": "error",
+            "message": f"분석 데이터 저장 실패: {str(e)}"
+        }), 500
+
+
 if __name__ == '__main__':
     # Render 등 PaaS 환경에서 주어지는 동적 포트를 우선 사용
     port = int(os.environ.get("PORT", 5001))
