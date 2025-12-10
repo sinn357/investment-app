@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, LineChart, Line } from 'recharts';
 import { useAssets, useDeleteAsset, useUpdateAsset } from '../lib/hooks/usePortfolio';
 import { toast } from 'sonner';
@@ -135,8 +134,6 @@ interface PortfolioDashboardProps {
 }
 
 export default function PortfolioDashboard({ showSideInfo = false, user }: PortfolioDashboardProps) {
-  const router = useRouter();
-
   // TanStack Query로 자산 데이터 조회
   const { data: assets, isLoading: loading, error, refetch: refetchAssets } = useAssets(user.id);
   const deleteAssetMutation = useDeleteAsset(user.id);
@@ -1806,15 +1803,6 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center">
                         <div className="flex justify-center gap-2">
-                          <button
-                            onClick={() => router.push(`/portfolio/${asset.id}/analysis`)}
-                            className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300 transition-colors duration-200"
-                            title={`${asset.name} 분석`}
-                          >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                            </svg>
-                          </button>
                           <button
                             onClick={() => handleEditAsset(asset)}
                             className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 transition-colors duration-200"
