@@ -2,8 +2,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
-import ExpenseGoalGauge from './ExpenseGoalGauge';
-import IncomeGoalGauge from './IncomeGoalGauge';
 
 interface Expense {
   id: number;

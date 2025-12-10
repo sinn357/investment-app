@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 interface PastNarrative {
   date: string;
@@ -17,13 +17,7 @@ export default function NarrativeReview({ userId }: NarrativeReviewProps) {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    if (userId) {
-      fetchHistory();
-    }
-  }, [userId]);
-
-  const fetchHistory = async () => {
+  const fetchHistory = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch(
@@ -38,7 +32,13 @@ export default function NarrativeReview({ userId }: NarrativeReviewProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId]);
+
+  useEffect(() => {
+    if (userId) {
+      fetchHistory();
+    }
+  }, [userId, fetchHistory]);
 
   if (loading) {
     return (
