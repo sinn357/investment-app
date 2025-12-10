@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Navigation from '@/components/Navigation';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -711,11 +711,16 @@ export default function AnalysisPage() {
   const [typeFilter, setTypeFilter] = useState<AssetType | '전체'>('전체');
   const [actionFilter, setActionFilter] = useState<ActionType | '전체'>('전체');
   const [search, setSearch] = useState('');
-  const [activeTab, setActiveTab] = useState<
-    'quant' | 'qual' | 'decision' | 'refs' | 'fundamental' | 'technical' | 'summary'
-  >('quant');
+  const [activeTab, setActiveTab] = useState<'fundamental' | 'technical' | 'summary' | 'refs'>('fundamental');
   const [draft, setDraft] = useState<AssetAnalysis | null>(null);
   const [saveState, setSaveState] = useState<'idle' | 'saved'>('idle');
+
+  const updateDeepDive = useCallback(
+    (updater: (prev: DeepDiveData) => DeepDiveData) => {
+      setDraft(prev => (prev ? { ...prev, deepDive: updater(withDeepDive(prev).deepDive) } : prev));
+    },
+    []
+  );
 
   const filteredAnalyses = useMemo(() => {
     return analyses.filter(item => {
@@ -846,53 +851,385 @@ export default function AnalysisPage() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         <Card className="border border-primary/20 bg-card">
-          <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 items-end">
-            <div className="space-y-2">
-              <Label htmlFor="search">검색</Label>
-              <Input
-                id="search"
-                placeholder="티커/이름 검색"
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>자산 타입</Label>
-              <Select value={typeFilter} onValueChange={val => setTypeFilter(val as AssetType | '전체')}>
-                <SelectTrigger>
-                  <SelectValue placeholder="전체" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="전체">전체</SelectItem>
-                  <SelectItem value="주식">주식</SelectItem>
-                  <SelectItem value="암호화폐">암호화폐</SelectItem>
-                  <SelectItem value="ETF">ETF</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>투자 의견</Label>
-              <Select
-                value={actionFilter}
-                onValueChange={val => setActionFilter(val as ActionType | '전체')}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="전체" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="전체">전체</SelectItem>
-                  <SelectItem value="매수">매수</SelectItem>
-                  <SelectItem value="관망">관망</SelectItem>
-                  <SelectItem value="매도">매도</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex justify-end">
-              <Button className="w-full sm:w-auto" onClick={handleAddNew}>
-                새 리포트 추가
-              </Button>
-            </div>
-          </CardContent>
+                            <CardContent className="space-y-4">
+                    <div className="sticky top-0 z-10 bg-card pb-3 border-b border-border flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <span>기본적분석</span>
+                        <span>· 기술적분석</span>
+                        <span>· 총평</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button variant="ghost" size="sm" onClick={() => setDraft(selected ?? null)}>
+                          되돌리기
+                        </Button>
+                        <Button variant="destructive" size="sm" onClick={handleDelete}>
+                          삭제
+                        </Button>
+                        <Button size="sm" onClick={handleSave} disabled={saveState === 'saved'}>
+                          {saveState === 'saved' ? '저장됨' : '저장'}
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        variant={activeTab === 'fundamental' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setActiveTab('fundamental')}
+                      >
+                        기본적분석
+                      </Button>
+                      <Button
+                        variant={activeTab === 'technical' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setActiveTab('technical')}
+                      >
+                        기술적분석
+                      </Button>
+                      <Button
+                        variant={activeTab === 'summary' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setActiveTab('summary')}
+                      >
+                        총평
+                      </Button>
+                      <Button
+                        variant={activeTab === 'refs' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setActiveTab('refs')}
+                      >
+                        참고 자료
+                      </Button>
+                    </div>
+
+                    {activeTab === 'fundamental' && (
+                      <div className="space-y-6">
+                        <h2 className="text-2xl font-bold mb-4">기본적분석</h2>
+
+                        <section>
+                          <h3 className="text-lg font-semibold mb-3">💡 가장 큰 투자이유</h3>
+                          <Textarea
+                            value={deepDive.fundamental.investment_reason}
+                            onChange={e =>
+                              updateDeepDive(prev => ({
+                                ...prev,
+                                fundamental: { ...prev.fundamental, investment_reason: e.target.value }
+                              }))
+                            }
+                            rows={4}
+                            className="w-full"
+                            placeholder="이 자산에 투자하는 핵심 이유를 적어주세요..."
+                          />
+                        </section>
+
+                        <section>
+                          <h3 className="text-lg font-semibold mb-3">🌟 미래 잠재력</h3>
+                          <Textarea
+                            value={deepDive.fundamental.potential}
+                            onChange={e =>
+                              updateDeepDive(prev => ({
+                                ...prev,
+                                fundamental: { ...prev.fundamental, potential: e.target.value }
+                              }))
+                            }
+                            rows={4}
+                            className="w-full"
+                            placeholder="회사가 보유한 잠재력 (연구기술, 내부문화, 직원 등)..."
+                          />
+                        </section>
+
+                        <section className="border border-primary/20 rounded-lg p-4">
+                          <h3 className="text-lg font-semibold mb-4">📋 기본정보</h3>
+                          <BasicInfoAccordion
+                            data={deepDive.fundamental.basic_info}
+                            onChange={(key, value) =>
+                              updateDeepDive(prev => ({
+                                ...prev,
+                                fundamental: {
+                                  ...prev.fundamental,
+                                  basic_info: { ...prev.fundamental.basic_info, [key]: value }
+                                }
+                              }))
+                            }
+                          />
+                        </section>
+
+                        <section className="border border-primary/20 rounded-lg p-4">
+                          <h3 className="text-lg font-semibold mb-4">⚔️ 경쟁사 비교</h3>
+                          <CompetitorComparison
+                            data={deepDive.fundamental.competitor_comparison}
+                            onChange={data =>
+                              updateDeepDive(prev => ({
+                                ...prev,
+                                fundamental: { ...prev.fundamental, competitor_comparison: data }
+                              }))
+                            }
+                          />
+                        </section>
+
+                        <section className="border border-primary/20 rounded-lg p-4">
+                          <h3 className="text-lg font-semibold mb-4">💰 재무분석</h3>
+                          <FinancialAnalysis
+                            data={deepDive.fundamental.financial_analysis}
+                            onChange={data =>
+                              updateDeepDive(prev => ({
+                                ...prev,
+                                fundamental: { ...prev.fundamental, financial_analysis: data }
+                              }))
+                            }
+                          />
+                        </section>
+                      </div>
+                    )}
+
+                    {activeTab === 'technical' && (
+                      <div className="space-y-6">
+                        <h2 className="text-2xl font-bold mb-4">기술적분석</h2>
+
+                        <section className="border border-primary/20 rounded-lg p-4">
+                          <h3 className="text-lg font-semibold mb-4">📈 차트 분석</h3>
+                          <ChartAnalysis
+                            data={deepDive.technical.chart_analysis}
+                            onChange={data =>
+                              updateDeepDive(prev => ({
+                                ...prev,
+                                technical: { ...prev.technical, chart_analysis: data }
+                              }))
+                            }
+                          />
+                        </section>
+
+                        <section className="border border-primary/20 rounded-lg p-4">
+                          <h3 className="text-lg font-semibold mb-4">🔢 퀀트 분석</h3>
+                          <QuantAnalysis
+                            data={deepDive.technical.quant_analysis}
+                            onChange={data =>
+                              updateDeepDive(prev => ({
+                                ...prev,
+                                technical: { ...prev.technical, quant_analysis: data }
+                              }))
+                            }
+                          />
+                        </section>
+
+                        <section className="border border-primary/20 rounded-lg p-4">
+                          <h3 className="text-lg font-semibold mb-4">💭 심리/수급 분석</h3>
+                          <SentimentAnalysis
+                            data={deepDive.technical.sentiment_analysis}
+                            onChange={data =>
+                              updateDeepDive(prev => ({
+                                ...prev,
+                                technical: { ...prev.technical, sentiment_analysis: data }
+                              }))
+                            }
+                          />
+                        </section>
+                      </div>
+                    )}
+
+                    {activeTab === 'summary' && (
+                      <div className="space-y-6">
+                        <h2 className="text-2xl font-bold mb-4">총평</h2>
+
+                        <section className="border border-primary/20 rounded-lg p-4">
+                          <h3 className="text-lg font-semibold mb-4">🎯 투자고려사항</h3>
+                          <InvestmentConsiderations
+                            data={deepDive.summary.investment_considerations}
+                            onChange={data =>
+                              updateDeepDive(prev => ({
+                                ...prev,
+                                summary: { ...prev.summary, investment_considerations: data }
+                              }))
+                            }
+                          />
+                        </section>
+
+                        <section className="border border-primary/20 rounded-lg p-4">
+                          <h3 className="text-lg font-semibold mb-4">⚠️ 리스크포인트</h3>
+                          <RiskPoints
+                            data={deepDive.summary.risk_points}
+                            onChange={data =>
+                              updateDeepDive(prev => ({
+                                ...prev,
+                                summary: { ...prev.summary, risk_points: data }
+                              }))
+                            }
+                          />
+                        </section>
+
+                        <section className="border border-primary/20 rounded-lg p-4">
+                          <h3 className="text-lg font-semibold mb-4">💵 밸류에이션</h3>
+                          <Valuation
+                            data={deepDive.summary.valuation}
+                            onChange={data =>
+                              updateDeepDive(prev => ({
+                                ...prev,
+                                summary: { ...prev.summary, valuation: data }
+                              }))
+                            }
+                          />
+                        </section>
+
+                        <section>
+                          <h3 className="text-lg font-semibold mb-3">📝 투자 포인트 (2분 요약)</h3>
+                          <Textarea
+                            value={deepDive.summary.investment_point}
+                            onChange={e =>
+                              updateDeepDive(prev => ({
+                                ...prev,
+                                summary: { ...prev.summary, investment_point: e.target.value }
+                              }))
+                            }
+                            rows={3}
+                            className="w-full"
+                            placeholder="2분 만에 설명할 수 있는 핵심 매수 이유..."
+                          />
+                        </section>
+
+                        <section>
+                          <h3 className="text-lg font-semibold mb-3">💭 나의 현재 생각 정리</h3>
+                          <Textarea
+                            value={deepDive.summary.my_thoughts}
+                            onChange={e =>
+                              updateDeepDive(prev => ({
+                                ...prev,
+                                summary: { ...prev.summary, my_thoughts: e.target.value }
+                              }))
+                            }
+                            rows={6}
+                            className="w-full"
+                            placeholder="이 자산에 대한 나의 생각을 자유롭게 정리하세요..."
+                          />
+                        </section>
+                      </div>
+                    )}
+
+                    {activeTab === 'refs' && (
+                      <div className="space-y-4">
+                        <Card className="border-border">
+                          <CardHeader>
+                            <CardTitle className="text-lg">참고 자료</CardTitle>
+                          </CardHeader>
+                          <CardContent className="space-y-3 text-sm">
+                            {detail.references.map((ref, idx) => (
+                              <div key={`${ref.title}-${idx}`} className="grid grid-cols-4 gap-2 items-center">
+                                <Select
+                                  value={ref.type}
+                                  onValueChange={val =>
+                                    setDraft(prev =>
+                                      prev
+                                        ? {
+                                            ...prev,
+                                            references: prev.references.map((r, i) =>
+                                              i === idx ? { ...r, type: val as ReferenceItem['type'] } : r
+                                            )
+                                          }
+                                        : prev
+                                    )
+                                  }
+                                >
+                                  <SelectTrigger className="h-9">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="기사">기사</SelectItem>
+                                    <SelectItem value="리포트">리포트</SelectItem>
+                                    <SelectItem value="영상">영상</SelectItem>
+                                    <SelectItem value="기타">기타</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                <Input
+                                  placeholder="제목"
+                                  value={ref.title}
+                                  onChange={e =>
+                                    setDraft(prev =>
+                                      prev
+                                        ? {
+                                            ...prev,
+                                            references: prev.references.map((r, i) =>
+                                              i === idx ? { ...r, title: e.target.value } : r
+                                            )
+                                          }
+                                        : prev
+                                    )
+                                  }
+                                />
+                                <Input
+                                  placeholder="URL"
+                                  value={ref.url}
+                                  onChange={e =>
+                                    setDraft(prev =>
+                                      prev
+                                        ? {
+                                            ...prev,
+                                            references: prev.references.map((r, i) =>
+                                              i === idx ? { ...r, url: e.target.value } : r
+                                            )
+                                          }
+                                        : prev
+                                    )
+                                  }
+                                />
+                                <div className="flex items-center gap-2">
+                                  <Input
+                                    placeholder="메모"
+                                    value={ref.note ?? ''}
+                                    onChange={e =>
+                                      setDraft(prev =>
+                                        prev
+                                          ? {
+                                              ...prev,
+                                              references: prev.references.map((r, i) =>
+                                                i === idx ? { ...r, note: e.target.value } : r
+                                              )
+                                            }
+                                          : prev
+                                      )
+                                    }
+                                  />
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() =>
+                                      setDraft(prev =>
+                                        prev
+                                          ? {
+                                              ...prev,
+                                              references: prev.references.filter((_, i) => i !== idx)
+                                            }
+                                          : prev
+                                      )
+                                    }
+                                  >
+                                    ✕
+                                  </Button>
+                                </div>
+                              </div>
+                            ))}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() =>
+                                setDraft(prev =>
+                                  prev
+                                    ? {
+                                        ...prev,
+                                        references: [
+                                          ...prev.references,
+                                          { type: '기사', title: '새 자료', url: '#', note: '' }
+                                        ]
+                                      }
+                                    : prev
+                                )
+                              }
+                            >
+                              참고 자료 추가
+                            </Button>
+                          </CardContent>
+                        </Card>
+                      </div>
+                    )}
+                  </CardContent>
         </Card>
 
         <section className="grid gap-4 lg:grid-cols-3">
@@ -1068,34 +1405,6 @@ export default function AnalysisPage() {
                     </div>
                     <div className="flex flex-wrap gap-2">
                       <Button
-                        variant={activeTab === 'quant' ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => setActiveTab('quant')}
-                      >
-                        정량 분석
-                      </Button>
-                      <Button
-                        variant={activeTab === 'qual' ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => setActiveTab('qual')}
-                      >
-                        정성 분석
-                      </Button>
-                      <Button
-                        variant={activeTab === 'decision' ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => setActiveTab('decision')}
-                      >
-                        투자 의견
-                      </Button>
-                      <Button
-                        variant={activeTab === 'refs' ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => setActiveTab('refs')}
-                      >
-                        참고 자료
-                      </Button>
-                      <Button
                         variant={activeTab === 'fundamental' ? 'default' : 'outline'}
                         size="sm"
                         onClick={() => setActiveTab('fundamental')}
@@ -1116,362 +1425,16 @@ export default function AnalysisPage() {
                       >
                         총평
                       </Button>
+                      <Button
+                        variant={activeTab === 'refs' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setActiveTab('refs')}
+                      >
+                        참고 자료
+                      </Button>
                     </div>
                   </CardHeader>
                   <CardContent>
-                    {activeTab === 'quant' && (
-                      <div className="grid gap-4 md:grid-cols-2">
-                        <Card className="border-primary/20">
-                          <CardHeader>
-                            <CardTitle className="text-lg">밸류에이션</CardTitle>
-                          </CardHeader>
-                          <CardContent className="grid grid-cols-2 gap-3 text-sm">
-                            <MetricInput
-                              label="PER"
-                              value={detail.myAnalysis.quantitative.valuation.per}
-                              suffix="x"
-                              onChange={val =>
-                                setDraft(prev =>
-                                  prev
-                                    ? {
-                                        ...prev,
-                                        myAnalysis: {
-                                          ...prev.myAnalysis,
-                                          quantitative: {
-                                            ...prev.myAnalysis.quantitative,
-                                            valuation: {
-                                              ...prev.myAnalysis.quantitative.valuation,
-                                              per: val ?? 0
-                                            }
-                                          }
-                                        }
-                                      }
-                                    : prev
-                                )
-                              }
-                            />
-                            <MetricInput
-                              label="PBR"
-                              value={detail.myAnalysis.quantitative.valuation.pbr}
-                              suffix="x"
-                              onChange={val =>
-                                setDraft(prev =>
-                                  prev
-                                    ? {
-                                        ...prev,
-                                        myAnalysis: {
-                                          ...prev.myAnalysis,
-                                          quantitative: {
-                                            ...prev.myAnalysis.quantitative,
-                                            valuation: {
-                                              ...prev.myAnalysis.quantitative.valuation,
-                                              pbr: val ?? 0
-                                            }
-                                          }
-                                        }
-                                      }
-                                    : prev
-                                )
-                              }
-                            />
-                            <MetricInput
-                              label="PSR"
-                              value={detail.myAnalysis.quantitative.valuation.psr}
-                              suffix="x"
-                              onChange={val =>
-                                setDraft(prev =>
-                                  prev
-                                    ? {
-                                        ...prev,
-                                        myAnalysis: {
-                                          ...prev.myAnalysis,
-                                          quantitative: {
-                                            ...prev.myAnalysis.quantitative,
-                                            valuation: {
-                                              ...prev.myAnalysis.quantitative.valuation,
-                                              psr: val
-                                            }
-                                          }
-                                        }
-                                      }
-                                    : prev
-                                )
-                              }
-                            />
-                            <MetricInput
-                              label="목표가"
-                              value={detail.myAnalysis.quantitative.valuation.targetPrice}
-                              prefix="$"
-                              onChange={val =>
-                                setDraft(prev =>
-                                  prev
-                                    ? {
-                                        ...prev,
-                                        myAnalysis: {
-                                          ...prev.myAnalysis,
-                                          quantitative: {
-                                            ...prev.myAnalysis.quantitative,
-                                            valuation: {
-                                              ...prev.myAnalysis.quantitative.valuation,
-                                              targetPrice: val
-                                            }
-                                          }
-                                        }
-                                      }
-                                    : prev
-                                )
-                              }
-                            />
-                            <MetricInput
-                              label="상승여력"
-                              value={detail.myAnalysis.quantitative.valuation.upside}
-                              suffix="%"
-                              onChange={val =>
-                                setDraft(prev =>
-                                  prev
-                                    ? {
-                                        ...prev,
-                                        myAnalysis: {
-                                          ...prev.myAnalysis,
-                                          quantitative: {
-                                            ...prev.myAnalysis.quantitative,
-                                            valuation: {
-                                              ...prev.myAnalysis.quantitative.valuation,
-                                              upside: val
-                                            }
-                                          }
-                                        }
-                                      }
-                                    : prev
-                                )
-                              }
-                            />
-                          </CardContent>
-                        </Card>
-                        <Card className="border-secondary/20">
-                          <CardHeader>
-                            <CardTitle className="text-lg">성장/재무</CardTitle>
-                          </CardHeader>
-                          <CardContent className="grid grid-cols-2 gap-3 text-sm">
-                            <MetricInput
-                              label="매출 CAGR"
-                              value={detail.myAnalysis.quantitative.growth.revenueCagr}
-                              suffix="%"
-                              onChange={val =>
-                                setDraft(prev =>
-                                  prev
-                                    ? {
-                                        ...prev,
-                                        myAnalysis: {
-                                          ...prev.myAnalysis,
-                                          quantitative: {
-                                            ...prev.myAnalysis.quantitative,
-                                            growth: {
-                                              ...prev.myAnalysis.quantitative.growth,
-                                              revenueCagr: val
-                                            }
-                                          }
-                                        }
-                                      }
-                                    : prev
-                                )
-                              }
-                            />
-                            <MetricInput
-                              label="EPS CAGR"
-                              value={detail.myAnalysis.quantitative.growth.epsCagr}
-                              suffix="%"
-                              onChange={val =>
-                                setDraft(prev =>
-                                  prev
-                                    ? {
-                                        ...prev,
-                                        myAnalysis: {
-                                          ...prev.myAnalysis,
-                                          quantitative: {
-                                            ...prev.myAnalysis.quantitative,
-                                            growth: {
-                                              ...prev.myAnalysis.quantitative.growth,
-                                              epsCagr: val
-                                            }
-                                          }
-                                        }
-                                      }
-                                    : prev
-                                )
-                              }
-                            />
-                            <MetricInput
-                              label="부채비율"
-                              value={detail.myAnalysis.quantitative.financial.debtRatio}
-                              suffix="%"
-                              onChange={val =>
-                                setDraft(prev =>
-                                  prev
-                                    ? {
-                                        ...prev,
-                                        myAnalysis: {
-                                          ...prev.myAnalysis,
-                                          quantitative: {
-                                            ...prev.myAnalysis.quantitative,
-                                            financial: {
-                                              ...prev.myAnalysis.quantitative.financial,
-                                              debtRatio: val
-                                            }
-                                          }
-                                        }
-                                      }
-                                    : prev
-                                )
-                              }
-                            />
-                            <MetricInput
-                              label="ROE"
-                              value={detail.myAnalysis.quantitative.financial.roe}
-                              suffix="%"
-                              onChange={val =>
-                                setDraft(prev =>
-                                  prev
-                                    ? {
-                                        ...prev,
-                                        myAnalysis: {
-                                          ...prev.myAnalysis,
-                                          quantitative: {
-                                            ...prev.myAnalysis.quantitative,
-                                            financial: {
-                                              ...prev.myAnalysis.quantitative.financial,
-                                              roe: val
-                                            }
-                                          }
-                                        }
-                                      }
-                                    : prev
-                                )
-                              }
-                            />
-                            <MetricInput
-                              label="FCF 마진"
-                              value={detail.myAnalysis.quantitative.financial.fcfMargin}
-                              suffix="%"
-                              onChange={val =>
-                                setDraft(prev =>
-                                  prev
-                                    ? {
-                                        ...prev,
-                                        myAnalysis: {
-                                          ...prev.myAnalysis,
-                                          quantitative: {
-                                            ...prev.myAnalysis.quantitative,
-                                            financial: {
-                                              ...prev.myAnalysis.quantitative.financial,
-                                              fcfMargin: val
-                                            }
-                                          }
-                                        }
-                                      }
-                                    : prev
-                                )
-                              }
-                            />
-                          </CardContent>
-                          <p className="px-6 pb-4 text-sm text-muted-foreground">
-                            <span className="text-xs text-muted-foreground">전망</span>
-                            <Textarea
-                              className="mt-1"
-                              value={detail.myAnalysis.quantitative.growth.outlook}
-                              onChange={e =>
-                                setDraft(prev =>
-                                  prev
-                                    ? {
-                                        ...prev,
-                                        myAnalysis: {
-                                          ...prev.myAnalysis,
-                                          quantitative: {
-                                            ...prev.myAnalysis.quantitative,
-                                            growth: {
-                                              ...prev.myAnalysis.quantitative.growth,
-                                              outlook: e.target.value
-                                            }
-                                          }
-                                        }
-                                      }
-                                    : prev
-                                )
-                              }
-                              rows={3}
-                            />
-                          </p>
-                        </Card>
-                        <Card className="md:col-span-2 border-border">
-                          <CardHeader>
-                            <CardTitle className="text-lg">점수 (1-5)</CardTitle>
-                          </CardHeader>
-                          <CardContent className="grid grid-cols-3 gap-4 text-sm">
-                            <MetricInput
-                              label="Value"
-                              value={detail.myAnalysis.quantitative.scores.value}
-                              onChange={val =>
-                                setDraft(prev =>
-                                  prev
-                                    ? {
-                                        ...prev,
-                                        myAnalysis: {
-                                          ...prev.myAnalysis,
-                                          quantitative: {
-                                            ...prev.myAnalysis.quantitative,
-                                            scores: { ...prev.myAnalysis.quantitative.scores, value: val ?? 0 }
-                                          }
-                                        }
-                                      }
-                                    : prev
-                                )
-                              }
-                            />
-                            <MetricInput
-                              label="Growth"
-                              value={detail.myAnalysis.quantitative.scores.growth}
-                              onChange={val =>
-                                setDraft(prev =>
-                                  prev
-                                    ? {
-                                        ...prev,
-                                        myAnalysis: {
-                                          ...prev.myAnalysis,
-                                          quantitative: {
-                                            ...prev.myAnalysis.quantitative,
-                                            scores: { ...prev.myAnalysis.quantitative.scores, growth: val ?? 0 }
-                                          }
-                                        }
-                                      }
-                                    : prev
-                                )
-                              }
-                            />
-                            <MetricInput
-                              label="Quality"
-                              value={detail.myAnalysis.quantitative.scores.quality}
-                              onChange={val =>
-                                setDraft(prev =>
-                                  prev
-                                    ? {
-                                        ...prev,
-                                        myAnalysis: {
-                                          ...prev.myAnalysis,
-                                          quantitative: {
-                                            ...prev.myAnalysis.quantitative,
-                                            scores: { ...prev.myAnalysis.quantitative.scores, quality: val ?? 0 }
-                                          }
-                                        }
-                                      }
-                                    : prev
-                                )
-                              }
-                            />
-                          </CardContent>
-                        </Card>
-                      </div>
-                    )}
-
                     {activeTab === 'qual' && (
                       <div className="grid gap-4 md:grid-cols-2">
                         <Card className="border-primary/20">
