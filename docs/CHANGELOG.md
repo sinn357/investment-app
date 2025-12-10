@@ -3,6 +3,30 @@
 ## 2025-12-10
 
 ### Changed
+- **개별분석 UX 재구성** (`/analysis`)
+  - 탭 단순화: 기본적/기술적/총평/참고자료 4개만 유지, 정량/정성/투자의견 섹션 제거
+  - Deep Dive 섹션(기본/기술/총평) 폼을 통합해 한 카드 내에서 작성/저장하도록 재배치
+  - 참고자료 인라인 에디터(타입/제목/URL/메모)로 교체, 스티키 저장 툴바 추가
+- **포트폴리오 분석 라우트 정리**
+  - `/portfolio/[id]/analysis`를 `/analysis`로 안내/리다이렉트
+  - 포트폴리오 테이블의 잘못된 분석 버튼 제거
+
+### Fixed
+- `NarrativeReview` 의존성 경고 해소: `fetchHistory`를 `useCallback`으로 래핑
+- 가계부 대시보드 미사용 Gauge import 제거
+
+### Commits
+- `65f23be`: fix: rebuild analysis page layout and lint warnings
+- `0228abe`: fix: clean analysis layout and lint warnings
+- `fd63feb`: feat: simplify analysis tabs and add inline references
+- `aa07ca0`: feat: integrate deep dive analysis into analysis page
+- `2c87f47`: feat: 포트폴리오에 자산 개별분석 버튼 추가 (이후 제거됨)
+
+---
+
+## 2025-12-10
+
+### Changed
 - **가계부 대시보드 리디자인** (expenses)
   - 구성/흐름 섹션 압축: 지출/수입 탭 통합, 높이 축소, 범례 하단 배치로 차트 잘림 방지
   - 목표 카드 재구성: 대분류(생활/건강 등) 아코디언 기본 접힘, 지출/수입 탭 전환, 소분류별 목표 입력 필드/진행도 표시, 전체 카테고리 노출
