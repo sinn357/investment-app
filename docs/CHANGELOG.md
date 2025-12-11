@@ -1,5 +1,54 @@
 # Investment App Changelog
 
+## 2025-12-12
+
+### Added
+- **ORACLE 브랜드 리네이밍 완료**
+  - "투자 어시스턴트" → "ORACLE (Market Intelligence Platform)"
+  - Ω (오메가) 심볼 로고 추가
+  - Navigation 완전 재디자인 (골드 그라데이션, 모노스페이스 폰트)
+
+- **타이핑 터미널 스타일 홈페이지 구현** (`/`)
+  - 개인용 대시보드에 맞게 미니멀화
+  - 타이핑 효과 애니메이션 (80ms 딜레이) + 커서 깜빡임 (530ms)
+  - 터미널 윈도우 디자인 (macOS 스타일 헤더: 🔴🟡🟢)
+  - 명령 프롬프트: `oracle@terminal ~ %`
+  - 상태 바: SYSTEM READY + 날짜 + 버전
+  - 홈 페이지 크기: 7.36 kB → 6.32 kB (14% 감소)
+
+- **투자철학 페이지 독립화** (`/philosophy`)
+  - 기존 홈 페이지에서 완전 분리
+  - Navigation에 전용 메뉴 추가 (💡 아이콘)
+
+### Changed
+- **투자철학 페이지 UX/UI 완전 개선** (`/philosophy`)
+  - 2단 그리드 레이아웃 (왼쪽: 목표/자산/범위, 오른쪽: 원칙/방법)
+  - Glassmorphism 카드 디자인 (반투명 + backdrop-blur-md)
+  - 골드/에메랄드 그라데이션 오버레이
+  - 호버 효과: 테두리 강조 + 그림자 + 글로우
+  - 타이포그래피 개선: text-5xl + 골드 그라데이션
+  - 스페이싱 최적화: 여백 33-67% 증가
+
+- **홈페이지 2차 재구성 (Phase 2 → Phase 5)**
+  - Phase 2: Linear + Stripe 스타일 프리미엄 랜딩페이지
+    * Canvas 애니메이션 (그리드 + 50개 파티클)
+    * 3D 회전 Feature 카드
+    * 글로우 효과 CTA 버튼
+  - Phase 5: 타이핑 터미널 스타일로 완전 교체
+    * Feature 카드 3개 제거
+    * CTA 버튼 2개 제거
+    * Canvas 파티클 제거
+    * 코드: 265줄 → 107줄 (60% 감소)
+
+### Commits
+- `d483969`: feat: Phase 1 - 홈페이지와 투자철학 페이지 분리
+- `2e4dac0`: feat: Phase 2 - Linear + Stripe 스타일 프리미엄 랜딩페이지
+- `56e85b6`: feat: Phase 3 - 투자철학 페이지 2단 그리드 + Glassmorphism 디자인
+- `f4bd85f`: feat: Phase 4 - 투자철학 페이지 타이포그래피 및 스페이싱 최적화
+- `69a9e83`: feat: ORACLE 리브랜딩 + 타이핑 터미널 홈페이지
+
+---
+
 ## 2025-12-11
 
 ### Changed
