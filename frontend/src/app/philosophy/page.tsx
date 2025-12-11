@@ -115,21 +115,21 @@ export default function Philosophy() {
 
       {/* 헤더 */}
       <header className="bg-gradient-to-r from-primary/5 to-secondary/5 shadow-sm border-b border-primary/10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <h1 className="text-3xl font-bold text-foreground">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary via-yellow-400 to-secondary bg-clip-text text-transparent mb-4">
             💎 투자 철학 & 원칙
           </h1>
-          <p className="mt-2 text-muted-foreground">
+          <p className="text-lg text-muted-foreground leading-relaxed max-w-3xl">
             모든 투자 결정의 기준점 - 나만의 투자 나침반을 설정하세요
           </p>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* 2단 그리드 레이아웃 */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
           {/* 왼쪽 컬럼 */}
-          <div className="space-y-6">
+          <div className="space-y-8">
             {/* 섹션 1: 투자 목표 */}
             <div className="group relative rounded-2xl border border-primary/20 bg-card/50 backdrop-blur-md p-6 hover:border-primary/40 hover:shadow-lg transition-all">
               <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent rounded-2xl pointer-events-none" />
@@ -165,7 +165,7 @@ export default function Philosophy() {
           </div>
 
           {/* 오른쪽 컬럼 */}
-          <div className="space-y-6">
+          <div className="space-y-8">
             {/* 섹션 4: 투자 원칙 */}
             <div className="group relative rounded-2xl border border-primary/20 bg-card/50 backdrop-blur-md p-6 hover:border-primary/40 hover:shadow-lg transition-all">
               <div className="absolute inset-0 bg-gradient-to-br from-secondary/5 to-transparent rounded-2xl pointer-events-none" />
