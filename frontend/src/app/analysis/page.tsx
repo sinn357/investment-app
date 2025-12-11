@@ -319,46 +319,32 @@ function FinancialAnalysis({
   data: Record<string, unknown>;
   onChange: (data: Record<string, unknown>) => void;
 }) {
-  const fields = [
-    { key: 'per', label: 'PER' },
-    { key: 'pbr', label: 'PBR' },
-    { key: 'roe', label: 'ROE (%)' },
-    { key: 'eps', label: 'EPS' },
-    { key: 'bps', label: 'BPS' },
-    { key: 'ev_ebitda', label: 'EV/EBITDA' },
-    { key: 'revenue', label: '매출액' },
-    { key: 'operating_margin', label: '영업이익률 (%)' },
-    { key: 'debt_ratio', label: '총부채비율 (%)' },
-    { key: 'current_ratio', label: '유동비율 (%)' }
+  const sections = [
+    { key: 'basic_status', label: '📊 기본 현황', placeholder: '시가총액, 주가, 52주 최고/최저, 거래량 등...' },
+    { key: 'recent_performance', label: '📈 최근 실적 요약', placeholder: '최근 분기/연간 매출, 영업이익, 순이익, 성장률 등...' },
+    { key: 'business_profitability', label: '🏢 사업부문별 수익성', placeholder: '부문별 매출 비중, 영업이익률, 성장성 등...' },
+    { key: 'capital_structure', label: '💰 자본 구조 & 주요 지표', placeholder: 'PER, PBR, ROE, ROA, 부채비율, 유동비율, EV/EBITDA 등...' },
+    { key: 'revenue_composition', label: '📊 매출 구성', placeholder: '제품/서비스별, 지역별, 고객별 매출 비중...' },
+    { key: 'profit_model', label: '💵 수익 모델', placeholder: '수익 창출 구조, 마진율, 수익성 동인...' },
+    { key: 'valuation', label: '🎯 핵심 밸류에이션', placeholder: '적정 PER, 목표주가 산정 근거, DCF/상대가치 등...' },
+    { key: 'financial_snapshot', label: '📋 재무제표 항목별 스냅샷', placeholder: '자산, 부채, 자본, 매출, 비용, 현금흐름 주요 항목...' },
+    { key: 'comment', label: '💭 코멘트', placeholder: '재무 상태에 대한 종합 의견...' }
   ];
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-        {fields.map(field => (
-          <div key={field.key}>
-            <label className="block text-sm font-medium mb-1">{field.label}</label>
-            <input
-              type="number"
-              step="0.01"
-              value={(data[field.key] as number) || ''}
-              onChange={e => onChange({ ...data, [field.key]: e.target.value })}
-              className="w-full p-2 bg-background border border-primary/20 rounded focus:outline-none focus:ring-2 focus:ring-primary text-foreground text-sm"
-              placeholder="0.00"
-            />
-          </div>
-        ))}
-      </div>
-      <div>
-        <label className="block text-sm font-medium mb-2">재무 코멘트</label>
-        <textarea
-          value={(data.comment as string) || ''}
-          onChange={e => onChange({ ...data, comment: e.target.value })}
-          rows={8}
-          className="w-full p-3 bg-background border border-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground resize-y min-h-[150px]"
-          placeholder="재무 상태에 대한 종합 의견..."
-        />
-      </div>
+      {sections.map(section => (
+        <div key={section.key}>
+          <label className="block text-sm font-medium mb-2">{section.label}</label>
+          <textarea
+            value={(data[section.key] as string) || ''}
+            onChange={e => onChange({ ...data, [section.key]: e.target.value })}
+            rows={8}
+            className="w-full p-3 bg-background border border-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground resize-y min-h-[150px]"
+            placeholder={section.placeholder}
+          />
+        </div>
+      ))}
     </div>
   );
 }
