@@ -126,47 +126,80 @@ export default function Philosophy() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="space-y-6">
-          {/* 섹션 1: 투자 목표 */}
-          <InvestmentGoal
-            goal={philosophy.goal}
-            onChange={(goal) => setPhilosophy({ ...philosophy, goal })}
-          />
+        {/* 2단 그리드 레이아웃 */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          {/* 왼쪽 컬럼 */}
+          <div className="space-y-6">
+            {/* 섹션 1: 투자 목표 */}
+            <div className="group relative rounded-2xl border border-primary/20 bg-card/50 backdrop-blur-md p-6 hover:border-primary/40 hover:shadow-lg transition-all">
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent rounded-2xl pointer-events-none" />
+              <div className="relative">
+                <InvestmentGoal
+                  goal={philosophy.goal}
+                  onChange={(goal) => setPhilosophy({ ...philosophy, goal })}
+                />
+              </div>
+            </div>
 
-          {/* 섹션 2: 금지 자산 */}
-          <ForbiddenAssets
-            forbiddenAssets={philosophy.forbiddenAssets}
-            onChange={(forbiddenAssets) => setPhilosophy({ ...philosophy, forbiddenAssets })}
-          />
+            {/* 섹션 2: 금지 자산 */}
+            <div className="group relative rounded-2xl border border-primary/20 bg-card/50 backdrop-blur-md p-6 hover:border-primary/40 hover:shadow-lg transition-all">
+              <div className="absolute inset-0 bg-gradient-to-br from-secondary/5 to-transparent rounded-2xl pointer-events-none" />
+              <div className="relative">
+                <ForbiddenAssets
+                  forbiddenAssets={philosophy.forbiddenAssets}
+                  onChange={(forbiddenAssets) => setPhilosophy({ ...philosophy, forbiddenAssets })}
+                />
+              </div>
+            </div>
 
-          {/* 섹션 3: 운용 범위 */}
-          <AllocationRange
-            allocationRange={philosophy.allocationRange}
-            onChange={(allocationRange) => setPhilosophy({ ...philosophy, allocationRange })}
-          />
-
-          {/* 섹션 4: 투자 원칙 */}
-          <InvestmentPrinciples
-            principles={philosophy.principles}
-            onChange={(principles) => setPhilosophy({ ...philosophy, principles })}
-          />
-
-          {/* 섹션 5: 투자 방법 */}
-          <InvestmentMethods
-            methods={philosophy.methods}
-            onChange={(methods) => setPhilosophy({ ...philosophy, methods })}
-          />
-
-          {/* 저장 버튼 */}
-          <div className="flex justify-center pt-4">
-            <button
-              onClick={handleSave}
-              disabled={isSaving}
-              className="px-8 py-3 bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-white font-semibold rounded-lg shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isSaving ? '저장 중...' : '💾 투자 철학 저장'}
-            </button>
+            {/* 섹션 3: 운용 범위 */}
+            <div className="group relative rounded-2xl border border-primary/20 bg-card/50 backdrop-blur-md p-6 hover:border-primary/40 hover:shadow-lg transition-all">
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent rounded-2xl pointer-events-none" />
+              <div className="relative">
+                <AllocationRange
+                  allocationRange={philosophy.allocationRange}
+                  onChange={(allocationRange) => setPhilosophy({ ...philosophy, allocationRange })}
+                />
+              </div>
+            </div>
           </div>
+
+          {/* 오른쪽 컬럼 */}
+          <div className="space-y-6">
+            {/* 섹션 4: 투자 원칙 */}
+            <div className="group relative rounded-2xl border border-primary/20 bg-card/50 backdrop-blur-md p-6 hover:border-primary/40 hover:shadow-lg transition-all">
+              <div className="absolute inset-0 bg-gradient-to-br from-secondary/5 to-transparent rounded-2xl pointer-events-none" />
+              <div className="relative">
+                <InvestmentPrinciples
+                  principles={philosophy.principles}
+                  onChange={(principles) => setPhilosophy({ ...philosophy, principles })}
+                />
+              </div>
+            </div>
+
+            {/* 섹션 5: 투자 방법 */}
+            <div className="group relative rounded-2xl border border-primary/20 bg-card/50 backdrop-blur-md p-6 hover:border-primary/40 hover:shadow-lg transition-all">
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent rounded-2xl pointer-events-none" />
+              <div className="relative">
+                <InvestmentMethods
+                  methods={philosophy.methods}
+                  onChange={(methods) => setPhilosophy({ ...philosophy, methods })}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 저장 버튼 */}
+        <div className="flex justify-center">
+          <button
+            onClick={handleSave}
+            disabled={isSaving}
+            className="group relative px-8 py-4 bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-white font-semibold rounded-lg shadow-2xl transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105"
+          >
+            <span className="relative z-10">{isSaving ? '저장 중...' : '💾 투자 철학 저장'}</span>
+            <div className="absolute inset-0 bg-gradient-to-r from-primary to-secondary opacity-0 group-hover:opacity-100 blur-xl transition-opacity pointer-events-none" />
+          </button>
         </div>
       </main>
     </div>
