@@ -1,5 +1,33 @@
 # Investment App Changelog
 
+## 2025-12-11
+
+### Changed
+- **개별분석 페이지 textarea 입력 영역 대폭 개선** (`/analysis`)
+  - 모든 textarea rows 값 2-3배 증가 (작은 필드: 2-3줄 → 6-8줄, 중간: 4줄 → 10줄, 큰: 6줄 → 15줄)
+  - resize-none → resize-y (세로 방향 수동 크기 조절 허용)
+  - min-height 추가 (120px~300px)로 최소 높이 보장
+  - useAutoResize 커스텀 훅 생성 (향후 확장용)
+  - 영향 범위: 13개 섹션 (BasicInfoAccordion 14개 항목, CompetitorComparison, FinancialAnalysis, ChartAnalysis, QuantAnalysis, SentimentAnalysis, InvestmentConsiderations, RiskPoints, Valuation, 기본적분석, 총평)
+
+- **재무분석 섹션 9개 항목으로 확장** (`/analysis`)
+  - 기존 10개 숫자 입력 필드 제거 → 9개 상세 textarea 섹션으로 교체
+  - 새로운 항목: 📊 기본 현황, 📈 최근 실적 요약, 🏢 사업부문별 수익성, 💰 자본 구조 & 주요 지표, 📊 매출 구성, 💵 수익 모델, 🎯 핵심 밸류에이션, 📋 재무제표 항목별 스냅샷, 💭 코멘트
+  - 각 항목별 충분한 입력 공간 제공 (rows: 8, min-h: 150px)
+
+### Verified
+- **Master Market Cycle 시스템 정상 작동 확인**
+  - MMC Score: 53.4점 (전환기, 중립)
+  - Macro: 57.1점 (확장기), Credit: 87.5점 (유동성 풍부), Sentiment: 31.5점 (과열 경계)
+  - 17개 핵심 지표 모두 최신 데이터로 반영됨
+  - 업데이트 시간: 2025-12-11 09:16:35
+
+### Commits
+- `c2731e9`: feat: 개별분석 페이지 textarea 입력 영역 대폭 개선
+- `2ade37b`: feat: 재무분석 섹션 9개 항목으로 확장
+
+---
+
 ## 2025-12-10
 
 ### Changed
