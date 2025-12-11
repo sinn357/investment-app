@@ -15,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
+import { useAutoResize } from '@/hooks/useAutoResize';
 
 type AssetType = '주식' | '암호화폐' | 'ETF';
 type ActionType = '매수' | '관망' | '매도';
@@ -266,8 +267,8 @@ function BasicInfoAccordion({
               <textarea
                 value={(data[item.key] as string) || ''}
                 onChange={e => onChange(item.key, e.target.value)}
-                rows={3}
-                className="w-full p-2 bg-background border border-primary/20 rounded focus:outline-none focus:ring-2 focus:ring-primary text-foreground text-sm resize-none"
+                rows={8}
+                className="w-full p-2 bg-background border border-primary/20 rounded focus:outline-none focus:ring-2 focus:ring-primary text-foreground text-sm resize-y min-h-[150px]"
                 placeholder={item.placeholder}
               />
             </div>
@@ -292,8 +293,8 @@ function CompetitorComparison({
         <textarea
           value={(data.market_size as string) || ''}
           onChange={e => onChange({ ...data, market_size: e.target.value })}
-          rows={3}
-          className="w-full p-3 bg-background border border-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground resize-none"
+          rows={8}
+          className="w-full p-3 bg-background border border-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground resize-y min-h-[150px]"
           placeholder="시장 규모, 성장률, 수요 트렌드..."
         />
       </div>
@@ -302,8 +303,8 @@ function CompetitorComparison({
         <textarea
           value={(data.competitive_position as string) || ''}
           onChange={e => onChange({ ...data, competitive_position: e.target.value })}
-          rows={3}
-          className="w-full p-3 bg-background border border-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground resize-none"
+          rows={8}
+          className="w-full p-3 bg-background border border-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground resize-y min-h-[150px]"
           placeholder="주요 경쟁사, 시장 점유율, 경쟁 우위..."
         />
       </div>
@@ -353,8 +354,8 @@ function FinancialAnalysis({
         <textarea
           value={(data.comment as string) || ''}
           onChange={e => onChange({ ...data, comment: e.target.value })}
-          rows={3}
-          className="w-full p-3 bg-background border border-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground resize-none"
+          rows={8}
+          className="w-full p-3 bg-background border border-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground resize-y min-h-[150px]"
           placeholder="재무 상태에 대한 종합 의견..."
         />
       </div>
@@ -370,8 +371,8 @@ function ChartAnalysis({ data, onChange }: { data: Record<string, unknown>; onCh
         <textarea
           value={(data.bollinger_bands as string) || ''}
           onChange={e => onChange({ ...data, bollinger_bands: e.target.value })}
-          rows={2}
-          className="w-full p-3 bg-background border border-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground resize-none"
+          rows={6}
+          className="w-full p-3 bg-background border border-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground resize-y min-h-[120px]"
           placeholder="상단밴드, 중간선, 하단밴드 위치와 해석..."
         />
       </div>
@@ -380,8 +381,8 @@ function ChartAnalysis({ data, onChange }: { data: Record<string, unknown>; onCh
         <textarea
           value={(data.candle_pattern as string) || ''}
           onChange={e => onChange({ ...data, candle_pattern: e.target.value })}
-          rows={2}
-          className="w-full p-3 bg-background border border-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground resize-none"
+          rows={6}
+          className="w-full p-3 bg-background border border-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground resize-y min-h-[120px]"
           placeholder="주요 캔들 패턴과 시그널..."
         />
       </div>
@@ -397,8 +398,8 @@ function QuantAnalysis({ data, onChange }: { data: Record<string, unknown>; onCh
         <textarea
           value={(data.factor_filtering as string) || ''}
           onChange={e => onChange({ ...data, factor_filtering: e.target.value })}
-          rows={2}
-          className="w-full p-3 bg-background border border-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground resize-none"
+          rows={6}
+          className="w-full p-3 bg-background border border-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground resize-y min-h-[120px]"
           placeholder="가치, 모멘텀, 퀄리티 팩터 점수..."
         />
       </div>
@@ -407,8 +408,8 @@ function QuantAnalysis({ data, onChange }: { data: Record<string, unknown>; onCh
         <textarea
           value={(data.backtest as string) || ''}
           onChange={e => onChange({ ...data, backtest: e.target.value })}
-          rows={2}
-          className="w-full p-3 bg-background border border-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground resize-none"
+          rows={6}
+          className="w-full p-3 bg-background border border-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground resize-y min-h-[120px]"
           placeholder="과거 전략 성과, 샤프 비율 등..."
         />
       </div>
@@ -447,8 +448,8 @@ function SentimentAnalysis({ data, onChange }: { data: Record<string, unknown>; 
         <textarea
           value={(data.options_flow as string) || ''}
           onChange={e => onChange({ ...data, options_flow: e.target.value })}
-          rows={2}
-          className="w-full p-3 bg-background border border-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground resize-none"
+          rows={6}
+          className="w-full p-3 bg-background border border-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground resize-y min-h-[120px]"
           placeholder="Put/Call 비율, 주요 옵션 거래..."
         />
       </div>
@@ -457,8 +458,8 @@ function SentimentAnalysis({ data, onChange }: { data: Record<string, unknown>; 
         <textarea
           value={(data.news_sentiment as string) || ''}
           onChange={e => onChange({ ...data, news_sentiment: e.target.value })}
-          rows={3}
-          className="w-full p-3 bg-background border border-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground resize-none"
+          rows={8}
+          className="w-full p-3 bg-background border border-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground resize-y min-h-[150px]"
           placeholder="최근 이슈, 이벤트 캘린더, 타임라인..."
         />
       </div>
@@ -474,8 +475,8 @@ function InvestmentConsiderations({ data, onChange }: { data: Record<string, unk
         <textarea
           value={(data.positive_factors as string) || ''}
           onChange={e => onChange({ ...data, positive_factors: e.target.value })}
-          rows={2}
-          className="w-full p-3 bg-background border border-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground resize-none"
+          rows={6}
+          className="w-full p-3 bg-background border border-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground resize-y min-h-[120px]"
           placeholder="매수를 지지하는 긍정적 요인들..."
         />
       </div>
@@ -484,8 +485,8 @@ function InvestmentConsiderations({ data, onChange }: { data: Record<string, unk
         <textarea
           value={(data.negative_factors as string) || ''}
           onChange={e => onChange({ ...data, negative_factors: e.target.value })}
-          rows={2}
-          className="w-full p-3 bg-background border border-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground resize-none"
+          rows={6}
+          className="w-full p-3 bg-background border border-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground resize-y min-h-[120px]"
           placeholder="주의해야 할 부정적 요인들..."
         />
       </div>
@@ -494,8 +495,8 @@ function InvestmentConsiderations({ data, onChange }: { data: Record<string, unk
         <textarea
           value={(data.scenario as string) || ''}
           onChange={e => onChange({ ...data, scenario: e.target.value })}
-          rows={3}
-          className="w-full p-3 bg-background border border-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground resize-none"
+          rows={8}
+          className="w-full p-3 bg-background border border-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground resize-y min-h-[150px]"
           placeholder="베스트/베이스/워스트 시나리오..."
         />
       </div>
@@ -504,8 +505,8 @@ function InvestmentConsiderations({ data, onChange }: { data: Record<string, unk
         <textarea
           value={(data.checklist as string) || ''}
           onChange={e => onChange({ ...data, checklist: e.target.value })}
-          rows={3}
-          className="w-full p-3 bg-background border border-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground resize-none"
+          rows={8}
+          className="w-full p-3 bg-background border border-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground resize-y min-h-[150px]"
           placeholder="매수 전 확인사항 리스트..."
         />
       </div>
@@ -521,8 +522,8 @@ function RiskPoints({ data, onChange }: { data: Record<string, unknown>; onChang
         <textarea
           value={(data.macro_risk as string) || ''}
           onChange={e => onChange({ ...data, macro_risk: e.target.value })}
-          rows={2}
-          className="w-full p-3 bg-background border border-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground resize-none"
+          rows={6}
+          className="w-full p-3 bg-background border border-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground resize-y min-h-[120px]"
           placeholder="경기침체, 금리, 환율, 원자재 가격..."
         />
       </div>
@@ -531,8 +532,8 @@ function RiskPoints({ data, onChange }: { data: Record<string, unknown>; onChang
         <textarea
           value={(data.industry_risk as string) || ''}
           onChange={e => onChange({ ...data, industry_risk: e.target.value })}
-          rows={2}
-          className="w-full p-3 bg-background border border-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground resize-none"
+          rows={6}
+          className="w-full p-3 bg-background border border-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground resize-y min-h-[120px]"
           placeholder="기술 대체, 공급망 붕괴, 사이클 변동성..."
         />
       </div>
@@ -541,8 +542,8 @@ function RiskPoints({ data, onChange }: { data: Record<string, unknown>; onChang
         <textarea
           value={(data.company_risk as string) || ''}
           onChange={e => onChange({ ...data, company_risk: e.target.value })}
-          rows={2}
-          className="w-full p-3 bg-background border border-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground resize-none"
+          rows={6}
+          className="w-full p-3 bg-background border border-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground resize-y min-h-[120px]"
           placeholder="이 기업만의 특수한 리스크..."
         />
       </div>
@@ -551,8 +552,8 @@ function RiskPoints({ data, onChange }: { data: Record<string, unknown>; onChang
         <textarea
           value={(data.mitigation as string) || ''}
           onChange={e => onChange({ ...data, mitigation: e.target.value })}
-          rows={2}
-          className="w-full p-3 bg-background border border-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground resize-none"
+          rows={6}
+          className="w-full p-3 bg-background border border-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground resize-y min-h-[120px]"
           placeholder="리스크 대응 및 완화 전략..."
         />
       </div>
@@ -592,8 +593,8 @@ function Valuation({ data, onChange }: { data: Record<string, unknown>; onChange
         <textarea
           value={(data.price_reason as string) || ''}
           onChange={e => onChange({ ...data, price_reason: e.target.value })}
-          rows={2}
-          className="w-full p-3 bg-background border border-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground resize-none"
+          rows={6}
+          className="w-full p-3 bg-background border border-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground resize-y min-h-[120px]"
           placeholder="현재 주가 수준의 원인 분석..."
         />
       </div>
@@ -602,8 +603,8 @@ function Valuation({ data, onChange }: { data: Record<string, unknown>; onChange
         <textarea
           value={(data.intrinsic_value as string) || ''}
           onChange={e => onChange({ ...data, intrinsic_value: e.target.value })}
-          rows={2}
-          className="w-full p-3 bg-background border border-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground resize-none"
+          rows={6}
+          className="w-full p-3 bg-background border border-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground resize-y min-h-[120px]"
           placeholder="내재가치 대비 저평가/고평가 판단..."
         />
       </div>
@@ -612,8 +613,8 @@ function Valuation({ data, onChange }: { data: Record<string, unknown>; onChange
         <textarea
           value={(data.dividend as string) || ''}
           onChange={e => onChange({ ...data, dividend: e.target.value })}
-          rows={2}
-          className="w-full p-3 bg-background border border-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground resize-none"
+          rows={6}
+          className="w-full p-3 bg-background border border-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground resize-y min-h-[120px]"
           placeholder="배당 수익률, 배당 성향..."
         />
       </div>
@@ -903,8 +904,8 @@ export default function AnalysisPage() {
                               fundamental: { ...prev.fundamental, investment_reason: e.target.value }
                             }))
                           }
-                          rows={4}
-                          className="w-full"
+                          rows={10}
+                          className="w-full resize-y min-h-[200px]"
                           placeholder="이 자산에 투자하는 핵심 이유를 적어주세요..."
                         />
                       </section>
@@ -918,8 +919,8 @@ export default function AnalysisPage() {
                               fundamental: { ...prev.fundamental, potential: e.target.value }
                             }))
                           }
-                          rows={4}
-                          className="w-full"
+                          rows={10}
+                          className="w-full resize-y min-h-[200px]"
                           placeholder="회사가 보유한 잠재력 (연구기술, 내부문화, 직원 등)..."
                         />
                       </section>
@@ -1053,8 +1054,8 @@ export default function AnalysisPage() {
                               summary: { ...prev.summary, investment_point: e.target.value }
                             }))
                           }
-                          rows={3}
-                          className="w-full"
+                          rows={8}
+                          className="w-full resize-y min-h-[150px]"
                           placeholder="2분 만에 설명할 수 있는 핵심 매수 이유..."
                         />
                       </section>
@@ -1068,8 +1069,8 @@ export default function AnalysisPage() {
                               summary: { ...prev.summary, my_thoughts: e.target.value }
                             }))
                           }
-                          rows={6}
-                          className="w-full"
+                          rows={15}
+                          className="w-full resize-y min-h-[300px]"
                           placeholder="이 자산에 대한 나의 생각을 자유롭게 정리하세요..."
                         />
                       </section>
