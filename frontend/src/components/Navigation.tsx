@@ -110,13 +110,16 @@ export default function Navigation() {
         <div className="flex justify-between items-center h-16">
           {/* 로고 */}
           <div className="flex items-center">
-            <Link href="/" className="flex items-center">
-              <div className="w-8 h-8 bg-gradient-to-br from-primary to-secondary rounded-lg flex items-center justify-center shadow-md">
-                <span className="text-white font-bold text-sm">투자</span>
+            <Link href="/" className="flex items-center group">
+              <div className="w-10 h-10 bg-gradient-to-br from-primary via-yellow-400 to-secondary rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-primary/50 transition-all">
+                <span className="text-white font-bold text-lg">Ω</span>
               </div>
-              <span className="ml-2 text-xl font-semibold text-white drop-shadow-sm">
-                어시스턴트
-              </span>
+              <div className="ml-3">
+                <span className="block text-2xl font-bold text-white tracking-wider font-mono">
+                  ORACLE
+                </span>
+                <span className="block text-xs text-white/70 -mt-1">Market Intelligence</span>
+              </div>
             </Link>
           </div>
 
