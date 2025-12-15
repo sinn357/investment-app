@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   Select,
   SelectContent,
@@ -15,34 +16,11 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
-import { useAutoResize } from '@/hooks/useAutoResize';
-
 type AssetType = '주식' | '암호화폐' | 'ETF';
-type ActionType = '매수' | '관망' | '매도';
 
-interface QuantitativeSection {
-  valuation: { per?: number; pbr?: number; psr?: number; targetPrice?: number; upside?: number };
-  growth: { revenueCagr?: number; epsCagr?: number; outlook: string };
-  financial: { debtRatio?: number; roe?: number; fcfMargin?: number };
-  scores: { value: number; growth: number; quality: number };
-}
-
-interface QualitativeSection {
-  businessModel: string;
-  moat: 'Wide' | 'Narrow' | 'None';
-  management: string;
-  risks: { level: 'High' | 'Medium' | 'Low'; item: string }[];
-  catalysts: string[];
-}
-
-interface DecisionSection {
-  action: ActionType;
-  conviction: number;
-  prices: { buy?: number; sell?: number; stop?: number };
-  positionSize: string;
-  thesis: string;
-  conditions?: string[];
-}
+// ============================================
+// 새로운 5개 탭 구조 인터페이스
+// ============================================
 
 interface ReferenceItem {
   type: '기사' | '리포트' | '영상' | '기타';
@@ -52,25 +30,145 @@ interface ReferenceItem {
 }
 
 interface DeepDiveData {
-  fundamental: {
-    investment_reason: string;
-    potential: string;
-    basic_info: Record<string, unknown>;
-    competitor_comparison: Record<string, unknown>;
-    financial_analysis: Record<string, unknown>;
+  // ① 투자 가설 (Investment Thesis)
+  thesis: {
+    main_reason: string;           // 가장 큰 투자이유
+    company_selection: string;     // 기업 선택사유 (연구기술, 내부문화, 직원/인재)
+    industry_lifecycle: string;    // 산업 생애주기(S-Curve)
+    market_size: string;          // 시장 규모 및 수요 (TAM/SAM)
+    customer_base: string;        // 고객군
+    main_products: string;        // 주요 제품/서비스 (요약)
+    one_line_thesis: string;      // 한 줄 투자 가설
+    alpha_type: string;           // 노리는 알파의 종류 (성장/리레이팅/사이클/이벤트)
   };
-  technical: {
-    chart_analysis: Record<string, unknown>;
-    quant_analysis: Record<string, unknown>;
-    sentiment_analysis: Record<string, unknown>;
+
+  // ② 검증: 펀더멘털이 맞는가
+  validation: {
+    // 기본정보 / 사업 구조
+    basic: {
+      company_overview: string;
+      business_type: string;
+      history: string;
+      business_model: string;
+      revenue_structure: string;
+      value_chain: string;
+      demand_kpi: string;
+      customer_concentration: string;
+    };
+    // 경쟁 / 방어력
+    competition: {
+      competitor_comparison: string;
+      competitive_positioning: string;
+      ip_patents: string;
+      future_potential: string;
+      pricing_power: string;
+      capex_rnd: string;
+    };
+    // 유통 / 채널
+    distribution: {
+      distribution_method: string;
+      channel_structure: string;
+      channel_changes: string;
+    };
+    // 재무 (검증 관점)
+    financials: {
+      recent_performance: string;
+      business_profitability: string;
+      working_capital: string;
+      income_statement: string;
+      cash_flow: string;
+      balance_sheet: string;
+    };
+    hypothesis_breakpoints: string; // 가설이 깨지는 조건 3가지
   };
-  summary: {
-    investment_considerations: Record<string, unknown>;
-    risk_points: Record<string, unknown>;
-    valuation: Record<string, unknown>;
-    investment_point: string;
-    my_thoughts: string;
+
+  // ③ 가격과 기대치 (Price & Expectation)
+  pricing: {
+    stock_price: number;
+    market_cap: string;
+    valuation_metrics: {
+      per?: number;
+      pbr?: number;
+      ev_ebitda?: number;
+      roe?: number;
+      eps?: number;
+      bps?: number;
+      eps_per_share?: number;
+      fcf_per_share?: number;
+    };
+    market_expectation: string;     // 시장 기대 해석
+    intrinsic_value: string;        // 내재가치 관점 평가
+    dividend_policy: string;
+    scenarios: {
+      base: string;
+      bull: string;
+      bear: string;
+    };
+    expectation_gap: string;        // 시장 기대 vs 내 가설의 차이
   };
+
+  // ④ 타이밍 & 리스크
+  timing: {
+    // 기술적
+    technical: {
+      chart_analysis: string;
+      bollinger_bands: string;
+      candle_patterns: string;
+      expected_price_action: string;
+    };
+    // 퀀트
+    quant: {
+      factor_filtering: string;
+      backtest: string;
+    };
+    // 심리/수급
+    sentiment: {
+      short_interest: string;
+      etf_flow: string;
+      options_flow: string;
+      news_sentiment: string;
+    };
+    // 외부 변수
+    external: {
+      macro_variables: string;
+      news_analysis: string;
+      recent_issues: string;
+      event_calendar: string;
+    };
+    entry_conditions: string;       // 진입 조건
+    invalidation_signals: string;   // 무효화 조건 (가설 붕괴 신호)
+  };
+
+  // ⑤ 결정 & 관리
+  decision: {
+    summary: string;                // 총평
+    considerations: {
+      positive_factors: string;     // 우호 요인
+      negative_factors: string;     // 경계 요인 (리스크)
+    };
+    risks: {
+      macro_risk: string;
+      industry_risk: string;
+      company_risk: string;
+    };
+    invalidation_condition: string; // 내가 틀렸다고 인정하는 조건
+    scenarios: {
+      summary: string;
+      sensitivity: string;
+    };
+    checklist: {
+      buy: string;
+      wait: string;
+    };
+    mitigation: string;             // 대응 전략
+    target_price: number;
+    investment_point: string;       // 투자포인트 (2분 요약)
+    my_thoughts: string;            // 나의 현재 생각 정리
+    action: 'BUY' | 'WAIT' | 'PASS';
+    position_size: string;          // 비중
+    review_conditions: string;      // 재검토 조건
+  };
+
   updated_at: string | null;
 }
 
@@ -83,35 +181,128 @@ interface AssetAnalysis {
   lastUpdatedAt: string;
   inPortfolio: boolean;
   inWatchlist: boolean;
-  myAnalysis: {
-    quantitative: QuantitativeSection;
-    qualitative: QualitativeSection;
-    decision: DecisionSection;
-  };
   deepDive: DeepDiveData;
   references: ReferenceItem[];
   tags: string[];
 }
 
 const createEmptyDeepDive = (): DeepDiveData => ({
-  fundamental: {
-    investment_reason: '',
-    potential: '',
-    basic_info: {},
-    competitor_comparison: {},
-    financial_analysis: {}
+  // ① 투자 가설
+  thesis: {
+    main_reason: '',
+    company_selection: '',
+    industry_lifecycle: '',
+    market_size: '',
+    customer_base: '',
+    main_products: '',
+    one_line_thesis: '',
+    alpha_type: '성장'
   },
-  technical: {
-    chart_analysis: {},
-    quant_analysis: {},
-    sentiment_analysis: {}
+  // ② 검증: 펀더멘털
+  validation: {
+    basic: {
+      company_overview: '',
+      business_type: '',
+      history: '',
+      business_model: '',
+      revenue_structure: '',
+      value_chain: '',
+      demand_kpi: '',
+      customer_concentration: ''
+    },
+    competition: {
+      competitor_comparison: '',
+      competitive_positioning: '',
+      ip_patents: '',
+      future_potential: '',
+      pricing_power: '',
+      capex_rnd: ''
+    },
+    distribution: {
+      distribution_method: '',
+      channel_structure: '',
+      channel_changes: ''
+    },
+    financials: {
+      recent_performance: '',
+      business_profitability: '',
+      working_capital: '',
+      income_statement: '',
+      cash_flow: '',
+      balance_sheet: ''
+    },
+    hypothesis_breakpoints: ''
   },
-  summary: {
-    investment_considerations: {},
-    risk_points: {},
-    valuation: {},
+  // ③ 가격과 기대치
+  pricing: {
+    stock_price: 0,
+    market_cap: '',
+    valuation_metrics: {},
+    market_expectation: '',
+    intrinsic_value: '',
+    dividend_policy: '',
+    scenarios: {
+      base: '',
+      bull: '',
+      bear: ''
+    },
+    expectation_gap: ''
+  },
+  // ④ 타이밍 & 리스크
+  timing: {
+    technical: {
+      chart_analysis: '',
+      bollinger_bands: '',
+      candle_patterns: '',
+      expected_price_action: ''
+    },
+    quant: {
+      factor_filtering: '',
+      backtest: ''
+    },
+    sentiment: {
+      short_interest: '',
+      etf_flow: '',
+      options_flow: '',
+      news_sentiment: ''
+    },
+    external: {
+      macro_variables: '',
+      news_analysis: '',
+      recent_issues: '',
+      event_calendar: ''
+    },
+    entry_conditions: '',
+    invalidation_signals: ''
+  },
+  // ⑤ 결정 & 관리
+  decision: {
+    summary: '',
+    considerations: {
+      positive_factors: '',
+      negative_factors: ''
+    },
+    risks: {
+      macro_risk: '',
+      industry_risk: '',
+      company_risk: ''
+    },
+    invalidation_condition: '',
+    scenarios: {
+      summary: '',
+      sensitivity: ''
+    },
+    checklist: {
+      buy: '',
+      wait: ''
+    },
+    mitigation: '',
+    target_price: 0,
     investment_point: '',
-    my_thoughts: ''
+    my_thoughts: '',
+    action: 'WAIT',
+    position_size: '',
+    review_conditions: ''
   },
   updated_at: null
 });
@@ -126,32 +317,6 @@ const sampleAnalyses: AssetAnalysis[] = [
     lastUpdatedAt: '2025-11-22',
     inPortfolio: true,
     inWatchlist: true,
-    myAnalysis: {
-      quantitative: {
-        valuation: { per: 48, pbr: 12, psr: 8.5, targetPrice: 290, upside: 22 },
-        growth: { revenueCagr: 28, epsCagr: 32, outlook: '에너지/AI 솔루션 확장으로 성장 지속' },
-        financial: { debtRatio: 35, roe: 18, fcfMargin: 9 },
-        scores: { value: 2, growth: 5, quality: 4 }
-      },
-      qualitative: {
-        businessModel: '전기차 + 에너지 저장 + 풀스택 자율주행 SaaS 구독',
-        moat: 'Wide',
-        management: '경영진 비전은 강하지만 실행 리스크 존재',
-        risks: [
-          { level: 'High', item: '자율주행 규제/리콜 리스크' },
-          { level: 'Medium', item: '가격 경쟁 심화로 마진 압박' }
-        ],
-        catalysts: ['로보택시 상용화', 'FSD 구독 전환 확대', 'Megapack 수주 확대']
-      },
-      decision: {
-        action: '매수',
-        conviction: 4,
-        prices: { buy: 230, sell: 320, stop: 195 },
-        positionSize: '포트폴리오 8% 목표, 3회 분할 매수',
-        thesis: 'EV→에너지→자율주행 3단계 성장',
-        conditions: ['FSD 매출 20%+ QoQ 유지', 'ASP 인하 시 손익분기 재검증']
-      }
-    },
     deepDive: createEmptyDeepDive(),
     references: [
       { type: '리포트', title: 'ARK 로보택시 TAM', url: 'https://example.com/ark-tsla', note: '보수적 시나리오 반영' },
@@ -168,32 +333,6 @@ const sampleAnalyses: AssetAnalysis[] = [
     lastUpdatedAt: '2025-11-20',
     inPortfolio: true,
     inWatchlist: true,
-    myAnalysis: {
-      quantitative: {
-        valuation: { psr: 0, targetPrice: 92000, upside: 35 },
-        growth: { outlook: 'ETF 자금 유입과 공급 축소로 수급 우위' },
-        financial: {},
-        scores: { value: 3, growth: 4, quality: 3 }
-      },
-      qualitative: {
-        businessModel: '디지털 스토어 오브 밸류, 탈중앙 결제 레이어',
-        moat: 'Wide',
-        management: '프로토콜 커뮤니티 주도',
-        risks: [
-          { level: 'High', item: '규제/세제 변경' },
-          { level: 'Medium', item: '온체인 수수료 급등에 따른 UX 저하' }
-        ],
-        catalysts: ['현물 ETF 추가 승인', '반감기 후 해시레이트 안정']
-      },
-      decision: {
-        action: '관망',
-        conviction: 3,
-        prices: { buy: 70000, sell: 98000, stop: 62000 },
-        positionSize: '포트폴리오 5% 유지',
-        thesis: 'ETF 자금 + 반감기 공급 축소',
-        conditions: ['해시레이트 급락 시 비중 축소']
-      }
-    },
     deepDive: createEmptyDeepDive(),
     references: [
       { type: '리포트', title: 'Glassnode On-chain Trends', url: 'https://example.com/glassnode' },
@@ -203,416 +342,17 @@ const sampleAnalyses: AssetAnalysis[] = [
   }
 ];
 
-const actionBadgeStyle: Record<ActionType, string> = {
-  매수: 'bg-emerald-100 text-emerald-800 border border-emerald-200',
-  관망: 'bg-amber-100 text-amber-800 border border-amber-200',
-  매도: 'bg-rose-100 text-rose-800 border border-rose-200'
+const actionBadgeStyle: Record<'BUY' | 'WAIT' | 'PASS', string> = {
+  BUY: 'bg-emerald-100 text-emerald-800 border border-emerald-200',
+  WAIT: 'bg-amber-100 text-amber-800 border border-amber-200',
+  PASS: 'bg-rose-100 text-rose-800 border border-rose-200'
 };
-
-const moatOptions: QualitativeSection['moat'][] = ['Wide', 'Narrow', 'None'];
-
-function ConvictionDots({ level }: { level: number }) {
-  return (
-    <div className="flex items-center gap-1">
-      {Array.from({ length: 5 }).map((_, idx) => (
-        <span key={idx} className={`h-2.5 w-2.5 rounded-full ${idx < level ? 'bg-primary' : 'bg-muted'}`} />
-      ))}
-    </div>
-  );
-}
-
-const basicInfoItems = [
-  { key: 'company_overview', label: '기업 개요', placeholder: '회사의 전반적인 개요를 작성하세요...' },
-  { key: 'business_type', label: '사업 종류 및 구조', placeholder: '주요 사업 분야와 조직 구조...' },
-  { key: 'history', label: '연혁 & 이정표', placeholder: '주요 연혁과 이정표...' },
-  { key: 'management', label: '경영진/지배구조', placeholder: 'CEO, 이사회 구성원 등...' },
-  { key: 'products', label: '주요 제품/서비스', placeholder: '핵심 제품과 서비스...' },
-  { key: 'customers', label: '고객군', placeholder: '주요 타겟 고객...' },
-  { key: 'ownership', label: '지분구조', placeholder: '주요 주주 및 지분율...' },
-  { key: 'business_model', label: '비즈니스 모델', placeholder: '수익 창출 방식...' },
-  { key: 'value_chain', label: '밸류체인&원가구성', placeholder: '가치 사슬과 원가 구조...' },
-  { key: 'kpi', label: '수요KPI&수요탄력성', placeholder: '핵심 성과 지표와 수요 탄력성...' },
-  { key: 'lifecycle', label: '산업 생애주기(S-Curve)', placeholder: '산업의 성장 단계...' },
-  { key: 'distribution', label: '유통 방식', placeholder: '직접판매, 대리점, 온라인 등...' },
-  { key: 'channel', label: '채널 구조', placeholder: 'B2B, B2C, D2C 등...' },
-  { key: 'ip', label: '지적재산(IP)', placeholder: '특허, 표준화, 진입장벽...' }
-];
-
-function BasicInfoAccordion({
-  data,
-  onChange
-}: {
-  data: Record<string, unknown>;
-  onChange: (key: string, value: string) => void;
-}) {
-  const [expandedItems, setExpandedItems] = useState<string[]>([]);
-
-  const toggleItem = (key: string) => {
-    setExpandedItems(prev => (prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]));
-  };
-
-  return (
-    <div className="space-y-2">
-      {basicInfoItems.map(item => (
-        <div key={item.key} className="border border-primary/10 rounded-lg overflow-hidden">
-          <button
-            onClick={() => toggleItem(item.key)}
-            className="w-full flex items-center justify-between p-3 bg-background hover:bg-primary/5 transition-colors"
-          >
-            <span className="text-sm font-medium text-foreground">{item.label}</span>
-            <span className="text-sm text-primary">{expandedItems.includes(item.key) ? '▼' : '▶'}</span>
-          </button>
-          {expandedItems.includes(item.key) && (
-            <div className="p-3 bg-card">
-              <textarea
-                value={(data[item.key] as string) || ''}
-                onChange={e => onChange(item.key, e.target.value)}
-                rows={8}
-                className="w-full p-2 bg-background border border-primary/20 rounded focus:outline-none focus:ring-2 focus:ring-primary text-foreground text-sm resize-y min-h-[150px]"
-                placeholder={item.placeholder}
-              />
-            </div>
-          )}
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function CompetitorComparison({
-  data,
-  onChange
-}: {
-  data: Record<string, unknown>;
-  onChange: (data: Record<string, unknown>) => void;
-}) {
-  return (
-    <div className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium mb-2">시장 규모 및 수요</label>
-        <textarea
-          value={(data.market_size as string) || ''}
-          onChange={e => onChange({ ...data, market_size: e.target.value })}
-          rows={8}
-          className="w-full p-3 bg-background border border-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground resize-y min-h-[150px]"
-          placeholder="시장 규모, 성장률, 수요 트렌드..."
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-medium mb-2">경쟁 포지셔닝</label>
-        <textarea
-          value={(data.competitive_position as string) || ''}
-          onChange={e => onChange({ ...data, competitive_position: e.target.value })}
-          rows={8}
-          className="w-full p-3 bg-background border border-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground resize-y min-h-[150px]"
-          placeholder="주요 경쟁사, 시장 점유율, 경쟁 우위..."
-        />
-      </div>
-    </div>
-  );
-}
-
-function FinancialAnalysis({
-  data,
-  onChange
-}: {
-  data: Record<string, unknown>;
-  onChange: (data: Record<string, unknown>) => void;
-}) {
-  const sections = [
-    { key: 'basic_status', label: '📊 기본 현황', placeholder: '시가총액, 주가, 52주 최고/최저, 거래량 등...' },
-    { key: 'recent_performance', label: '📈 최근 실적 요약', placeholder: '최근 분기/연간 매출, 영업이익, 순이익, 성장률 등...' },
-    { key: 'business_profitability', label: '🏢 사업부문별 수익성', placeholder: '부문별 매출 비중, 영업이익률, 성장성 등...' },
-    { key: 'capital_structure', label: '💰 자본 구조 & 주요 지표', placeholder: 'PER, PBR, ROE, ROA, 부채비율, 유동비율, EV/EBITDA 등...' },
-    { key: 'revenue_composition', label: '📊 매출 구성', placeholder: '제품/서비스별, 지역별, 고객별 매출 비중...' },
-    { key: 'profit_model', label: '💵 수익 모델', placeholder: '수익 창출 구조, 마진율, 수익성 동인...' },
-    { key: 'valuation', label: '🎯 핵심 밸류에이션', placeholder: '적정 PER, 목표주가 산정 근거, DCF/상대가치 등...' },
-    { key: 'financial_snapshot', label: '📋 재무제표 항목별 스냅샷', placeholder: '자산, 부채, 자본, 매출, 비용, 현금흐름 주요 항목...' },
-    { key: 'comment', label: '💭 코멘트', placeholder: '재무 상태에 대한 종합 의견...' }
-  ];
-
-  return (
-    <div className="space-y-4">
-      {sections.map(section => (
-        <div key={section.key}>
-          <label className="block text-sm font-medium mb-2">{section.label}</label>
-          <textarea
-            value={(data[section.key] as string) || ''}
-            onChange={e => onChange({ ...data, [section.key]: e.target.value })}
-            rows={8}
-            className="w-full p-3 bg-background border border-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground resize-y min-h-[150px]"
-            placeholder={section.placeholder}
-          />
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function ChartAnalysis({ data, onChange }: { data: Record<string, unknown>; onChange: (d: Record<string, unknown>) => void }) {
-  return (
-    <div className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium mb-2">볼린저밴드 (주가이동평균 20일)</label>
-        <textarea
-          value={(data.bollinger_bands as string) || ''}
-          onChange={e => onChange({ ...data, bollinger_bands: e.target.value })}
-          rows={6}
-          className="w-full p-3 bg-background border border-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground resize-y min-h-[120px]"
-          placeholder="상단밴드, 중간선, 하단밴드 위치와 해석..."
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-medium mb-2">캔들 패턴 분석</label>
-        <textarea
-          value={(data.candle_pattern as string) || ''}
-          onChange={e => onChange({ ...data, candle_pattern: e.target.value })}
-          rows={6}
-          className="w-full p-3 bg-background border border-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground resize-y min-h-[120px]"
-          placeholder="주요 캔들 패턴과 시그널..."
-        />
-      </div>
-    </div>
-  );
-}
-
-function QuantAnalysis({ data, onChange }: { data: Record<string, unknown>; onChange: (d: Record<string, unknown>) => void }) {
-  return (
-    <div className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium mb-2">팩터 기반 필터링</label>
-        <textarea
-          value={(data.factor_filtering as string) || ''}
-          onChange={e => onChange({ ...data, factor_filtering: e.target.value })}
-          rows={6}
-          className="w-full p-3 bg-background border border-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground resize-y min-h-[120px]"
-          placeholder="가치, 모멘텀, 퀄리티 팩터 점수..."
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-medium mb-2">과거 수익률 기반 백테스트</label>
-        <textarea
-          value={(data.backtest as string) || ''}
-          onChange={e => onChange({ ...data, backtest: e.target.value })}
-          rows={6}
-          className="w-full p-3 bg-background border border-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground resize-y min-h-[120px]"
-          placeholder="과거 전략 성과, 샤프 비율 등..."
-        />
-      </div>
-    </div>
-  );
-}
-
-function SentimentAnalysis({ data, onChange }: { data: Record<string, unknown>; onChange: (d: Record<string, unknown>) => void }) {
-  return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium mb-1">공매도 비율 (%)</label>
-          <input
-            type="number"
-            step="0.01"
-            value={(data.short_ratio as number) || ''}
-            onChange={e => onChange({ ...data, short_ratio: e.target.value })}
-            className="w-full p-2 bg-background border border-primary/20 rounded focus:outline-none focus:ring-2 focus:ring-primary text-foreground text-sm"
-            placeholder="0.00"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">ETF 매수/매도</label>
-          <input
-            type="text"
-            value={(data.etf_flow as string) || ''}
-            onChange={e => onChange({ ...data, etf_flow: e.target.value })}
-            className="w-full p-2 bg-background border border-primary/20 rounded focus:outline-none focus:ring-2 focus:ring-primary text-foreground text-sm"
-            placeholder="순매수/순매도"
-          />
-        </div>
-      </div>
-      <div>
-        <label className="block text-sm font-medium mb-2">옵션 시장 흐름</label>
-        <textarea
-          value={(data.options_flow as string) || ''}
-          onChange={e => onChange({ ...data, options_flow: e.target.value })}
-          rows={6}
-          className="w-full p-3 bg-background border border-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground resize-y min-h-[120px]"
-          placeholder="Put/Call 비율, 주요 옵션 거래..."
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-medium mb-2">뉴스/이슈 분석 (긍정/부정)</label>
-        <textarea
-          value={(data.news_sentiment as string) || ''}
-          onChange={e => onChange({ ...data, news_sentiment: e.target.value })}
-          rows={8}
-          className="w-full p-3 bg-background border border-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground resize-y min-h-[150px]"
-          placeholder="최근 이슈, 이벤트 캘린더, 타임라인..."
-        />
-      </div>
-    </div>
-  );
-}
-
-function InvestmentConsiderations({ data, onChange }: { data: Record<string, unknown>; onChange: (d: Record<string, unknown>) => void }) {
-  return (
-    <div className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium mb-2">우호 요인</label>
-        <textarea
-          value={(data.positive_factors as string) || ''}
-          onChange={e => onChange({ ...data, positive_factors: e.target.value })}
-          rows={6}
-          className="w-full p-3 bg-background border border-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground resize-y min-h-[120px]"
-          placeholder="매수를 지지하는 긍정적 요인들..."
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-medium mb-2">경계 요인</label>
-        <textarea
-          value={(data.negative_factors as string) || ''}
-          onChange={e => onChange({ ...data, negative_factors: e.target.value })}
-          rows={6}
-          className="w-full p-3 bg-background border border-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground resize-y min-h-[120px]"
-          placeholder="주의해야 할 부정적 요인들..."
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-medium mb-2">시나리오 요약</label>
-        <textarea
-          value={(data.scenario as string) || ''}
-          onChange={e => onChange({ ...data, scenario: e.target.value })}
-          rows={8}
-          className="w-full p-3 bg-background border border-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground resize-y min-h-[150px]"
-          placeholder="베스트/베이스/워스트 시나리오..."
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-medium mb-2">BUY/WAIT 체크리스트</label>
-        <textarea
-          value={(data.checklist as string) || ''}
-          onChange={e => onChange({ ...data, checklist: e.target.value })}
-          rows={8}
-          className="w-full p-3 bg-background border border-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground resize-y min-h-[150px]"
-          placeholder="매수 전 확인사항 리스트..."
-        />
-      </div>
-    </div>
-  );
-}
-
-function RiskPoints({ data, onChange }: { data: Record<string, unknown>; onChange: (d: Record<string, unknown>) => void }) {
-  return (
-    <div className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium mb-2">거시 리스크</label>
-        <textarea
-          value={(data.macro_risk as string) || ''}
-          onChange={e => onChange({ ...data, macro_risk: e.target.value })}
-          rows={6}
-          className="w-full p-3 bg-background border border-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground resize-y min-h-[120px]"
-          placeholder="경기침체, 금리, 환율, 원자재 가격..."
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-medium mb-2">산업 리스크</label>
-        <textarea
-          value={(data.industry_risk as string) || ''}
-          onChange={e => onChange({ ...data, industry_risk: e.target.value })}
-          rows={6}
-          className="w-full p-3 bg-background border border-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground resize-y min-h-[120px]"
-          placeholder="기술 대체, 공급망 붕괴, 사이클 변동성..."
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-medium mb-2">기업 고유 리스크</label>
-        <textarea
-          value={(data.company_risk as string) || ''}
-          onChange={e => onChange({ ...data, company_risk: e.target.value })}
-          rows={6}
-          className="w-full p-3 bg-background border border-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground resize-y min-h-[120px]"
-          placeholder="이 기업만의 특수한 리스크..."
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-medium mb-2">대응 전략</label>
-        <textarea
-          value={(data.mitigation as string) || ''}
-          onChange={e => onChange({ ...data, mitigation: e.target.value })}
-          rows={6}
-          className="w-full p-3 bg-background border border-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground resize-y min-h-[120px]"
-          placeholder="리스크 대응 및 완화 전략..."
-        />
-      </div>
-    </div>
-  );
-}
-
-function Valuation({ data, onChange }: { data: Record<string, unknown>; onChange: (d: Record<string, unknown>) => void }) {
-  return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium mb-1">현재 주가</label>
-          <input
-            type="number"
-            step="0.01"
-            value={(data.current_price as number) || ''}
-            onChange={e => onChange({ ...data, current_price: e.target.value })}
-            className="w-full p-2 bg-background border border-primary/20 rounded focus:outline-none focus:ring-2 focus:ring-primary text-foreground text-sm"
-            placeholder="0.00"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">목표 주가</label>
-          <input
-            type="number"
-            step="0.01"
-            value={(data.target_price as number) || ''}
-            onChange={e => onChange({ ...data, target_price: e.target.value })}
-            className="w-full p-2 bg-background border border-primary/20 rounded focus:outline-none focus:ring-2 focus:ring-primary text-foreground text-sm"
-            placeholder="0.00"
-          />
-        </div>
-      </div>
-      <div>
-        <label className="block text-sm font-medium mb-2">현재 주가의 이유</label>
-        <textarea
-          value={(data.price_reason as string) || ''}
-          onChange={e => onChange({ ...data, price_reason: e.target.value })}
-          rows={6}
-          className="w-full p-3 bg-background border border-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground resize-y min-h-[120px]"
-          placeholder="현재 주가 수준의 원인 분석..."
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-medium mb-2">내재가치보다 싼가?</label>
-        <textarea
-          value={(data.intrinsic_value as string) || ''}
-          onChange={e => onChange({ ...data, intrinsic_value: e.target.value })}
-          rows={6}
-          className="w-full p-3 bg-background border border-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground resize-y min-h-[120px]"
-          placeholder="내재가치 대비 저평가/고평가 판단..."
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-medium mb-2">배당 정책</label>
-        <textarea
-          value={(data.dividend as string) || ''}
-          onChange={e => onChange({ ...data, dividend: e.target.value })}
-          rows={6}
-          className="w-full p-3 bg-background border border-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground resize-y min-h-[120px]"
-          placeholder="배당 수익률, 배당 성향..."
-        />
-      </div>
-    </div>
-  );
-}
 
 export default function AnalysisPage() {
   const STORAGE_KEY = 'analysis_reports_v1';
   const [analyses, setAnalyses] = useState<AssetAnalysis[]>(sampleAnalyses.map(item => ({ ...item, deepDive: item.deepDive ?? createEmptyDeepDive() })));
   const [selectedId, setSelectedId] = useState<string>(sampleAnalyses[0]?.id ?? '');
-  const [activeTab, setActiveTab] = useState<'fundamental' | 'technical' | 'summary' | 'refs'>('fundamental');
+  const [activeTab, setActiveTab] = useState<'thesis' | 'validation' | 'pricing' | 'timing' | 'decision'>('thesis');
   const [draft, setDraft] = useState<AssetAnalysis | null>(null);
   const [saveState, setSaveState] = useState<'idle' | 'saved'>('idle');
 
@@ -700,7 +440,7 @@ export default function AnalysisPage() {
                 }`}
                 onClick={() => {
                   setSelectedId(item.id);
-                  setActiveTab('fundamental');
+                  setActiveTab('thesis');
                 }}
               >
                 <CardHeader className="flex flex-row items-center justify-between space-y-0">
@@ -710,29 +450,25 @@ export default function AnalysisPage() {
                       {item.symbol} · {item.name}
                     </CardTitle>
                   </div>
-                  <Badge className={actionBadgeStyle[item.myAnalysis.decision.action]}>
-                    {item.myAnalysis.decision.action}
+                  <Badge className={actionBadgeStyle[item.deepDive.decision.action]}>
+                    {item.deepDive.decision.action}
                   </Badge>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <div className="flex items-center justify-between text-sm text-muted-foreground">
-                    <span>확신도</span>
-                    <ConvictionDots level={item.myAnalysis.decision.conviction} />
-                  </div>
                   <div className="grid grid-cols-2 gap-2 text-sm">
                     <div className="rounded-md border border-dashed border-primary/20 bg-primary/5 p-3">
                       <p className="text-xs text-muted-foreground">목표가</p>
                       <p className="font-semibold">
-                        {item.myAnalysis.quantitative.valuation.targetPrice
-                          ? `$${item.myAnalysis.quantitative.valuation.targetPrice}`
+                        {item.deepDive.decision.target_price > 0
+                          ? `$${item.deepDive.decision.target_price}`
                           : '-'}
                       </p>
                     </div>
                     <div className="rounded-md border border-dashed border-secondary/30 bg-secondary/5 p-3">
-                      <p className="text-xs text-muted-foreground">상승여력</p>
+                      <p className="text-xs text-muted-foreground">현재가</p>
                       <p className="font-semibold">
-                        {item.myAnalysis.quantitative.valuation.upside
-                          ? `${item.myAnalysis.quantitative.valuation.upside}%`
+                        {item.deepDive.pricing.stock_price > 0
+                          ? `$${item.deepDive.pricing.stock_price}`
                           : '-'}
                       </p>
                     </div>
@@ -791,8 +527,8 @@ export default function AnalysisPage() {
                       </CardTitle>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Badge className={actionBadgeStyle[detail.myAnalysis.decision.action]}>
-                        {detail.myAnalysis.decision.action}
+                      <Badge className={actionBadgeStyle[detail.deepDive.decision.action]}>
+                        {detail.deepDive.decision.action}
                       </Badge>
                       <Badge variant={detail.inPortfolio ? 'default' : 'secondary'}>
                         {detail.inPortfolio ? '포트폴리오' : '워치리스트'}
@@ -863,329 +599,1025 @@ export default function AnalysisPage() {
                   </div>
 
                   <div className="flex flex-wrap gap-2">
-                    <Button variant={activeTab === 'fundamental' ? 'default' : 'outline'} size="sm" onClick={() => setActiveTab('fundamental')}>
-                      기본적분석
+                    <Button variant={activeTab === 'thesis' ? 'default' : 'outline'} size="sm" onClick={() => setActiveTab('thesis')}>
+                      ① 투자 가설
                     </Button>
-                    <Button variant={activeTab === 'technical' ? 'default' : 'outline'} size="sm" onClick={() => setActiveTab('technical')}>
-                      기술적분석
+                    <Button variant={activeTab === 'validation' ? 'default' : 'outline'} size="sm" onClick={() => setActiveTab('validation')}>
+                      ② 검증: 펀더멘털
                     </Button>
-                    <Button variant={activeTab === 'summary' ? 'default' : 'outline'} size="sm" onClick={() => setActiveTab('summary')}>
-                      총평
+                    <Button variant={activeTab === 'pricing' ? 'default' : 'outline'} size="sm" onClick={() => setActiveTab('pricing')}>
+                      ③ 가격과 기대치
                     </Button>
-                    <Button variant={activeTab === 'refs' ? 'default' : 'outline'} size="sm" onClick={() => setActiveTab('refs')}>
-                      참고 자료
+                    <Button variant={activeTab === 'timing' ? 'default' : 'outline'} size="sm" onClick={() => setActiveTab('timing')}>
+                      ④ 타이밍 & 리스크
+                    </Button>
+                    <Button variant={activeTab === 'decision' ? 'default' : 'outline'} size="sm" onClick={() => setActiveTab('decision')}>
+                      ⑤ 결정 & 관리
                     </Button>
                   </div>
 
-                  {activeTab === 'fundamental' && (
+                  {/* ① 투자 가설 탭 */}
+                  {activeTab === 'thesis' && (
                     <div className="space-y-6">
-                      <h2 className="text-2xl font-bold mb-4">기본적분석</h2>
+                      <h2 className="text-2xl font-bold mb-4">① 투자 가설 (Investment Thesis)</h2>
+
+                      <Alert className="bg-primary/5 border-primary/20">
+                        <AlertDescription>
+                          <strong>👉 원칙:</strong> 디테일 금지. 이 기업이 이길 것 같다는 이야기까지만
+                        </AlertDescription>
+                      </Alert>
+
                       <section>
-                        <h3 className="text-lg font-semibold mb-3">💡 가장 큰 투자이유</h3>
+                        <Label className="text-lg font-semibold mb-3 block">💡 가장 큰 투자이유</Label>
                         <Textarea
-                          value={deepDive.fundamental.investment_reason}
+                          value={deepDive.thesis.main_reason}
                           onChange={e =>
                             updateDeepDive(prev => ({
                               ...prev,
-                              fundamental: { ...prev.fundamental, investment_reason: e.target.value }
+                              thesis: { ...prev.thesis, main_reason: e.target.value }
                             }))
                           }
                           rows={10}
                           className="w-full resize-y min-h-[200px]"
-                          placeholder="이 자산에 투자하는 핵심 이유를 적어주세요..."
+                          placeholder="이 자산에 투자하는 핵심 이유를 간결하게 적어주세요..."
                         />
                       </section>
+
                       <section>
-                        <h3 className="text-lg font-semibold mb-3">🌟 미래 잠재력</h3>
+                        <Label className="text-lg font-semibold mb-3 block">🏢 기업 선택사유 (연구기술, 내부문화, 직원/인재)</Label>
                         <Textarea
-                          value={deepDive.fundamental.potential}
+                          value={deepDive.thesis.company_selection}
                           onChange={e =>
                             updateDeepDive(prev => ({
                               ...prev,
-                              fundamental: { ...prev.fundamental, potential: e.target.value }
-                            }))
-                          }
-                          rows={10}
-                          className="w-full resize-y min-h-[200px]"
-                          placeholder="회사가 보유한 잠재력 (연구기술, 내부문화, 직원 등)..."
-                        />
-                      </section>
-                      <section className="border border-primary/20 rounded-lg p-4">
-                        <h3 className="text-lg font-semibold mb-4">📋 기본정보</h3>
-                        <BasicInfoAccordion
-                          data={deepDive.fundamental.basic_info}
-                          onChange={(key, value) =>
-                            updateDeepDive(prev => ({
-                              ...prev,
-                              fundamental: { ...prev.fundamental, basic_info: { ...prev.fundamental.basic_info, [key]: value } }
-                            }))
-                          }
-                        />
-                      </section>
-                      <section className="border border-primary/20 rounded-lg p-4">
-                        <h3 className="text-lg font-semibold mb-4">⚔️ 경쟁사 비교</h3>
-                        <CompetitorComparison
-                          data={deepDive.fundamental.competitor_comparison}
-                          onChange={data =>
-                            updateDeepDive(prev => ({
-                              ...prev,
-                              fundamental: { ...prev.fundamental, competitor_comparison: data }
-                            }))
-                          }
-                        />
-                      </section>
-                      <section className="border border-primary/20 rounded-lg p-4">
-                        <h3 className="text-lg font-semibold mb-4">💰 재무분석</h3>
-                        <FinancialAnalysis
-                          data={deepDive.fundamental.financial_analysis}
-                          onChange={data =>
-                            updateDeepDive(prev => ({
-                              ...prev,
-                              fundamental: { ...prev.fundamental, financial_analysis: data }
-                            }))
-                          }
-                        />
-                      </section>
-                    </div>
-                  )}
-
-                  {activeTab === 'technical' && (
-                    <div className="space-y-6">
-                      <h2 className="text-2xl font-bold mb-4">기술적분석</h2>
-                      <section className="border border-primary/20 rounded-lg p-4">
-                        <h3 className="text-lg font-semibold mb-4">📈 차트 분석</h3>
-                        <ChartAnalysis
-                          data={deepDive.technical.chart_analysis}
-                          onChange={data =>
-                            updateDeepDive(prev => ({
-                              ...prev,
-                              technical: { ...prev.technical, chart_analysis: data }
-                            }))
-                          }
-                        />
-                      </section>
-                      <section className="border border-primary/20 rounded-lg p-4">
-                        <h3 className="text-lg font-semibold mb-4">🔢 퀀트 분석</h3>
-                        <QuantAnalysis
-                          data={deepDive.technical.quant_analysis}
-                          onChange={data =>
-                            updateDeepDive(prev => ({
-                              ...prev,
-                              technical: { ...prev.technical, quant_analysis: data }
-                            }))
-                          }
-                        />
-                      </section>
-                      <section className="border border-primary/20 rounded-lg p-4">
-                        <h3 className="text-lg font-semibold mb-4">💭 심리/수급 분석</h3>
-                        <SentimentAnalysis
-                          data={deepDive.technical.sentiment_analysis}
-                          onChange={data =>
-                            updateDeepDive(prev => ({
-                              ...prev,
-                              technical: { ...prev.technical, sentiment_analysis: data }
-                            }))
-                          }
-                        />
-                      </section>
-                    </div>
-                  )}
-
-                  {activeTab === 'summary' && (
-                    <div className="space-y-6">
-                      <h2 className="text-2xl font-bold mb-4">총평</h2>
-                      <section className="border border-primary/20 rounded-lg p-4">
-                        <h3 className="text-lg font-semibold mb-4">🎯 투자고려사항</h3>
-                        <InvestmentConsiderations
-                          data={deepDive.summary.investment_considerations}
-                          onChange={data =>
-                            updateDeepDive(prev => ({
-                              ...prev,
-                              summary: { ...prev.summary, investment_considerations: data }
-                            }))
-                          }
-                        />
-                      </section>
-                      <section className="border border-primary/20 rounded-lg p-4">
-                        <h3 className="text-lg font-semibold mb-4">⚠️ 리스크포인트</h3>
-                        <RiskPoints
-                          data={deepDive.summary.risk_points}
-                          onChange={data =>
-                            updateDeepDive(prev => ({
-                              ...prev,
-                              summary: { ...prev.summary, risk_points: data }
-                            }))
-                          }
-                        />
-                      </section>
-                      <section className="border border-primary/20 rounded-lg p-4">
-                        <h3 className="text-lg font-semibold mb-4">💵 밸류에이션</h3>
-                        <Valuation
-                          data={deepDive.summary.valuation}
-                          onChange={data =>
-                            updateDeepDive(prev => ({
-                              ...prev,
-                              summary: { ...prev.summary, valuation: data }
-                            }))
-                          }
-                        />
-                      </section>
-                      <section>
-                        <h3 className="text-lg font-semibold mb-3">📝 투자 포인트 (2분 요약)</h3>
-                        <Textarea
-                          value={deepDive.summary.investment_point}
-                          onChange={e =>
-                            updateDeepDive(prev => ({
-                              ...prev,
-                              summary: { ...prev.summary, investment_point: e.target.value }
+                              thesis: { ...prev.thesis, company_selection: e.target.value }
                             }))
                           }
                           rows={8}
                           className="w-full resize-y min-h-[150px]"
-                          placeholder="2분 만에 설명할 수 있는 핵심 매수 이유..."
+                          placeholder="왜 이 기업인가? 어떤 강점이 있는가?"
                         />
                       </section>
+
                       <section>
-                        <h3 className="text-lg font-semibold mb-3">💭 나의 현재 생각 정리</h3>
+                        <Label className="text-lg font-semibold mb-3 block">📈 산업 생애주기 (S-Curve)</Label>
                         <Textarea
-                          value={deepDive.summary.my_thoughts}
+                          value={deepDive.thesis.industry_lifecycle}
                           onChange={e =>
                             updateDeepDive(prev => ({
                               ...prev,
-                              summary: { ...prev.summary, my_thoughts: e.target.value }
+                              thesis: { ...prev.thesis, industry_lifecycle: e.target.value }
                             }))
                           }
-                          rows={15}
-                          className="w-full resize-y min-h-[300px]"
-                          placeholder="이 자산에 대한 나의 생각을 자유롭게 정리하세요..."
+                          rows={8}
+                          className="w-full resize-y min-h-[150px]"
+                          placeholder="산업의 현재 성장 단계는? (도입기/성장기/성숙기/쇠퇴기)"
+                        />
+                      </section>
+
+                      <section>
+                        <Label className="text-lg font-semibold mb-3 block">🌍 시장 규모 및 수요 (TAM/SAM)</Label>
+                        <Textarea
+                          value={deepDive.thesis.market_size}
+                          onChange={e =>
+                            updateDeepDive(prev => ({
+                              ...prev,
+                              thesis: { ...prev.thesis, market_size: e.target.value }
+                            }))
+                          }
+                          rows={8}
+                          className="w-full resize-y min-h-[150px]"
+                          placeholder="시장 규모와 성장 가능성은?"
+                        />
+                      </section>
+
+                      <section>
+                        <Label className="text-lg font-semibold mb-3 block">👥 고객군</Label>
+                        <Textarea
+                          value={deepDive.thesis.customer_base}
+                          onChange={e =>
+                            updateDeepDive(prev => ({
+                              ...prev,
+                              thesis: { ...prev.thesis, customer_base: e.target.value }
+                            }))
+                          }
+                          rows={6}
+                          className="w-full resize-y min-h-[120px]"
+                          placeholder="주요 타겟 고객층은?"
+                        />
+                      </section>
+
+                      <section>
+                        <Label className="text-lg font-semibold mb-3 block">🎯 주요 제품/서비스 (요약)</Label>
+                        <Textarea
+                          value={deepDive.thesis.main_products}
+                          onChange={e =>
+                            updateDeepDive(prev => ({
+                              ...prev,
+                              thesis: { ...prev.thesis, main_products: e.target.value }
+                            }))
+                          }
+                          rows={6}
+                          className="w-full resize-y min-h-[120px]"
+                          placeholder="핵심 제품/서비스를 간략히 요약"
+                        />
+                      </section>
+
+                      <Card className="bg-secondary/5 border-secondary/30">
+                        <CardHeader>
+                          <CardTitle className="text-lg">✨ 산출물</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <div>
+                            <Label className="text-sm font-medium mb-2 block">한 줄 투자 가설</Label>
+                            <Input
+                              value={deepDive.thesis.one_line_thesis}
+                              onChange={e =>
+                                updateDeepDive(prev => ({
+                                  ...prev,
+                                  thesis: { ...prev.thesis, one_line_thesis: e.target.value }
+                                }))
+                              }
+                              placeholder="이 투자를 한 줄로 요약하면?"
+                              className="w-full"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-sm font-medium mb-2 block">노리는 알파의 종류</Label>
+                            <Select
+                              value={deepDive.thesis.alpha_type}
+                              onValueChange={val =>
+                                updateDeepDive(prev => ({
+                                  ...prev,
+                                  thesis: { ...prev.thesis, alpha_type: val }
+                                }))
+                              }
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="성장">성장 (Growth)</SelectItem>
+                                <SelectItem value="리레이팅">리레이팅 (Re-rating)</SelectItem>
+                                <SelectItem value="사이클">사이클 (Cyclical)</SelectItem>
+                                <SelectItem value="이벤트">이벤트 (Event-driven)</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  )}
+
+                  {/* ② 검증: 펀더멘털 탭 */}
+                  {activeTab === 'validation' && (
+                    <div className="space-y-6">
+                      <h2 className="text-2xl font-bold mb-4">② 검증: 펀더멘털이 맞는가</h2>
+
+                      <Alert className="bg-primary/5 border-primary/20">
+                        <AlertDescription>
+                          <strong>👉 원칙:</strong> 투자 가설이 실제 비즈니스 구조와 재무로 뒷받침되는지 검증
+                        </AlertDescription>
+                      </Alert>
+
+                      {/* 기본정보 / 사업 구조 */}
+                      <Card className="border-primary/20">
+                        <CardHeader>
+                          <CardTitle>📋 기본정보 / 사업 구조</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <div>
+                            <Label className="text-sm font-medium mb-2 block">기업 개요</Label>
+                            <Textarea
+                              value={deepDive.validation.basic.company_overview}
+                              onChange={e =>
+                                updateDeepDive(prev => ({
+                                  ...prev,
+                                  validation: {
+                                    ...prev.validation,
+                                    basic: { ...prev.validation.basic, company_overview: e.target.value }
+                                  }
+                                }))
+                              }
+                              rows={6}
+                              className="w-full resize-y min-h-[120px]"
+                              placeholder="회사의 전반적인 개요..."
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-sm font-medium mb-2 block">사업 종류 및 구조</Label>
+                            <Textarea
+                              value={deepDive.validation.basic.business_type}
+                              onChange={e =>
+                                updateDeepDive(prev => ({
+                                  ...prev,
+                                  validation: {
+                                    ...prev.validation,
+                                    basic: { ...prev.validation.basic, business_type: e.target.value }
+                                  }
+                                }))
+                              }
+                              rows={6}
+                              className="w-full resize-y min-h-[120px]"
+                              placeholder="주요 사업 분야와 조직 구조..."
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-sm font-medium mb-2 block">연혁 & 이정표</Label>
+                            <Textarea
+                              value={deepDive.validation.basic.history}
+                              onChange={e =>
+                                updateDeepDive(prev => ({
+                                  ...prev,
+                                  validation: {
+                                    ...prev.validation,
+                                    basic: { ...prev.validation.basic, history: e.target.value }
+                                  }
+                                }))
+                              }
+                              rows={6}
+                              className="w-full resize-y min-h-[120px]"
+                              placeholder="주요 연혁과 이정표..."
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-sm font-medium mb-2 block">비즈니스 모델</Label>
+                            <Textarea
+                              value={deepDive.validation.basic.business_model}
+                              onChange={e =>
+                                updateDeepDive(prev => ({
+                                  ...prev,
+                                  validation: {
+                                    ...prev.validation,
+                                    basic: { ...prev.validation.basic, business_model: e.target.value }
+                                  }
+                                }))
+                              }
+                              rows={6}
+                              className="w-full resize-y min-h-[120px]"
+                              placeholder="수익 창출 방식..."
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-sm font-medium mb-2 block">매출 구조</Label>
+                            <Textarea
+                              value={deepDive.validation.basic.revenue_structure}
+                              onChange={e =>
+                                updateDeepDive(prev => ({
+                                  ...prev,
+                                  validation: {
+                                    ...prev.validation,
+                                    basic: { ...prev.validation.basic, revenue_structure: e.target.value }
+                                  }
+                                }))
+                              }
+                              rows={6}
+                              className="w-full resize-y min-h-[120px]"
+                              placeholder="제품/서비스별, 지역별 매출 비중..."
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-sm font-medium mb-2 block">밸류체인 & 원가구성</Label>
+                            <Textarea
+                              value={deepDive.validation.basic.value_chain}
+                              onChange={e =>
+                                updateDeepDive(prev => ({
+                                  ...prev,
+                                  validation: {
+                                    ...prev.validation,
+                                    basic: { ...prev.validation.basic, value_chain: e.target.value }
+                                  }
+                                }))
+                              }
+                              rows={6}
+                              className="w-full resize-y min-h-[120px]"
+                              placeholder="가치 사슬과 원가 구조..."
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-sm font-medium mb-2 block">수요 KPI & 수요탄력성</Label>
+                            <Textarea
+                              value={deepDive.validation.basic.demand_kpi}
+                              onChange={e =>
+                                updateDeepDive(prev => ({
+                                  ...prev,
+                                  validation: {
+                                    ...prev.validation,
+                                    basic: { ...prev.validation.basic, demand_kpi: e.target.value }
+                                  }
+                                }))
+                              }
+                              rows={6}
+                              className="w-full resize-y min-h-[120px]"
+                              placeholder="핵심 성과 지표와 수요 탄력성..."
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-sm font-medium mb-2 block">고객 집중도</Label>
+                            <Textarea
+                              value={deepDive.validation.basic.customer_concentration}
+                              onChange={e =>
+                                updateDeepDive(prev => ({
+                                  ...prev,
+                                  validation: {
+                                    ...prev.validation,
+                                    basic: { ...prev.validation.basic, customer_concentration: e.target.value }
+                                  }
+                                }))
+                              }
+                              rows={6}
+                              className="w-full resize-y min-h-[120px]"
+                              placeholder="주요 고객 의존도, 리스크..."
+                            />
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* 경쟁 / 방어력 */}
+                      <Card className="border-primary/20">
+                        <CardHeader>
+                          <CardTitle>⚔️ 경쟁 / 방어력</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <div>
+                            <Label className="text-sm font-medium mb-2 block">경쟁사 비교</Label>
+                            <Textarea
+                              value={deepDive.validation.competition.competitor_comparison}
+                              onChange={e =>
+                                updateDeepDive(prev => ({
+                                  ...prev,
+                                  validation: {
+                                    ...prev.validation,
+                                    competition: { ...prev.validation.competition, competitor_comparison: e.target.value }
+                                  }
+                                }))
+                              }
+                              rows={6}
+                              className="w-full resize-y min-h-[120px]"
+                              placeholder="주요 경쟁사와의 비교..."
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-sm font-medium mb-2 block">경쟁 포지셔닝</Label>
+                            <Textarea
+                              value={deepDive.validation.competition.competitive_positioning}
+                              onChange={e =>
+                                updateDeepDive(prev => ({
+                                  ...prev,
+                                  validation: {
+                                    ...prev.validation,
+                                    competition: { ...prev.validation.competition, competitive_positioning: e.target.value }
+                                  }
+                                }))
+                              }
+                              rows={6}
+                              className="w-full resize-y min-h-[120px]"
+                              placeholder="시장 점유율, 경쟁 우위..."
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-sm font-medium mb-2 block">지적재산 (IP) & 특허</Label>
+                            <Textarea
+                              value={deepDive.validation.competition.ip_patents}
+                              onChange={e =>
+                                updateDeepDive(prev => ({
+                                  ...prev,
+                                  validation: {
+                                    ...prev.validation,
+                                    competition: { ...prev.validation.competition, ip_patents: e.target.value }
+                                  }
+                                }))
+                              }
+                              rows={6}
+                              className="w-full resize-y min-h-[120px]"
+                              placeholder="특허, 표준화, 진입장벽..."
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-sm font-medium mb-2 block">미래 잠재력</Label>
+                            <Textarea
+                              value={deepDive.validation.competition.future_potential}
+                              onChange={e =>
+                                updateDeepDive(prev => ({
+                                  ...prev,
+                                  validation: {
+                                    ...prev.validation,
+                                    competition: { ...prev.validation.competition, future_potential: e.target.value }
+                                  }
+                                }))
+                              }
+                              rows={6}
+                              className="w-full resize-y min-h-[120px]"
+                              placeholder="연구기술, 내부문화, 직원..."
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-sm font-medium mb-2 block">가격 결정력 (Pricing Power)</Label>
+                            <Textarea
+                              value={deepDive.validation.competition.pricing_power}
+                              onChange={e =>
+                                updateDeepDive(prev => ({
+                                  ...prev,
+                                  validation: {
+                                    ...prev.validation,
+                                    competition: { ...prev.validation.competition, pricing_power: e.target.value }
+                                  }
+                                }))
+                              }
+                              rows={6}
+                              className="w-full resize-y min-h-[120px]"
+                              placeholder="가격 인상 능력, 마진 유지 능력..."
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-sm font-medium mb-2 block">CAPEX & R&D 투자</Label>
+                            <Textarea
+                              value={deepDive.validation.competition.capex_rnd}
+                              onChange={e =>
+                                updateDeepDive(prev => ({
+                                  ...prev,
+                                  validation: {
+                                    ...prev.validation,
+                                    competition: { ...prev.validation.competition, capex_rnd: e.target.value }
+                                  }
+                                }))
+                              }
+                              rows={6}
+                              className="w-full resize-y min-h-[120px]"
+                              placeholder="설비투자, 연구개발 지출..."
+                            />
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* 유통 / 채널 */}
+                      <Card className="border-primary/20">
+                        <CardHeader>
+                          <CardTitle>🚚 유통 / 채널</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <div>
+                            <Label className="text-sm font-medium mb-2 block">유통 방식</Label>
+                            <Textarea
+                              value={deepDive.validation.distribution.distribution_method}
+                              onChange={e =>
+                                updateDeepDive(prev => ({
+                                  ...prev,
+                                  validation: {
+                                    ...prev.validation,
+                                    distribution: { ...prev.validation.distribution, distribution_method: e.target.value }
+                                  }
+                                }))
+                              }
+                              rows={6}
+                              className="w-full resize-y min-h-[120px]"
+                              placeholder="직접판매, 대리점, 온라인 등..."
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-sm font-medium mb-2 block">채널 구조</Label>
+                            <Textarea
+                              value={deepDive.validation.distribution.channel_structure}
+                              onChange={e =>
+                                updateDeepDive(prev => ({
+                                  ...prev,
+                                  validation: {
+                                    ...prev.validation,
+                                    distribution: { ...prev.validation.distribution, channel_structure: e.target.value }
+                                  }
+                                }))
+                              }
+                              rows={6}
+                              className="w-full resize-y min-h-[120px]"
+                              placeholder="B2B, B2C, D2C 등..."
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-sm font-medium mb-2 block">채널 변화 & 트렌드</Label>
+                            <Textarea
+                              value={deepDive.validation.distribution.channel_changes}
+                              onChange={e =>
+                                updateDeepDive(prev => ({
+                                  ...prev,
+                                  validation: {
+                                    ...prev.validation,
+                                    distribution: { ...prev.validation.distribution, channel_changes: e.target.value }
+                                  }
+                                }))
+                              }
+                              rows={6}
+                              className="w-full resize-y min-h-[120px]"
+                              placeholder="채널 전환, 디지털 전환 등..."
+                            />
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* 재무 (검증 관점) */}
+                      <Card className="border-primary/20">
+                        <CardHeader>
+                          <CardTitle>💰 재무 (검증 관점)</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <div>
+                            <Label className="text-sm font-medium mb-2 block">최근 실적</Label>
+                            <Textarea
+                              value={deepDive.validation.financials.recent_performance}
+                              onChange={e =>
+                                updateDeepDive(prev => ({
+                                  ...prev,
+                                  validation: {
+                                    ...prev.validation,
+                                    financials: { ...prev.validation.financials, recent_performance: e.target.value }
+                                  }
+                                }))
+                              }
+                              rows={6}
+                              className="w-full resize-y min-h-[120px]"
+                              placeholder="최근 분기/연간 실적 요약..."
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-sm font-medium mb-2 block">사업 수익성</Label>
+                            <Textarea
+                              value={deepDive.validation.financials.business_profitability}
+                              onChange={e =>
+                                updateDeepDive(prev => ({
+                                  ...prev,
+                                  validation: {
+                                    ...prev.validation,
+                                    financials: { ...prev.validation.financials, business_profitability: e.target.value }
+                                  }
+                                }))
+                              }
+                              rows={6}
+                              className="w-full resize-y min-h-[120px]"
+                              placeholder="영업이익률, 순이익률, ROE, ROA..."
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-sm font-medium mb-2 block">운전자본</Label>
+                            <Textarea
+                              value={deepDive.validation.financials.working_capital}
+                              onChange={e =>
+                                updateDeepDive(prev => ({
+                                  ...prev,
+                                  validation: {
+                                    ...prev.validation,
+                                    financials: { ...prev.validation.financials, working_capital: e.target.value }
+                                  }
+                                }))
+                              }
+                              rows={6}
+                              className="w-full resize-y min-h-[120px]"
+                              placeholder="현금 전환 주기, 재고회전율..."
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-sm font-medium mb-2 block">손익계산서 (P&L)</Label>
+                            <Textarea
+                              value={deepDive.validation.financials.income_statement}
+                              onChange={e =>
+                                updateDeepDive(prev => ({
+                                  ...prev,
+                                  validation: {
+                                    ...prev.validation,
+                                    financials: { ...prev.validation.financials, income_statement: e.target.value }
+                                  }
+                                }))
+                              }
+                              rows={6}
+                              className="w-full resize-y min-h-[120px]"
+                              placeholder="매출, 영업이익, 순이익 추이..."
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-sm font-medium mb-2 block">현금흐름 (Cash Flow)</Label>
+                            <Textarea
+                              value={deepDive.validation.financials.cash_flow}
+                              onChange={e =>
+                                updateDeepDive(prev => ({
+                                  ...prev,
+                                  validation: {
+                                    ...prev.validation,
+                                    financials: { ...prev.validation.financials, cash_flow: e.target.value }
+                                  }
+                                }))
+                              }
+                              rows={6}
+                              className="w-full resize-y min-h-[120px]"
+                              placeholder="영업CF, 투자CF, 재무CF..."
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-sm font-medium mb-2 block">재무상태표 (Balance Sheet)</Label>
+                            <Textarea
+                              value={deepDive.validation.financials.balance_sheet}
+                              onChange={e =>
+                                updateDeepDive(prev => ({
+                                  ...prev,
+                                  validation: {
+                                    ...prev.validation,
+                                    financials: { ...prev.validation.financials, balance_sheet: e.target.value }
+                                  }
+                                }))
+                              }
+                              rows={6}
+                              className="w-full resize-y min-h-[120px]"
+                              placeholder="자산, 부채, 자본 구조..."
+                            />
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* 가설이 깨지는 조건 */}
+                      <section>
+                        <Label className="text-lg font-semibold mb-3 block text-rose-600">⚠️ 가설이 깨지는 조건 3가지</Label>
+                        <Textarea
+                          value={deepDive.validation.hypothesis_breakpoints}
+                          onChange={e =>
+                            updateDeepDive(prev => ({
+                              ...prev,
+                              validation: {
+                                ...prev.validation,
+                                hypothesis_breakpoints: e.target.value
+                              }
+                            }))
+                          }
+                          rows={8}
+                          className="w-full resize-y min-h-[150px] border-rose-300 focus:ring-rose-500"
+                          placeholder="이 투자 가설이 틀렸다고 판단할 수 있는 구체적인 조건 3가지..."
                         />
                       </section>
                     </div>
                   )}
 
-                  {activeTab === 'refs' && (
-                    <div className="space-y-4">
-                      <Card className="border-border">
+                  {/* ③ 가격과 기대치 탭 */}
+                  {activeTab === 'pricing' && (
+                    <div className="space-y-6">
+                      <h2 className="text-2xl font-bold mb-4">③ 가격과 기대치 (Price & Expectation)</h2>
+
+                      <Alert className="bg-primary/5 border-primary/20">
+                        <AlertDescription>
+                          <strong>👉 원칙:</strong> 시장은 이미 무엇을 믿고 있나? 내 가설과의 차이는?
+                        </AlertDescription>
+                      </Alert>
+
+                      {/* 기본 가격 정보 */}
+                      <Card className="border-primary/20">
                         <CardHeader>
-                          <CardTitle className="text-lg">참고 자료</CardTitle>
+                          <CardTitle>📊 기본 가격 정보</CardTitle>
                         </CardHeader>
-                        <CardContent className="space-y-3 text-sm">
-                          {detail.references.map((ref, idx) => (
-                            <div key={`${ref.title}-${idx}`} className="grid grid-cols-4 gap-2 items-center">
-                              <Select
-                                value={ref.type}
-                                onValueChange={val =>
-                                  setDraft(prev =>
-                                    prev
-                                      ? {
-                                          ...prev,
-                                          references: prev.references.map((r, i) =>
-                                            i === idx ? { ...r, type: val as ReferenceItem['type'] } : r
-                                          )
-                                        }
-                                      : prev
-                                  )
-                                }
-                              >
-                                <SelectTrigger className="h-9">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="기사">기사</SelectItem>
-                                  <SelectItem value="리포트">리포트</SelectItem>
-                                  <SelectItem value="영상">영상</SelectItem>
-                                  <SelectItem value="기타">기타</SelectItem>
-                                </SelectContent>
-                              </Select>
+                        <CardContent className="space-y-4">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <Label className="text-sm font-medium mb-2 block">현재 주가</Label>
                               <Input
-                                placeholder="제목"
-                                value={ref.title}
+                                type="number"
+                                step="0.01"
+                                value={deepDive.pricing.stock_price || ''}
                                 onChange={e =>
-                                  setDraft(prev =>
-                                    prev
-                                      ? {
-                                          ...prev,
-                                          references: prev.references.map((r, i) =>
-                                            i === idx ? { ...r, title: e.target.value } : r
-                                          )
-                                        }
-                                      : prev
-                                  )
+                                  updateDeepDive(prev => ({
+                                    ...prev,
+                                    pricing: { ...prev.pricing, stock_price: parseFloat(e.target.value) || 0 }
+                                  }))
                                 }
+                                placeholder="0.00"
                               />
-                              <Input
-                                placeholder="URL"
-                                value={ref.url}
-                                onChange={e =>
-                                  setDraft(prev =>
-                                    prev
-                                      ? {
-                                          ...prev,
-                                          references: prev.references.map((r, i) =>
-                                            i === idx ? { ...r, url: e.target.value } : r
-                                          )
-                                        }
-                                      : prev
-                                  )
-                                }
-                              />
-                              <div className="flex items-center gap-2">
-                                <Input
-                                  placeholder="메모"
-                                  value={ref.note ?? ''}
-                                  onChange={e =>
-                                    setDraft(prev =>
-                                      prev
-                                        ? {
-                                            ...prev,
-                                            references: prev.references.map((r, i) =>
-                                              i === idx ? { ...r, note: e.target.value } : r
-                                            )
-                                          }
-                                        : prev
-                                    )
-                                  }
-                                />
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() =>
-                                    setDraft(prev =>
-                                      prev
-                                        ? {
-                                            ...prev,
-                                            references: prev.references.filter((_, i) => i !== idx)
-                                          }
-                                        : prev
-                                    )
-                                  }
-                                >
-                                  ✕
-                                </Button>
-                              </div>
                             </div>
-                          ))}
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() =>
-                              setDraft(prev =>
-                                prev
-                                  ? {
-                                      ...prev,
-                                      references: [
-                                        ...prev.references,
-                                        { type: '기사', title: '새 자료', url: '#', note: '' }
-                                      ]
-                                    }
-                                  : prev
-                              )
-                            }
-                          >
-                            참고 자료 추가
-                          </Button>
+                            <div>
+                              <Label className="text-sm font-medium mb-2 block">시가총액</Label>
+                              <Input
+                                value={deepDive.pricing.market_cap}
+                                onChange={e =>
+                                  updateDeepDive(prev => ({
+                                    ...prev,
+                                    pricing: { ...prev.pricing, market_cap: e.target.value }
+                                  }))
+                                }
+                                placeholder="예: $100B"
+                              />
+                            </div>
+                          </div>
                         </CardContent>
                       </Card>
+
+                      {/* 밸류에이션 지표 */}
+                      <Card className="border-primary/20">
+                        <CardHeader>
+                          <CardTitle>📈 밸류에이션 지표</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <Label className="text-sm font-medium mb-2 block">PER</Label>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                value={deepDive.pricing.valuation_metrics.per || ''}
+                                onChange={e =>
+                                  updateDeepDive(prev => ({
+                                    ...prev,
+                                    pricing: {
+                                      ...prev.pricing,
+                                      valuation_metrics: { ...prev.pricing.valuation_metrics, per: parseFloat(e.target.value) || undefined }
+                                    }
+                                  }))
+                                }
+                                placeholder="0.00"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-sm font-medium mb-2 block">PBR</Label>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                value={deepDive.pricing.valuation_metrics.pbr || ''}
+                                onChange={e =>
+                                  updateDeepDive(prev => ({
+                                    ...prev,
+                                    pricing: {
+                                      ...prev.pricing,
+                                      valuation_metrics: { ...prev.pricing.valuation_metrics, pbr: parseFloat(e.target.value) || undefined }
+                                    }
+                                  }))
+                                }
+                                placeholder="0.00"
+                              />
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <Label className="text-sm font-medium mb-2 block">EV/EBITDA</Label>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                value={deepDive.pricing.valuation_metrics.ev_ebitda || ''}
+                                onChange={e =>
+                                  updateDeepDive(prev => ({
+                                    ...prev,
+                                    pricing: {
+                                      ...prev.pricing,
+                                      valuation_metrics: { ...prev.pricing.valuation_metrics, ev_ebitda: parseFloat(e.target.value) || undefined }
+                                    }
+                                  }))
+                                }
+                                placeholder="0.00"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-sm font-medium mb-2 block">ROE</Label>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                value={deepDive.pricing.valuation_metrics.roe || ''}
+                                onChange={e =>
+                                  updateDeepDive(prev => ({
+                                    ...prev,
+                                    pricing: {
+                                      ...prev.pricing,
+                                      valuation_metrics: { ...prev.pricing.valuation_metrics, roe: parseFloat(e.target.value) || undefined }
+                                    }
+                                  }))
+                                }
+                                placeholder="0.00"
+                              />
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <Label className="text-sm font-medium mb-2 block">EPS</Label>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                value={deepDive.pricing.valuation_metrics.eps || ''}
+                                onChange={e =>
+                                  updateDeepDive(prev => ({
+                                    ...prev,
+                                    pricing: {
+                                      ...prev.pricing,
+                                      valuation_metrics: { ...prev.pricing.valuation_metrics, eps: parseFloat(e.target.value) || undefined }
+                                    }
+                                  }))
+                                }
+                                placeholder="0.00"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-sm font-medium mb-2 block">BPS</Label>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                value={deepDive.pricing.valuation_metrics.bps || ''}
+                                onChange={e =>
+                                  updateDeepDive(prev => ({
+                                    ...prev,
+                                    pricing: {
+                                      ...prev.pricing,
+                                      valuation_metrics: { ...prev.pricing.valuation_metrics, bps: parseFloat(e.target.value) || undefined }
+                                    }
+                                  }))
+                                }
+                                placeholder="0.00"
+                              />
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <Label className="text-sm font-medium mb-2 block">주당 EPS</Label>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                value={deepDive.pricing.valuation_metrics.eps_per_share || ''}
+                                onChange={e =>
+                                  updateDeepDive(prev => ({
+                                    ...prev,
+                                    pricing: {
+                                      ...prev.pricing,
+                                      valuation_metrics: { ...prev.pricing.valuation_metrics, eps_per_share: parseFloat(e.target.value) || undefined }
+                                    }
+                                  }))
+                                }
+                                placeholder="0.00"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-sm font-medium mb-2 block">주당 FCF</Label>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                value={deepDive.pricing.valuation_metrics.fcf_per_share || ''}
+                                onChange={e =>
+                                  updateDeepDive(prev => ({
+                                    ...prev,
+                                    pricing: {
+                                      ...prev.pricing,
+                                      valuation_metrics: { ...prev.pricing.valuation_metrics, fcf_per_share: parseFloat(e.target.value) || undefined }
+                                    }
+                                  }))
+                                }
+                                placeholder="0.00"
+                              />
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* 시장 해석 */}
+                      <Card className="border-primary/20">
+                        <CardHeader>
+                          <CardTitle>🔍 시장 해석</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <div>
+                            <Label className="text-sm font-medium mb-2 block">시장 기대 해석</Label>
+                            <Textarea
+                              value={deepDive.pricing.market_expectation}
+                              onChange={e =>
+                                updateDeepDive(prev => ({
+                                  ...prev,
+                                  pricing: { ...prev.pricing, market_expectation: e.target.value }
+                                }))
+                              }
+                              rows={6}
+                              className="w-full resize-y min-h-[120px]"
+                              placeholder="시장은 이 자산에 대해 무엇을 믿고 있나? 밸류에이션에 반영된 기대는?"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-sm font-medium mb-2 block">내재가치 관점 평가</Label>
+                            <Textarea
+                              value={deepDive.pricing.intrinsic_value}
+                              onChange={e =>
+                                updateDeepDive(prev => ({
+                                  ...prev,
+                                  pricing: { ...prev.pricing, intrinsic_value: e.target.value }
+                                }))
+                              }
+                              rows={6}
+                              className="w-full resize-y min-h-[120px]"
+                              placeholder="내재가치 기준으로 볼 때 현재 가격은? DCF, 자산가치, 동종업계 비교 등..."
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-sm font-medium mb-2 block">배당 정책</Label>
+                            <Textarea
+                              value={deepDive.pricing.dividend_policy}
+                              onChange={e =>
+                                updateDeepDive(prev => ({
+                                  ...prev,
+                                  pricing: { ...prev.pricing, dividend_policy: e.target.value }
+                                }))
+                              }
+                              rows={4}
+                              className="w-full resize-y min-h-[80px]"
+                              placeholder="배당 정책, 배당 성향, 배당 성장률..."
+                            />
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* 시나리오 분석 */}
+                      <Card className="border-primary/20">
+                        <CardHeader>
+                          <CardTitle>📊 시나리오 분석</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <div>
+                            <Label className="text-sm font-medium mb-2 block">베이스 시나리오 (Base Case)</Label>
+                            <Textarea
+                              value={deepDive.pricing.scenarios.base}
+                              onChange={e =>
+                                updateDeepDive(prev => ({
+                                  ...prev,
+                                  pricing: {
+                                    ...prev.pricing,
+                                    scenarios: { ...prev.pricing.scenarios, base: e.target.value }
+                                  }
+                                }))
+                              }
+                              rows={6}
+                              className="w-full resize-y min-h-[120px]"
+                              placeholder="가장 가능성 높은 시나리오 + 목표가..."
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-sm font-medium mb-2 block">강세 시나리오 (Bull Case)</Label>
+                            <Textarea
+                              value={deepDive.pricing.scenarios.bull}
+                              onChange={e =>
+                                updateDeepDive(prev => ({
+                                  ...prev,
+                                  pricing: {
+                                    ...prev.pricing,
+                                    scenarios: { ...prev.pricing.scenarios, bull: e.target.value }
+                                  }
+                                }))
+                              }
+                              rows={6}
+                              className="w-full resize-y min-h-[120px]"
+                              placeholder="모든 것이 잘 풀리는 경우 + 최고 목표가..."
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-sm font-medium mb-2 block">약세 시나리오 (Bear Case)</Label>
+                            <Textarea
+                              value={deepDive.pricing.scenarios.bear}
+                              onChange={e =>
+                                updateDeepDive(prev => ({
+                                  ...prev,
+                                  pricing: {
+                                    ...prev.pricing,
+                                    scenarios: { ...prev.pricing.scenarios, bear: e.target.value }
+                                  }
+                                }))
+                              }
+                              rows={6}
+                              className="w-full resize-y min-h-[120px]"
+                              placeholder="최악의 경우 + 최저 목표가..."
+                            />
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* 시장 기대 vs 내 가설의 차이 */}
+                      <section>
+                        <Label className="text-lg font-semibold mb-3 block text-primary">⚡ 시장 기대 vs 내 가설의 차이</Label>
+                        <Textarea
+                          value={deepDive.pricing.expectation_gap}
+                          onChange={e =>
+                            updateDeepDive(prev => ({
+                              ...prev,
+                              pricing: { ...prev.pricing, expectation_gap: e.target.value }
+                            }))
+                          }
+                          rows={8}
+                          className="w-full resize-y min-h-[150px] border-primary/30 focus:ring-primary"
+                          placeholder="시장은 무엇을 놓치고 있나? 나의 가설이 맞다면 어떤 가격 변화가 올 것인가?"
+                        />
+                      </section>
+                    </div>
+                  )}
+
+                  {/* ④ 타이밍 & 리스크 탭 */}
+                  {activeTab === 'timing' && (
+                    <div className="space-y-6">
+                      <h2 className="text-2xl font-bold mb-4">④ 타이밍 & 리스크</h2>
+                      <div className="p-8 border-2 border-dashed border-primary/30 rounded-lg bg-primary/5 text-center text-muted-foreground">
+                        <p className="text-lg">🚧 Phase 5에서 구현 예정</p>
+                        <p className="mt-2 text-sm">언제 들어가며, 어떻게 실패를 관리할 것인가?</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ⑤ 결정 & 관리 탭 */}
+                  {activeTab === 'decision' && (
+                    <div className="space-y-6">
+                      <h2 className="text-2xl font-bold mb-4">⑤ 결정 & 관리</h2>
+                      <div className="p-8 border-2 border-dashed border-primary/30 rounded-lg bg-primary/5 text-center text-muted-foreground">
+                        <p className="text-lg">🚧 Phase 6에서 구현 예정</p>
+                        <p className="mt-2 text-sm">그래서 나는 무엇을 할 것인가?</p>
+                      </div>
                     </div>
                   )}
                 </CardContent>
