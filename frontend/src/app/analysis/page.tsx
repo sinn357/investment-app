@@ -1602,11 +1602,335 @@ export default function AnalysisPage() {
                   {/* ④ 타이밍 & 리스크 탭 */}
                   {activeTab === 'timing' && (
                     <div className="space-y-6">
-                      <h2 className="text-2xl font-bold mb-4">④ 타이밍 & 리스크</h2>
-                      <div className="p-8 border-2 border-dashed border-primary/30 rounded-lg bg-primary/5 text-center text-muted-foreground">
-                        <p className="text-lg">🚧 Phase 5에서 구현 예정</p>
-                        <p className="mt-2 text-sm">언제 들어가며, 어떻게 실패를 관리할 것인가?</p>
-                      </div>
+                      <h2 className="text-2xl font-bold mb-4">④ 타이밍 & 리스크 (Timing & Risk)</h2>
+
+                      <Alert className="bg-primary/5 border-primary/20">
+                        <AlertDescription>
+                          <strong>👉 원칙:</strong> 언제 들어가며, 어떻게 실패를 관리할 것인가?
+                        </AlertDescription>
+                      </Alert>
+
+                      {/* 기술적 분석 */}
+                      <Card className="border-primary/20">
+                        <CardHeader>
+                          <CardTitle>📈 기술적 분석</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <div>
+                            <Label className="text-sm font-medium mb-2 block">차트 분석</Label>
+                            <Textarea
+                              value={deepDive.timing.technical.chart_analysis}
+                              onChange={e =>
+                                updateDeepDive(prev => ({
+                                  ...prev,
+                                  timing: {
+                                    ...prev.timing,
+                                    technical: { ...prev.timing.technical, chart_analysis: e.target.value }
+                                  }
+                                }))
+                              }
+                              rows={6}
+                              className="w-full resize-y min-h-[120px]"
+                              placeholder="추세선, 지지/저항선, 패턴 분석..."
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-sm font-medium mb-2 block">볼린저밴드</Label>
+                            <Textarea
+                              value={deepDive.timing.technical.bollinger_bands}
+                              onChange={e =>
+                                updateDeepDive(prev => ({
+                                  ...prev,
+                                  timing: {
+                                    ...prev.timing,
+                                    technical: { ...prev.timing.technical, bollinger_bands: e.target.value }
+                                  }
+                                }))
+                              }
+                              rows={4}
+                              className="w-full resize-y min-h-[80px]"
+                              placeholder="밴드 위치, 확장/수축 상태..."
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-sm font-medium mb-2 block">캔들 패턴</Label>
+                            <Textarea
+                              value={deepDive.timing.technical.candle_patterns}
+                              onChange={e =>
+                                updateDeepDive(prev => ({
+                                  ...prev,
+                                  timing: {
+                                    ...prev.timing,
+                                    technical: { ...prev.timing.technical, candle_patterns: e.target.value }
+                                  }
+                                }))
+                              }
+                              rows={4}
+                              className="w-full resize-y min-h-[80px]"
+                              placeholder="반전/지속 패턴, 도지, 망치형..."
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-sm font-medium mb-2 block">예상 가격 움직임</Label>
+                            <Textarea
+                              value={deepDive.timing.technical.expected_price_action}
+                              onChange={e =>
+                                updateDeepDive(prev => ({
+                                  ...prev,
+                                  timing: {
+                                    ...prev.timing,
+                                    technical: { ...prev.timing.technical, expected_price_action: e.target.value }
+                                  }
+                                }))
+                              }
+                              rows={4}
+                              className="w-full resize-y min-h-[80px]"
+                              placeholder="단기/중기 전망, 목표가 구간..."
+                            />
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* 퀀트 분석 */}
+                      <Card className="border-primary/20">
+                        <CardHeader>
+                          <CardTitle>🔢 퀀트 분석</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <div>
+                            <Label className="text-sm font-medium mb-2 block">팩터 필터링</Label>
+                            <Textarea
+                              value={deepDive.timing.quant.factor_filtering}
+                              onChange={e =>
+                                updateDeepDive(prev => ({
+                                  ...prev,
+                                  timing: {
+                                    ...prev.timing,
+                                    quant: { ...prev.timing.quant, factor_filtering: e.target.value }
+                                  }
+                                }))
+                              }
+                              rows={6}
+                              className="w-full resize-y min-h-[120px]"
+                              placeholder="모멘텀, 밸류, 퀄리티 팩터 점수..."
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-sm font-medium mb-2 block">백테스트</Label>
+                            <Textarea
+                              value={deepDive.timing.quant.backtest}
+                              onChange={e =>
+                                updateDeepDive(prev => ({
+                                  ...prev,
+                                  timing: {
+                                    ...prev.timing,
+                                    quant: { ...prev.timing.quant, backtest: e.target.value }
+                                  }
+                                }))
+                              }
+                              rows={6}
+                              className="w-full resize-y min-h-[120px]"
+                              placeholder="전략 백테스트 결과, 샤프비율..."
+                            />
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* 심리/수급 분석 */}
+                      <Card className="border-primary/20">
+                        <CardHeader>
+                          <CardTitle>💭 심리/수급 분석</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <div>
+                            <Label className="text-sm font-medium mb-2 block">공매도 비율</Label>
+                            <Textarea
+                              value={deepDive.timing.sentiment.short_interest}
+                              onChange={e =>
+                                updateDeepDive(prev => ({
+                                  ...prev,
+                                  timing: {
+                                    ...prev.timing,
+                                    sentiment: { ...prev.timing.sentiment, short_interest: e.target.value }
+                                  }
+                                }))
+                              }
+                              rows={4}
+                              className="w-full resize-y min-h-[80px]"
+                              placeholder="공매도 잔고, 변화 추이..."
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-sm font-medium mb-2 block">ETF 자금 흐름</Label>
+                            <Textarea
+                              value={deepDive.timing.sentiment.etf_flow}
+                              onChange={e =>
+                                updateDeepDive(prev => ({
+                                  ...prev,
+                                  timing: {
+                                    ...prev.timing,
+                                    sentiment: { ...prev.timing.sentiment, etf_flow: e.target.value }
+                                  }
+                                }))
+                              }
+                              rows={4}
+                              className="w-full resize-y min-h-[80px]"
+                              placeholder="ETF 자금 유입/유출 현황..."
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-sm font-medium mb-2 block">옵션 흐름</Label>
+                            <Textarea
+                              value={deepDive.timing.sentiment.options_flow}
+                              onChange={e =>
+                                updateDeepDive(prev => ({
+                                  ...prev,
+                                  timing: {
+                                    ...prev.timing,
+                                    sentiment: { ...prev.timing.sentiment, options_flow: e.target.value }
+                                  }
+                                }))
+                              }
+                              rows={4}
+                              className="w-full resize-y min-h-[80px]"
+                              placeholder="Put/Call 비율, 옵션 포지션..."
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-sm font-medium mb-2 block">뉴스 센티먼트</Label>
+                            <Textarea
+                              value={deepDive.timing.sentiment.news_sentiment}
+                              onChange={e =>
+                                updateDeepDive(prev => ({
+                                  ...prev,
+                                  timing: {
+                                    ...prev.timing,
+                                    sentiment: { ...prev.timing.sentiment, news_sentiment: e.target.value }
+                                  }
+                                }))
+                              }
+                              rows={4}
+                              className="w-full resize-y min-h-[80px]"
+                              placeholder="뉴스 톤, 소셜미디어 분위기..."
+                            />
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* 외부 변수 */}
+                      <Card className="border-primary/20">
+                        <CardHeader>
+                          <CardTitle>🌍 외부 변수</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <div>
+                            <Label className="text-sm font-medium mb-2 block">거시 변수</Label>
+                            <Textarea
+                              value={deepDive.timing.external.macro_variables}
+                              onChange={e =>
+                                updateDeepDive(prev => ({
+                                  ...prev,
+                                  timing: {
+                                    ...prev.timing,
+                                    external: { ...prev.timing.external, macro_variables: e.target.value }
+                                  }
+                                }))
+                              }
+                              rows={6}
+                              className="w-full resize-y min-h-[120px]"
+                              placeholder="금리, 환율, 원자재 가격 등 매크로 환경..."
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-sm font-medium mb-2 block">뉴스 분석</Label>
+                            <Textarea
+                              value={deepDive.timing.external.news_analysis}
+                              onChange={e =>
+                                updateDeepDive(prev => ({
+                                  ...prev,
+                                  timing: {
+                                    ...prev.timing,
+                                    external: { ...prev.timing.external, news_analysis: e.target.value }
+                                  }
+                                }))
+                              }
+                              rows={6}
+                              className="w-full resize-y min-h-[120px]"
+                              placeholder="최근 주요 뉴스, 기사 해석..."
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-sm font-medium mb-2 block">최근 이슈</Label>
+                            <Textarea
+                              value={deepDive.timing.external.recent_issues}
+                              onChange={e =>
+                                updateDeepDive(prev => ({
+                                  ...prev,
+                                  timing: {
+                                    ...prev.timing,
+                                    external: { ...prev.timing.external, recent_issues: e.target.value }
+                                  }
+                                }))
+                              }
+                              rows={6}
+                              className="w-full resize-y min-h-[120px]"
+                              placeholder="산업/기업 주요 이슈..."
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-sm font-medium mb-2 block">이벤트 캘린더</Label>
+                            <Textarea
+                              value={deepDive.timing.external.event_calendar}
+                              onChange={e =>
+                                updateDeepDive(prev => ({
+                                  ...prev,
+                                  timing: {
+                                    ...prev.timing,
+                                    external: { ...prev.timing.external, event_calendar: e.target.value }
+                                  }
+                                }))
+                              }
+                              rows={6}
+                              className="w-full resize-y min-h-[120px]"
+                              placeholder="실적 발표, FOMC, 배당 기준일 등..."
+                            />
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* 진입 조건 */}
+                      <section>
+                        <Label className="text-lg font-semibold mb-3 block text-emerald-600">✅ 진입 조건</Label>
+                        <Textarea
+                          value={deepDive.timing.entry_conditions}
+                          onChange={e =>
+                            updateDeepDive(prev => ({
+                              ...prev,
+                              timing: { ...prev.timing, entry_conditions: e.target.value }
+                            }))
+                          }
+                          rows={8}
+                          className="w-full resize-y min-h-[150px] border-emerald-300 focus:ring-emerald-500"
+                          placeholder="어떤 신호가 나오면 매수할 것인가? 구체적인 진입 조건 3가지..."
+                        />
+                      </section>
+
+                      {/* 무효화 신호 */}
+                      <section>
+                        <Label className="text-lg font-semibold mb-3 block text-rose-600">⚠️ 무효화 신호 (가설 붕괴 신호)</Label>
+                        <Textarea
+                          value={deepDive.timing.invalidation_signals}
+                          onChange={e =>
+                            updateDeepDive(prev => ({
+                              ...prev,
+                              timing: { ...prev.timing, invalidation_signals: e.target.value }
+                            }))
+                          }
+                          rows={8}
+                          className="w-full resize-y min-h-[150px] border-rose-300 focus:ring-rose-500"
+                          placeholder="어떤 신호가 나오면 즉시 청산할 것인가? 손절 조건, 가설 붕괴 신호..."
+                        />
+                      </section>
                     </div>
                   )}
 
