@@ -1937,11 +1937,371 @@ export default function AnalysisPage() {
                   {/* ⑤ 결정 & 관리 탭 */}
                   {activeTab === 'decision' && (
                     <div className="space-y-6">
-                      <h2 className="text-2xl font-bold mb-4">⑤ 결정 & 관리</h2>
-                      <div className="p-8 border-2 border-dashed border-primary/30 rounded-lg bg-primary/5 text-center text-muted-foreground">
-                        <p className="text-lg">🚧 Phase 6에서 구현 예정</p>
-                        <p className="mt-2 text-sm">그래서 나는 무엇을 할 것인가?</p>
-                      </div>
+                      <h2 className="text-2xl font-bold mb-4">⑤ 결정 & 관리 (Decision & Management)</h2>
+
+                      <Alert className="bg-primary/5 border-primary/20">
+                        <AlertDescription>
+                          <strong>👉 원칙:</strong> 그래서 나는 무엇을 할 것인가?
+                        </AlertDescription>
+                      </Alert>
+
+                      {/* 총평 */}
+                      <section>
+                        <Label className="text-lg font-semibold mb-3 block">📝 총평</Label>
+                        <Textarea
+                          value={deepDive.decision.summary}
+                          onChange={e =>
+                            updateDeepDive(prev => ({
+                              ...prev,
+                              decision: { ...prev.decision, summary: e.target.value }
+                            }))
+                          }
+                          rows={8}
+                          className="w-full resize-y min-h-[150px]"
+                          placeholder="이 투자에 대한 종합적인 평가..."
+                        />
+                      </section>
+
+                      {/* 투자 고려사항 */}
+                      <Card className="border-primary/20">
+                        <CardHeader>
+                          <CardTitle>⚖️ 투자 고려사항</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <div>
+                            <Label className="text-sm font-medium mb-2 block">우호 요인</Label>
+                            <Textarea
+                              value={deepDive.decision.considerations.positive_factors}
+                              onChange={e =>
+                                updateDeepDive(prev => ({
+                                  ...prev,
+                                  decision: {
+                                    ...prev.decision,
+                                    considerations: { ...prev.decision.considerations, positive_factors: e.target.value }
+                                  }
+                                }))
+                              }
+                              rows={6}
+                              className="w-full resize-y min-h-[120px]"
+                              placeholder="투자에 유리한 요인들..."
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-sm font-medium mb-2 block">경계 요인 (리스크)</Label>
+                            <Textarea
+                              value={deepDive.decision.considerations.negative_factors}
+                              onChange={e =>
+                                updateDeepDive(prev => ({
+                                  ...prev,
+                                  decision: {
+                                    ...prev.decision,
+                                    considerations: { ...prev.decision.considerations, negative_factors: e.target.value }
+                                  }
+                                }))
+                              }
+                              rows={6}
+                              className="w-full resize-y min-h-[120px]"
+                              placeholder="주의해야 할 요인들..."
+                            />
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* 리스크 분석 */}
+                      <Card className="border-rose-300">
+                        <CardHeader>
+                          <CardTitle className="text-rose-600">⚠️ 리스크 분석</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <div>
+                            <Label className="text-sm font-medium mb-2 block">거시 리스크</Label>
+                            <Textarea
+                              value={deepDive.decision.risks.macro_risk}
+                              onChange={e =>
+                                updateDeepDive(prev => ({
+                                  ...prev,
+                                  decision: {
+                                    ...prev.decision,
+                                    risks: { ...prev.decision.risks, macro_risk: e.target.value }
+                                  }
+                                }))
+                              }
+                              rows={6}
+                              className="w-full resize-y min-h-[120px]"
+                              placeholder="금리, 경기침체, 지정학적 리스크 등..."
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-sm font-medium mb-2 block">산업 리스크</Label>
+                            <Textarea
+                              value={deepDive.decision.risks.industry_risk}
+                              onChange={e =>
+                                updateDeepDive(prev => ({
+                                  ...prev,
+                                  decision: {
+                                    ...prev.decision,
+                                    risks: { ...prev.decision.risks, industry_risk: e.target.value }
+                                  }
+                                }))
+                              }
+                              rows={6}
+                              className="w-full resize-y min-h-[120px]"
+                              placeholder="산업 구조 변화, 경쟁 심화, 규제 리스크 등..."
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-sm font-medium mb-2 block">기업 리스크</Label>
+                            <Textarea
+                              value={deepDive.decision.risks.company_risk}
+                              onChange={e =>
+                                updateDeepDive(prev => ({
+                                  ...prev,
+                                  decision: {
+                                    ...prev.decision,
+                                    risks: { ...prev.decision.risks, company_risk: e.target.value }
+                                  }
+                                }))
+                              }
+                              rows={6}
+                              className="w-full resize-y min-h-[120px]"
+                              placeholder="경영진 교체, 회계 이슈, 소송 리스크 등..."
+                            />
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* 시나리오 & 민감도 */}
+                      <Card className="border-primary/20">
+                        <CardHeader>
+                          <CardTitle>📊 시나리오 & 민감도</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <div>
+                            <Label className="text-sm font-medium mb-2 block">시나리오 요약</Label>
+                            <Textarea
+                              value={deepDive.decision.scenarios.summary}
+                              onChange={e =>
+                                updateDeepDive(prev => ({
+                                  ...prev,
+                                  decision: {
+                                    ...prev.decision,
+                                    scenarios: { ...prev.decision.scenarios, summary: e.target.value }
+                                  }
+                                }))
+                              }
+                              rows={6}
+                              className="w-full resize-y min-h-[120px]"
+                              placeholder="베이스/강세/약세 시나리오의 확률과 영향..."
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-sm font-medium mb-2 block">민감도 분석</Label>
+                            <Textarea
+                              value={deepDive.decision.scenarios.sensitivity}
+                              onChange={e =>
+                                updateDeepDive(prev => ({
+                                  ...prev,
+                                  decision: {
+                                    ...prev.decision,
+                                    scenarios: { ...prev.decision.scenarios, sensitivity: e.target.value }
+                                  }
+                                }))
+                              }
+                              rows={6}
+                              className="w-full resize-y min-h-[120px]"
+                              placeholder="주요 변수 변화에 따른 가격 민감도..."
+                            />
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* 체크리스트 */}
+                      <Card className="border-primary/20">
+                        <CardHeader>
+                          <CardTitle>✅ 체크리스트</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <div>
+                            <Label className="text-sm font-medium mb-2 block">매수 조건 체크리스트</Label>
+                            <Textarea
+                              value={deepDive.decision.checklist.buy}
+                              onChange={e =>
+                                updateDeepDive(prev => ({
+                                  ...prev,
+                                  decision: {
+                                    ...prev.decision,
+                                    checklist: { ...prev.decision.checklist, buy: e.target.value }
+                                  }
+                                }))
+                              }
+                              rows={6}
+                              className="w-full resize-y min-h-[120px]"
+                              placeholder="매수 전에 반드시 확인할 사항들..."
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-sm font-medium mb-2 block">대기 조건 체크리스트</Label>
+                            <Textarea
+                              value={deepDive.decision.checklist.wait}
+                              onChange={e =>
+                                updateDeepDive(prev => ({
+                                  ...prev,
+                                  decision: {
+                                    ...prev.decision,
+                                    checklist: { ...prev.decision.checklist, wait: e.target.value }
+                                  }
+                                }))
+                              }
+                              rows={6}
+                              className="w-full resize-y min-h-[120px]"
+                              placeholder="더 기다려야 하는 조건들..."
+                            />
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* 대응 전략 */}
+                      <section>
+                        <Label className="text-lg font-semibold mb-3 block">🛡️ 대응 전략</Label>
+                        <Textarea
+                          value={deepDive.decision.mitigation}
+                          onChange={e =>
+                            updateDeepDive(prev => ({
+                              ...prev,
+                              decision: { ...prev.decision, mitigation: e.target.value }
+                            }))
+                          }
+                          rows={8}
+                          className="w-full resize-y min-h-[150px]"
+                          placeholder="리스크 대응 방안, 헤지 전략..."
+                        />
+                      </section>
+
+                      {/* 최종 결정 */}
+                      <Card className="border-primary/30 bg-primary/5">
+                        <CardHeader>
+                          <CardTitle className="text-primary">🎯 최종 결정</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <Label className="text-sm font-medium mb-2 block">목표가</Label>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                value={deepDive.decision.target_price || ''}
+                                onChange={e =>
+                                  updateDeepDive(prev => ({
+                                    ...prev,
+                                    decision: { ...prev.decision, target_price: parseFloat(e.target.value) || 0 }
+                                  }))
+                                }
+                                placeholder="0.00"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-sm font-medium mb-2 block">포지션 크기</Label>
+                              <Input
+                                value={deepDive.decision.position_size}
+                                onChange={e =>
+                                  updateDeepDive(prev => ({
+                                    ...prev,
+                                    decision: { ...prev.decision, position_size: e.target.value }
+                                  }))
+                                }
+                                placeholder="예: 5%"
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <Label className="text-sm font-medium mb-2 block">투자포인트 (2분 요약)</Label>
+                            <Textarea
+                              value={deepDive.decision.investment_point}
+                              onChange={e =>
+                                updateDeepDive(prev => ({
+                                  ...prev,
+                                  decision: { ...prev.decision, investment_point: e.target.value }
+                                }))
+                              }
+                              rows={6}
+                              className="w-full resize-y min-h-[120px]"
+                              placeholder="핵심 투자 포인트를 2분 안에 설명할 수 있도록..."
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-sm font-medium mb-2 block">최종 행동</Label>
+                            <Select
+                              value={deepDive.decision.action}
+                              onValueChange={value =>
+                                updateDeepDive(prev => ({
+                                  ...prev,
+                                  decision: { ...prev.decision, action: value as 'BUY' | 'WAIT' | 'PASS' }
+                                }))
+                              }
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="행동 선택" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="BUY">BUY (매수)</SelectItem>
+                                <SelectItem value="WAIT">WAIT (관망)</SelectItem>
+                                <SelectItem value="PASS">PASS (패스)</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* 나의 현재 생각 */}
+                      <section>
+                        <Label className="text-lg font-semibold mb-3 block">💭 나의 현재 생각 정리</Label>
+                        <Textarea
+                          value={deepDive.decision.my_thoughts}
+                          onChange={e =>
+                            updateDeepDive(prev => ({
+                              ...prev,
+                              decision: { ...prev.decision, my_thoughts: e.target.value }
+                            }))
+                          }
+                          rows={8}
+                          className="w-full resize-y min-h-[150px]"
+                          placeholder="지금 시점에서의 솔직한 생각, 고민, 확신..."
+                        />
+                      </section>
+
+                      {/* 무효화 조건 */}
+                      <section>
+                        <Label className="text-lg font-semibold mb-3 block text-rose-600">⚠️ 내가 틀렸다고 인정하는 조건</Label>
+                        <Textarea
+                          value={deepDive.decision.invalidation_condition}
+                          onChange={e =>
+                            updateDeepDive(prev => ({
+                              ...prev,
+                              decision: { ...prev.decision, invalidation_condition: e.target.value }
+                            }))
+                          }
+                          rows={8}
+                          className="w-full resize-y min-h-[150px] border-rose-300 focus:ring-rose-500"
+                          placeholder="어떤 상황이 오면 투자 가설이 틀렸다고 인정할 것인가?"
+                        />
+                      </section>
+
+                      {/* 재검토 조건 */}
+                      <section>
+                        <Label className="text-lg font-semibold mb-3 block">🔄 재검토 조건</Label>
+                        <Textarea
+                          value={deepDive.decision.review_conditions}
+                          onChange={e =>
+                            updateDeepDive(prev => ({
+                              ...prev,
+                              decision: { ...prev.decision, review_conditions: e.target.value }
+                            }))
+                          }
+                          rows={6}
+                          className="w-full resize-y min-h-[120px]"
+                          placeholder="언제 이 분석을 다시 검토할 것인가? (실적 발표, 주요 이벤트 등)"
+                        />
+                      </section>
                     </div>
                   )}
                 </CardContent>
