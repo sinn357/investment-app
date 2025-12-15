@@ -1,5 +1,54 @@
 # Investment App Changelog
 
+## 2025-12-16
+
+### Added
+- **개별분석 5개 탭 재설계 완전 구현** (`/analysis`)
+  - 투자 가설 (thesis): 7개 필드 + 산출물
+  - 검증: 펀더멘털 (validation): 24개 필드, 4개 섹션
+  - 가격과 기대치 (pricing): 8개 지표 + 시나리오
+  - 타이밍 & 리스크 (timing): 14개 필드, 진입/무효화 조건
+  - 결정 & 관리 (decision): 11개 필드, 최종 결정
+- **PostgreSQL JSONB 기반 데이터 저장**
+  - asset_analysis 테이블 (thesis, validation, pricing, timing, decision 필드)
+  - GET/POST API 엔드포인트: `/api/asset-analysis`
+- **80+ 입력 필드**: 논리적 그룹화된 20+ Card 섹션
+- **시나리오 분석 시스템**: 최선/기본/최악 시나리오 기반 목표가 계산
+- **진입/무효화 조건**: 7가지 기술적 조건 기반 매수/매도 판단
+
+### Changed
+- **4개 탭 → 5개 탭 구조 완전 재설계**
+  - fundamental/technical/summary → thesis/validation/pricing/timing/decision
+- **DeepDiveData 인터페이스 재작성**: 80+ 필드로 확장
+- **페이지 구조 개선**: 686줄 → 2,305줄 (+1,619줄)
+- **빌드 크기**: 41.7 kB → 45.1 kB (+3.4 kB)
+
+### Removed
+- **구 4개 탭 컴포넌트**: fundamental/technical/summary 관련 코드 700줄 제거
+
+### Technical Details
+- **프론트엔드**: Next.js 15, TypeScript, shadcn/ui
+- **백엔드**: Flask, PostgreSQL, JSONB
+- **상태 관리**: localStorage (임시), PostgreSQL (영구, API 연동 예정)
+
+### Known Issues
+- API 연동 미완성: 프론트엔드에서 백엔드 API 호출하지 않음
+- localStorage 전용: 데이터가 브라우저에만 저장됨
+- 자동 저장 없음: 수동 저장 버튼 필요
+
+### Next Steps
+1. 프론트엔드에서 `/api/asset-analysis` 호출 구현
+2. debounce를 사용한 자동 저장
+3. localStorage → PostgreSQL 마이그레이션
+
+### Commits
+- `5204c47`: feat: Phase 4 - 가격과 기대치 탭 완전 구현
+- `fb291e6`: feat: Phase 5 - 타이밍 & 리스크 탭 완전 구현
+- `c6a011b`: feat: Phase 6 - 결정 & 관리 탭 완전 구현
+- `e98893c`: feat: Phase 7 - 백엔드 API 완전 구현
+
+---
+
 ## 2025-12-12
 
 ### Added
