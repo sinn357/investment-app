@@ -370,7 +370,27 @@ export default function AnalysisPage() {
       if (saved) {
         const parsed = JSON.parse(saved) as AssetAnalysis[];
         if (parsed.length > 0) {
-          const normalized = parsed.map(item => ({ ...item, deepDive: item.deepDive ?? createEmptyDeepDive() }));
+          const normalized = parsed.map(item => {
+            const emptyDeepDive = createEmptyDeepDive();
+            const deepDive = item.deepDive ?? emptyDeepDive;
+
+            // 깊은 병합: 각 섹션이 존재하는지 확인하고 기본값 제공
+            return {
+              ...item,
+              deepDive: {
+                ...emptyDeepDive,
+                ...deepDive,
+                decision: {
+                  ...emptyDeepDive.decision,
+                  ...(deepDive.decision ?? {})
+                },
+                pricing: {
+                  ...emptyDeepDive.pricing,
+                  ...(deepDive.pricing ?? {})
+                }
+              }
+            };
+          });
           setAnalyses(normalized);
           setSelectedId(normalized[0].id);
         }
@@ -450,8 +470,8 @@ export default function AnalysisPage() {
                       {item.symbol} · {item.name}
                     </CardTitle>
                   </div>
-                  <Badge className={actionBadgeStyle[item.deepDive.decision.action]}>
-                    {item.deepDive.decision.action}
+                  <Badge className={actionBadgeStyle[item.deepDive?.decision?.action ?? 'WAIT']}>
+                    {item.deepDive?.decision?.action ?? 'WAIT'}
                   </Badge>
                 </CardHeader>
                 <CardContent className="space-y-3">
@@ -459,7 +479,7 @@ export default function AnalysisPage() {
                     <div className="rounded-md border border-dashed border-primary/20 bg-primary/5 p-3">
                       <p className="text-xs text-muted-foreground">목표가</p>
                       <p className="font-semibold">
-                        {item.deepDive.decision.target_price > 0
+                        {(item.deepDive?.decision?.target_price ?? 0) > 0
                           ? `$${item.deepDive.decision.target_price}`
                           : '-'}
                       </p>
@@ -467,7 +487,7 @@ export default function AnalysisPage() {
                     <div className="rounded-md border border-dashed border-secondary/30 bg-secondary/5 p-3">
                       <p className="text-xs text-muted-foreground">현재가</p>
                       <p className="font-semibold">
-                        {item.deepDive.pricing.stock_price > 0
+                        {(item.deepDive?.pricing?.stock_price ?? 0) > 0
                           ? `$${item.deepDive.pricing.stock_price}`
                           : '-'}
                       </p>
@@ -527,8 +547,8 @@ export default function AnalysisPage() {
                       </CardTitle>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Badge className={actionBadgeStyle[detail.deepDive.decision.action]}>
-                        {detail.deepDive.decision.action}
+                      <Badge className={actionBadgeStyle[detail.deepDive?.decision?.action ?? 'WAIT']}>
+                        {detail.deepDive?.decision?.action ?? 'WAIT'}
                       </Badge>
                       <Badge variant={detail.inPortfolio ? 'default' : 'secondary'}>
                         {detail.inPortfolio ? '포트폴리오' : '워치리스트'}
