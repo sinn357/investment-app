@@ -283,36 +283,26 @@ class PostgresDatabaseService:
 
                     CREATE INDEX IF NOT EXISTS idx_economic_narrative_user_date ON economic_narrative(user_id, date DESC);
 
-                    -- 자산 개별분석 테이블
+                    -- 자산 개별분석 테이블 (5개 탭 구조)
                     CREATE TABLE IF NOT EXISTS asset_analysis (
                         id SERIAL PRIMARY KEY,
                         asset_id INTEGER REFERENCES assets(id) ON DELETE CASCADE,
                         user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
 
-                        -- 기본적분석
-                        fundamental JSONB DEFAULT '{
-                            "investment_reason": "",
-                            "potential": "",
-                            "basic_info": {},
-                            "competitor_comparison": {},
-                            "financial_analysis": {}
-                        }',
+                        -- ① 투자 가설 (Investment Thesis)
+                        thesis JSONB DEFAULT '{}',
 
-                        -- 기술적분석
-                        technical JSONB DEFAULT '{
-                            "chart_analysis": {},
-                            "quant_analysis": {},
-                            "sentiment_analysis": {}
-                        }',
+                        -- ② 검증: 펀더멘털 (Validation: Fundamentals)
+                        validation JSONB DEFAULT '{}',
 
-                        -- 총평
-                        summary JSONB DEFAULT '{
-                            "investment_considerations": {},
-                            "risk_points": {},
-                            "valuation": {},
-                            "investment_point": "",
-                            "my_thoughts": ""
-                        }',
+                        -- ③ 가격과 기대치 (Price & Expectation)
+                        pricing JSONB DEFAULT '{}',
+
+                        -- ④ 타이밍 & 리스크 (Timing & Risk)
+                        timing JSONB DEFAULT '{}',
+
+                        -- ⑤ 결정 & 관리 (Decision & Management)
+                        decision JSONB DEFAULT '{}',
 
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

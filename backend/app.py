@@ -3768,7 +3768,7 @@ def get_credit_cycle_v3():
 @app.route('/api/asset-analysis', methods=['GET'])
 def get_asset_analysis():
     """
-    자산 개별분석 데이터 조회
+    자산 개별분석 데이터 조회 (5개 탭 구조)
 
     Query Parameters:
         - asset_id: 자산 ID (필수)
@@ -3778,9 +3778,11 @@ def get_asset_analysis():
         {
             "status": "success",
             "data": {
-                "fundamental": {...},
-                "technical": {...},
-                "summary": {...}
+                "thesis": {...},      // 투자 가설
+                "validation": {...},  // 검증: 펀더멘털
+                "pricing": {...},     // 가격과 기대치
+                "timing": {...},      // 타이밍 & 리스크
+                "decision": {...}     // 결정 & 관리
             }
         }
     """
@@ -3798,7 +3800,7 @@ def get_asset_analysis():
         with db_service.get_connection() as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 cur.execute("""
-                    SELECT fundamental, technical, summary, updated_at
+                    SELECT thesis, validation, pricing, timing, decision, updated_at
                     FROM asset_analysis
                     WHERE asset_id = %s AND user_id = %s
                 """, (asset_id, user_id))
@@ -3809,36 +3811,24 @@ def get_asset_analysis():
                     return jsonify({
                         "status": "success",
                         "data": {
-                            "fundamental": result['fundamental'],
-                            "technical": result['technical'],
-                            "summary": result['summary'],
+                            "thesis": result['thesis'] or {},
+                            "validation": result['validation'] or {},
+                            "pricing": result['pricing'] or {},
+                            "timing": result['timing'] or {},
+                            "decision": result['decision'] or {},
                             "updated_at": result['updated_at'].isoformat() if result['updated_at'] else None
                         }
                     })
                 else:
-                    # 데이터가 없으면 기본 구조 반환
+                    # 데이터가 없으면 빈 객체 반환
                     return jsonify({
                         "status": "success",
                         "data": {
-                            "fundamental": {
-                                "investment_reason": "",
-                                "potential": "",
-                                "basic_info": {},
-                                "competitor_comparison": {},
-                                "financial_analysis": {}
-                            },
-                            "technical": {
-                                "chart_analysis": {},
-                                "quant_analysis": {},
-                                "sentiment_analysis": {}
-                            },
-                            "summary": {
-                                "investment_considerations": {},
-                                "risk_points": {},
-                                "valuation": {},
-                                "investment_point": "",
-                                "my_thoughts": ""
-                            },
+                            "thesis": {},
+                            "validation": {},
+                            "pricing": {},
+                            "timing": {},
+                            "decision": {},
                             "updated_at": None
                         }
                     })
@@ -3855,15 +3845,17 @@ def get_asset_analysis():
 @app.route('/api/asset-analysis', methods=['POST'])
 def save_asset_analysis():
     """
-    자산 개별분석 데이터 저장/업데이트
+    자산 개별분석 데이터 저장/업데이트 (5개 탭 구조)
 
     Request Body:
         {
             "asset_id": 123,
             "user_id": 1,
-            "fundamental": {...},
-            "technical": {...},
-            "summary": {...}
+            "thesis": {...},      // 투자 가설
+            "validation": {...},  // 검증: 펀더멘털
+            "pricing": {...},     // 가격과 기대치
+            "timing": {...},      // 타이밍 & 리스크
+            "decision": {...}     // 결정 & 관리
         }
 
     Returns:
@@ -3877,9 +3869,11 @@ def save_asset_analysis():
 
         asset_id = data.get('asset_id')
         user_id = data.get('user_id')
-        fundamental = data.get('fundamental', {})
-        technical = data.get('technical', {})
-        summary = data.get('summary', {})
+        thesis = data.get('thesis', {})
+        validation = data.get('validation', {})
+        pricing = data.get('pricing', {})
+        timing = data.get('timing', {})
+        decision = data.get('decision', {})
 
         if not asset_id or not user_id:
             return jsonify({
@@ -3891,15 +3885,17 @@ def save_asset_analysis():
         with db_service.get_connection() as conn:
             with conn.cursor() as cur:
                 cur.execute("""
-                    INSERT INTO asset_analysis (asset_id, user_id, fundamental, technical, summary, updated_at)
-                    VALUES (%s, %s, %s, %s, %s, NOW())
+                    INSERT INTO asset_analysis (asset_id, user_id, thesis, validation, pricing, timing, decision, updated_at)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, NOW())
                     ON CONFLICT (asset_id, user_id)
                     DO UPDATE SET
-                        fundamental = EXCLUDED.fundamental,
-                        technical = EXCLUDED.technical,
-                        summary = EXCLUDED.summary,
+                        thesis = EXCLUDED.thesis,
+                        validation = EXCLUDED.validation,
+                        pricing = EXCLUDED.pricing,
+                        timing = EXCLUDED.timing,
+                        decision = EXCLUDED.decision,
                         updated_at = NOW()
-                """, (asset_id, user_id, json.dumps(fundamental), json.dumps(technical), json.dumps(summary)))
+                """, (asset_id, user_id, json.dumps(thesis), json.dumps(validation), json.dumps(pricing), json.dumps(timing), json.dumps(decision)))
 
                 conn.commit()
 
