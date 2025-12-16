@@ -526,6 +526,9 @@ class PostgresDatabaseService:
                     if not latest_row:
                         return {"error": "No data found for indicator"}
 
+                # 히스토리 데이터 조회 (최근 12개)
+                history_table = self.get_history_data(indicator_id, limit=12)
+
                 # API 응답 형태로 변환
                 result = {
                     "latest_release": {
@@ -541,6 +544,7 @@ class PostgresDatabaseService:
                         "forecast": self._parse_value(next_row['forecast']) if next_row else None,
                         "previous": self._parse_value(next_row['previous']) if next_row else None
                     },
+                    "history_table": history_table,
                     "last_updated": crawl_row['last_crawl_time'].isoformat() if crawl_row else None,
                     "timestamp": datetime.now().isoformat()
                 }
