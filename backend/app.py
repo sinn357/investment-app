@@ -3913,6 +3913,139 @@ def save_asset_analysis():
         }), 500
 
 
+# =====================================
+# Industry Analysis API (산업군 분석)
+# =====================================
+
+@app.route('/api/industry-analysis', methods=['GET'])
+def get_industry_analysis():
+    """특정 산업 분석 조회"""
+    try:
+        user_id = request.args.get('user_id', type=int)
+        major_category = request.args.get('major_category')
+        sub_industry = request.args.get('sub_industry')
+
+        if not all([user_id, major_category, sub_industry]):
+            return jsonify({
+                "status": "error",
+                "message": "user_id, major_category, sub_industry 파라미터가 필요합니다"
+            }), 400
+
+        result = db_service.get_industry_analysis(user_id, major_category, sub_industry)
+
+        if result:
+            return jsonify({
+                "status": "success",
+                "data": result
+            })
+        else:
+            # 데이터 없으면 빈 템플릿 반환
+            return jsonify({
+                "status": "success",
+                "data": {
+                    "analysis_data": {
+                        "core_technology": {"definition": "", "stage": "상용화", "innovation_path": ""},
+                        "macro_impact": {"interest_rate": "", "exchange_rate": "", "commodities": "", "policy": ""},
+                        "growth_drivers": {"internal": "", "external": "", "kpi": ""},
+                        "value_chain": {"flow": "", "profit_pool": "", "bottleneck": ""},
+                        "supply_demand": {
+                            "demand": {"end_user": "", "long_term": "", "sensitivity": ""},
+                            "supply": {"players": "", "capacity": "", "barriers": ""},
+                            "catalysts": ""
+                        },
+                        "market_map": {"structure": "", "competition": "", "moat": "", "lifecycle": ""}
+                    },
+                    "leading_stocks": [],
+                    "emerging_stocks": []
+                }
+            })
+
+    except Exception as e:
+        import traceback
+        print(f"Error in get_industry_analysis: {traceback.format_exc()}")
+        return jsonify({
+            "status": "error",
+            "message": f"산업 분석 조회 실패: {str(e)}"
+        }), 500
+
+
+@app.route('/api/industry-analysis', methods=['POST'])
+def save_industry_analysis():
+    """산업 분석 저장 (UPSERT)"""
+    try:
+        data = request.get_json()
+
+        user_id = data.get('user_id')
+        major_category = data.get('major_category')
+        sub_industry = data.get('sub_industry')
+        analysis_data = data.get('analysis_data', {})
+        leading_stocks = data.get('leading_stocks', [])
+        emerging_stocks = data.get('emerging_stocks', [])
+
+        if not all([user_id, major_category, sub_industry]):
+            return jsonify({
+                "status": "error",
+                "message": "user_id, major_category, sub_industry는 필수입니다"
+            }), 400
+
+        success = db_service.save_industry_analysis(
+            user_id,
+            major_category,
+            sub_industry,
+            analysis_data,
+            leading_stocks,
+            emerging_stocks
+        )
+
+        if success:
+            return jsonify({
+                "status": "success",
+                "message": "산업 분석이 저장되었습니다"
+            })
+        else:
+            return jsonify({
+                "status": "error",
+                "message": "산업 분석 저장 실패"
+            }), 500
+
+    except Exception as e:
+        import traceback
+        print(f"Error in save_industry_analysis: {traceback.format_exc()}")
+        return jsonify({
+            "status": "error",
+            "message": f"산업 분석 저장 실패: {str(e)}"
+        }), 500
+
+
+@app.route('/api/industry-categories', methods=['GET'])
+def get_industry_categories():
+    """특정 산업군의 모든 하위 산업 목록 조회"""
+    try:
+        user_id = request.args.get('user_id', type=int)
+        major_category = request.args.get('major_category')
+
+        if not all([user_id, major_category]):
+            return jsonify({
+                "status": "error",
+                "message": "user_id, major_category 파라미터가 필요합니다"
+            }), 400
+
+        results = db_service.get_all_industries_by_major(user_id, major_category)
+
+        return jsonify({
+            "status": "success",
+            "data": results
+        })
+
+    except Exception as e:
+        import traceback
+        print(f"Error in get_industry_categories: {traceback.format_exc()}")
+        return jsonify({
+            "status": "error",
+            "message": f"산업군 목록 조회 실패: {str(e)}"
+        }), 500
+
+
 if __name__ == '__main__':
     # Render 등 PaaS 환경에서 주어지는 동적 포트를 우선 사용
     port = int(os.environ.get("PORT", 5001))

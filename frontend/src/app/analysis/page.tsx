@@ -438,6 +438,27 @@ export default function AnalysisPage() {
     }
   };
 
+  const handleAdd = () => {
+    const newId = `new-${Date.now()}`;
+    const newAsset: AssetAnalysis = {
+      id: newId,
+      symbol: '',
+      name: '',
+      type: '주식',
+      analyzedAt: new Date().toISOString().split('T')[0],
+      lastUpdatedAt: new Date().toISOString().split('T')[0],
+      inPortfolio: false,
+      inWatchlist: false,
+      deepDive: createEmptyDeepDive(),
+      references: [],
+      tags: []
+    };
+    const updated = [...analyses, newAsset];
+    persistAnalyses(updated);
+    setSelectedId(newId);
+    setActiveTab('thesis');
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
@@ -452,6 +473,14 @@ export default function AnalysisPage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         <section className="grid gap-4 lg:grid-cols-3">
           <div className="lg:col-span-1 space-y-4">
+            {/* 새 분석 추가 버튼 */}
+            <Button
+              onClick={handleAdd}
+              className="w-full bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-white font-semibold shadow-lg"
+            >
+              ➕ 새 분석 추가
+            </Button>
+
             {analyses.map(item => (
               <Card
                 key={item.id}

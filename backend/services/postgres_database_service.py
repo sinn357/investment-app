@@ -347,6 +347,33 @@ class PostgresDatabaseService:
 
                     CREATE INDEX IF NOT EXISTS idx_watchlist_user ON watchlist(user_id);
                     CREATE INDEX IF NOT EXISTS idx_watchlist_symbol ON watchlist(symbol);
+
+                    -- 산업군 분석 테이블 (Page 3: Industries - 새로운 산업군 분석 시스템)
+                    CREATE TABLE IF NOT EXISTS industry_analysis (
+                        id SERIAL PRIMARY KEY,
+                        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+                        major_category VARCHAR(50) NOT NULL,     -- 6대 산업군
+                        sub_industry VARCHAR(100) NOT NULL,      -- 하위 산업명
+                        analysis_data JSONB NOT NULL DEFAULT '{
+                            "core_technology": {"definition": "", "stage": "상용화", "innovation_path": ""},
+                            "macro_impact": {"interest_rate": "", "exchange_rate": "", "commodities": "", "policy": ""},
+                            "growth_drivers": {"internal": "", "external": "", "kpi": ""},
+                            "value_chain": {"flow": "", "profit_pool": "", "bottleneck": ""},
+                            "supply_demand": {
+                                "demand": {"end_user": "", "long_term": "", "sensitivity": ""},
+                                "supply": {"players": "", "capacity": "", "barriers": ""},
+                                "catalysts": ""
+                            },
+                            "market_map": {"structure": "", "competition": "", "moat": "", "lifecycle": ""}
+                        }'::jsonb,
+                        leading_stocks TEXT[] DEFAULT '{}',      -- 대표 대형주
+                        emerging_stocks TEXT[] DEFAULT '{}',     -- 중소형 유망주
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        UNIQUE(user_id, major_category, sub_industry)
+                    );
+
+                    CREATE INDEX IF NOT EXISTS idx_industry_analysis_user ON industry_analysis(user_id);
+                    CREATE INDEX IF NOT EXISTS idx_industry_analysis_major ON industry_analysis(major_category);
                     """
 
                     print("Executing PostgreSQL schema initialization...")
@@ -2719,3 +2746,145 @@ class PostgresDatabaseService:
         except Exception as e:
             print(f"PostgreSQL get_latest_indicator error for {indicator_id}: {e}")
             return None
+
+    # ========================================
+    # Industry Analysis Methods
+    # ========================================
+
+    def get_industry_analysis(self, user_id: int, major_category: str, sub_industry: str) -> Optional[Dict]:
+        """
+        특정 산업 분석 조회
+
+        Args:
+            user_id: 사용자 ID
+            major_category: 6대 산업군 (예: '기술·데이터·인프라')
+            sub_industry: 하위 산업명 (예: '반도체 & 반도체 장비')
+
+        Returns:
+            {
+                'id': int,
+                'user_id': int,
+                'major_category': str,
+                'sub_industry': str,
+                'analysis_data': dict,
+                'leading_stocks': list,
+                'emerging_stocks': list,
+                'updated_at': str
+            } or None
+        """
+        try:
+            with self.get_connection() as conn:
+                with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                    cur.execute("""
+                        SELECT *
+                        FROM industry_analysis
+                        WHERE user_id = %s
+                          AND major_category = %s
+                          AND sub_industry = %s
+                    """, (user_id, major_category, sub_industry))
+
+                    result = cur.fetchone()
+
+                    if result:
+                        return dict(result)
+                    else:
+                        return None
+
+        except Exception as e:
+            print(f"PostgreSQL get_industry_analysis error: {e}")
+            return None
+
+    def save_industry_analysis(
+        self,
+        user_id: int,
+        major_category: str,
+        sub_industry: str,
+        analysis_data: dict,
+        leading_stocks: list,
+        emerging_stocks: list
+    ) -> bool:
+        """
+        산업 분석 저장 (UPSERT)
+
+        Args:
+            user_id: 사용자 ID
+            major_category: 6대 산업군
+            sub_industry: 하위 산업명
+            analysis_data: 분석 요소 JSONB 데이터
+            leading_stocks: 대표 대형주 배열
+            emerging_stocks: 중소형 유망주 배열
+
+        Returns:
+            성공 여부 (bool)
+        """
+        try:
+            with self.get_connection() as conn:
+                with conn.cursor() as cur:
+                    cur.execute("""
+                        INSERT INTO industry_analysis (
+                            user_id,
+                            major_category,
+                            sub_industry,
+                            analysis_data,
+                            leading_stocks,
+                            emerging_stocks,
+                            updated_at
+                        ) VALUES (%s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
+                        ON CONFLICT (user_id, major_category, sub_industry)
+                        DO UPDATE SET
+                            analysis_data = EXCLUDED.analysis_data,
+                            leading_stocks = EXCLUDED.leading_stocks,
+                            emerging_stocks = EXCLUDED.emerging_stocks,
+                            updated_at = CURRENT_TIMESTAMP
+                    """, (
+                        user_id,
+                        major_category,
+                        sub_industry,
+                        json.dumps(analysis_data),
+                        leading_stocks,
+                        emerging_stocks
+                    ))
+                    conn.commit()
+                    return True
+
+        except Exception as e:
+            print(f"PostgreSQL save_industry_analysis error: {e}")
+            return False
+
+    def get_all_industries_by_major(self, user_id: int, major_category: str) -> List[Dict]:
+        """
+        특정 산업군의 모든 하위 산업 목록 조회
+
+        Args:
+            user_id: 사용자 ID
+            major_category: 6대 산업군
+
+        Returns:
+            [{
+                'sub_industry': str,
+                'leading_stocks': list,
+                'emerging_stocks': list,
+                'updated_at': str
+            }, ...]
+        """
+        try:
+            with self.get_connection() as conn:
+                with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                    cur.execute("""
+                        SELECT
+                            sub_industry,
+                            leading_stocks,
+                            emerging_stocks,
+                            updated_at
+                        FROM industry_analysis
+                        WHERE user_id = %s
+                          AND major_category = %s
+                        ORDER BY sub_industry ASC
+                    """, (user_id, major_category))
+
+                    results = cur.fetchall()
+                    return [dict(row) for row in results]
+
+        except Exception as e:
+            print(f"PostgreSQL get_all_industries_by_major error: {e}")
+            return []
