@@ -854,11 +854,11 @@ def get_all_indicators_from_db():
     try:
         force_refresh = request.args.get("force") == "1"
         now_ts = time.time()
-        # 히스토리 개수 제한 (기본 6개). 0이면 히스토리 스킵.
+        # 히스토리 개수 제한 (기본 12개). 0이면 히스토리 스킵.
         try:
-            history_limit = int(request.args.get("history_limit", "0"))  # 기본: 히스토리 스킵
+            history_limit = int(request.args.get("history_limit", "12"))  # 기본: 12개 히스토리
         except ValueError:
-            history_limit = 0
+            history_limit = 12
 
         # ✅ 최근 캐시가 있으면 즉시 반환 (5분)
         if not force_refresh and INDICATORS_CACHE["data"] and (now_ts - INDICATORS_CACHE["timestamp"] < INDICATORS_CACHE_TTL):
@@ -923,7 +923,7 @@ def get_all_indicators_from_db():
                     "data": {
                         "latest_release": data.get("latest_release", {}),
                         "next_release": data.get("next_release", {}),
-                        "history": history
+                        "history_table": history
                     }
                 })
 
