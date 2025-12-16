@@ -46,7 +46,7 @@ interface GridIndicator {
       forecast?: number | string | null;
       previous: number | string;
     };
-    history?: Array<{
+    history_table?: Array<{
       release_date: string;
       time?: string;
       actual: number | string | null;
