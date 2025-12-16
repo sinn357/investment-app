@@ -49,7 +49,7 @@ interface Indicator {
       forecast?: number | string | null;
       previous: number | string;
     };
-    history?: HistoryData[];
+    history_table?: HistoryData[];
   };
 }
 
@@ -102,7 +102,7 @@ const IndicatorChartPanel: React.FC<IndicatorChartPanelProps> = ({
 
   // 지표 변경 시 기존 데이터에서 히스토리 추출 (API 호출 제거)
   useEffect(() => {
-    if (!selectedIndicator || !selectedIndicator.data?.history) {
+    if (!selectedIndicator || !selectedIndicator.data?.history_table) {
       setHistoryData([]);
       setChartData([]);
       setLoading(false);
@@ -111,7 +111,7 @@ const IndicatorChartPanel: React.FC<IndicatorChartPanelProps> = ({
 
     setLoading(true);
     try {
-      const history = selectedIndicator.data.history;
+      const history = selectedIndicator.data.history_table;
 
       // 히스토리 테이블용 데이터 (최근 6개월)
       setHistoryData(history.slice(0, 6));

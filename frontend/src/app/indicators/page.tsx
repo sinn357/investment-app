@@ -262,8 +262,8 @@ export default function IndicatorsPage() {
             const latest = item.data.latest_release;
 
             // 히스토리 데이터에서 스파크라인 데이터 추출 (최근 6개월)
-            const sparklineData = item.data.history
-              ? item.data.history.slice(0, 6).reverse().map((h: { actual: string | number }) => {
+            const sparklineData = item.data.history_table
+              ? item.data.history_table.slice(0, 6).reverse().map((h: { actual: string | number }) => {
                   const actualValue = typeof h.actual === 'string'
                     ? parseFloat(h.actual.replace('%', '').replace('K', '000'))
                     : h.actual;
