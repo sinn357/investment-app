@@ -73,8 +73,11 @@ def crawl_sp500_pe() -> Dict[str, Any]:
         # 오늘 날짜를 최신 발표일로 사용
         today = datetime.now().strftime('%Y-%m-%d')
 
-        # 이전값은 현재값에서 약간 낮다고 가정 (실제 히스토리 크롤링은 복잡)
-        previous_pe = round(current_pe - 0.02, 2)
+        # 히스토리 데이터 가져오기 (최근 12개월)
+        history = get_sp500_pe_history()
+
+        # 이전값은 히스토리에서 가져오기 (없으면 현재값 - 0.02)
+        previous_pe = history[0]['actual'] if history else round(current_pe - 0.02, 2)
 
         return {
             "latest_release": {
@@ -85,7 +88,7 @@ def crawl_sp500_pe() -> Dict[str, Any]:
                 "previous": str(previous_pe)
             },
             "next_release": None,
-            "history_table": []  # Phase 2에서는 히스토리 불필요
+            "history_table": history
         }
 
     except requests.RequestException as e:
