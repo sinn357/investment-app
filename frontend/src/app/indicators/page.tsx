@@ -556,18 +556,20 @@ export default function IndicatorsPage() {
         {/* <EconomicIndicatorsSection /> */}
         {/* <DataSection /> */}
 
-        {/* 날짜 선택 및 저장 버튼 */}
+        {/* 뉴스 & 담론 섹션 */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between gap-4 mb-6 bg-card rounded-lg p-4 border border-primary/20">
-            <div className="flex items-center gap-3">
-              <label className="text-sm font-medium text-muted-foreground">기준 날짜:</label>
-              <input
-                type="date"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                className="px-3 py-2 bg-background border border-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground"
-              />
-            </div>
+          <NewsNarrative
+            articles={narrative.articles}
+            myNarrative={narrative.myNarrative}
+            onChange={(data) => setNarrative({ ...narrative, ...data })}
+            mmcScore={masterCycleData?.mmc_score}
+            phase={masterCycleData?.phase}
+            selectedDate={selectedDate}
+            onDateChange={setSelectedDate}
+          />
+
+          {/* 담론 저장 버튼 */}
+          <div className="mt-4 flex justify-end">
             <button
               onClick={handleSaveNarrative}
               disabled={isSavingNarrative}
@@ -576,17 +578,9 @@ export default function IndicatorsPage() {
               {isSavingNarrative ? '저장 중...' : '💾 담론 저장'}
             </button>
           </div>
-        </div>
 
-        {/* 뉴스 & 담론 섹션 */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-6">
-          <NewsNarrative
-            articles={narrative.articles}
-            myNarrative={narrative.myNarrative}
-            onChange={(data) => setNarrative({ ...narrative, ...data })}
-            mmcScore={masterCycleData?.mmc_score}
-            phase={masterCycleData?.phase}
-          />
+          {/* 과거 담론 리뷰 섹션 */}
+          <NarrativeReview userId={userId} />
         </div>
 
         {/* 리스크 레이더 섹션 */}
@@ -627,11 +621,6 @@ export default function IndicatorsPage() {
             cards={bigWave.cards}
             onChange={(cards) => setBigWave({ cards })}
           />
-        </div>
-
-        {/* 과거 담론 리뷰 섹션 (Phase 5) */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-10">
-          <NarrativeReview userId={userId} />
         </div>
       </main>
       </div>

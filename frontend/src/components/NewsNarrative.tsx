@@ -16,13 +16,11 @@ interface NewsNarrativeProps {
   onChange: (data: { articles: Article[]; myNarrative: string }) => void;
   mmcScore?: number;
   phase?: string;
-  topChanges?: {
-    increases: string[];
-    decreases: string[];
-  };
+  selectedDate: string;
+  onDateChange: (date: string) => void;
 }
 
-export default function NewsNarrative({ articles, myNarrative, onChange, mmcScore, phase, topChanges }: NewsNarrativeProps) {
+export default function NewsNarrative({ articles, myNarrative, onChange, mmcScore, phase, selectedDate, onDateChange }: NewsNarrativeProps) {
   const [isAdding, setIsAdding] = useState(false);
   const [newArticle, setNewArticle] = useState({
     title: '',
@@ -60,10 +58,21 @@ export default function NewsNarrative({ articles, myNarrative, onChange, mmcScor
 
   return (
     <div className="bg-card rounded-lg p-6 border-2 border-primary/20">
-      <h2 className="text-xl font-semibold text-card-foreground mb-4 flex items-center">
-        <span className="text-2xl mr-2">📰</span>
-        뉴스 & 담론
-      </h2>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-semibold text-card-foreground flex items-center">
+          <span className="text-2xl mr-2">📰</span>
+          뉴스 & 담론
+        </h2>
+        <div className="flex items-center gap-3">
+          <label className="text-sm font-medium text-muted-foreground">기준 날짜:</label>
+          <input
+            type="date"
+            value={selectedDate}
+            onChange={(e) => onDateChange(e.target.value)}
+            className="px-3 py-2 bg-background border border-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground"
+          />
+        </div>
+      </div>
 
       {/* 기사 스크랩 섹션 */}
       <div className="mb-6">
@@ -174,11 +183,10 @@ export default function NewsNarrative({ articles, myNarrative, onChange, mmcScor
         <h3 className="text-sm font-semibold text-muted-foreground mb-3">내 담론 (경제 전망)</h3>
 
         {/* 담론 작성 가이드 (Phase 3) */}
-        {mmcScore !== undefined && phase && topChanges && (
+        {mmcScore !== undefined && phase && (
           <NarrativeGuide
             mmcScore={mmcScore}
             phase={phase}
-            topChanges={topChanges}
           />
         )}
 

@@ -5,14 +5,18 @@ import { useState } from 'react';
 interface NarrativeGuideProps {
   mmcScore: number;
   phase: string;
-  topChanges: {
-    increases: string[];
-    decreases: string[];
+  topChanges?: {
+    increases?: string[];
+    decreases?: string[];
   };
 }
 
 export default function NarrativeGuide({ mmcScore, phase, topChanges }: NarrativeGuideProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const changes = {
+    increases: topChanges?.increases ?? [],
+    decreases: topChanges?.decreases ?? []
+  };
 
   const questions = [
     {
@@ -26,12 +30,12 @@ export default function NarrativeGuide({ mmcScore, phase, topChanges }: Narrativ
     {
       category: "지표 분석",
       items: [
-        topChanges.increases.length > 0
-          ? `${topChanges.increases.join(', ')} 상승의 의미는?`
+        changes.increases.length > 0
+          ? `${changes.increases.join(', ')} 상승의 의미는?`
           : "주요 지표 변화가 없는 이유는?",
-        topChanges.decreases.length > 0
-          ? `${topChanges.decreases.join(', ')} 하락이 시사하는 바는?`
-          : null,
+        changes.decreases.length > 0
+          ? `${changes.decreases.join(', ')} 하락이 시사하는 바는?`
+          : "최근 하락/둔화 지표는 무엇이며 의미는?",
         "다음 달 주목해야 할 지표는?"
       ].filter(Boolean) as string[]
     },
