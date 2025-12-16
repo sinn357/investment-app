@@ -129,9 +129,24 @@ def extract_raw_data(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
             "previous": latest_release.get("actual") if latest_release else None
         }
 
+    # 히스토리 데이터 추가 (최근 12개 레코드, actual 값이 있는 것만)
+    history_table = []
+    for row in rows:
+        if row["actual"] is not None:
+            history_table.append({
+                "release_date": row["release_date"],
+                "time": row["time"],
+                "actual": row["actual"],
+                "forecast": row["forecast"],
+                "previous": row["previous"]
+            })
+            if len(history_table) >= 12:
+                break
+
     return {
         "latest_release": latest_release,
         "next_release": next_release,
+        "history_table": history_table,
         "timestamp": datetime.now().isoformat()
     }
 
