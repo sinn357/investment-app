@@ -957,6 +957,15 @@ def get_all_indicators_from_db():
             print(f"Sentiment cycle calculation error: {e}")
             sentiment_cycle = None
 
+        # ✅ Master Market Cycle 계산 (3대 사이클 통합)
+        master_cycle = None
+        try:
+            from services.cycle_engine import calculate_master_cycle_v1
+            master_cycle = calculate_master_cycle_v1(db_service)
+        except Exception as e:
+            print(f"Master cycle calculation error: {e}")
+            master_cycle = None
+
         response_data = {
             "status": "success",
             "indicators": results,
@@ -966,7 +975,9 @@ def get_all_indicators_from_db():
             # ✅ 3대 사이클 데이터 추가 (4개 요청 → 1개 요청 최적화)
             "macro_cycle": macro_cycle,
             "credit_cycle": credit_cycle,
-            "sentiment_cycle": sentiment_cycle
+            "sentiment_cycle": sentiment_cycle,
+            # ✅ Master Market Cycle 추가 (3대 사이클 통합 점수)
+            "master_cycle": master_cycle
         }
 
         # ✅ 캐시 저장
