@@ -994,6 +994,118 @@ def get_all_indicators_from_db():
             "message": f"Database query failed: {str(e)}"
         }), 500
 
+@app.route('/api/v2/indicators/health-check')
+def get_indicators_health_check():
+    """모든 지표의 데이터 신선도 및 상태 확인"""
+    try:
+        from datetime import datetime, timedelta
+        from crawlers.indicators_config import get_all_enabled_indicators
+
+        all_indicator_ids = list(get_all_enabled_indicators().keys())
+        health_results = []
+        now = datetime.now()
+
+        # 상태별 카운터
+        counts = {
+            "healthy": 0,
+            "stale": 0,
+            "outdated": 0,
+            "error": 0
+        }
+
+        for indicator_id in all_indicator_ids:
+            # 지표 데이터 조회
+            data = db_service.get_indicator_data(indicator_id)
+
+            if "error" in data:
+                # 데이터 조회 오류
+                health_results.append({
+                    "indicator_id": indicator_id,
+                    "name": CrawlerService.get_indicator_name(indicator_id),
+                    "status": "error",
+                    "last_update": None,
+                    "days_old": None,
+                    "message": "데이터 조회 실패"
+                })
+                counts["error"] += 1
+                continue
+
+            latest = data.get("latest_release", {})
+            release_date_str = latest.get("release_date")
+
+            if not release_date_str or release_date_str == "미정":
+                # 날짜 정보 없음
+                health_results.append({
+                    "indicator_id": indicator_id,
+                    "name": CrawlerService.get_indicator_name(indicator_id),
+                    "status": "error",
+                    "last_update": release_date_str or "없음",
+                    "days_old": None,
+                    "message": "날짜 정보 없음"
+                })
+                counts["error"] += 1
+                continue
+
+            try:
+                # 날짜 파싱
+                release_date = datetime.strptime(release_date_str, "%Y-%m-%d")
+                days_old = (now - release_date).days
+
+                # 상태 분류
+                if days_old <= 7:
+                    status = "healthy"
+                    message = "최신 데이터"
+                    counts["healthy"] += 1
+                elif days_old <= 30:
+                    status = "stale"
+                    message = "약간 오래된 데이터"
+                    counts["stale"] += 1
+                else:
+                    status = "outdated"
+                    message = "매우 오래된 데이터"
+                    counts["outdated"] += 1
+
+                health_results.append({
+                    "indicator_id": indicator_id,
+                    "name": CrawlerService.get_indicator_name(indicator_id),
+                    "status": status,
+                    "last_update": release_date_str,
+                    "days_old": days_old,
+                    "message": message
+                })
+
+            except ValueError:
+                # 날짜 파싱 실패
+                health_results.append({
+                    "indicator_id": indicator_id,
+                    "name": CrawlerService.get_indicator_name(indicator_id),
+                    "status": "error",
+                    "last_update": release_date_str,
+                    "days_old": None,
+                    "message": "날짜 형식 오류"
+                })
+                counts["error"] += 1
+
+        # 상태별 정렬 (error > outdated > stale > healthy)
+        status_priority = {"error": 0, "outdated": 1, "stale": 2, "healthy": 3}
+        health_results.sort(key=lambda x: (status_priority.get(x["status"], 4), x["days_old"] if x["days_old"] is not None else 999))
+
+        return jsonify({
+            "status": "success",
+            "timestamp": now.isoformat(),
+            "total_indicators": len(all_indicator_ids),
+            "summary": counts,
+            "indicators": health_results
+        })
+
+    except Exception as e:
+        import traceback
+        print(f"Error in get_indicators_health_check: {traceback.format_exc()}")
+        return jsonify({
+            "status": "error",
+            "message": f"Health check failed: {str(e)}"
+        }), 500
+
 @app.route('/api/v2/indicators/<indicator_id>')
 def get_indicator_from_db(indicator_id):
     """데이터베이스에서 특정 지표 데이터 조회"""
