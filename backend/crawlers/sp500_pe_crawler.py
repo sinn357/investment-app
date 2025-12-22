@@ -150,6 +150,8 @@ def get_sp500_pe_history() -> List[Dict[str, Any]]:
                 except (ValueError, AttributeError):
                     continue
 
+        # 최신순으로 정렬 (오래된 데이터가 먼저 크롤링되는 경우 대비)
+        history.sort(key=lambda x: x['release_date'], reverse=True)
         return history
 
     except Exception as e:
