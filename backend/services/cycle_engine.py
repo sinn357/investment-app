@@ -607,7 +607,8 @@ def calculate_master_cycle_v1(db_service) -> Dict[str, Any]:
             "credit": {...},
             "sentiment": {...},
             "recommendation": "중립 포지션 유지",
-            "updated_at": "2025-12-05T10:30:00"
+            "updated_at": "2025-12-05T10:30:00",
+            "data_warnings": []  # ✅ 오래된 데이터 경고
         }
     """
     try:
@@ -615,6 +616,67 @@ def calculate_master_cycle_v1(db_service) -> Dict[str, Any]:
         macro = calculate_macro_score(db_service)
         credit = calculate_credit_score(db_service)
         sentiment = calculate_sentiment_score(db_service)  # ✅ Phase 2: 실제 계산
+
+        # 1.5. 데이터 신선도 검증 (30일 이상 오래된 데이터 경고)
+        data_warnings = []
+        now = datetime.now()
+
+        # Macro 지표 검증
+        for indicator_id in MACRO_INDICATORS.keys():
+            data = db_service.get_indicator_data(indicator_id)
+            if "error" not in data and data.get("latest_release"):
+                release_date_str = data["latest_release"].get("release_date")
+                if release_date_str and release_date_str != "미정":
+                    try:
+                        release_date = datetime.strptime(release_date_str, "%Y-%m-%d")
+                        days_old = (now - release_date).days
+                        if days_old > 30:
+                            data_warnings.append({
+                                "indicator": MACRO_INDICATORS[indicator_id]['name'],
+                                "days_old": days_old,
+                                "last_update": release_date_str,
+                                "cycle": "Macro"
+                            })
+                    except ValueError:
+                        pass
+
+        # Credit 지표 검증
+        for indicator_id in CREDIT_INDICATORS.keys():
+            data = db_service.get_indicator_data(indicator_id)
+            if "error" not in data and data.get("latest_release"):
+                release_date_str = data["latest_release"].get("release_date")
+                if release_date_str and release_date_str != "미정":
+                    try:
+                        release_date = datetime.strptime(release_date_str, "%Y-%m-%d")
+                        days_old = (now - release_date).days
+                        if days_old > 30:
+                            data_warnings.append({
+                                "indicator": CREDIT_INDICATORS[indicator_id]['name'],
+                                "days_old": days_old,
+                                "last_update": release_date_str,
+                                "cycle": "Credit"
+                            })
+                    except ValueError:
+                        pass
+
+        # Sentiment 지표 검증
+        for indicator_id in SENTIMENT_INDICATORS.keys():
+            data = db_service.get_indicator_data(indicator_id)
+            if "error" not in data and data.get("latest_release"):
+                release_date_str = data["latest_release"].get("release_date")
+                if release_date_str and release_date_str != "미정":
+                    try:
+                        release_date = datetime.strptime(release_date_str, "%Y-%m-%d")
+                        days_old = (now - release_date).days
+                        if days_old > 30:
+                            data_warnings.append({
+                                "indicator": SENTIMENT_INDICATORS[indicator_id]['name'],
+                                "days_old": days_old,
+                                "last_update": release_date_str,
+                                "cycle": "Sentiment"
+                            })
+                    except ValueError:
+                        pass
 
         # 2. MMC 계산 (가중치: Sentiment 50%, Credit 30%, Macro 20%)
         mmc_score = (
@@ -640,7 +702,8 @@ def calculate_master_cycle_v1(db_service) -> Dict[str, Any]:
             "sentiment": sentiment,
             "recommendation": recommendation,
             "updated_at": datetime.now().isoformat(),
-            "version": "v2.0-phase2"  # ✅ Phase 2 버전
+            "version": "v2.0-phase2",  # ✅ Phase 2 버전
+            "data_warnings": data_warnings  # ✅ 오래된 데이터 경고
         }
 
     except Exception as e:
@@ -649,7 +712,8 @@ def calculate_master_cycle_v1(db_service) -> Dict[str, Any]:
             "error": str(e),
             "mmc_score": 50.0,
             "phase": "계산 오류",
-            "recommendation": "데이터 확인 필요"
+            "recommendation": "데이터 확인 필요",
+            "data_warnings": []
         }
 
 
