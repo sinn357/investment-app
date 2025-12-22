@@ -51,6 +51,61 @@
 
 ---
 
+## 2025-12-23 (Session 2: 긴급 디버깅 및 헬스체크 UI)
+
+### Fixed
+- **S&P 500 PE 히스토리 데이터 백엔드 정렬 수정**
+  - 문제: 프론트엔드 정렬로는 근본 해결 안됨, 백엔드에서 역순 데이터 전달
+  - 진단: History[0]이 2025-06-01 (최신 2025-12-22)
+  - 해결: `sp500_pe_crawler.py`에 `history.sort(reverse=True)` 추가
+  - 영향: 백엔드 데이터 구조 표준화, 프론트엔드 정렬 불필요
+  - 파일: `backend/crawlers/sp500_pe_crawler.py` Line 153-155
+  - 커밋: `ec9a851`
+
+### Added
+- **헬스체크 요약 패널 UI 구현**
+  - healthCheck state + fetchJsonWithRetry 데이터 페칭
+  - Master Cycle 카드 하단에 4개 상태 카드 UI 추가
+  - 표시: ✅ Healthy (26개) / ⚠️ Stale (13개) / 🚨 Outdated (5개) / ❌ Error (11개)
+  - 색상 구분: 초록/노랑/주황/빨강 + 기간 표시
+  - 반응형 flex-wrap 레이아웃
+  - 파일: `frontend/src/app/indicators/page.tsx` Line 149-151, 194-206, 457-508
+  - 커밋: `1a06ec2`
+
+### Diagnosed
+- **병렬 크롤링 속도 문제 진단**
+  - 실제 시간: 157.4초 (예상 18초의 8.7배 느림) 🚨
+  - 원인: `as_completed(timeout=10초 × 5개)` 배치 타임아웃 50초
+  - 영향: 11개 배치 × 50초 = 550초 최대 (실제 157초)
+  - 해결 필요: 타임아웃 제거 또는 축소 (다음 세션)
+
+### Performance
+- **긴급 디버깅 4단계 완료**
+  - Step 1: 배포 상태 확인 ✅
+  - Step 2: S&P 500 PE 데이터 확인 및 수정 ✅
+  - Step 3: 병렬 크롤링 시간 측정 및 문제 진단 🚨
+  - Step 4: 헬스체크 API 테스트 ✅
+
+### Technical Details
+- **백엔드 수정**:
+  - `sp500_pe_crawler.py`: 히스토리 데이터 최신순 정렬 (+2줄)
+- **프론트엔드 수정**:
+  - `indicators/page.tsx`: healthCheck state + useEffect + UI (+70줄)
+
+### Commits
+- `ec9a851`: fix: S&P 500 PE 히스토리 데이터 최신순 정렬 추가
+- `1a06ec2`: feat: 헬스체크 요약 패널 UI 구현 (Phase 2)
+
+### Documentation
+- `docs/2025-12-23_Session_2_Debugging_Complete.md`: 긴급 디버깅 및 UI 구현 상세 문서화
+
+### Next Session
+- **Phase 3**: 병렬 크롤링 속도 최적화 (157초 → 55초 목표)
+- **Phase 2-3**: 지표 카드에 상태 배지 표시
+- **Phase 4**: Master Cycle 경고 UI 구현
+
+---
+
 ## 2025-12-16
 
 ### Added
