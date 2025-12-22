@@ -262,13 +262,20 @@ export default function IndicatorsPage() {
             const latest = item.data.latest_release;
 
             // 히스토리 데이터에서 스파크라인 데이터 추출 (최근 6개월)
+            // release_date 기준으로 최신순 정렬 후 사용 (일부 지표는 역순 정렬되어 있음)
             const sparklineData = item.data.history_table
-              ? item.data.history_table.slice(0, 6).reverse().map((h: { actual: string | number }) => {
-                  const actualValue = typeof h.actual === 'string'
-                    ? parseFloat(h.actual.replace('%', '').replace('K', '000'))
-                    : h.actual;
-                  return isNaN(actualValue) ? 0 : actualValue;
-                })
+              ? [...item.data.history_table]
+                  .sort((a: { release_date: string }, b: { release_date: string }) =>
+                    new Date(b.release_date).getTime() - new Date(a.release_date).getTime()
+                  )
+                  .slice(0, 6)
+                  .reverse()
+                  .map((h: { actual: string | number }) => {
+                    const actualValue = typeof h.actual === 'string'
+                      ? parseFloat(h.actual.replace('%', '').replace('K', '000'))
+                      : h.actual;
+                    return isNaN(actualValue) ? 0 : actualValue;
+                  })
               : [];
 
             return {

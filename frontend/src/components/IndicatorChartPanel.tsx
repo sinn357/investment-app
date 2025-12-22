@@ -111,13 +111,16 @@ const IndicatorChartPanel: React.FC<IndicatorChartPanelProps> = ({
 
     setLoading(true);
     try {
-      const history = selectedIndicator.data.history_table;
+      // 히스토리 데이터를 release_date 기준으로 최신순 정렬 (일부 지표는 역순 정렬되어 있음)
+      const sortedHistory = [...selectedIndicator.data.history_table].sort((a, b) => {
+        return new Date(b.release_date).getTime() - new Date(a.release_date).getTime();
+      });
 
       // 히스토리 테이블용 데이터 (최근 6개월)
-      setHistoryData(history.slice(0, 6));
+      setHistoryData(sortedHistory.slice(0, 6));
 
       // 차트용 데이터 변환 (최근 12개월, 역순)
-      const chart = history.slice(0, 12).reverse().map(item => {
+      const chart = sortedHistory.slice(0, 12).reverse().map(item => {
         const actualNum = typeof item.actual === 'string'
           ? parseFloat(item.actual.replace('%', '').replace('K', '000'))
           : item.actual;
