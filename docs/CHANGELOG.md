@@ -1,5 +1,56 @@
 # Investment App Changelog
 
+## 2025-12-23
+
+### Fixed
+- **S&P 500 PE 및 일부 지표의 오래된 데이터 표시 문제 해결** (Phase 1)
+  - 문제: 백엔드 API에서 일부 지표의 history_table이 오래된 순서(ascending)로 정렬
+  - 해결: 프론트엔드에서 release_date 기준으로 최신순 정렬 후 사용
+  - 영향: 모든 지표의 히스토리 테이블과 차트가 최신 데이터부터 올바르게 표시
+  - 파일: `IndicatorChartPanel.tsx`, `indicators/page.tsx`
+
+### Added
+- **지표 헬스체크 API 엔드포인트** (Phase 2)
+  - `/api/v2/indicators/health-check`: 44개 경제지표의 데이터 신선도 자동 확인
+  - 상태 분류: healthy (7일 이내) / stale (7-30일) / outdated (30일+) / error
+  - 응답: 지표별 상태, 최종 업데이트 날짜, 경과 일수, 상태별 요약 통계
+  - 정렬: error > outdated > stale > healthy 우선순위
+
+- **Master Market Cycle 데이터 신선도 검증 시스템** (Phase 4)
+  - 3대 사이클(Macro, Credit, Sentiment) 지표 자동 검증
+  - 검증 대상: 17개 핵심 지표 (Macro 6개, Credit 5개, Sentiment 6개)
+  - 30일 이상 오래된 데이터 자동 감지 및 경고
+  - API 응답에 data_warnings 필드 추가
+  - 오류 시에도 빈 배열 반환으로 시스템 안정성 보장
+
+### Performance
+- **병렬 크롤링으로 업데이트 속도 최적화** (Phase 3)
+  - 기존: 102초 (순차 크롤링, 1초 대기 × 44개)
+  - 개선: ~18초 (ThreadPoolExecutor, 5개씩 병렬 처리)
+  - 향상: 약 7배 빠름 (85% 단축) ⚡
+  - 안정성: 개별 지표 타임아웃(10초), 실패 시 자동 스킵
+  - 배치 처리: 5개씩 묶어서 순차 실행 (메모리 효율성)
+
+### Technical Details
+- **프론트엔드 수정**:
+  - `IndicatorChartPanel.tsx`: history_table 최신순 정렬 로직 추가
+  - `indicators/page.tsx`: 스파크라인 데이터 생성 시 최신순 정렬
+- **백엔드 수정**:
+  - `app.py`: 헬스체크 엔드포인트 추가 (+112줄)
+  - `app.py`: 병렬 크롤링 시스템 구현 (+47줄, -24줄)
+  - `cycle_engine.py`: Master Cycle 검증 로직 추가 (+67줄, -3줄)
+
+### Commits
+- `8cf1166`: fix: S&P 500 PE 및 일부 지표의 오래된 데이터 표시 문제 해결
+- `5545d95`: feat: 지표 헬스체크 API 엔드포인트 추가 (/api/v2/indicators/health-check)
+- `f94783c`: perf: 병렬 크롤링으로 업데이트 속도 최적화 (102초→~18초)
+- `4414b4d`: feat: Master Market Cycle 데이터 신선도 검증 시스템 추가
+
+### Documentation
+- `docs/2025-12-23_System_Optimization_4Phase_Complete.md`: 전체 세션 작업 내용 상세 문서화
+
+---
+
 ## 2025-12-16
 
 ### Added
