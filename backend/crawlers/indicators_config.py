@@ -320,7 +320,7 @@ INDICATORS: Dict[str, IndicatorConfig] = {
         id="cpi",
         name="Consumer Price Index (CPI)",
         name_ko="소비자물가지수",
-        url="https://fred.stlouisfed.org/series/CPIAUCSL_PC1",
+        url="https://kr.investing.com/economic-calendar/cpi-733",
         category="inflation",
         threshold={"target": 2.0, "high": 3.0},
     ),
@@ -328,7 +328,7 @@ INDICATORS: Dict[str, IndicatorConfig] = {
         id="core-cpi",
         name="Core CPI",
         name_ko="근원 소비자물가지수",
-        url="https://fred.stlouisfed.org/series/CPILFESL_PC1",
+        url="https://kr.investing.com/economic-calendar/core-cpi-736",
         category="inflation",
     ),
     "ppi": IndicatorConfig(
