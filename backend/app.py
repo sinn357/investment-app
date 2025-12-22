@@ -1157,8 +1157,9 @@ def get_history_from_db(indicator_id):
         }), 500
 
 def update_all_indicators_background():
-    """백그라운드에서 모든 지표 업데이트 실행"""
+    """백그라운드에서 모든 지표 업데이트 실행 (병렬 크롤링)"""
     global update_status, INDICATORS_CACHE
+    from concurrent.futures import ThreadPoolExecutor, as_completed
 
     try:
         update_status["is_updating"] = True
@@ -1172,40 +1173,62 @@ def update_all_indicators_background():
         indicators = list(get_all_enabled_indicators().keys())
         total_indicators = len(indicators)
 
-        for i, indicator_id in enumerate(indicators):
-            update_status["current_indicator"] = indicator_id
-            update_status["progress"] = int((i / total_indicators) * 100)
+        # 병렬 크롤링 설정
+        batch_size = 5  # 5개씩 동시 처리
+        max_workers = 5  # 최대 5개 스레드
+        timeout_per_indicator = 10  # 각 지표당 10초 타임아웃
 
-            try:
-                # 크롤링 실행
-                crawled_data = CrawlerService.crawl_indicator(indicator_id)
+        completed_count = 0
 
-                if "error" in crawled_data:
-                    update_status["failed_indicators"].append({
-                        "indicator_id": indicator_id,
-                        "error": crawled_data["error"]
-                    })
-                else:
-                    # 데이터베이스에 저장
-                    db_service.save_indicator_data(indicator_id, crawled_data)
-                    update_status["completed_indicators"].append(indicator_id)
+        # 배치 단위로 처리
+        for batch_start in range(0, total_indicators, batch_size):
+            batch_end = min(batch_start + batch_size, total_indicators)
+            batch = indicators[batch_start:batch_end]
 
-            except Exception as e:
-                update_status["failed_indicators"].append({
-                    "indicator_id": indicator_id,
-                    "error": str(e)
-                })
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                # 배치 내 모든 지표 크롤링 제출
+                future_to_indicator = {
+                    executor.submit(CrawlerService.crawl_indicator, indicator_id): indicator_id
+                    for indicator_id in batch
+                }
 
-            # 크롤링 간격
-            time.sleep(1)
+                # 완료된 작업 수집
+                for future in as_completed(future_to_indicator, timeout=timeout_per_indicator * len(batch)):
+                    indicator_id = future_to_indicator[future]
+                    completed_count += 1
+
+                    try:
+                        # 크롤링 결과 가져오기 (타임아웃 적용)
+                        crawled_data = future.result(timeout=timeout_per_indicator)
+
+                        if "error" in crawled_data:
+                            update_status["failed_indicators"].append({
+                                "indicator_id": indicator_id,
+                                "error": crawled_data["error"]
+                            })
+                        else:
+                            # 데이터베이스에 저장
+                            db_service.save_indicator_data(indicator_id, crawled_data)
+                            update_status["completed_indicators"].append(indicator_id)
+
+                    except Exception as e:
+                        update_status["failed_indicators"].append({
+                            "indicator_id": indicator_id,
+                            "error": f"Timeout or error: {str(e)}"
+                        })
+
+                    # 진행률 업데이트
+                    update_status["progress"] = int((completed_count / total_indicators) * 100)
+                    update_status["current_indicator"] = indicator_id
 
         update_status["progress"] = 100
         update_status["current_indicator"] = ""
 
     except Exception as e:
+        import traceback
         update_status["failed_indicators"].append({
             "indicator_id": "system",
-            "error": f"Update process failed: {str(e)}"
+            "error": f"Update process failed: {str(e)}\n{traceback.format_exc()}"
         })
     finally:
         # ✅ 지표 업데이트 후 캐시 무효화 + 상태 리셋
