@@ -318,17 +318,17 @@ INDICATORS: Dict[str, IndicatorConfig] = {
     # ========== 물가지표 (Inflation) ==========
     "cpi": IndicatorConfig(
         id="cpi",
-        name="Consumer Price Index (CPI)",
-        name_ko="소비자물가지수",
-        url="https://www.investing.com/economic-calendar/cpi-69",
+        name="Consumer Price Index (CPI) YoY",
+        name_ko="소비자물가지수 (YoY)",
+        url="https://www.investing.com/economic-calendar/cpi-733",
         category="inflation",
         threshold={"target": 2.0, "high": 3.0},
     ),
     "core-cpi": IndicatorConfig(
         id="core-cpi",
-        name="Core CPI",
-        name_ko="근원 소비자물가지수",
-        url="https://www.investing.com/economic-calendar/core-cpi-56",
+        name="Core CPI YoY",
+        name_ko="근원 소비자물가지수 (YoY)",
+        url="https://www.investing.com/economic-calendar/core-cpi-736",
         category="inflation",
     ),
     "ppi": IndicatorConfig(
