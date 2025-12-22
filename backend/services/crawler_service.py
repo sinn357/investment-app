@@ -39,9 +39,12 @@ class CrawlerService:
             # URL 유형에 따라 크롤러 선택
             if "fred.stlouisfed.org" in url:
                 # FRED CSV API 크롤러
-                series_id = url.split('/')[-1]  # URL에서 시리즈 ID 추출 (예: T10Y2Y, DFII10)
+                series_id = url.split('/')[-1]  # URL에서 시리즈 ID 추출 (예: T10Y2Y, DFII10, CPIAUCSL_PC1)
                 calculate_yoy = indicator_id == "m2-yoy"
-                result = crawl_fred_indicator(series_id, calculate_yoy=calculate_yoy)
+                # CPI/PPI 등 월별 데이터는 더 긴 기간 필요 (6개월 = 180일)
+                is_monthly = "_PC1" in series_id or indicator_id in ["cpi", "core-cpi", "ppi", "pce", "core-pce"]
+                days = 180 if is_monthly else (500 if calculate_yoy else 14)
+                result = crawl_fred_indicator(series_id, calculate_yoy=calculate_yoy, days=days)
 
                 if "error" in result:
                     return result

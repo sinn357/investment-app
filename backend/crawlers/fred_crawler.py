@@ -198,17 +198,20 @@ def _extract_yoy_data(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
     }
 
 
-def crawl_fred_indicator(series_id: str, calculate_yoy: bool = False) -> Dict[str, Any]:
+def crawl_fred_indicator(series_id: str, calculate_yoy: bool = False, days: int = 14) -> Dict[str, Any]:
     """FRED 지표 크롤링 (Main Entry Point)
 
     Args:
         series_id: FRED 시리즈 ID
             - T10Y2Y: 10년물-2년물 장단기금리차
             - DFII10: 10년물 TIPS 실질금리
+            - CPIAUCSL_PC1: CPI MoM 변화율
         calculate_yoy: True면 전년동기 대비 %로 변환 (M2 등 레벨 데이터용)
+        days: 가져올 일수 (기본 14일, YoY는 500일, 월별 데이터는 180일 권장)
     """
     try:
-        days = 500 if calculate_yoy else 14  # YoY 계산 시 최소 1년치 이상 확보
+        if calculate_yoy and days < 500:
+            days = 500  # YoY 계산 시 최소 1년치 이상 확보
         csv_text = fetch_fred_csv(series_id, days=days)
         rows = parse_fred_csv(csv_text)
 
