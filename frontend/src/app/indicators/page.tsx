@@ -146,6 +146,9 @@ export default function IndicatorsPage() {
   // ✅ NEW: Master Market Cycle state (Phase 1)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [masterCycleData, setMasterCycleData] = useState<any>(null);
+  // ✅ NEW: Health Check state (Phase 2)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [healthCheck, setHealthCheck] = useState<any>(null);
   const [narrative, setNarrative] = useState<EconomicNarrative>({
     articles: [],
     myNarrative: '',
@@ -187,6 +190,20 @@ export default function IndicatorsPage() {
       console.warn('빅웨이브 로드 실패:', error);
     }
   }, []);
+
+  // ✅ Phase 2: 헬스체크 데이터 페칭
+  useEffect(() => {
+    async function fetchHealthCheck() {
+      try {
+        const response = await fetchJsonWithRetry(`${API_URL}/api/v2/indicators/health-check`);
+        setHealthCheck(response);
+      } catch (error) {
+        console.error('헬스체크 데이터 로드 실패:', error);
+        setHealthCheck(null);
+      }
+    }
+    fetchHealthCheck();
+  }, []); // 페이지 로드 시 한 번만 실행
 
   // 수동 업데이트 함수
   const handleManualUpdate = async () => {
@@ -434,6 +451,59 @@ export default function IndicatorsPage() {
         {!loading && masterCycleData && (
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
             <MasterCycleCard data={masterCycleData} />
+          </div>
+        )}
+
+        {/* ✅ NEW: Health Check Summary (Phase 2) */}
+        {!loading && healthCheck && healthCheck.summary && (
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-6">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 p-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
+                📊 지표 상태 요약
+              </h3>
+              <div className="flex flex-wrap gap-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">✅</span>
+                  <div>
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Healthy</span>
+                    <p className="text-xl font-bold text-green-600 dark:text-green-400">
+                      {healthCheck.summary.healthy}개
+                    </p>
+                    <span className="text-xs text-gray-500">(7일 이내)</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">⚠️</span>
+                  <div>
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Stale</span>
+                    <p className="text-xl font-bold text-yellow-600 dark:text-yellow-400">
+                      {healthCheck.summary.stale}개
+                    </p>
+                    <span className="text-xs text-gray-500">(7-30일)</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">🚨</span>
+                  <div>
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Outdated</span>
+                    <p className="text-xl font-bold text-orange-600 dark:text-orange-400">
+                      {healthCheck.summary.outdated}개
+                    </p>
+                    <span className="text-xs text-gray-500">(30일+)</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">❌</span>
+                  <div>
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Error</span>
+                    <p className="text-xl font-bold text-red-600 dark:text-red-400">
+                      {healthCheck.summary.error}개
+                    </p>
+                    <span className="text-xs text-gray-500">(크롤링 실패)</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
