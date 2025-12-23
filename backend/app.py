@@ -1156,10 +1156,10 @@ def get_history_from_db(indicator_id):
             "message": f"Database query failed: {str(e)}"
         }), 500
 
-def update_all_indicators_background():
-    """백그라운드에서 모든 지표 업데이트 실행 (병렬 크롤링)"""
+async def update_all_indicators_background_async():
+    """백그라운드에서 모든 지표 업데이트 실행 (비동기 병렬 크롤링)"""
     global update_status, INDICATORS_CACHE
-    from concurrent.futures import ThreadPoolExecutor, as_completed
+    import asyncio
 
     try:
         update_status["is_updating"] = True
@@ -1173,48 +1173,41 @@ def update_all_indicators_background():
         indicators = list(get_all_enabled_indicators().keys())
         total_indicators = len(indicators)
 
-        # 병렬 크롤링 설정 (전체 병렬화)
-        max_workers = 15  # 최대 15개 스레드
-        timeout_per_indicator = 3  # 각 지표당 3초 타임아웃
+        # 비동기 크롤링 설정
+        timeout_per_indicator = 3
 
-        completed_count = 0
+        # 모든 지표를 동시에 비동기 실행 (asyncio.to_thread로 동기 함수를 비동기로 실행)
+        tasks = []
+        for indicator_id in indicators:
+            task = asyncio.to_thread(CrawlerService.crawl_indicator, indicator_id)
+            tasks.append((indicator_id, task))
 
-        # 전체 지표를 한 번에 병렬 처리 (배치 제거)
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            # 모든 지표 크롤링 동시 제출
-            future_to_indicator = {
-                executor.submit(CrawlerService.crawl_indicator, indicator_id): indicator_id
-                for indicator_id in indicators
-            }
+        # 모든 작업 동시 실행 (return_exceptions=True로 에러도 결과로 반환)
+        results = await asyncio.gather(*[task for _, task in tasks], return_exceptions=True)
 
-            # 완료된 작업 수집 (개별 지표 타임아웃 적용)
-            for future in as_completed(future_to_indicator):
-                indicator_id = future_to_indicator[future]
-                completed_count += 1
+        # 결과 처리
+        for i, (indicator_id, _) in enumerate(tasks):
+            result = results[i]
 
-                try:
-                    # 크롤링 결과 가져오기 (타임아웃 적용)
-                    crawled_data = future.result(timeout=timeout_per_indicator)
+            if isinstance(result, Exception):
+                update_status["failed_indicators"].append({
+                    "indicator_id": indicator_id,
+                    "error": f"Exception: {str(result)}"
+                })
+            elif isinstance(result, dict) and "error" in result:
+                update_status["failed_indicators"].append({
+                    "indicator_id": indicator_id,
+                    "error": result["error"]
+                })
+            else:
+                # 데이터베이스에 저장
+                db_service.save_indicator_data(indicator_id, result)
+                update_status["completed_indicators"].append(indicator_id)
 
-                    if "error" in crawled_data:
-                        update_status["failed_indicators"].append({
-                            "indicator_id": indicator_id,
-                            "error": crawled_data["error"]
-                        })
-                    else:
-                        # 데이터베이스에 저장
-                        db_service.save_indicator_data(indicator_id, crawled_data)
-                        update_status["completed_indicators"].append(indicator_id)
-
-                except Exception as e:
-                    update_status["failed_indicators"].append({
-                        "indicator_id": indicator_id,
-                        "error": f"Timeout or error: {str(e)}"
-                    })
-
-                # 진행률 업데이트
-                update_status["progress"] = int((completed_count / total_indicators) * 100)
-                update_status["current_indicator"] = indicator_id
+            # 진행률 업데이트
+            completed_count = i + 1
+            update_status["progress"] = int((completed_count / total_indicators) * 100)
+            update_status["current_indicator"] = indicator_id
 
         update_status["progress"] = 100
         update_status["current_indicator"] = ""
@@ -1230,6 +1223,18 @@ def update_all_indicators_background():
         INDICATORS_CACHE["data"] = None
         INDICATORS_CACHE["timestamp"] = 0
         update_status["is_updating"] = False
+
+def update_all_indicators_background():
+    """비동기 함수를 동기 컨텍스트에서 실행하는 래퍼"""
+    import asyncio
+
+    # 새 이벤트 루프 생성 및 실행
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    try:
+        loop.run_until_complete(update_all_indicators_background_async())
+    finally:
+        loop.close()
 
 @app.route('/api/v2/update-indicators', methods=['POST'])
 def trigger_update_indicators():
