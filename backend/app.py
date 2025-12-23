@@ -1173,9 +1173,9 @@ def update_all_indicators_background():
         indicators = list(get_all_enabled_indicators().keys())
         total_indicators = len(indicators)
 
-        # 병렬 크롤링 설정 (전체 병렬화 + 공격적 타임아웃)
+        # 병렬 크롤링 설정 (전체 병렬화)
         max_workers = 15  # 최대 15개 스레드
-        timeout_per_indicator = 1  # 각 지표당 1초 타임아웃 (공격적 설정)
+        timeout_per_indicator = 3  # 각 지표당 3초 타임아웃
 
         completed_count = 0
 
