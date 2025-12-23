@@ -62,6 +62,7 @@ INDICATORS: Dict[str, IndicatorConfig] = {
         name_ko="산업생산",
         url="https://www.investing.com/economic-calendar/industrial-production-175",
         category="business",
+        enabled=False,  # 404 오류로 비활성화
     ),
     "industrial-production-1755": IndicatorConfig(
         id="industrial-production-1755",
@@ -155,6 +156,7 @@ INDICATORS: Dict[str, IndicatorConfig] = {
         name_ko="평균시간당임금 (MoM)",
         url="https://www.investing.com/economic-calendar/average-hourly-earnings-1776",
         category="employment",
+        enabled=False,  # 파싱 오류로 비활성화
     ),
     "average-hourly-earnings-1777": IndicatorConfig(
         id="average-hourly-earnings-1777",
@@ -431,6 +433,7 @@ INDICATORS: Dict[str, IndicatorConfig] = {
         url="https://fred.stlouisfed.org/series/NFCI",
         category="credit",
         threshold={"loose": -0.5, "neutral": 0, "tight": 0.5},
+        enabled=False,  # FRED 데이터 부족으로 비활성화
     ),
     "m2-yoy": IndicatorConfig(
         id="m2-yoy",
