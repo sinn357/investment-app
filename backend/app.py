@@ -1173,53 +1173,48 @@ def update_all_indicators_background():
         indicators = list(get_all_enabled_indicators().keys())
         total_indicators = len(indicators)
 
-        # 병렬 크롤링 설정
-        batch_size = 5  # 5개씩 동시 처리
-        max_workers = 5  # 최대 5개 스레드
-        timeout_per_indicator = 3  # 각 지표당 3초 타임아웃 (실패 지표 대기 시간 단축)
+        # 병렬 크롤링 설정 (전체 병렬화)
+        max_workers = 10  # 최대 10개 스레드 (5→10 증가)
+        timeout_per_indicator = 2  # 각 지표당 2초 타임아웃 (3→2 단축)
 
         completed_count = 0
 
-        # 배치 단위로 처리
-        for batch_start in range(0, total_indicators, batch_size):
-            batch_end = min(batch_start + batch_size, total_indicators)
-            batch = indicators[batch_start:batch_end]
+        # 전체 지표를 한 번에 병렬 처리 (배치 제거)
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            # 모든 지표 크롤링 동시 제출
+            future_to_indicator = {
+                executor.submit(CrawlerService.crawl_indicator, indicator_id): indicator_id
+                for indicator_id in indicators
+            }
 
-            with ThreadPoolExecutor(max_workers=max_workers) as executor:
-                # 배치 내 모든 지표 크롤링 제출
-                future_to_indicator = {
-                    executor.submit(CrawlerService.crawl_indicator, indicator_id): indicator_id
-                    for indicator_id in batch
-                }
+            # 완료된 작업 수집 (개별 지표 타임아웃 적용)
+            for future in as_completed(future_to_indicator):
+                indicator_id = future_to_indicator[future]
+                completed_count += 1
 
-                # 완료된 작업 수집 (배치 타임아웃 제거, 개별 지표 타임아웃만 사용)
-                for future in as_completed(future_to_indicator):
-                    indicator_id = future_to_indicator[future]
-                    completed_count += 1
+                try:
+                    # 크롤링 결과 가져오기 (타임아웃 적용)
+                    crawled_data = future.result(timeout=timeout_per_indicator)
 
-                    try:
-                        # 크롤링 결과 가져오기 (타임아웃 적용)
-                        crawled_data = future.result(timeout=timeout_per_indicator)
-
-                        if "error" in crawled_data:
-                            update_status["failed_indicators"].append({
-                                "indicator_id": indicator_id,
-                                "error": crawled_data["error"]
-                            })
-                        else:
-                            # 데이터베이스에 저장
-                            db_service.save_indicator_data(indicator_id, crawled_data)
-                            update_status["completed_indicators"].append(indicator_id)
-
-                    except Exception as e:
+                    if "error" in crawled_data:
                         update_status["failed_indicators"].append({
                             "indicator_id": indicator_id,
-                            "error": f"Timeout or error: {str(e)}"
+                            "error": crawled_data["error"]
                         })
+                    else:
+                        # 데이터베이스에 저장
+                        db_service.save_indicator_data(indicator_id, crawled_data)
+                        update_status["completed_indicators"].append(indicator_id)
 
-                    # 진행률 업데이트
-                    update_status["progress"] = int((completed_count / total_indicators) * 100)
-                    update_status["current_indicator"] = indicator_id
+                except Exception as e:
+                    update_status["failed_indicators"].append({
+                        "indicator_id": indicator_id,
+                        "error": f"Timeout or error: {str(e)}"
+                    })
+
+                # 진행률 업데이트
+                update_status["progress"] = int((completed_count / total_indicators) * 100)
+                update_status["current_indicator"] = indicator_id
 
         update_status["progress"] = 100
         update_status["current_indicator"] = ""
