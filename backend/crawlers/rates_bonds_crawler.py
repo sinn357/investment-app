@@ -32,8 +32,23 @@ def parse_historical_table(html: str) -> List[Dict[str, Any]]:
     """
     soup = BeautifulSoup(html, 'html.parser')
 
-    # Historical Data 테이블 찾기 (2025년 구조: class 기반)
-    table = soup.find('table')
+    # Historical Data 테이블 찾기 (2025년 구조: 여러 테이블 중 날짜 데이터가 있는 것)
+    tables = soup.find_all('table')
+    table = None
+
+    # 각 테이블을 확인하여 날짜 형식("Dec 23, 2025")이 있는 것 찾기
+    for t in tables:
+        tbody = t.find('tbody')
+        if tbody:
+            rows = tbody.find_all('tr')
+            if rows:
+                cells = rows[0].find_all('td')
+                if cells:
+                    first_cell = cells[0].get_text().strip()
+                    # "Dec 23, 2025" 형식 체크
+                    if len(first_cell.split(',')) == 2 and '202' in first_cell:
+                        table = t
+                        break
 
     if not table:
         return []

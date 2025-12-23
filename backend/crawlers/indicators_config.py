@@ -273,7 +273,7 @@ INDICATORS: Dict[str, IndicatorConfig] = {
         name_ko="달러 인덱스",
         url="https://www.investing.com/indices/usdollar",
         category="trade",
-        enabled=False,  # Historical Data 크롤러 실패 - 임시 비활성화
+        enabled=True,  # ✅ 크롤러 수정 완료
     ),
     "usd-krw": IndicatorConfig(
         id="usd-krw",
@@ -281,7 +281,7 @@ INDICATORS: Dict[str, IndicatorConfig] = {
         name_ko="원/달러 환율",
         url="https://www.investing.com/currencies/usd-krw",
         category="trade",
-        enabled=False,  # Historical Data 크롤러 실패 - 임시 비활성화
+        enabled=True,  # ✅ 크롤러 수정 완료
     ),
     "reer": IndicatorConfig(
         id="reer",
@@ -386,7 +386,7 @@ INDICATORS: Dict[str, IndicatorConfig] = {
         name_ko="브렌트유",
         url="https://www.investing.com/commodities/brent-oil",
         category="inflation",
-        enabled=False,  # Historical Data 크롤러 실패 - 임시 비활성화
+        enabled=True,  # ✅ 크롤러 수정 완료
     ),
     "wti-oil": IndicatorConfig(
         id="wti-oil",
@@ -394,7 +394,7 @@ INDICATORS: Dict[str, IndicatorConfig] = {
         name_ko="WTI 원유",
         url="https://www.investing.com/commodities/crude-oil",
         category="inflation",
-        enabled=False,  # Historical Data 크롤러 실패 - 임시 비활성화
+        enabled=True,  # ✅ 크롤러 수정 완료
     ),
 
     # ========== 원자재지수 ==========
