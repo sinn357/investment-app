@@ -1176,7 +1176,7 @@ def update_all_indicators_background():
         # 병렬 크롤링 설정
         batch_size = 5  # 5개씩 동시 처리
         max_workers = 5  # 최대 5개 스레드
-        timeout_per_indicator = 10  # 각 지표당 10초 타임아웃
+        timeout_per_indicator = 3  # 각 지표당 3초 타임아웃 (실패 지표 대기 시간 단축)
 
         completed_count = 0
 

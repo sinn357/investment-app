@@ -90,6 +90,7 @@ INDICATORS: Dict[str, IndicatorConfig] = {
         name_ko="기업재고",
         url="https://www.investing.com/economic-calendar/business-inventories-184",
         category="business",
+        enabled=False,  # 크롤링 실패 - 임시 비활성화
     ),
     "cb-consumer-confidence": IndicatorConfig(
         id="cb-consumer-confidence",
@@ -120,6 +121,7 @@ INDICATORS: Dict[str, IndicatorConfig] = {
         name_ko="경기선행지수",
         url="https://www.investing.com/economic-calendar/leading-indicators-214",
         category="business",
+        enabled=False,  # 크롤링 실패 - 임시 비활성화
     ),
 
     # ========== 고용지표 (Employment) ==========
@@ -220,6 +222,7 @@ INDICATORS: Dict[str, IndicatorConfig] = {
         name_ko="수출",
         url="https://www.investing.com/economic-calendar/exports-1779",
         category="trade",
+        enabled=False,  # 크롤링 실패 - 임시 비활성화
     ),
     "imports": IndicatorConfig(
         id="imports",
@@ -227,6 +230,7 @@ INDICATORS: Dict[str, IndicatorConfig] = {
         name_ko="수입",
         url="https://www.investing.com/economic-calendar/imports-1780",
         category="trade",
+        enabled=False,  # 크롤링 실패 - 임시 비활성화
     ),
     "current-account-balance": IndicatorConfig(
         id="current-account-balance",
@@ -234,6 +238,7 @@ INDICATORS: Dict[str, IndicatorConfig] = {
         name_ko="경상수지",
         url="https://apps.bea.gov/iTable/?reqid=62&step=1#eyJhcHBpZCI6NjIsInN0ZXBzIjpbMSwyLDNdLCJkYXRhIjpbWyJwcm9kdWN0IiwiMTAiXV19",
         category="trade",
+        enabled=False,  # BEA API 키 문제 - 임시 비활성화
     ),
 
     # ========== 수출입물가 ==========
@@ -268,6 +273,7 @@ INDICATORS: Dict[str, IndicatorConfig] = {
         name_ko="달러 인덱스",
         url="https://www.investing.com/indices/usdollar",
         category="trade",
+        enabled=False,  # Historical Data 크롤러 실패 - 임시 비활성화
     ),
     "usd-krw": IndicatorConfig(
         id="usd-krw",
@@ -275,6 +281,7 @@ INDICATORS: Dict[str, IndicatorConfig] = {
         name_ko="원/달러 환율",
         url="https://www.investing.com/currencies/usd-krw",
         category="trade",
+        enabled=False,  # Historical Data 크롤러 실패 - 임시 비활성화
     ),
     "reer": IndicatorConfig(
         id="reer",
@@ -351,6 +358,7 @@ INDICATORS: Dict[str, IndicatorConfig] = {
         name_ko="근원 개인소비지출",
         url="https://www.investing.com/economic-calendar/core-pce-prices-326",
         category="inflation",
+        enabled=False,  # 크롤링 실패 - 임시 비활성화
     ),
 
     # ========== 기대 인플레이션 ==========
@@ -378,6 +386,7 @@ INDICATORS: Dict[str, IndicatorConfig] = {
         name_ko="브렌트유",
         url="https://www.investing.com/commodities/brent-oil",
         category="inflation",
+        enabled=False,  # Historical Data 크롤러 실패 - 임시 비활성화
     ),
     "wti-oil": IndicatorConfig(
         id="wti-oil",
@@ -385,6 +394,7 @@ INDICATORS: Dict[str, IndicatorConfig] = {
         name_ko="WTI 원유",
         url="https://www.investing.com/commodities/crude-oil",
         category="inflation",
+        enabled=False,  # Historical Data 크롤러 실패 - 임시 비활성화
     ),
 
     # ========== 원자재지수 ==========
@@ -394,6 +404,7 @@ INDICATORS: Dict[str, IndicatorConfig] = {
         name_ko="S&P GSCI 원자재지수",
         url="https://www.investing.com/indices/s-p-gsci",
         category="inflation",
+        enabled=False,  # Historical Data 크롤러 실패 - 임시 비활성화
     ),
 
     # ========== 신용/유동성지표 (Credit) ==========
