@@ -1192,8 +1192,8 @@ def update_all_indicators_background():
                     for indicator_id in batch
                 }
 
-                # 완료된 작업 수집
-                for future in as_completed(future_to_indicator, timeout=timeout_per_indicator * len(batch)):
+                # 완료된 작업 수집 (배치 타임아웃 제거, 개별 지표 타임아웃만 사용)
+                for future in as_completed(future_to_indicator):
                     indicator_id = future_to_indicator[future]
                     completed_count += 1
 
