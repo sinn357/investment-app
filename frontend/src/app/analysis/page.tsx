@@ -471,20 +471,21 @@ export default function AnalysisPage() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-        <section className="grid gap-4 lg:grid-cols-3">
-          <div className="lg:col-span-1 space-y-4">
+        <section className="flex gap-4">
+          <aside className="w-52 shrink-0 space-y-3">
             {/* 새 분석 추가 버튼 */}
             <Button
               onClick={handleAdd}
-              className="w-full bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-white font-semibold shadow-lg"
+              size="sm"
+              className="w-full bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-white font-medium shadow"
             >
-              ➕ 새 분석 추가
+              ➕ 새 분석
             </Button>
 
             {analyses.map(item => (
               <Card
                 key={item.id}
-                className={`cursor-pointer transition shadow-sm hover:-translate-y-0.5 ${
+                className={`cursor-pointer transition shadow-sm hover:-translate-y-0.5 p-3 ${
                   item.id === selected?.id ? 'ring-2 ring-primary/60 border-primary/50' : 'border-border'
                 }`}
                 onClick={() => {
@@ -492,52 +493,31 @@ export default function AnalysisPage() {
                   setActiveTab('thesis');
                 }}
               >
-                <CardHeader className="flex flex-row items-center justify-between space-y-0">
-                  <div>
+                <div className="flex items-start justify-between mb-2">
+                  <div className="min-w-0 flex-1">
                     <p className="text-xs text-muted-foreground">{item.type}</p>
-                    <CardTitle className="text-lg">
-                      {item.symbol} · {item.name}
-                    </CardTitle>
+                    <p className="font-semibold text-sm truncate">{item.symbol}</p>
+                    <p className="text-xs text-muted-foreground truncate">{item.name}</p>
                   </div>
-                  <Badge className={actionBadgeStyle[item.deepDive?.decision?.action ?? 'WAIT']}>
+                  <Badge className={`${actionBadgeStyle[item.deepDive?.decision?.action ?? 'WAIT']} text-xs shrink-0 ml-2`}>
                     {item.deepDive?.decision?.action ?? 'WAIT'}
                   </Badge>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div className="rounded-md border border-dashed border-primary/20 bg-primary/5 p-3">
-                      <p className="text-xs text-muted-foreground">목표가</p>
-                      <p className="font-semibold">
-                        {(item.deepDive?.decision?.target_price ?? 0) > 0
-                          ? `$${item.deepDive.decision.target_price}`
-                          : '-'}
-                      </p>
-                    </div>
-                    <div className="rounded-md border border-dashed border-secondary/30 bg-secondary/5 p-3">
-                      <p className="text-xs text-muted-foreground">현재가</p>
-                      <p className="font-semibold">
-                        {(item.deepDive?.pricing?.stock_price ?? 0) > 0
-                          ? `$${item.deepDive.pricing.stock_price}`
-                          : '-'}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {item.tags.map(tag => (
-                      <Badge key={tag} variant="secondary" className="text-xs">
-                        #{tag}
-                      </Badge>
-                    ))}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    업데이트: {item.lastUpdatedAt} · 분석일: {item.analyzedAt}
-                  </p>
-                </CardContent>
+                </div>
+
+                <div className="text-xs text-muted-foreground">
+                  {(item.deepDive?.pricing?.stock_price ?? 0) > 0 && (item.deepDive?.decision?.target_price ?? 0) > 0 ? (
+                    <span className="font-medium">
+                      ${item.deepDive.pricing.stock_price} → ${item.deepDive.decision.target_price}
+                    </span>
+                  ) : (
+                    <span>가격 미설정</span>
+                  )}
+                </div>
               </Card>
             ))}
-          </div>
+          </aside>
 
-          <div className="lg:col-span-2 space-y-4">
+          <div className="flex-1 space-y-4">
             {detail ? (
               <Card className="border border-primary/20 bg-card">
                 <CardHeader className="flex flex-col gap-2">
