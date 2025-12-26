@@ -1,5 +1,40 @@
 # Investment App Changelog
 
+## 2025-12-26
+
+### UI/UX Improvements
+- **Analysis 페이지 레이아웃 개선 - 컴팩트 사이드바**
+  - 왼쪽 종목 목록: 33% → 208px (15%)
+  - 메인 컨텐츠: 67% → 85% (+18% 증가)
+  - 카드 간소화: 목표가/현재가 한 줄, 태그/날짜 제거
+  - 카드 높이 60% 감소 → 한 화면에 더 많은 종목 표시
+  - 파일: `frontend/src/app/analysis/page.tsx`
+  - 커밋: `1651de2`
+
+- **Industries 페이지 레이아웃 개선 - 2단계 구조**
+  - 6개 대분류: 3열 카드 → 상단 가로 탭
+  - 소분류: 카드 밑 펼침 → 왼쪽 사이드바 (208px)
+  - 메인 컨텐츠: 33% → 80% (+47% 증가)
+  - 전체 계층 한눈에 확인 가능, 빠른 탭 전환
+  - 불필요한 import 제거 (ChevronDown, ChevronUp)
+  - 파일: `frontend/src/app/industries/page.tsx`
+  - 커밋: `b12bcdb`
+
+### Technical Details
+- **프론트엔드 수정**:
+  - `analysis/page.tsx`: grid → flex 레이아웃 전환 (24 ins, 44 del)
+  - `industries/page.tsx`: 중첩 구조 → 2단계 레이아웃 (45 ins, 55 del)
+  - 총 코드 감소: -65 lines
+
+### Commits
+- `1651de2`: refactor: analysis 페이지 레이아웃 개선 - 컴팩트 사이드바
+- `b12bcdb`: refactor: industries 페이지 레이아웃 개선 - 2단계 구조
+
+### Documentation
+- `docs/2025-12-26_UI_Layout_Improvements.md`: UI 개선 작업 전체 문서화
+
+---
+
 ## 2025-12-23
 
 ### Session 4: 비동기 처리 테스트 실패
