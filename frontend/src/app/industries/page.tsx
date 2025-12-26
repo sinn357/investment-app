@@ -9,7 +9,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { ChevronDown, ChevronUp } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://investment-app-backend-x166.onrender.com';
 
@@ -308,51 +307,48 @@ export default function IndustriesPage() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-        {/* 6대 산업군 카드 (항상 표시) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {/* 상단: 6대 산업군 탭 */}
+        <div className="flex flex-wrap gap-2 pb-4 border-b border-border">
           {MAJOR_CATEGORIES.map(category => (
-            <div key={category.id} className="space-y-3">
-              <Card
-                className={`cursor-pointer hover:-translate-y-1 transition-all shadow-md hover:shadow-xl bg-gradient-to-br ${category.color} ${expandedMajor === category.name ? 'ring-2 ring-primary' : ''}`}
-                onClick={() => handleMajorClick(category.name)}
-              >
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <span className="text-4xl">{category.icon}</span>
-                      <div>
-                        <div className="text-xl font-bold">{category.name}</div>
-                        <div className="text-sm text-muted-foreground font-normal">
-                          {category.subIndustries.length}개 하위 산업
-                        </div>
-                      </div>
-                    </div>
-                    {expandedMajor === category.name ? <ChevronUp /> : <ChevronDown />}
-                  </CardTitle>
-                </CardHeader>
-              </Card>
+            <button
+              key={category.id}
+              onClick={() => handleMajorClick(category.name)}
+              className={`px-4 py-2 rounded-lg font-semibold transition-all ${
+                expandedMajor === category.name
+                  ? `bg-gradient-to-br ${category.color} ring-2 ring-primary border-primary/50`
+                  : 'bg-muted/50 hover:bg-muted border border-border'
+              }`}
+            >
+              <span className="text-xl mr-2">{category.icon}</span>
+              <span className="text-sm">{category.name}</span>
+            </button>
+          ))}
+        </div>
 
-              {/* 하위산업군 탭들 (카드 밑에 표시) */}
-              {expandedMajor === category.name && (
-                <div className="ml-4 space-y-2 animate-in slide-in-from-top-2 duration-300">
-                  <div className="grid grid-cols-1 gap-2">
-                    {category.subIndustries.map((subIndustry, index) => (
-                      <div key={index} className="space-y-2">
-                        <Button
-                          onClick={() => handleSubIndustryClick(category.name, subIndustry)}
-                          className={`w-full h-auto py-3 text-left justify-start ${
-                            selectedSubIndustry?.major === category.name && selectedSubIndustry?.sub === subIndustry
-                              ? 'bg-gradient-to-r from-primary to-secondary text-primary-foreground'
-                              : 'bg-gradient-to-r from-primary/10 to-secondary/10 hover:from-primary/20 hover:to-secondary/20 border border-primary/20'
-                          }`}
-                          variant={selectedSubIndustry?.major === category.name && selectedSubIndustry?.sub === subIndustry ? 'default' : 'outline'}
-                        >
-                          <span className="font-semibold">{subIndustry}</span>
-                        </Button>
+        {/* 하단: 사이드바 + 메인 */}
+        {expandedMajor && (
+          <div className="flex gap-4">
+            {/* 왼쪽: 소분류 사이드바 */}
+            <aside className="w-52 shrink-0 space-y-2">
+              {MAJOR_CATEGORIES.find(c => c.name === expandedMajor)?.subIndustries.map((subIndustry, index) => (
+                <Button
+                  key={index}
+                  onClick={() => handleSubIndustryClick(expandedMajor, subIndustry)}
+                  className={`w-full h-auto py-2 text-left justify-start text-sm ${
+                    selectedSubIndustry?.major === expandedMajor && selectedSubIndustry?.sub === subIndustry
+                      ? 'bg-gradient-to-r from-primary to-secondary text-primary-foreground'
+                      : 'bg-gradient-to-r from-primary/10 to-secondary/10 hover:from-primary/20 hover:to-secondary/20 border border-primary/20'
+                  }`}
+                  variant={selectedSubIndustry?.major === expandedMajor && selectedSubIndustry?.sub === subIndustry ? 'default' : 'outline'}
+                >
+                  <span className="font-medium">{subIndustry}</span>
+                </Button>
+              ))}
+            </aside>
 
-                        {/* 분석 폼 (하위산업 탭 밑에 표시) */}
-                        {selectedSubIndustry?.major === category.name && selectedSubIndustry?.sub === subIndustry && analysisData && (
-                          <div className="ml-4 space-y-4 animate-in slide-in-from-top-2 duration-300">
+            {/* 오른쪽: 분석 폼 메인 */}
+            {selectedSubIndustry && analysisData && (
+              <div className="flex-1 space-y-4">
                             {/* 저장 버튼 */}
                             <div className="flex items-center gap-3 justify-end sticky top-0 bg-background/95 backdrop-blur-sm z-10 py-2 border-b">
                               {saveMessage && <span className="text-sm font-medium">{saveMessage}</span>}
@@ -796,16 +792,10 @@ export default function IndustriesPage() {
                                 {isSaving ? '저장 중...' : '💾 저장'}
                               </Button>
                             </div>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
+              </div>
+            )}
+          </div>
+        )}
       </main>
     </div>
   );
