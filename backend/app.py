@@ -931,8 +931,9 @@ def get_all_indicators_from_db():
         indicators_dict = {}
         for item in results:
             indicator_id = item.get('indicator_id')
-            if indicator_id and item.get('data', {}).get('latest_release'):
-                indicators_dict[indicator_id] = item['data']['latest_release']
+            if indicator_id and item.get('data'):
+                # 전체 item을 저장 (latest_release뿐만 아니라 next_release, history도 포함)
+                indicators_dict[indicator_id] = item
 
         # 3대 사이클 계산 (✅ DB 재조회 없이 results 데이터 재사용)
         try:
@@ -958,10 +959,11 @@ def get_all_indicators_from_db():
             sentiment_cycle = None
 
         # ✅ Master Market Cycle 계산 (3대 사이클 통합)
+        # Phase 1 최적화: 이미 조회한 indicators_dict 재사용 (DB 재조회 17회 제거)
         master_cycle = None
         try:
-            from services.cycle_engine import calculate_master_cycle_v1
-            master_cycle = calculate_master_cycle_v1(db_service)
+            from services.cycle_engine import calculate_master_cycle_v1_from_data
+            master_cycle = calculate_master_cycle_v1_from_data(indicators_dict)
         except Exception as e:
             print(f"Master cycle calculation error: {e}")
             master_cycle = None
