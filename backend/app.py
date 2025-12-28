@@ -141,6 +141,7 @@ update_status = {
     "current_indicator": "",
     "completed_indicators": [],
     "failed_indicators": [],
+    "total_indicators": 0,  # 전체 지표 개수
     "start_time": None
 }
 
@@ -1223,6 +1224,7 @@ async def update_all_indicators_background_async():
         from crawlers.indicators_config import get_all_enabled_indicators
         indicators = list(get_all_enabled_indicators().keys())
         total_indicators = len(indicators)
+        update_status["total_indicators"] = total_indicators  # 전체 개수 저장
 
         # 비동기 크롤링 설정
         timeout_per_indicator = 3
