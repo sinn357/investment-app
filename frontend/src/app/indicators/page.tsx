@@ -152,7 +152,6 @@ export default function IndicatorsPage() {
     duration: number;
     count: number;
   }>({ type: 'loading', duration: 0, count: 0 });
-  const [updateStartTime, setUpdateStartTime] = useState<number | null>(null); // 업데이트 시작 시간
   // ✅ NEW: Master Market Cycle state (Phase 1)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [masterCycleData, setMasterCycleData] = useState<any>(null);
@@ -219,8 +218,8 @@ export default function IndicatorsPage() {
   const handleManualUpdate = async () => {
     try {
       setIsUpdating(true);
-      // ✅ Phase 3: 업데이트 시작 시간 기록
-      setUpdateStartTime(Date.now());
+      // ✅ 수정 1: 업데이트 시작 시간을 localStorage에 저장 (새로고침 후에도 유지)
+      localStorage.setItem('updateStartTime', Date.now().toString());
 
       const response = await fetch('https://investment-app-backend-x166.onrender.com/api/v2/update-indicators', {
         method: 'POST',
@@ -250,19 +249,8 @@ export default function IndicatorsPage() {
               setIsUpdating(false);
               setUpdateProgress(null);
 
-              // ✅ Phase 3: 업데이트 완료 정보 저장 (localStorage에도 저장)
-              if (updateStartTime) {
-                const duration = (Date.now() - updateStartTime) / 1000; // 밀리초 → 초
-                const updateInfo = {
-                  type: 'update' as const,
-                  duration: duration,
-                  count: status.completed_indicators?.length || 0,
-                  timestamp: Date.now()
-                };
-                setLoadingInfo(updateInfo);
-                // localStorage에 저장 (새로고침 후에도 유지)
-                localStorage.setItem('lastUpdateInfo', JSON.stringify(updateInfo));
-              }
+              // ✅ 수정: localStorage 저장은 새로고침 후 데이터 로딩 완료 시점에 처리
+              // (updateStartTime은 localStorage에 저장되어 있으므로 여기서는 저장하지 않음)
 
               // 3초 카운트다운 시작 (window.location.reload는 useEffect에서 처리)
               setCountdownSeconds(3);
@@ -285,26 +273,6 @@ export default function IndicatorsPage() {
       alert('업데이트 중 오류가 발생했습니다.');
     }
   };
-
-  // ✅ Step 3: 페이지 로드 시 localStorage에서 업데이트 정보 복원
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem('lastUpdateInfo');
-      if (saved) {
-        const info = JSON.parse(saved);
-        // 5분 이내면 업데이트 정보 표시, 이후엔 일반 로딩 정보로 전환
-        if (Date.now() - info.timestamp < 5 * 60 * 1000) {
-          setLoadingInfo({
-            type: info.type,
-            duration: info.duration,
-            count: info.count
-          });
-        }
-      }
-    } catch (error) {
-      console.warn('localStorage 복원 실패:', error);
-    }
-  }, []);
 
   // 경제 지표 데이터 페칭 및 국면 계산 (✅ 통합 API - 4개 요청 → 1개 요청)
   useEffect(() => {
@@ -368,14 +336,59 @@ export default function IndicatorsPage() {
           });
           setAllIndicators(gridIndicators);
 
-          // ✅ Phase 3: 로딩 완료 시간 계산 및 정보 저장
+          // ✅ 수정 2: 페이지 로드 시 분기 처리 (Case 1,2,3)
           const endTime = performance.now();
           const loadTime = (endTime - startTime) / 1000; // 밀리초 → 초
-          setLoadingInfo({
-            type: 'loading',
-            duration: Number(loadTime.toFixed(2)),
-            count: gridIndicators.length
-          });
+
+          // localStorage에 updateStartTime이 있는지 확인 (업데이트 후 새로고침인지)
+          const savedUpdateStartTime = localStorage.getItem('updateStartTime');
+
+          if (savedUpdateStartTime) {
+            // Case 3: 업데이트 버튼 클릭 후 → 전체 시간 계산
+            const totalDuration = (Date.now() - parseInt(savedUpdateStartTime)) / 1000;
+            const updateInfo = {
+              type: 'update' as const,
+              duration: Number(totalDuration.toFixed(1)),
+              count: gridIndicators.length,
+              timestamp: Date.now()
+            };
+            setLoadingInfo(updateInfo);
+
+            // 영구 저장 (5분간 유지)
+            localStorage.setItem('lastUpdateInfo', JSON.stringify(updateInfo));
+            // 일회용 시작 시간 삭제
+            localStorage.removeItem('updateStartTime');
+
+            // ✅ 수정 3: 실제 업데이트 시간 저장
+            localStorage.setItem('actualLastUpdate', new Date().toISOString());
+          } else {
+            // Case 1, 2: 페이지 첫 진입 또는 새로고침 → 일반 로딩 시간
+            // 최근 업데이트 정보가 있으면 우선 표시
+            const saved = localStorage.getItem('lastUpdateInfo');
+            if (saved) {
+              try {
+                const info = JSON.parse(saved);
+                // 5분 이내면 업데이트 정보 유지
+                if (Date.now() - info.timestamp < 5 * 60 * 1000) {
+                  setLoadingInfo({
+                    type: info.type,
+                    duration: info.duration,
+                    count: info.count
+                  });
+                  return; // 업데이트 정보 유지, 로딩 정보로 덮어쓰지 않음
+                }
+              } catch (error) {
+                console.warn('lastUpdateInfo 파싱 실패:', error);
+              }
+            }
+
+            // 업데이트 정보가 없거나 오래되면 일반 로딩 정보 표시
+            setLoadingInfo({
+              type: 'loading',
+              duration: Number(loadTime.toFixed(2)),
+              count: gridIndicators.length
+            });
+          }
         }
 
         // ✅ NEW: Master Market Cycle API 호출 (Phase 1)
@@ -590,19 +603,27 @@ export default function IndicatorsPage() {
               <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
                 <div className="flex items-center gap-3">
                   <span className="text-sm text-gray-600 dark:text-gray-400">
-                    {lastUpdated ? (
-                      <>
-                        마지막 업데이트: <span className="font-medium text-gray-900 dark:text-gray-100">{new Date(lastUpdated).toLocaleString('ko-KR', {
-                          timeZone: 'Asia/Seoul',  // ✅ KST 명시
-                          month: 'long',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}</span>
-                      </>
-                    ) : (
-                      '업데이트 정보 없음'
-                    )}
+                    {(() => {
+                      // ✅ 수정 4: localStorage 시간 우선 사용
+                      const actualUpdate = localStorage.getItem('actualLastUpdate');
+                      const displayTime = actualUpdate && new Date(actualUpdate) > new Date(lastUpdated || 0)
+                        ? actualUpdate
+                        : lastUpdated;
+
+                      return displayTime ? (
+                        <>
+                          마지막 업데이트: <span className="font-medium text-gray-900 dark:text-gray-100">{new Date(displayTime).toLocaleString('ko-KR', {
+                            timeZone: 'Asia/Seoul',  // ✅ KST 명시
+                            month: 'long',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}</span>
+                        </>
+                      ) : (
+                        '업데이트 정보 없음'
+                      );
+                    })()}
                   </span>
                   {/* ✅ Phase 3: 로딩/업데이트 정보 배지 */}
                   {loadingInfo.duration > 0 && (
