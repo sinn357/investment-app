@@ -19,6 +19,8 @@ import { CARD_CLASSES } from '@/styles/theme';
 // import { calculateCycleScore, RawIndicators } from '@/utils/cycleCalculator'; // ✅ 제거: Master Cycle로 대체
 import { fetchJsonWithRetry } from '@/utils/fetchWithRetry';
 import BigWaveSection, { BigWaveCard } from '@/components/BigWaveSection';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 
 interface Interpretation {
   core_definition: string;
