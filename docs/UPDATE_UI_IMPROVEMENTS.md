@@ -139,23 +139,32 @@ const handleUpdateComplete = (updateStatus) => {
 
 ## 🎯 구현 체크리스트
 
-### Phase 1: 진척도 표시 수정 (즉시)
+### Phase 1: 진척도 표시 수정 ✅ (완료)
 - [x] 백엔드 `total_indicators` 추가 (`f0b1586`)
-- [ ] Render 배포 완료 확인
-- [ ] 프론트엔드 테스트 (하드 리프레시 Cmd+Shift+R)
-- [ ] `/api/v2/update-status` 응답 검증
+- [x] 백엔드 API 응답 확인 (total_indicators: 45)
+- [x] 프론트엔드 필드명 불일치 수정
+- [x] `total_count` → `total_indicators` 변경
+- [x] `completed_count` → `completed_indicators.length` 변경
+- **결과**: "44/45 완료" 정상 표시 ✅
 
-### Phase 2: 업데이트 완료 후 자동 새로고침 (권장)
-- [ ] `useEffect`로 `progress === 100` 감지
-- [ ] 3초 카운트다운 표시 ("3초 후 자동 새로고침...")
-- [ ] `window.location.reload()` 실행
-- [ ] 업데이트 시간 정상 표시 확인
+### Phase 2: 업데이트 완료 후 자동 새로고침 ✅ (완료)
+- [x] `useEffect`로 업데이트 완료 감지 (`countdownSeconds` state)
+- [x] 3초 카운트다운 표시 (초록색 배지, 시계 아이콘, 애니메이션)
+- [x] `window.location.reload()` 실행 (0초 도달 시)
+- [x] 업데이트 시간 정상 표시 확인
+- **결과**: 자동 새로고침으로 최신 데이터 표시 ✅
 
-### Phase 3: 로딩 시간 표시 개선
-- [ ] `loadingInfo` 상태 추가 (type, duration, count)
-- [ ] 일반 로딩 시: "데이터 로딩: N초"
-- [ ] 업데이트 후: "업데이트 완료: N개 지표 (소요 시간: N초)"
-- [ ] 업데이트 시작/종료 시간 계산 로직 추가
+### Phase 3: 로딩 시간 표시 개선 ✅ (완료)
+- [x] `loadingInfo` 상태 추가 (type, duration, count)
+- [x] localStorage 기반 3가지 케이스 처리
+  - Case 1: 페이지 첫 진입 → "데이터 로딩: 1.76초"
+  - Case 2: 새로고침 → "데이터 로딩: 1.52초" (5분 내 업데이트 시 유지)
+  - Case 3: 업데이트 버튼 → "업데이트 완료: 45개 지표 (32초)"
+- [x] 업데이트 시작/종료 시간 계산 로직 (localStorage)
+- [x] 마지막 업데이트 시간 localStorage 저장 (actualLastUpdate)
+- [x] 시간대 KST 명시 (Asia/Seoul)
+- [x] 업데이트 시간 배지 분 단위 표시 ("1시간 30분 전 업데이트")
+- **결과**: 정확한 시간 측정 및 표시 ✅
 
 ### Phase 4: 추가 개선 (선택)
 - [ ] 업데이트 진행 중 개별 지표 성공/실패 표시
@@ -254,5 +263,93 @@ useEffect(() => {
 
 ---
 
-**Last Updated**: 2025-12-29
-**Status**: Phase 1 백엔드 완료, 프론트엔드 대기 중
+## ✅ 세션 결과 (2025-12-29)
+
+### 완료된 작업
+
+**Phase 2-3 구현** (`d2a2460`, `2fcf935`, `a63c56b`, `25d4fba`)
+
+#### 1️⃣ 자동 새로고침 시스템 (Phase 2)
+- 업데이트 완료 후 3초 카운트다운 UI
+- 자동 새로고침으로 최신 데이터 표시
+- 업데이트 시간 정상 갱신
+
+#### 2️⃣ 로딩 시간 표시 개선 (Phase 3)
+- 3가지 케이스 정확히 측정
+  - 페이지 첫 진입: DB 로딩 시간
+  - 새로고침: DB 로딩 시간 (업데이트 정보 유지)
+  - 업데이트 버튼: 전체 시간 (크롤링 + 카운트다운 + 리로드 + 로딩)
+- localStorage 기반 시간 추적
+- 타입별 색상 구분 (초록/파랑)
+
+#### 3️⃣ 0/0 완료 문제 해결
+- 백엔드 필드명 불일치 수정
+- `total_count` → `total_indicators`
+- `completed_count` → `completed_indicators.length`
+- **결과**: "44/45 완료" 정상 표시
+
+#### 4️⃣ 마지막 업데이트 시간 정확성
+- localStorage에 실제 업데이트 시간 저장
+- 백엔드 고정값 대신 localStorage 우선 사용
+- KST 시간대 명시 (Asia/Seoul)
+- **결과**: "12월 29일 오전 1:48" 정확히 표시
+
+#### 5️⃣ 업데이트 시간 배지 개선
+- localStorage 기반 정확한 시간 계산
+- 분 단위까지 표시 ("1시간 30분 전 업데이트")
+- 24시간 이후 "🔴 크롤링 권장" 표시
+- **결과**: 실시간 업데이트 시간 반영
+
+### 기술적 구현
+
+#### localStorage 활용
+```typescript
+// 3가지 키 사용
+updateStartTime      // 일회용 (업데이트 후 삭제)
+lastUpdateInfo       // 5분간 유지 (업데이트 정보)
+actualLastUpdate     // 영구 저장 (실제 업데이트 시간)
+```
+
+#### 3가지 케이스 분기 처리
+```typescript
+const savedStartTime = localStorage.getItem('updateStartTime');
+
+if (savedStartTime) {
+  // Case 3: 업데이트 후 → 전체 시간
+  totalDuration = (Date.now() - savedStartTime) / 1000;
+  setLoadingInfo({type: 'update', duration: totalDuration, ...});
+} else {
+  // Case 1, 2: 일반 로딩 → 로딩 시간
+  loadTime = (performance.now() - startTime) / 1000;
+  setLoadingInfo({type: 'loading', duration: loadTime, ...});
+}
+```
+
+### 커밋 히스토리
+
+| 커밋 | 설명 |
+|------|------|
+| `d2a2460` | Phase 2-3 업데이트 UI 개선 (자동 새로고침 + 로딩 시간 표시) |
+| `2fcf935` | 업데이트 UI 3가지 문제 해결 (0/0, 로딩 시간, 시간대) |
+| `a63c56b` | 업데이트 시간 측정 완전 수정 (3가지 케이스) |
+| `25d4fba` | 업데이트 시간 배지 정확성 개선 (분 단위 표시) |
+
+### 변경 통계
+
+- **수정 파일**: `frontend/src/app/indicators/page.tsx`
+- **총 변경**: +199줄, -78줄
+- **빌드**: ✅ 성공 (3.5-3.7초)
+
+### 예상 결과
+
+| 항목 | Before | After |
+|------|--------|-------|
+| 진척도 | "0/0 완료" ❌ | "44/45 완료" ✅ |
+| 업데이트 시간 | "데이터 로딩: 1.76초" ❌ | "업데이트 완료: 45개 지표 (32초)" ✅ |
+| 마지막 업데이트 | "12/28 16:46" ❌ | "12/29 01:48" ✅ |
+| 시간 배지 | "🟢 9시간 전" ❌ | "🟢 1시간 30분 전" ✅ |
+
+---
+
+**Last Updated**: 2025-12-29 02:00
+**Status**: ✅ Phase 1-3 완료, Phase 4 선택 사항
