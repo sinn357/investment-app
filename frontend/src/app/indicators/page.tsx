@@ -676,16 +676,34 @@ export default function IndicatorsPage() {
                   </div>
                   <div className="flex items-center gap-3">
                     {/* 업데이트 시간 배지 */}
-                    {lastUpdated && (() => {
-                      const hours = (Date.now() - new Date(lastUpdated).getTime()) / (1000 * 60 * 60);
-                      const isStale = hours > 24;
+                    {(() => {
+                      // ✅ localStorage 시간 우선 사용 (마지막 업데이트 시간 표시와 동일)
+                      const actualUpdate = localStorage.getItem('actualLastUpdate');
+                      const displayTime = actualUpdate && new Date(actualUpdate) > new Date(lastUpdated || 0)
+                        ? actualUpdate
+                        : lastUpdated;
+
+                      if (!displayTime) return null;
+
+                      const totalMinutes = (Date.now() - new Date(displayTime).getTime()) / (1000 * 60);
+                      const hours = Math.floor(totalMinutes / 60);
+                      const minutes = Math.floor(totalMinutes % 60);
+                      const isStale = hours >= 24;
+
+                      // ✅ 분까지 표시
+                      let timeText;
+                      if (hours > 0) {
+                        timeText = `${hours}시간 ${minutes}분 전 업데이트`;
+                      } else {
+                        timeText = `${minutes}분 전 업데이트`;
+                      }
 
                       return (
                         <Badge
                           variant={isStale ? "destructive" : "default"}
                           className="text-xs font-medium"
                         >
-                          {isStale ? '🔴 크롤링 권장' : `🟢 ${Math.floor(hours)}시간 전 업데이트`}
+                          {isStale ? '🔴 크롤링 권장' : `🟢 ${timeText}`}
                         </Badge>
                       );
                     })()}
