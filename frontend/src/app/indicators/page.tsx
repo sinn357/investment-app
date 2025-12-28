@@ -443,71 +443,12 @@ export default function IndicatorsPage() {
 
       <header className="bg-gradient-to-r from-primary/5 to-secondary/5 shadow-sm border-b border-primary/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-start justify-between">
-            <div>
-              <h1 className={`${CARD_CLASSES.title} text-3xl`}>
-                경제지표 모니터링
-              </h1>
-              <p className={`mt-2 ${CARD_CLASSES.subtitle}`}>
-                실시간 경제지표 데이터 분석
-              </p>
-            </div>
-            {/* 업데이트 시간 배지 및 버튼 */}
-            <div className="flex flex-col items-end gap-3">
-              {lastUpdated && (
-                <div className="flex flex-col items-end gap-2">
-                  {(() => {
-                    const hours = (Date.now() - new Date(lastUpdated).getTime()) / (1000 * 60 * 60);
-                    const isStale = hours > 24;
-
-                    return (
-                      <>
-                        <Badge
-                          variant={isStale ? "destructive" : "default"}
-                          className="text-xs font-medium"
-                        >
-                          {isStale ? '🔴 크롤링 권장' : `🟢 ${Math.floor(hours)}시간 전 업데이트`}
-                        </Badge>
-                        <p className="text-xs text-muted-foreground">
-                          {new Date(lastUpdated).toLocaleString('ko-KR')}
-                        </p>
-                      </>
-                    );
-                  })()}
-                </div>
-              )}
-              <div className="flex flex-col items-end gap-2">
-                <Button
-                  onClick={handleManualUpdate}
-                  disabled={isUpdating}
-                  className="bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-white font-semibold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isUpdating ? (
-                    <>
-                      <svg className="animate-spin h-4 w-4 mr-2" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                      </svg>
-                      업데이트 중...
-                    </>
-                  ) : (
-                    <>
-                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                      </svg>
-                      지표 업데이트
-                    </>
-                  )}
-                </Button>
-                {isUpdating && updateProgress && (
-                  <div className="text-xs text-muted-foreground">
-                    {updateProgress.completed} / {updateProgress.total} 완료
-                    {updateProgress.current && ` (${updateProgress.current})`}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+          <h1 className={`${CARD_CLASSES.title} text-3xl`}>
+            경제지표 모니터링
+          </h1>
+          <p className={`mt-2 ${CARD_CLASSES.subtitle}`}>
+            실시간 경제지표 데이터 분석
+          </p>
         </div>
       </header>
 
@@ -639,35 +580,52 @@ export default function IndicatorsPage() {
                       테이블
                     </button>
                   </div>
-                  <div className="flex flex-col items-end gap-2">
-                    <Button
-                      onClick={handleManualUpdate}
-                      disabled={isUpdating}
-                      className="bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-white font-semibold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {isUpdating ? (
-                        <>
-                          <svg className="animate-spin h-4 w-4 mr-2" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                          </svg>
-                          업데이트 중...
-                        </>
-                      ) : (
-                        <>
-                          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                          </svg>
-                          지표 업데이트
-                        </>
+                  <div className="flex items-center gap-3">
+                    {/* 업데이트 시간 배지 */}
+                    {lastUpdated && (() => {
+                      const hours = (Date.now() - new Date(lastUpdated).getTime()) / (1000 * 60 * 60);
+                      const isStale = hours > 24;
+
+                      return (
+                        <Badge
+                          variant={isStale ? "destructive" : "default"}
+                          className="text-xs font-medium"
+                        >
+                          {isStale ? '🔴 크롤링 권장' : `🟢 ${Math.floor(hours)}시간 전 업데이트`}
+                        </Badge>
+                      );
+                    })()}
+                    {/* 업데이트 버튼 */}
+                    <div className="flex flex-col items-end gap-2">
+                      <Button
+                        onClick={handleManualUpdate}
+                        disabled={isUpdating}
+                        className="bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-white font-semibold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isUpdating ? (
+                          <>
+                            <svg className="animate-spin h-4 w-4 mr-2" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                            </svg>
+                            업데이트 중...
+                          </>
+                        ) : (
+                          <>
+                            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
+                            지표 업데이트
+                          </>
+                        )}
+                      </Button>
+                      {isUpdating && updateProgress && (
+                        <div className="text-xs text-muted-foreground">
+                          {updateProgress.completed} / {updateProgress.total} 완료
+                          {updateProgress.current && ` (${updateProgress.current})`}
+                        </div>
                       )}
-                    </Button>
-                    {isUpdating && updateProgress && (
-                      <div className="text-xs text-muted-foreground">
-                        {updateProgress.completed} / {updateProgress.total} 완료
-                        {updateProgress.current && ` (${updateProgress.current})`}
-                      </div>
-                    )}
+                    </div>
                   </div>
                 </div>
               </div>
