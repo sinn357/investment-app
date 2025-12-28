@@ -15,6 +15,15 @@ from services.credit_cycle_service import CreditCycleService
 from metadata.indicator_metadata import IndicatorMetadata
 import threading
 import time
+import json
+
+# Redis 임포트 시도 (Phase 3 캐싱)
+try:
+    import redis
+    REDIS_AVAILABLE = True
+except ImportError:
+    print("Redis not available")
+    REDIS_AVAILABLE = False
 
 # PostgreSQL 서비스 임포트 시도
 try:
@@ -32,6 +41,22 @@ CORS(app,
      methods=['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
      allow_headers=['Content-Type', 'Authorization'],
      supports_credentials=True)
+
+# ✅ Phase 3: Redis 클라이언트 초기화
+redis_client = None
+if REDIS_AVAILABLE:
+    try:
+        redis_url = os.getenv('REDIS_URL')
+        if redis_url:
+            redis_client = redis.from_url(redis_url, decode_responses=True)
+            # 연결 테스트
+            redis_client.ping()
+            print("✅ Redis connected successfully")
+        else:
+            print("⚠️ REDIS_URL not set, Redis caching disabled")
+    except Exception as e:
+        print(f"⚠️ Redis connection failed: {e}")
+        redis_client = None
 
 # CORS preflight 핸들러 추가
 @app.before_request
@@ -860,7 +885,18 @@ def get_all_indicators_from_db():
         except ValueError:
             history_limit = 12
 
-        # ✅ 최근 캐시가 있으면 즉시 반환 (5분)
+        # ✅ Phase 3: Redis 캐시 확인 (최우선)
+        cache_key = f'indicators:all:v2:history_{history_limit}'
+        if not force_refresh and redis_client:
+            try:
+                cached = redis_client.get(cache_key)
+                if cached:
+                    print(f"✅ Redis cache hit: {cache_key}")
+                    return jsonify(json.loads(cached))
+            except Exception as e:
+                print(f"⚠️ Redis get error: {e}")
+
+        # ✅ 메모리 캐시 확인 (Redis 없을 때 폴백)
         if not force_refresh and INDICATORS_CACHE["data"] and (now_ts - INDICATORS_CACHE["timestamp"] < INDICATORS_CACHE_TTL):
             return jsonify(INDICATORS_CACHE["data"])
 
@@ -986,6 +1022,18 @@ def get_all_indicators_from_db():
         # ✅ 캐시 저장
         INDICATORS_CACHE["data"] = response_data
         INDICATORS_CACHE["timestamp"] = now_ts
+
+        # ✅ Phase 3: Redis 캐시 저장 (5분 TTL)
+        if redis_client:
+            try:
+                redis_client.setex(
+                    cache_key,
+                    300,  # 5분 TTL
+                    json.dumps(response_data)
+                )
+                print(f"✅ Redis cache saved: {cache_key}")
+            except Exception as e:
+                print(f"⚠️ Redis set error: {e}")
 
         return jsonify(response_data)
 
@@ -1225,6 +1273,17 @@ async def update_all_indicators_background_async():
         # ✅ 지표 업데이트 후 캐시 무효화 + 상태 리셋
         INDICATORS_CACHE["data"] = None
         INDICATORS_CACHE["timestamp"] = 0
+
+        # ✅ Phase 3: Redis 캐시 무효화 (모든 history_limit 키 삭제)
+        if redis_client:
+            try:
+                # 패턴 매칭으로 모든 indicators 캐시 키 삭제
+                for key in redis_client.scan_iter("indicators:all:v2:*"):
+                    redis_client.delete(key)
+                print("✅ Redis cache invalidated")
+            except Exception as e:
+                print(f"⚠️ Redis cache invalidation error: {e}")
+
         update_status["is_updating"] = False
 
 def update_all_indicators_background():
