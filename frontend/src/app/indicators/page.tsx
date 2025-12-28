@@ -145,7 +145,14 @@ export default function IndicatorsPage() {
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
   const [updateProgress, setUpdateProgress] = useState<{ completed: number; total: number; current?: string } | null>(null);
-  const [loadingTime, setLoadingTime] = useState<number | null>(null); // ✅ 로딩 시간 측정
+  const [countdownSeconds, setCountdownSeconds] = useState<number | null>(null); // ✅ Phase 2: 자동 새로고침 카운트다운
+  // ✅ Phase 3: 로딩/업데이트 정보 추적
+  const [loadingInfo, setLoadingInfo] = useState<{
+    type: 'loading' | 'update';
+    duration: number;
+    count: number;
+  }>({ type: 'loading', duration: 0, count: 0 });
+  const [updateStartTime, setUpdateStartTime] = useState<number | null>(null); // 업데이트 시작 시간
   // ✅ NEW: Master Market Cycle state (Phase 1)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [masterCycleData, setMasterCycleData] = useState<any>(null);
@@ -212,6 +219,8 @@ export default function IndicatorsPage() {
   const handleManualUpdate = async () => {
     try {
       setIsUpdating(true);
+      // ✅ Phase 3: 업데이트 시작 시간 기록
+      setUpdateStartTime(Date.now());
 
       const response = await fetch('https://investment-app-backend-x166.onrender.com/api/v2/update-indicators', {
         method: 'POST',
@@ -236,13 +245,23 @@ export default function IndicatorsPage() {
             });
 
             if (!status.is_updating) {
-              // 업데이트 완료
+              // ✅ Phase 2: 업데이트 완료 - 3초 카운트다운 시작
               clearInterval(pollInterval);
               setIsUpdating(false);
               setUpdateProgress(null);
 
-              // 데이터 다시 로드
-              window.location.reload();
+              // ✅ Phase 3: 업데이트 완료 정보 저장
+              if (updateStartTime) {
+                const duration = (Date.now() - updateStartTime) / 1000; // 밀리초 → 초
+                setLoadingInfo({
+                  type: 'update',
+                  duration: duration,
+                  count: status.completed_count || 0
+                });
+              }
+
+              // 3초 카운트다운 시작 (window.location.reload는 useEffect에서 처리)
+              setCountdownSeconds(3);
             }
           }
         }, 2000); // 2초마다 폴링
@@ -325,10 +344,14 @@ export default function IndicatorsPage() {
           });
           setAllIndicators(gridIndicators);
 
-          // ✅ 로딩 완료 시간 계산 (소수점 2자리)
+          // ✅ Phase 3: 로딩 완료 시간 계산 및 정보 저장
           const endTime = performance.now();
           const loadTime = (endTime - startTime) / 1000; // 밀리초 → 초
-          setLoadingTime(Number(loadTime.toFixed(2)));
+          setLoadingInfo({
+            type: 'loading',
+            duration: Number(loadTime.toFixed(2)),
+            count: gridIndicators.length
+          });
         }
 
         // ✅ NEW: Master Market Cycle API 호출 (Phase 1)
@@ -356,6 +379,19 @@ export default function IndicatorsPage() {
 
     fetchAndCalculateCycle();
   }, []);
+
+  // ✅ Phase 2: 카운트다운 감소 로직
+  useEffect(() => {
+    if (countdownSeconds !== null && countdownSeconds > 0) {
+      const timer = setTimeout(() => {
+        setCountdownSeconds(countdownSeconds - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    } else if (countdownSeconds === 0) {
+      // 0초 도달 시 자동 새로고침
+      window.location.reload();
+    }
+  }, [countdownSeconds]);
 
   // 경제 담론 데이터 로드
   useEffect(() => {
@@ -538,13 +574,20 @@ export default function IndicatorsPage() {
                       '업데이트 정보 없음'
                     )}
                   </span>
-                  {/* ✅ 로딩 시간 배지 */}
-                  {loadingTime !== null && (
-                    <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 text-xs font-semibold rounded-full border border-green-300 dark:border-green-700">
+                  {/* ✅ Phase 3: 로딩/업데이트 정보 배지 */}
+                  {loadingInfo.duration > 0 && (
+                    <span className={`inline-flex items-center gap-1 px-3 py-1 text-xs font-semibold rounded-full border ${
+                      loadingInfo.type === 'loading'
+                        ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border-green-300 dark:border-green-700'
+                        : 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 border-blue-300 dark:border-blue-700'
+                    }`}>
                       <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                       </svg>
-                      로딩: {loadingTime}초
+                      {loadingInfo.type === 'loading'
+                        ? `데이터 로딩: ${loadingInfo.duration}초`
+                        : `업데이트 완료: ${loadingInfo.count}개 지표 (${Math.floor(loadingInfo.duration)}초)`
+                      }
                     </span>
                   )}
                 </div>
@@ -623,6 +666,15 @@ export default function IndicatorsPage() {
                         <div className="text-xs text-muted-foreground">
                           {updateProgress.completed} / {updateProgress.total} 완료
                           {updateProgress.current && ` (${updateProgress.current})`}
+                        </div>
+                      )}
+                      {/* ✅ Phase 2: 카운트다운 메시지 */}
+                      {countdownSeconds !== null && countdownSeconds > 0 && (
+                        <div className="flex items-center gap-2 px-4 py-2 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 text-sm font-semibold rounded-lg border border-green-300 dark:border-green-700 animate-pulse">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          {countdownSeconds}초 후 자동 새로고침...
                         </div>
                       )}
                     </div>
