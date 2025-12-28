@@ -237,10 +237,10 @@ export default function IndicatorsPage() {
           if (statusResult.status === 'success' && statusResult.update_status) {
             const status = statusResult.update_status;
 
-            // 진행률 업데이트
+            // ✅ 수정: 백엔드 필드명에 맞게 변경 (total_indicators, completed_indicators)
             setUpdateProgress({
-              completed: status.completed_count || 0,
-              total: status.total_count || 0,
+              completed: status.completed_indicators?.length || 0,
+              total: status.total_indicators || 0,
               current: status.current_indicator
             });
 
@@ -250,14 +250,18 @@ export default function IndicatorsPage() {
               setIsUpdating(false);
               setUpdateProgress(null);
 
-              // ✅ Phase 3: 업데이트 완료 정보 저장
+              // ✅ Phase 3: 업데이트 완료 정보 저장 (localStorage에도 저장)
               if (updateStartTime) {
                 const duration = (Date.now() - updateStartTime) / 1000; // 밀리초 → 초
-                setLoadingInfo({
-                  type: 'update',
+                const updateInfo = {
+                  type: 'update' as const,
                   duration: duration,
-                  count: status.completed_count || 0
-                });
+                  count: status.completed_indicators?.length || 0,
+                  timestamp: Date.now()
+                };
+                setLoadingInfo(updateInfo);
+                // localStorage에 저장 (새로고침 후에도 유지)
+                localStorage.setItem('lastUpdateInfo', JSON.stringify(updateInfo));
               }
 
               // 3초 카운트다운 시작 (window.location.reload는 useEffect에서 처리)
@@ -281,6 +285,26 @@ export default function IndicatorsPage() {
       alert('업데이트 중 오류가 발생했습니다.');
     }
   };
+
+  // ✅ Step 3: 페이지 로드 시 localStorage에서 업데이트 정보 복원
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('lastUpdateInfo');
+      if (saved) {
+        const info = JSON.parse(saved);
+        // 5분 이내면 업데이트 정보 표시, 이후엔 일반 로딩 정보로 전환
+        if (Date.now() - info.timestamp < 5 * 60 * 1000) {
+          setLoadingInfo({
+            type: info.type,
+            duration: info.duration,
+            count: info.count
+          });
+        }
+      }
+    } catch (error) {
+      console.warn('localStorage 복원 실패:', error);
+    }
+  }, []);
 
   // 경제 지표 데이터 페칭 및 국면 계산 (✅ 통합 API - 4개 요청 → 1개 요청)
   useEffect(() => {
@@ -568,7 +592,13 @@ export default function IndicatorsPage() {
                   <span className="text-sm text-gray-600 dark:text-gray-400">
                     {lastUpdated ? (
                       <>
-                        마지막 업데이트: <span className="font-medium text-gray-900 dark:text-gray-100">{new Date(lastUpdated).toLocaleString('ko-KR', { month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                        마지막 업데이트: <span className="font-medium text-gray-900 dark:text-gray-100">{new Date(lastUpdated).toLocaleString('ko-KR', {
+                          timeZone: 'Asia/Seoul',  // ✅ KST 명시
+                          month: 'long',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}</span>
                       </>
                     ) : (
                       '업데이트 정보 없음'
