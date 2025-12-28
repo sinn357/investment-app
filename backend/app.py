@@ -870,20 +870,21 @@ def get_all_indicators_from_db():
         results = []
         last_updated = None
 
+        # ✅ Phase 2 최적화: 배치 쿼리 (47회 → 4회 쿼리로 감소)
+        # 1. 모든 지표 데이터를 한 번에 조회
+        all_data = db_service.get_multiple_indicators_data(all_indicator_ids)
+
+        # 2. 히스토리 데이터도 한 번에 조회 (필요한 경우)
+        all_history = {}
+        if history_limit > 0:
+            all_history = db_service.get_multiple_history_data(all_indicator_ids, limit=history_limit)
+
+        # 3. 조회한 데이터로 results 구성
         for indicator_id in all_indicator_ids:
-            # 지표 데이터 조회
-            data = db_service.get_indicator_data(indicator_id)
+            data = all_data.get(indicator_id, {})
             if "error" not in data:
-                history = []
-                if history_limit > 0:
-                    history_data = db_service.get_history_data(indicator_id, limit=history_limit)
-                    if "error" not in history_data:
-                        if isinstance(history_data, list):
-                            # get_history_data()는 배열을 직접 반환
-                            history = history_data[:history_limit]
-                        elif isinstance(history_data, dict):
-                            # 혹시 딕셔너리 형태로 올 경우 대비
-                            history = history_data.get("history", [])[:history_limit]
+                # 히스토리 데이터 가져오기
+                history = all_history.get(indicator_id, [])
 
                 # 메타데이터 추가 - 안전한 방식으로 get_indicator_config 사용
                 metadata = get_indicator_config(indicator_id)

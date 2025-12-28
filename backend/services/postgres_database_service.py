@@ -594,6 +594,149 @@ class PostgresDatabaseService:
             print(f"Error getting history data for {indicator_id}: {e}")
             return []
 
+    def get_multiple_indicators_data(self, indicator_ids: List[str]) -> Dict[str, Any]:
+        """
+        여러 지표 데이터를 한 번에 조회 (배치 쿼리)
+        Phase 2 성능 최적화: 47회 쿼리 → 3회 쿼리로 감소
+
+        Args:
+            indicator_ids: 조회할 지표 ID 리스트
+
+        Returns:
+            {
+                indicator_id: {
+                    "latest_release": {...},
+                    "next_release": {...},
+                    "last_updated": "..."
+                }
+            }
+        """
+        try:
+            with self.get_connection() as conn:
+                with conn.cursor() as cur:
+                    # 1. 최신 릴리즈 데이터 배치 조회 (IN 절 사용)
+                    cur.execute("""
+                        SELECT DISTINCT ON (indicator_id)
+                            indicator_id, release_date, time, actual, forecast, previous, created_at
+                        FROM latest_releases
+                        WHERE indicator_id = ANY(%s)
+                        ORDER BY indicator_id, created_at DESC
+                    """, (indicator_ids,))
+                    latest_rows = cur.fetchall()
+
+                    # 2. 다음 릴리즈 데이터 배치 조회
+                    cur.execute("""
+                        SELECT DISTINCT ON (indicator_id)
+                            indicator_id, release_date, time, forecast, previous, created_at
+                        FROM next_releases
+                        WHERE indicator_id = ANY(%s)
+                        ORDER BY indicator_id, created_at DESC
+                    """, (indicator_ids,))
+                    next_rows = cur.fetchall()
+
+                    # 3. 크롤링 시간 배치 조회
+                    cur.execute("""
+                        SELECT DISTINCT ON (indicator_id)
+                            indicator_id, last_crawl_time
+                        FROM crawl_info
+                        WHERE indicator_id = ANY(%s)
+                        ORDER BY indicator_id, last_crawl_time DESC
+                    """, (indicator_ids,))
+                    crawl_rows = cur.fetchall()
+
+                    # 딕셔너리로 변환 (빠른 접근)
+                    latest_dict = {row['indicator_id']: row for row in latest_rows}
+                    next_dict = {row['indicator_id']: row for row in next_rows}
+                    crawl_dict = {row['indicator_id']: row for row in crawl_rows}
+
+                    # 결과 구성
+                    result = {}
+                    for indicator_id in indicator_ids:
+                        latest_row = latest_dict.get(indicator_id)
+                        if not latest_row:
+                            result[indicator_id] = {"error": "No data found"}
+                            continue
+
+                        next_row = next_dict.get(indicator_id)
+                        crawl_row = crawl_dict.get(indicator_id)
+
+                        result[indicator_id] = {
+                            "latest_release": {
+                                "release_date": latest_row['release_date'],
+                                "time": latest_row['time'],
+                                "actual": self._parse_value(latest_row['actual']),
+                                "forecast": self._parse_value(latest_row['forecast']),
+                                "previous": self._parse_value(latest_row['previous'])
+                            },
+                            "next_release": {
+                                "release_date": next_row['release_date'] if next_row else "미정",
+                                "time": next_row['time'] if next_row else "미정",
+                                "forecast": self._parse_value(next_row['forecast']) if next_row else None,
+                                "previous": self._parse_value(next_row['previous']) if next_row else None
+                            },
+                            "last_updated": crawl_row['last_crawl_time'].isoformat() if crawl_row else None,
+                            "timestamp": datetime.now().isoformat()
+                        }
+
+                    return result
+
+        except Exception as e:
+            print(f"Error getting multiple indicators data: {e}")
+            return {indicator_id: {"error": str(e)} for indicator_id in indicator_ids}
+
+    def get_multiple_history_data(self, indicator_ids: List[str], limit: int = 12) -> Dict[str, List[Dict[str, Any]]]:
+        """
+        여러 지표의 히스토리 데이터를 한 번에 조회 (배치 쿼리)
+        Phase 2 성능 최적화: 47회 쿼리 → 1회 쿼리로 감소
+
+        Args:
+            indicator_ids: 조회할 지표 ID 리스트
+            limit: 각 지표당 가져올 최대 행 수
+
+        Returns:
+            {
+                indicator_id: [
+                    {"release_date": "...", "time": "...", "actual": ...},
+                    ...
+                ]
+            }
+        """
+        try:
+            with self.get_connection() as conn:
+                with conn.cursor() as cur:
+                    # 서브쿼리로 각 지표별 최신 N개만 조회
+                    query = """
+                        SELECT * FROM (
+                            SELECT
+                                indicator_id, release_date, time, actual, forecast, previous,
+                                ROW_NUMBER() OVER (PARTITION BY indicator_id ORDER BY release_date DESC) as rn
+                            FROM history_data
+                            WHERE indicator_id = ANY(%s)
+                        ) subq
+                        WHERE rn <= %s
+                        ORDER BY indicator_id, release_date DESC
+                    """
+                    cur.execute(query, (indicator_ids, limit))
+                    rows = cur.fetchall()
+
+                    # 지표별로 그룹화
+                    result = {indicator_id: [] for indicator_id in indicator_ids}
+                    for row in rows:
+                        indicator_id = row['indicator_id']
+                        result[indicator_id].append({
+                            "release_date": row['release_date'],
+                            "time": row['time'],
+                            "actual": self._parse_value(row['actual']),
+                            "forecast": self._parse_value(row['forecast']),
+                            "previous": self._parse_value(row['previous'])
+                        })
+
+                    return result
+
+        except Exception as e:
+            print(f"Error getting multiple history data: {e}")
+            return {indicator_id: [] for indicator_id in indicator_ids}
+
     def get_all_indicators(self) -> List[str]:
         """모든 지표 ID 목록 조회"""
         try:
