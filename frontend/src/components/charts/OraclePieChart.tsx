@@ -27,6 +27,8 @@ interface OraclePieChartProps {
   showLabel?: boolean;
   /** 커스텀 색상 배열 (없으면 기본 팔레트 사용) */
   colors?: string[];
+  /** 추가 CSS 클래스 */
+  className?: string;
 }
 
 export default function OraclePieChart({

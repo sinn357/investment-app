@@ -45,23 +45,19 @@ export default function SettingsPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-lg text-gray-600">로딩 중...</div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-lg text-muted-foreground">로딩 중...</div>
       </div>
     );
   }
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-lg text-gray-600">인증이 필요합니다.</div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-lg text-muted-foreground">인증이 필요합니다.</div>
       </div>
     );
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <AccountSettings user={user} onLogout={handleLogout} />
-    </div>
-  );
+  return <AccountSettings user={user} onLogout={handleLogout} />;
 }
