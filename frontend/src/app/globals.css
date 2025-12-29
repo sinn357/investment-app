@@ -51,35 +51,35 @@
   --card-foreground: oklch(0.15 0.02 90);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.15 0.02 90);
-  /* 메인 색상: 화려한 골드 */
-  --primary: oklch(0.68 0.17 88);
+  /* 메인 색상: 빛나는 골드 (밝기 증가) */
+  --primary: oklch(0.75 0.20 88);
   --primary-foreground: oklch(0.98 0 0);
-  /* 사이드 색상: 파릇파릇한 에메랄드 */
-  --secondary: oklch(0.65 0.16 158);
+  /* 사이드 색상: 생동감 있는 에메랄드 (밝기 증가) */
+  --secondary: oklch(0.72 0.19 158);
   --secondary-foreground: oklch(0.98 0 0);
   --muted: oklch(0.96 0.01 90);
   --muted-foreground: oklch(0.50 0.02 90);
-  --accent: oklch(0.65 0.16 158);
+  --accent: oklch(0.72 0.19 158);
   --accent-foreground: oklch(0.98 0 0);
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.90 0.01 90);
   --input: oklch(0.92 0.01 90);
-  --ring: oklch(0.68 0.17 88);
-  /* 차트 색상: 골드-에메랄드 조화 */
-  --chart-1: oklch(0.68 0.17 88);
-  --chart-2: oklch(0.65 0.16 158);
-  --chart-3: oklch(0.60 0.14 120);
-  --chart-4: oklch(0.72 0.15 75);
-  --chart-5: oklch(0.62 0.15 140);
-  /* 사이드바: 골드 강조 */
+  --ring: oklch(0.75 0.20 88);
+  /* 차트 색상: 더 밝고 생동감 있는 골드-에메랄드 조화 */
+  --chart-1: oklch(0.75 0.20 88);
+  --chart-2: oklch(0.72 0.19 158);
+  --chart-3: oklch(0.68 0.17 120);
+  --chart-4: oklch(0.78 0.18 75);
+  --chart-5: oklch(0.70 0.18 140);
+  /* 사이드바: 더 강렬한 골드 강조 */
   --sidebar: oklch(0.98 0.005 90);
   --sidebar-foreground: oklch(0.15 0.02 90);
-  --sidebar-primary: oklch(0.68 0.17 88);
+  --sidebar-primary: oklch(0.75 0.20 88);
   --sidebar-primary-foreground: oklch(0.98 0 0);
-  --sidebar-accent: oklch(0.65 0.16 158);
+  --sidebar-accent: oklch(0.72 0.19 158);
   --sidebar-accent-foreground: oklch(0.98 0 0);
   --sidebar-border: oklch(0.90 0.01 90);
-  --sidebar-ring: oklch(0.68 0.17 88);
+  --sidebar-ring: oklch(0.75 0.20 88);
 }
 
 .dark {
@@ -128,4 +128,214 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* ====================================
+   🌟 Oracle 2025 Animation System
+   ==================================== */
+
+/* V2 Enhanced Colors */
+:root {
+  --primary-shine: oklch(0.82 0.22 88);
+  --primary-glow: rgba(218, 165, 32, 0.4);
+  --secondary-shine: oklch(0.78 0.21 158);
+  --secondary-glow: rgba(80, 200, 120, 0.4);
+}
+
+.dark {
+  --primary-shine: oklch(0.88 0.24 88);
+  --secondary-shine: oklch(0.85 0.23 158);
+}
+
+/* Shimmer Effect (빛나는 효과) */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.shimmer-effect {
+  position: relative;
+  overflow: hidden;
+}
+
+.shimmer-effect::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(218, 165, 32, 0.4) 50%,
+    transparent 100%
+  );
+  animation: shimmer 3s infinite;
+  pointer-events: none;
+}
+
+/* Glow Pulse Effect (발광 효과) */
+@keyframes glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 20px var(--primary-glow);
+  }
+  50% {
+    box-shadow: 0 0 40px var(--primary-glow),
+                0 0 60px var(--secondary-glow);
+  }
+}
+
+.glow-effect {
+  animation: glow-pulse 2s ease-in-out infinite;
+}
+
+/* Fade In Up Animation */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in-up {
+  animation: fadeInUp 0.6s ease-out forwards;
+}
+
+/* Fade In Down Animation */
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in-down {
+  animation: fadeInDown 0.6s ease-out forwards;
+}
+
+/* Scale In Animation */
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.scale-in {
+  animation: scaleIn 0.5s ease-out forwards;
+}
+
+/* Float Animation */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-float-delayed {
+  animation: float 6s ease-in-out infinite;
+  animation-delay: 3s;
+}
+
+/* Gradient Animation */
+@keyframes gradient {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.animate-gradient {
+  background-size: 200% 200%;
+  animation: gradient 8s ease infinite;
+}
+
+/* Glassmorphism Card */
+.glass-card {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(218, 165, 32, 0.2);
+  box-shadow: 0 8px 32px rgba(218, 165, 32, 0.1),
+              inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  transition: all 0.3s ease;
+}
+
+.dark .glass-card {
+  background: rgba(23, 23, 23, 0.7);
+  border: 1px solid rgba(218, 165, 32, 0.3);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3),
+              inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.glass-card:hover {
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(218, 165, 32, 0.4);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 48px rgba(218, 165, 32, 0.2),
+              inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.dark .glass-card:hover {
+  background: rgba(30, 30, 30, 0.8);
+  border: 1px solid rgba(218, 165, 32, 0.5);
+  box-shadow: 0 12px 48px rgba(218, 165, 32, 0.3),
+              inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+/* Ripple Effect (버튼 클릭 시) */
+.ripple {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.6);
+  transform: scale(0);
+  animation: ripple-animation 0.6s ease-out;
+  pointer-events: none;
+}
+
+@keyframes ripple-animation {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+/* Spin Slow Animation */
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 20s linear infinite;
 }

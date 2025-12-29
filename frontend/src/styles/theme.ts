@@ -3,19 +3,44 @@
  * Phase 1: 디자인 통일 작업
  */
 
-// 지표 색상 시스템
+// Oracle 2025 색상 시스템 (골드-에메랄드)
+export const ORACLE_COLORS = {
+  // 메인 색상 (globals.css와 동기화)
+  gold: {
+    light: '#DAA520',      // oklch(0.75 0.20 88)
+    DEFAULT: '#D4AF37',    // 순금색
+    dark: '#B8860B',       // 다크 골드
+    shine: '#F4E68A',      // 빛나는 골드
+  },
+  emerald: {
+    light: '#50C878',      // oklch(0.72 0.19 158)
+    DEFAULT: '#2ECC71',    // 에메랄드
+    dark: '#27AE60',       // 다크 에메랄드
+    shine: '#7DCEA0',      // 빛나는 에메랄드
+  },
+
+  // 그라디언트
+  gradient: {
+    goldEmerald: 'linear-gradient(135deg, #DAA520 0%, #50C878 100%)',
+    goldShine: 'linear-gradient(135deg, #F4E68A 0%, #DAA520 100%)',
+    emeraldShine: 'linear-gradient(135deg, #7DCEA0 0%, #50C878 100%)',
+  },
+};
+
+// 지표 색상 시스템 (Oracle 테마 통합)
 export const INDICATOR_COLORS = {
-  // 긍정/부정 색상
-  excellent: '#10b981',  // 초록 - 매우 좋음
-  good: '#84cc16',       // 연두 - 좋음
+  // 긍정/부정 색상 (에메랄드-골드 기반)
+  excellent: '#50C878',  // 에메랄드 - 매우 좋음
+  good: '#7DCEA0',       // 밝은 에메랄드 - 좋음
   caution: '#f59e0b',    // 주황 - 주의
   warning: '#ef4444',    // 빨강 - 경고
   neutral: '#6b7280',    // 회색 - 중립
 
-  // 차트 색상
-  primary: '#3b82f6',    // 파랑 - 막대 차트
-  secondary: '#10b981',  // 초록 - 선형 차트
-  tertiary: '#8b5cf6',   // 보라 - 보조 데이터
+  // 차트 색상 (골드-에메랄드 조화)
+  primary: '#DAA520',    // 골드 - 막대 차트
+  secondary: '#50C878',  // 에메랄드 - 선형 차트
+  tertiary: '#7DCEA0',   // 밝은 에메랄드 - 보조 데이터
+  quaternary: '#D4AF37', // 순금색 - 추가 데이터
 
   // 배경 색상
   cardBg: '#ffffff',
@@ -34,16 +59,19 @@ export const INDICATOR_COLORS = {
   borderDark: '#374151',
 };
 
-// Recharts 공통 테마
+// Recharts 공통 테마 (Oracle 2025)
 export const CHART_THEME = {
-  // 차트 색상
+  // 차트 색상 (골드-에메랄드 조화)
   colors: {
-    bar: INDICATOR_COLORS.primary,
-    line: INDICATOR_COLORS.secondary,
+    bar: INDICATOR_COLORS.primary,              // 골드
+    line: INDICATOR_COLORS.secondary,           // 에메랄드
+    area: INDICATOR_COLORS.tertiary,            // 밝은 에메랄드
+    scatter: INDICATOR_COLORS.quaternary,       // 순금색
     grid: '#374151',
     axis: '#6b7280',
-    referenceLine: '#ef4444',
-    referenceLineSecondary: '#f59e0b',
+    referenceLine: '#ef4444',                   // 빨강 (위험선)
+    referenceLineSecondary: '#f59e0b',          // 주황 (경고선)
+    referenceLineGold: ORACLE_COLORS.gold.DEFAULT,  // 골드 (목표선)
   },
 
   // Tooltip 스타일
