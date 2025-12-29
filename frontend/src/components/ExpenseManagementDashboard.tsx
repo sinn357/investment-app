@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { OraclePieChart, OracleBarChart } from './charts';
 
 interface Expense {
@@ -416,7 +416,8 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
   };
 
   // 일별 지출/수입 데이터 준비
-  const prepareDailyData = () => {
+  // ✅ 성능 최적화: 일별 차트 데이터를 useMemo로 캐싱 (expenses 변경 시에만 재계산)
+  const dailyData = useMemo(() => {
     if (!expenses || expenses.length === 0) return [];
 
     // 날짜별로 지출과 수입을 그룹화
@@ -446,7 +447,7 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
       .sort((a, b) => new Date(a.fullDate).getTime() - new Date(b.fullDate).getTime());
 
     return sortedData;
-  };
+  }, [expenses]);
 
   // 월별 지출/수입 데이터 준비 (2025년 12월부터 활성화 예정)
   // 현재는 선택한 월의 데이터만 가져오므로 월별 차트가 의미 없음
@@ -487,49 +488,54 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
   };
   */
 
-  // 지출/수입 비율 데이터 준비
-  const prepareExpenseIncomeRatioData = () => {
+  // ✅ 성능 최적화: 지출/수입 비율 데이터를 useMemo로 캐싱 (expenseData 변경 시에만 재계산)
+  const ratioData = useMemo(() => {
     if (!expenseData) return [];
 
     return [
       { name: '지출', value: Number(expenseData.summary.total_expense) },
       { name: '수입', value: Number(expenseData.summary.total_income) }
     ];
-  };
+  }, [expenseData]);
 
-  // 필터링된 거래내역
-  const filteredExpenses = expenses.filter(expense => {
-    const categoryMatch = categoryFilter === '전체' || expense.category === categoryFilter;
-    const typeMatch = typeFilter === '전체' || expense.transaction_type === typeFilter;
-    return categoryMatch && typeMatch;
-  });
+  // ✅ 성능 최적화: 필터링 로직을 useMemo로 캐싱 (expenses, categoryFilter, typeFilter 변경 시에만 재계산)
+  const filteredExpenses = useMemo(() => {
+    return expenses.filter(expense => {
+      const categoryMatch = categoryFilter === '전체' || expense.category === categoryFilter;
+      const typeMatch = typeFilter === '전체' || expense.transaction_type === typeFilter;
+      return categoryMatch && typeMatch;
+    });
+  }, [expenses, categoryFilter, typeFilter]);
 
-  // 정렬된 거래내역
-  const sortedExpenses = [...filteredExpenses].sort((a, b) => {
-    let aValue: string | number, bValue: string | number;
+  // ✅ 성능 최적화: 정렬 로직을 useMemo로 캐싱 (filteredExpenses, sortBy, sortOrder 변경 시에만 재계산)
+  const sortedExpenses = useMemo(() => {
+    return [...filteredExpenses].sort((a, b) => {
+      let aValue: string | number, bValue: string | number;
 
-    switch (sortBy) {
-      case 'amount':
-        aValue = a.amount;
-        bValue = b.amount;
-        break;
-      case 'category':
-        aValue = a.category;
-        bValue = b.category;
-        break;
-      default:
-        aValue = new Date(a.transaction_date).getTime();
-        bValue = new Date(b.transaction_date).getTime();
-    }
+      switch (sortBy) {
+        case 'amount':
+          aValue = a.amount;
+          bValue = b.amount;
+          break;
+        case 'category':
+          aValue = a.category;
+          bValue = b.category;
+          break;
+        default:
+          aValue = new Date(a.transaction_date).getTime();
+          bValue = new Date(b.transaction_date).getTime();
+      }
 
-    if (sortOrder === 'asc') {
-      return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
-    } else {
-      return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
-    }
-  });
+      if (sortOrder === 'asc') {
+        return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+      } else {
+        return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
+      }
+    });
+  }, [filteredExpenses, sortBy, sortOrder]);
 
-  const buildCompositionData = () => {
+  // ✅ 성능 최적화: 구성 분석 차트 데이터를 useMemo로 캐싱 (expenseData, compositionMode, compositionCategory, compositionSubCategory, expenses 변경 시에만 재계산)
+  const compositionPieData = useMemo(() => {
     if (!expenseData) return [];
 
     const isExpenseMode = compositionMode === '지출';
@@ -571,9 +577,7 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
     }
 
     return pieData;
-  };
-
-  const compositionPieData = buildCompositionData();
+  }, [expenseData, compositionMode, compositionCategory, compositionSubCategory, expenses]);
   const [goalAccordion, setGoalAccordion] = useState<Record<string, boolean>>({});
 
   const buildGoalTotals = (mode: '지출' | '수입') => {
@@ -622,8 +626,7 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
     saveBudgetGoals(newGoals);
   };
 
-  const dailyData = prepareDailyData();
-  const ratioData = prepareExpenseIncomeRatioData();
+  // ✅ 성능 최적화: 이미 useMemo로 정의된 변수들 사용 (중복 계산 제거)
   const monthLabel = `${selectedYear}년 ${selectedMonth}월`;
   const expenseSummary = expenseData ? {
     income: expenseData.summary.total_income,

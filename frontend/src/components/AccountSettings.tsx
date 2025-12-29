@@ -146,8 +146,7 @@ export default function AccountSettings({ user, onLogout }: AccountSettingsProps
             <EnhancedButton
               variant="outline"
               onClick={() => router.push('/portfolio')}
-              className="fade-in-up"
-              style={{ animationDelay: '0.1s' }}
+              className="fade-in-up [animation-delay:0.1s]"
             >
               포트폴리오로 돌아가기
             </EnhancedButton>

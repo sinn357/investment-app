@@ -74,11 +74,31 @@ export default function IndicatorGrid({ indicators, selectedId, onIndicatorClick
     return result;
   }, [activeFilter, sortOption, indicators]);
 
-  // 카테고리별 지표 개수 (useCallback으로 최적화)
-  const getCategoryCount = useCallback((category: FilterCategory) => {
-    if (category === 'all') return indicators.length;
-    return indicators.filter(ind => ind.category === category).length;
+  // ✅ 성능 최적화: 카테고리별 지표 개수를 useMemo로 미리 계산 (매번 필터링 방지)
+  const categoryCounts = useMemo(() => {
+    const counts: Record<FilterCategory, number> = {
+      all: indicators.length,
+      business: 0,
+      employment: 0,
+      interest: 0,
+      trade: 0,
+      inflation: 0,
+    };
+
+    indicators.forEach(ind => {
+      const cat = ind.category as FilterCategory;
+      if (cat in counts && cat !== 'all') {
+        counts[cat]++;
+      }
+    });
+
+    return counts;
   }, [indicators]);
+
+  // 카테고리별 지표 개수 조회 함수 (useMemo로 계산된 값 반환)
+  const getCategoryCount = useCallback((category: FilterCategory) => {
+    return categoryCounts[category] || 0;
+  }, [categoryCounts]);
 
   return (
     <section className="py-8 bg-gradient-to-b from-transparent to-gray-50 dark:to-gray-900/30">

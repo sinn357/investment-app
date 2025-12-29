@@ -485,7 +485,7 @@ export default function AnalysisPage() {
             <Select
               value={selected?.id?.toString() || ''}
               onValueChange={(value) => {
-                setSelectedId(Number(value));
+                setSelectedId(value);
                 setActiveTab('thesis');
               }}
             >
@@ -634,7 +634,7 @@ export default function AnalysisPage() {
                         <p className="text-xs text-muted-foreground">액션</p>
                         <Badge className={`mt-1 ${
                           detail.deepDive?.decision?.action === 'BUY' ? 'bg-green-500 hover:bg-green-600' :
-                          detail.deepDive?.decision?.action === 'SELL' ? 'bg-red-500 hover:bg-red-600' :
+                          detail.deepDive?.decision?.action === 'PASS' ? 'bg-red-500 hover:bg-red-600' :
                           'bg-yellow-500 hover:bg-yellow-600'
                         } text-white text-lg px-4 py-2`}>
                           {detail.deepDive?.decision?.action || 'WAIT'}

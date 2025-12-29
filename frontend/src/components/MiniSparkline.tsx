@@ -11,7 +11,7 @@
 
 'use client';
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { LineChart, Line, ResponsiveContainer, YAxis } from 'recharts';
 
 interface MiniSparklineProps {
@@ -25,17 +25,22 @@ const MiniSparkline = React.memo(function MiniSparkline({
 }: MiniSparklineProps) {
   if (data.length === 0) return null;
 
-  // 데이터를 Recharts 형식으로 변환
-  const chartData = data.map((value, index) => ({
-    index,
-    value,
-  }));
+  // ✅ 성능 최적화: 차트 데이터 변환을 useMemo로 캐싱 (data 변경 시에만 재계산)
+  const chartData = useMemo(() => {
+    return data.map((value, index) => ({
+      index,
+      value,
+    }));
+  }, [data]);
 
-  // 최소/최대값 계산 (Y축 범위)
-  const values = data.filter(v => !isNaN(v) && v !== null);
-  const minValue = Math.min(...values);
-  const maxValue = Math.max(...values);
-  const padding = (maxValue - minValue) * 0.1 || 1;
+  // ✅ 성능 최적화: Y축 범위 계산을 useMemo로 캐싱 (data 변경 시에만 재계산)
+  const { minValue, maxValue, padding } = useMemo(() => {
+    const values = data.filter(v => !isNaN(v) && v !== null);
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const pad = (max - min) * 0.1 || 1;
+    return { minValue: min, maxValue: max, padding: pad };
+  }, [data]);
 
   return (
     <div className="w-full h-10">

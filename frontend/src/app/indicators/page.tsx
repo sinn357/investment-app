@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import Navigation from '@/components/Navigation';
 import MasterCycleCard from '@/components/MasterCycleCard';
 // import CyclePanel from '@/components/CyclePanel'; // ✅ 제거: Master Cycle로 대체
@@ -58,6 +58,7 @@ interface GridIndicator {
   };
 }
 
+// ✅ 성능 최적화: 순수 함수를 컴포넌트 외부로 이동 (매 렌더링마다 재생성 방지)
 // 지표명을 카테고리로 매핑하는 헬퍼 함수
 function mapIndicatorToCategory(name: string): string {
   const lowerName = name.toLowerCase();

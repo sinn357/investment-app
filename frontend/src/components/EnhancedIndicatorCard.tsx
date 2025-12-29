@@ -12,7 +12,7 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { CARD_CLASSES, BADGE_CLASSES } from '@/styles/theme';
 import MiniSparkline from './MiniSparkline';
 import IndicatorDetailModal from './IndicatorDetailModal';
@@ -32,6 +32,15 @@ export interface EnhancedIndicatorCardProps {
   onClick?: () => void;
 }
 
+// ✅ 성능 최적화: 카테고리 한글명을 컴포넌트 외부로 이동 (매 렌더링마다 재생성 방지)
+const CATEGORY_NAMES: Record<string, string> = {
+  'business': '경기',
+  'employment': '고용',
+  'interest': '금리',
+  'trade': '무역',
+  'inflation': '물가',
+};
+
 const EnhancedIndicatorCard = React.memo(function EnhancedIndicatorCard({
   id,
   name,
@@ -47,8 +56,8 @@ const EnhancedIndicatorCard = React.memo(function EnhancedIndicatorCard({
 }: EnhancedIndicatorCardProps) {
   const [showModal, setShowModal] = useState(false);
 
-  // 변화량 계산
-  const getChange = () => {
+  // ✅ 성능 최적화: 변화량 계산을 useMemo로 캐싱 (actual, previous 변경 시에만 재계산)
+  const change = useMemo(() => {
     if (actual === null || actual === undefined) return null;
 
     const actualNum = typeof actual === 'string'
@@ -61,14 +70,13 @@ const EnhancedIndicatorCard = React.memo(function EnhancedIndicatorCard({
     if (isNaN(actualNum) || isNaN(prevNum)) return null;
 
     return actualNum - prevNum;
-  };
+  }, [actual, previous]);
 
-  const change = getChange();
   const hasIncrease = change !== null && change > 0;
   const hasDecrease = change !== null && change < 0;
 
-  // 상태 배지 결정
-  const getStatusBadge = () => {
+  // ✅ 성능 최적화: 상태 배지를 useMemo로 캐싱 (surprise, reverseColor 변경 시에만 재계산)
+  const status = useMemo(() => {
     if (surprise === null || surprise === undefined) {
       return { text: '중립', class: BADGE_CLASSES.neutral };
     }
@@ -96,12 +104,10 @@ const EnhancedIndicatorCard = React.memo(function EnhancedIndicatorCard({
     } else {
       return { text: '주의', class: BADGE_CLASSES.caution };
     }
-  };
+  }, [surprise, reverseColor]);
 
-  const status = getStatusBadge();
-
-  // 카테고리별 완전한 클래스명 (Tailwind 동적 클래스 문제 해결)
-  const getCategoryClasses = () => {
+  // ✅ 성능 최적화: 카테고리 클래스를 useMemo로 캐싱 (category 변경 시에만 재계산)
+  const categoryClasses = useMemo(() => {
     const classes: Record<string, string> = {
       'business': 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300',
       'employment': 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300',
@@ -110,18 +116,7 @@ const EnhancedIndicatorCard = React.memo(function EnhancedIndicatorCard({
       'inflation': 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300',
     };
     return classes[category] || 'bg-gray-100 dark:bg-gray-900/30 text-gray-700 dark:text-gray-300';
-  };
-
-  const categoryClasses = getCategoryClasses();
-
-  // 카테고리 한글명
-  const categoryNames: Record<string, string> = {
-    'business': '경기',
-    'employment': '고용',
-    'interest': '금리',
-    'trade': '무역',
-    'inflation': '물가',
-  };
+  }, [category]);
 
   const handleCardClick = () => {
     if (onClick) {
@@ -142,7 +137,7 @@ const EnhancedIndicatorCard = React.memo(function EnhancedIndicatorCard({
         {/* 헤더: 카테고리 태그 + 상태 배지 */}
         <div className="flex items-center justify-between mb-3">
           <span className={`px-2 py-1 rounded text-xs font-medium ${categoryClasses}`}>
-            {categoryNames[category] || category}
+            {CATEGORY_NAMES[category] || category}
           </span>
           <span className={status.class}>
             {status.text}

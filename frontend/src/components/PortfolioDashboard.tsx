@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { LineChart, Line, ResponsiveContainer, CartesianGrid, XAxis, YAxis, Tooltip } from 'recharts';
 import { useAssets, useDeleteAsset, useUpdateAsset } from '../lib/hooks/usePortfolio';
 import { toast } from 'sonner';
@@ -528,10 +528,11 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
     return configs[fieldName] || { label: fieldName, placeholder: '' };
   };
 
-  const getFilteredAssets = useCallback(() => {
+  // ✅ 성능 최적화: useCallback → useMemo (값을 반환하므로 캐싱이 더 효율적)
+  const filteredAssets = useMemo(() => {
     if (!portfolioData) return [];
 
-    let filtered = portfolioData.data;
+    let filtered = [...portfolioData.data];
 
     if (selectedCategory !== '전체') {
       filtered = filtered.filter(asset => asset.asset_type === selectedCategory);
@@ -569,11 +570,11 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
     return filtered;
   }, [portfolioData, selectedCategory, sortBy, sortOrder]);
 
-  const getGroupedAssets = useCallback(() => {
-    const filtered = getFilteredAssets();
-    const grouped: Record<string, Record<string, typeof filtered>> = {};
+  // ✅ 성능 최적화: useCallback → useMemo (값을 반환하므로 캐싱이 더 효율적)
+  const groupedAssets = useMemo(() => {
+    const grouped: Record<string, Record<string, typeof filteredAssets>> = {};
 
-    filtered.forEach(asset => {
+    filteredAssets.forEach(asset => {
       const category = asset.asset_type;
       const subCategory = asset.sub_category || '기타';
 
@@ -587,11 +588,11 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
     });
 
     return grouped;
-  }, [getFilteredAssets]);
+  }, [filteredAssets]);
 
-  const getPieChartData = () => {
+  // ✅ 성능 최적화: useMemo로 차트 데이터 캐싱 (chartViewType, subViewType, portfolioData, groupedAssets 변경 시에만 재계산)
+  const pieChartData = useMemo(() => {
     if (!portfolioData) return [];
-    const groupedAssets = getGroupedAssets();
 
     if (chartViewType === '전체') {
       // 대분류별 데이터
@@ -637,11 +638,11 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
         };
       });
     }
-  };
+  }, [portfolioData, chartViewType, subViewType, groupedAssets]);
 
-  const getBarChartData = () => {
+  // ✅ 성능 최적화: useMemo로 차트 데이터 캐싱
+  const barChartData = useMemo(() => {
     if (!portfolioData) return [];
-    const groupedAssets = getGroupedAssets();
 
     if (chartViewType === '전체') {
       // 대분류별 데이터
@@ -689,7 +690,7 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
         };
       });
     }
-  };
+  }, [portfolioData, chartViewType, subViewType, groupedAssets]);
 
   // 포트폴리오 히스토리 상태 및 함수들
   const [historyData, setHistoryData] = useState<Array<{
@@ -746,7 +747,6 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
   // 포트폴리오 데이터 로드 시 모든 항목을 펼친 상태로 초기화
   useEffect(() => {
     if (portfolioData) {
-      const groupedAssets = getGroupedAssets();
       const categoryExpanded: Record<string, boolean> = {};
       const subCategoryExpanded: Record<string, boolean> = {};
 
@@ -760,7 +760,7 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
       setExpandedCategories(categoryExpanded);
       setExpandedSubCategories(subCategoryExpanded);
     }
-  }, [portfolioData, getGroupedAssets]);
+  }, [portfolioData, groupedAssets]);
 
   // 대분류 접기/펼치기 토글
   const toggleCategory = (category: string) => {
@@ -780,8 +780,7 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
   };
 
   // 모든 항목 펼치기/접기
-  const toggleAllExpanded = () => {
-    const groupedAssets = getGroupedAssets();
+  const toggleAllExpanded = useCallback(() => {
     const allExpanded = Object.keys(expandedCategories).every(key => expandedCategories[key]);
 
     const categoryExpanded: Record<string, boolean> = {};
@@ -796,7 +795,7 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
 
     setExpandedCategories(categoryExpanded);
     setExpandedSubCategories(subCategoryExpanded);
-  };
+  }, [expandedCategories, groupedAssets]);
 
   const getAssetFlowData = () => {
     // 포트폴리오 자산들을 등록일 기준으로 정렬하여 실제 자산흐름 생성
@@ -1002,10 +1001,7 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
     );
   }
 
-  const filteredAssets = getFilteredAssets();
-  const groupedAssets = getGroupedAssets();
-  const pieChartData = getPieChartData();
-  const barChartData = getBarChartData();
+  // ✅ 성능 최적화: 이미 useMemo로 정의된 변수들 사용 (중복 계산 제거)
   const assetFlowData = getAssetFlowData();
   const categories = ['전체', ...Object.keys(portfolioData.by_category)];
 
@@ -1461,7 +1457,6 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
                 data={pieChartData.map(item => ({ name: item.name, value: item.value }))}
                 donut
                 height={200}
-                className="md:h-[250px]"
               />
             </div>
 
@@ -1473,7 +1468,6 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
                 xKey="name"
                 yKeys={[{ key: 'amount', name: '투자 원금' }]}
                 height={200}
-                className="md:h-[250px]"
               />
             </div>
           </div>
