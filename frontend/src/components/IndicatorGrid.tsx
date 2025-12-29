@@ -109,18 +109,18 @@ export default function IndicatorGrid({ indicators, selectedId, onIndicatorClick
                     className={`
                       flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all whitespace-nowrap
                       ${isActive
-                        ? 'bg-blue-600 text-white shadow-md scale-105'
-                        : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                        ? 'bg-gradient-to-r from-[#DAA520] to-[#D4AF37] text-white shadow-lg shadow-[#DAA520]/30 scale-105 shimmer-effect'
+                        : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:border-[#DAA520] hover:shadow-md hover:scale-105'
                       }
                     `}
                   >
                     <span>{filter.icon}</span>
                     <span>{filter.name}</span>
                     <span className={`
-                      px-2 py-0.5 rounded-full text-xs
+                      px-2 py-0.5 rounded-full text-xs font-semibold
                       ${isActive
-                        ? 'bg-blue-700'
-                        : 'bg-gray-200 dark:bg-gray-700'
+                        ? 'bg-white/20 text-white'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
                       }
                     `}>
                       {count}
@@ -144,8 +144,8 @@ export default function IndicatorGrid({ indicators, selectedId, onIndicatorClick
                     className={`
                       flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all whitespace-nowrap
                       ${isActive
-                        ? 'bg-green-600 text-white shadow-sm'
-                        : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                        ? 'bg-gradient-to-r from-[#50C878] to-[#2ECC71] text-white shadow-md shadow-[#50C878]/30 scale-105'
+                        : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700 hover:border-[#50C878] hover:shadow-sm hover:scale-105'
                       }
                     `}
                   >

@@ -2,10 +2,10 @@
 
 import React, { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import GlassCard from './GlassCard';
 
 type RiskLevel = 'Low' | 'Medium' | 'High';
 
@@ -82,11 +82,9 @@ export default function RiskRadar({ value, onChange }: RiskRadarProps) {
   const renderGroup = (label: string, key: 'structural' | 'cycle' | 'portfolio') => {
     const items = data[key];
     return (
-      <Card className="border border-primary/20 bg-card">
-        <CardHeader>
-          <CardTitle className="text-lg">{label}</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
+      <GlassCard className="p-4" animate animationDelay={50}>
+        <h3 className="text-lg font-semibold text-foreground mb-3">{label}</h3>
+        <div className="space-y-3">
           {items.map(item => (
             <div
               key={item.id}
@@ -133,8 +131,8 @@ export default function RiskRadar({ value, onChange }: RiskRadarProps) {
               />
             </div>
           ))}
-        </CardContent>
-      </Card>
+        </div>
+      </GlassCard>
     );
   };
 
@@ -155,11 +153,9 @@ export default function RiskRadar({ value, onChange }: RiskRadarProps) {
         {renderGroup('포트폴리오 구조 리스크', 'portfolio')}
       </div>
 
-      <Card className="border border-secondary/30 bg-card">
-        <CardHeader>
-          <CardTitle className="text-lg">실행/행동 리스크 태그</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
+      <GlassCard className="p-4" animate animationDelay={100}>
+        <h3 className="text-lg font-semibold text-foreground mb-3">실행/행동 리스크 태그</h3>
+        <div className="space-y-3">
           <Input
             placeholder="콤마로 구분해 입력 (예: 감정, 판단, 루틴, 피로)"
             value={tagInput}
@@ -180,8 +176,8 @@ export default function RiskRadar({ value, onChange }: RiskRadarProps) {
               </Badge>
             ))}
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </GlassCard>
     </div>
   );
 }

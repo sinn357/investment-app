@@ -22,6 +22,7 @@ import BigWaveSection, { BigWaveCard } from '@/components/BigWaveSection';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import EnhancedButton from '@/components/EnhancedButton';
+import GlassCard from '@/components/GlassCard';
 
 interface Interpretation {
   core_definition: string;
@@ -545,53 +546,53 @@ export default function IndicatorsPage() {
         {/* ✅ NEW: Health Check Summary (Phase 2) */}
         {!loading && healthCheck && healthCheck.summary && (
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-6">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 p-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
+            <GlassCard className="p-4" animate animationDelay={50}>
+              <h3 className="text-lg font-semibold text-foreground mb-3">
                 📊 지표 상태 요약
               </h3>
               <div className="flex flex-wrap gap-4">
                 <div className="flex items-center gap-2">
                   <span className="text-2xl">✅</span>
                   <div>
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Healthy</span>
+                    <span className="text-sm text-muted-foreground">Healthy</span>
                     <p className="text-xl font-bold text-green-600 dark:text-green-400">
                       {healthCheck.summary.healthy}개
                     </p>
-                    <span className="text-xs text-gray-500">(7일 이내)</span>
+                    <span className="text-xs text-muted-foreground">(7일 이내)</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-2xl">⚠️</span>
                   <div>
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Stale</span>
+                    <span className="text-sm text-muted-foreground">Stale</span>
                     <p className="text-xl font-bold text-yellow-600 dark:text-yellow-400">
                       {healthCheck.summary.stale}개
                     </p>
-                    <span className="text-xs text-gray-500">(7-30일)</span>
+                    <span className="text-xs text-muted-foreground">(7-30일)</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-2xl">🚨</span>
                   <div>
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Outdated</span>
+                    <span className="text-sm text-muted-foreground">Outdated</span>
                     <p className="text-xl font-bold text-orange-600 dark:text-orange-400">
                       {healthCheck.summary.outdated}개
                     </p>
-                    <span className="text-xs text-gray-500">(30일+)</span>
+                    <span className="text-xs text-muted-foreground">(30일+)</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-2xl">❌</span>
                   <div>
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Error</span>
+                    <span className="text-sm text-muted-foreground">Error</span>
                     <p className="text-xl font-bold text-red-600 dark:text-red-400">
                       {healthCheck.summary.error}개
                     </p>
-                    <span className="text-xs text-gray-500">(크롤링 실패)</span>
+                    <span className="text-xs text-muted-foreground">(크롤링 실패)</span>
                   </div>
                 </div>
               </div>
-            </div>
+            </GlassCard>
           </div>
         )}
 

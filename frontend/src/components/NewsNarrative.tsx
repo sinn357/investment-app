@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import NarrativeGuide from './NarrativeGuide';
+import GlassCard from './GlassCard';
 
 interface Article {
   title: string;
@@ -57,9 +58,9 @@ export default function NewsNarrative({ articles, myNarrative, onChange, mmcScor
   };
 
   return (
-    <div className="bg-card rounded-lg p-6 border-2 border-primary/20">
+    <GlassCard className="p-6" animate animationDelay={100}>
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-semibold text-card-foreground flex items-center">
+        <h2 className="text-xl font-semibold text-foreground flex items-center">
           <span className="text-2xl mr-2">📰</span>
           뉴스 & 담론
         </h2>
@@ -201,6 +202,6 @@ export default function NewsNarrative({ articles, myNarrative, onChange, mmcScor
           💡 나중에 돌아봤을 때 자신의 판단을 검증할 수 있습니다.
         </p>
       </div>
-    </div>
+    </GlassCard>
   );
 }

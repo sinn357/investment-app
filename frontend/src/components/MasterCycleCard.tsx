@@ -107,9 +107,15 @@ export default function MasterCycleCard({ data }: MasterCycleCardProps) {
       {/* 헤더 */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-2">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            🎯 Master Market Cycle
-          </h2>
+          <div className="flex items-center gap-3">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+              🎯 Master Market Cycle
+            </h2>
+            {/* LIVE 배지 */}
+            <span className="px-3 py-1 bg-green-500 text-white rounded-full text-sm font-bold animate-pulse">
+              🔴 LIVE
+            </span>
+          </div>
           {data.version && (
             <span className="text-xs text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 px-2 py-1 rounded">
               {data.version}
