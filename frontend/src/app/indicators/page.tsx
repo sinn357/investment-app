@@ -15,13 +15,11 @@ import RiskRadar from '@/components/RiskRadar';
 // import CyclePanelSkeleton from '@/components/skeletons/CyclePanelSkeleton'; // ✅ 제거: Master Cycle로 대체
 import IndicatorGridSkeleton from '@/components/skeletons/IndicatorGridSkeleton';
 import ErrorBoundary from '@/components/ErrorBoundary';
-import { CARD_CLASSES } from '@/styles/theme';
 // import { calculateCycleScore, RawIndicators } from '@/utils/cycleCalculator'; // ✅ 제거: Master Cycle로 대체
 import { fetchJsonWithRetry } from '@/utils/fetchWithRetry';
 import BigWaveSection, { BigWaveCard } from '@/components/BigWaveSection';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import EnhancedButton from '@/components/EnhancedButton';
 import GlassCard from '@/components/GlassCard';
 
 interface Interpretation {

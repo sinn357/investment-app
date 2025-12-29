@@ -309,8 +309,6 @@ export default function EnhancedPortfolioForm({ user, onExpandedChange }: Enhanc
       submitData.amount = Number(formData.amount);
     }
 
-    console.log('Portfolio Data:', JSON.stringify(submitData, null, 2));
-
     // TanStack Query mutation으로 데이터 전송 (toast는 hooks에서 자동 표시)
     try {
       await createAssetMutation.mutateAsync(submitData as PortfolioFormInput & { user_id: number });

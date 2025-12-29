@@ -2,8 +2,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { OraclePieChart, OracleBarChart } from './charts';
-import GlassCard from './GlassCard';
-import EnhancedButton from './EnhancedButton';
 
 interface Expense {
   id: number;
@@ -97,29 +95,6 @@ const transferCategories: Record<string, string[]> = {
 };
 
 const paymentMethods = ["현금", "신용카드", "체크카드", "계좌이체", "기타"];
-
-const PALETTE = {
-  gold: '#d6a740',
-  paleGold: '#f4d06f',
-  emerald: '#1fbf8f',
-  mint: '#8ce0c3',
-  sand: '#f8f4ec',
-  light: '#f5f7fb',
-  coral: '#f47264',
-  slate: '#334155',
-};
-
-const COLORS = [PALETTE.gold, PALETTE.emerald, PALETTE.paleGold, PALETTE.mint, '#5cc7af', '#fbbf24', '#38bdf8', '#94a3b8', '#a855f7'];
-
-// 대분류별 색상 그룹 (자산 구성 분석용)
-const CATEGORY_COLORS: Record<string, string[]> = {
-  '생활': ['#0088FE', '#0099FF', '#00AAFF', '#00BBFF', '#00CCFF', '#00DDFF', '#00EEFF', '#00FFFF', '#00FFEE', '#00FFDD'],
-  '건강': ['#00C49F', '#00D5AF', '#00E6BF', '#00F7CF', '#10FFD0', '#20FFD5', '#30FFDA', '#40FFDF', '#50FFE4'],
-  '사회': ['#FFBB28', '#FFCC38', '#FFDD48', '#FFEE58', '#FFFF68', '#FFFF78', '#FFFF88'],
-  '여가': ['#FF8042', '#FF9052', '#FFA062', '#FFB072', '#FFC082', '#FFD092', '#FFE0A2'],
-  '쇼핑': ['#8884D8', '#9894E8', '#A8A4F8', '#B8B4FF', '#C8C4FF', '#D8D4FF', '#E8E4FF'],
-  '기타': ['#82CA9D', '#92DAAD', '#A2EABD', '#B2FACD', '#C2FFDD']
-};
 
 interface User {
   id: number;
@@ -276,8 +251,8 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
       }
 
       const result = await response.json();
-      if (result.status === 'success') {
-        console.log('Budget goals saved successfully');
+      if (result.status !== 'success') {
+        console.error('Failed to save budget goals:', result.message);
       }
     } catch (error) {
       console.error('Error saving budget goals:', error);

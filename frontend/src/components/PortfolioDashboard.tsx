@@ -114,16 +114,6 @@ interface PortfolioData {
   by_category: { [key: string]: CategorySummary };
 }
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D', '#FFC658', '#FF7C7C', '#8DD1E1'];
-
-// 대분류별 색상 그룹 (소분류 차트용)
-const MAIN_CATEGORY_COLORS = {
-  '즉시현금': ['#0088FE', '#1D93FF', '#3A9FFF', '#58ABFF'],
-  '예치자산': ['#00C49F', '#1DD0AB', '#3ADBB7', '#58E6C3'],
-  '투자자산': ['#FFBB28', '#FFC53A', '#FFCF4D', '#FFD960'],
-  '대체투자': ['#FF8042', '#FF8F58', '#FF9E6E', '#FFAD84']
-};
-
 interface User {
   id: number;
   username: string;
@@ -370,9 +360,7 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
       });
 
       const result = await response.json();
-      if (result.status === 'success') {
-        console.log('Goal settings saved successfully');
-      } else {
+      if (result.status !== 'success') {
         console.error('Failed to save goal settings:', result.message);
       }
     } catch (error) {

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import Particles, { initParticlesEngine } from '@tsparticles/react';
 import { loadSlim } from '@tsparticles/slim';
-import type { Container, Engine } from '@tsparticles/engine';
+import type { Engine } from '@tsparticles/engine';
 
 export default function ParticlesBackground() {
   const [init, setInit] = useState(false);
@@ -16,8 +16,8 @@ export default function ParticlesBackground() {
     });
   }, []);
 
-  const particlesLoaded = useCallback(async (container?: Container) => {
-    console.log('Particles loaded:', container);
+  const particlesLoaded = useCallback(async () => {
+    // Particles loaded successfully
   }, []);
 
   if (!init) {
