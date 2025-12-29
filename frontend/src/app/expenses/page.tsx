@@ -116,32 +116,37 @@ export default function ExpensesPage() {
                 수입과 지출을 체계적으로 관리하세요 · Oracle 2025
               </p>
             </div>
-            <div className="flex items-center space-x-4 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+            <div className="flex flex-col md:flex-row items-start md:items-center space-y-2 md:space-y-0 md:space-x-4 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
               <div className="text-sm text-muted-foreground">
                 <span className="font-medium text-foreground">{user.username}</span>님
               </div>
-              <EnhancedButton
-                variant="secondary"
-                size="sm"
-                onClick={handleExportExcel}
-                shimmer
-              >
-                📊 Excel 다운로드
-              </EnhancedButton>
-              <EnhancedButton
-                variant="outline"
-                size="sm"
-                onClick={() => router.push('/settings')}
-              >
-                계정 설정
-              </EnhancedButton>
-              <EnhancedButton
-                variant="outline"
-                size="sm"
-                onClick={handleLogout}
-              >
-                로그아웃
-              </EnhancedButton>
+              <div className="flex space-x-2">
+                <EnhancedButton
+                  variant="secondary"
+                  size="sm"
+                  onClick={handleExportExcel}
+                  shimmer
+                  className="text-xs md:text-sm py-1.5 md:py-2 px-3 md:px-4"
+                >
+                  📊 Excel
+                </EnhancedButton>
+                <EnhancedButton
+                  variant="outline"
+                  size="sm"
+                  onClick={() => router.push('/settings')}
+                  className="text-xs md:text-sm py-1.5 md:py-2 px-2 md:px-4"
+                >
+                  계정 설정
+                </EnhancedButton>
+                <EnhancedButton
+                  variant="outline"
+                  size="sm"
+                  onClick={handleLogout}
+                  className="text-xs md:text-sm py-1.5 md:py-2 px-2 md:px-4"
+                >
+                  로그아웃
+                </EnhancedButton>
+              </div>
             </div>
           </div>
         </div>

@@ -371,30 +371,32 @@ export default function PortfolioPage() {
                 보유 자산을 체계적으로 관리하세요 - Oracle 2025
               </p>
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="flex flex-col md:flex-row items-start md:items-center space-y-2 md:space-y-0 md:space-x-4">
               <div className="text-sm text-muted-foreground">
                 <span className="font-medium text-foreground">{user.username}</span>님
               </div>
-              <EnhancedButton
-                variant="secondary"
-                onClick={handleExportExcel}
-                shimmer
-                className="text-sm"
-              >
-                📊 Excel 다운로드
-              </EnhancedButton>
-              <button
-                onClick={() => router.push('/settings')}
-                className="px-4 py-2 text-sm font-medium text-secondary border border-secondary/30 rounded-md hover:bg-secondary/10 transition-colors"
-              >
-                계정 설정
-              </button>
-              <button
-                onClick={handleLogout}
-                className="px-4 py-2 text-sm font-medium text-primary border border-primary/30 rounded-md hover:bg-primary/10 transition-colors"
-              >
-                로그아웃
-              </button>
+              <div className="flex space-x-2">
+                <EnhancedButton
+                  variant="secondary"
+                  onClick={handleExportExcel}
+                  shimmer
+                  className="text-xs md:text-sm py-1.5 md:py-2 px-3 md:px-4"
+                >
+                  📊 Excel
+                </EnhancedButton>
+                <button
+                  onClick={() => router.push('/settings')}
+                  className="px-2 md:px-4 py-1.5 md:py-2 text-xs md:text-sm font-medium text-secondary border border-secondary/30 rounded-md hover:bg-secondary/10 transition-colors"
+                >
+                  계정 설정
+                </button>
+                <button
+                  onClick={handleLogout}
+                  className="px-2 md:px-4 py-1.5 md:py-2 text-xs md:text-sm font-medium text-primary border border-primary/30 rounded-md hover:bg-primary/10 transition-colors"
+                >
+                  로그아웃
+                </button>
+              </div>
             </div>
           </div>
         </div>

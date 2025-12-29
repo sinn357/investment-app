@@ -1045,47 +1045,41 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
     return (
       <div className="space-y-6">
         {/* 요약 카드 - 5개 블록 */}
-        <div className="grid grid-cols-1 gap-3">
-          {/* 첫 번째 줄: 총 자산, 총 투자원금 */}
-          <div className="grid grid-cols-2 gap-3">
-            <GlassCard className="p-4" animate animationDelay={0}>
-              <h3 className="text-xs font-medium text-muted-foreground">총 자산</h3>
-              <p className="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                {formatCurrency(portfolioData.summary.total_assets)}
-              </p>
-            </GlassCard>
+        <div className="grid grid-cols-2 md:grid-cols-2 xl:grid-cols-5 gap-3">
+          <GlassCard className="p-3 md:p-4" animate animationDelay={0}>
+            <h3 className="text-xs font-medium text-muted-foreground">총 자산</h3>
+            <p className="text-lg md:text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+              {formatCurrency(portfolioData.summary.total_assets)}
+            </p>
+          </GlassCard>
 
-            <GlassCard className="p-4" animate animationDelay={100}>
-              <h3 className="text-xs font-medium text-muted-foreground">총 투자원금</h3>
-              <p className="text-2xl font-bold text-foreground">
-                {formatCurrency(totalInvestmentPrincipal)}
-              </p>
-            </GlassCard>
-          </div>
+          <GlassCard className="p-3 md:p-4" animate animationDelay={100}>
+            <h3 className="text-xs font-medium text-muted-foreground">총 투자원금</h3>
+            <p className="text-lg md:text-2xl font-bold text-foreground">
+              {formatCurrency(totalInvestmentPrincipal)}
+            </p>
+          </GlassCard>
 
-          {/* 두 번째 줄: 투자현금, 총 손익, 수익률 */}
-          <div className="grid grid-cols-3 gap-3">
-            <GlassCard className="p-4" animate animationDelay={200}>
-              <h3 className="text-xs font-medium text-muted-foreground">투자현금</h3>
-              <p className="text-xl font-bold text-foreground">
-                {formatCurrency(totalInvestmentCash)}
-              </p>
-            </GlassCard>
+          <GlassCard className="p-3 md:p-4" animate animationDelay={200}>
+            <h3 className="text-xs font-medium text-muted-foreground">투자현금</h3>
+            <p className="text-lg md:text-xl font-bold text-foreground">
+              {formatCurrency(totalInvestmentCash)}
+            </p>
+          </GlassCard>
 
-            <GlassCard className="p-4" animate animationDelay={300} glow={portfolioData.summary.total_profit_loss > 0}>
-              <h3 className="text-xs font-medium text-muted-foreground">총 손익</h3>
-              <p className={`text-xl font-bold ${portfolioData.summary.total_profit_loss >= 0 ? 'text-secondary' : 'text-red-500'}`}>
-                {formatCurrency(portfolioData.summary.total_profit_loss)}
-              </p>
-            </GlassCard>
+          <GlassCard className="p-3 md:p-4" animate animationDelay={300} glow={portfolioData.summary.total_profit_loss > 0}>
+            <h3 className="text-xs font-medium text-muted-foreground">총 손익</h3>
+            <p className={`text-lg md:text-xl font-bold ${portfolioData.summary.total_profit_loss >= 0 ? 'text-secondary' : 'text-red-500'}`}>
+              {formatCurrency(portfolioData.summary.total_profit_loss)}
+            </p>
+          </GlassCard>
 
-            <GlassCard className="p-4" animate animationDelay={400} glow={portfolioData.summary.profit_rate > 0}>
-              <h3 className="text-xs font-medium text-muted-foreground">수익률</h3>
-              <p className={`text-xl font-bold ${portfolioData.summary.profit_rate >= 0 ? 'text-secondary' : 'text-red-500'}`}>
-                {portfolioData.summary.profit_rate.toFixed(2)}%
-              </p>
-            </GlassCard>
-          </div>
+          <GlassCard className="p-3 md:p-4" animate animationDelay={400} glow={portfolioData.summary.profit_rate > 0}>
+            <h3 className="text-xs font-medium text-muted-foreground">수익률</h3>
+            <p className={`text-lg md:text-xl font-bold ${portfolioData.summary.profit_rate >= 0 ? 'text-secondary' : 'text-red-500'}`}>
+              {portfolioData.summary.profit_rate.toFixed(2)}%
+            </p>
+          </GlassCard>
         </div>
 
         {/* 전체 목표 달성률 */}
@@ -1364,7 +1358,7 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
           )}
 
           {/* 차트 */}
-          <ResponsiveContainer width="100%" height={300}>
+          <ResponsiveContainer width="100%" height={250} className="md:h-[300px]">
             <LineChart data={assetFlowData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="time" />
@@ -1478,7 +1472,8 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
               <OraclePieChart
                 data={pieChartData.map(item => ({ name: item.name, value: item.value }))}
                 donut
-                height={250}
+                height={200}
+                className="md:h-[250px]"
               />
             </div>
 
@@ -1489,7 +1484,8 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
                 data={barChartData}
                 xKey="name"
                 yKeys={[{ key: 'amount', name: '투자 원금' }]}
-                height={250}
+                height={200}
+                className="md:h-[250px]"
               />
             </div>
           </div>
