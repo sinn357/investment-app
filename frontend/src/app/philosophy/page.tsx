@@ -7,6 +7,8 @@ import ForbiddenAssets from '@/components/ForbiddenAssets';
 import AllocationRange from '@/components/AllocationRange';
 import InvestmentPrinciples from '@/components/InvestmentPrinciples';
 import InvestmentMethods from '@/components/InvestmentMethods';
+import GlassCard from '@/components/GlassCard';
+import EnhancedButton from '@/components/EnhancedButton';
 
 // TypeScript interfaces
 interface InvestmentPhilosophy {
@@ -101,10 +103,11 @@ export default function Philosophy() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-muted-foreground">투자 철학 불러오는 중...</p>
-        </div>
+        <GlassCard className="p-8 text-center" animate glow>
+          <div className="animate-spin rounded-full h-16 w-16 border-4 border-primary border-t-transparent mx-auto"></div>
+          <p className="mt-6 text-lg font-medium text-foreground">투자 철학 불러오는 중...</p>
+          <p className="mt-2 text-sm text-muted-foreground">잠시만 기다려주세요</p>
+        </GlassCard>
       </div>
     );
   }
@@ -114,12 +117,13 @@ export default function Philosophy() {
       <Navigation />
 
       {/* 헤더 */}
-      <header className="bg-gradient-to-r from-primary/5 to-secondary/5 shadow-sm border-b border-primary/10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary via-yellow-400 to-secondary bg-clip-text text-transparent mb-4">
+      <header className="relative bg-gradient-to-r from-primary/10 to-secondary/10 shadow-sm border-b border-primary/20 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-secondary/5 animate-gradient"></div>
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-primary via-yellow-400 to-secondary bg-clip-text text-transparent mb-4 fade-in-down">
             💎 투자 철학 & 원칙
           </h1>
-          <p className="text-lg text-muted-foreground leading-relaxed max-w-3xl">
+          <p className="text-lg md:text-xl text-muted-foreground leading-relaxed max-w-3xl fade-in-up">
             모든 투자 결정의 기준점 - 나만의 투자 나침반을 설정하세요
           </p>
         </div>
@@ -131,75 +135,62 @@ export default function Philosophy() {
           {/* 왼쪽 컬럼 */}
           <div className="space-y-8">
             {/* 섹션 1: 투자 목표 */}
-            <div className="group relative rounded-2xl border border-primary/20 bg-card/50 backdrop-blur-md p-6 hover:border-primary/40 hover:shadow-lg transition-all">
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent rounded-2xl pointer-events-none" />
-              <div className="relative">
-                <InvestmentGoal
-                  goal={philosophy.goal}
-                  onChange={(goal) => setPhilosophy({ ...philosophy, goal })}
-                />
-              </div>
-            </div>
+            <GlassCard className="p-6" animationDelay={0}>
+              <InvestmentGoal
+                goal={philosophy.goal}
+                onChange={(goal) => setPhilosophy({ ...philosophy, goal })}
+              />
+            </GlassCard>
 
             {/* 섹션 2: 금지 자산 */}
-            <div className="group relative rounded-2xl border border-primary/20 bg-card/50 backdrop-blur-md p-6 hover:border-primary/40 hover:shadow-lg transition-all">
-              <div className="absolute inset-0 bg-gradient-to-br from-secondary/5 to-transparent rounded-2xl pointer-events-none" />
-              <div className="relative">
-                <ForbiddenAssets
-                  forbiddenAssets={philosophy.forbiddenAssets}
-                  onChange={(forbiddenAssets) => setPhilosophy({ ...philosophy, forbiddenAssets })}
-                />
-              </div>
-            </div>
+            <GlassCard className="p-6" animationDelay={100}>
+              <ForbiddenAssets
+                forbiddenAssets={philosophy.forbiddenAssets}
+                onChange={(forbiddenAssets) => setPhilosophy({ ...philosophy, forbiddenAssets })}
+              />
+            </GlassCard>
 
             {/* 섹션 3: 운용 범위 */}
-            <div className="group relative rounded-2xl border border-primary/20 bg-card/50 backdrop-blur-md p-6 hover:border-primary/40 hover:shadow-lg transition-all">
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent rounded-2xl pointer-events-none" />
-              <div className="relative">
-                <AllocationRange
-                  allocationRange={philosophy.allocationRange}
-                  onChange={(allocationRange) => setPhilosophy({ ...philosophy, allocationRange })}
-                />
-              </div>
-            </div>
+            <GlassCard className="p-6" animationDelay={200}>
+              <AllocationRange
+                allocationRange={philosophy.allocationRange}
+                onChange={(allocationRange) => setPhilosophy({ ...philosophy, allocationRange })}
+              />
+            </GlassCard>
           </div>
 
           {/* 오른쪽 컬럼 */}
           <div className="space-y-8">
             {/* 섹션 4: 투자 원칙 */}
-            <div className="group relative rounded-2xl border border-primary/20 bg-card/50 backdrop-blur-md p-6 hover:border-primary/40 hover:shadow-lg transition-all">
-              <div className="absolute inset-0 bg-gradient-to-br from-secondary/5 to-transparent rounded-2xl pointer-events-none" />
-              <div className="relative">
-                <InvestmentPrinciples
-                  principles={philosophy.principles}
-                  onChange={(principles) => setPhilosophy({ ...philosophy, principles })}
-                />
-              </div>
-            </div>
+            <GlassCard className="p-6" animationDelay={300}>
+              <InvestmentPrinciples
+                principles={philosophy.principles}
+                onChange={(principles) => setPhilosophy({ ...philosophy, principles })}
+              />
+            </GlassCard>
 
             {/* 섹션 5: 투자 방법 */}
-            <div className="group relative rounded-2xl border border-primary/20 bg-card/50 backdrop-blur-md p-6 hover:border-primary/40 hover:shadow-lg transition-all">
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent rounded-2xl pointer-events-none" />
-              <div className="relative">
-                <InvestmentMethods
-                  methods={philosophy.methods}
-                  onChange={(methods) => setPhilosophy({ ...philosophy, methods })}
-                />
-              </div>
-            </div>
+            <GlassCard className="p-6" animationDelay={400}>
+              <InvestmentMethods
+                methods={philosophy.methods}
+                onChange={(methods) => setPhilosophy({ ...philosophy, methods })}
+              />
+            </GlassCard>
           </div>
         </div>
 
         {/* 저장 버튼 */}
-        <div className="flex justify-center">
-          <button
+        <div className="flex justify-center fade-in-up" style={{ animationDelay: '500ms' }}>
+          <EnhancedButton
+            variant="primary"
+            size="lg"
             onClick={handleSave}
             disabled={isSaving}
-            className="group relative px-8 py-4 bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-white font-semibold rounded-lg shadow-2xl transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105"
+            loading={isSaving}
+            shimmer
           >
-            <span className="relative z-10">{isSaving ? '저장 중...' : '💾 투자 철학 저장'}</span>
-            <div className="absolute inset-0 bg-gradient-to-r from-primary to-secondary opacity-0 group-hover:opacity-100 blur-xl transition-opacity pointer-events-none" />
-          </button>
+            {isSaving ? '저장 중...' : '💾 투자 철학 저장'}
+          </EnhancedButton>
         </div>
       </main>
     </div>
