@@ -7,10 +7,10 @@ import EnhancedPortfolioForm from '@/components/EnhancedPortfolioForm';
 import PortfolioDashboard from '@/components/PortfolioDashboard';
 import AuthForm from '@/components/AuthForm';
 import { useAssets } from '@/lib/hooks/usePortfolio';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import GlassCard from '@/components/GlassCard';
+import EnhancedButton from '@/components/EnhancedButton';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 
@@ -330,15 +330,15 @@ export default function PortfolioPage() {
     <div className="min-h-screen bg-background">
       <Navigation />
 
-      <header className="bg-gradient-to-r from-primary/5 to-secondary/5 shadow-sm border-b border-primary/10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <header className="relative overflow-hidden bg-gradient-to-r from-primary/10 via-secondary/10 to-primary/10 animate-gradient shadow-sm border-b border-primary/20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl font-bold text-foreground">
-                포트폴리오 관리
+            <div className="animate-fade-in-up">
+              <h1 className="text-4xl lg:text-5xl font-bold bg-gradient-to-r from-primary via-yellow-400 to-secondary bg-clip-text text-transparent">
+                💎 포트폴리오 관리
               </h1>
-              <p className="mt-2 text-muted-foreground">
-                보유 자산을 체계적으로 관리하세요
+              <p className="mt-3 text-lg text-muted-foreground animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+                보유 자산을 체계적으로 관리하세요 - Oracle 2025
               </p>
             </div>
             <div className="flex items-center space-x-4">
@@ -388,14 +388,16 @@ export default function PortfolioPage() {
           </div>
 
           {/* 추가 섹션: 매수/매도 계획 */}
-          <Card className="border border-primary/20 bg-card">
-            <CardHeader>
-              <CardTitle className="text-xl">매수/매도 계획</CardTitle>
+          <GlassCard className="p-6" animate animationDelay={0}>
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-foreground mb-2 flex items-center gap-2">
+                <span className="text-3xl">📈</span> 매수/매도 계획
+              </h2>
               <p className="text-sm text-muted-foreground">
                 포트폴리오 자산을 선택해 목표가·수량·조건을 기록하세요 (로컬 저장)
               </p>
-            </CardHeader>
-            <CardContent className="space-y-4">
+            </div>
+            <div className="space-y-4">
               <div className="grid gap-3 md:grid-cols-5">
                 <div className="space-y-1">
                   <p className="text-xs text-muted-foreground">자산 선택</p>
@@ -483,7 +485,9 @@ export default function PortfolioPage() {
                 </div>
               </div>
               <div className="flex justify-end">
-                <Button onClick={handleAddPlanEntry}>계획 추가</Button>
+                <EnhancedButton variant="primary" onClick={handleAddPlanEntry} shimmer>
+                  계획 추가
+                </EnhancedButton>
               </div>
 
               <div className="overflow-x-auto">
@@ -544,18 +548,20 @@ export default function PortfolioPage() {
                   </tbody>
                 </table>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </GlassCard>
 
           {/* 추가 섹션: 데일리 모니터링 */}
-          <Card className="border border-secondary/20 bg-card">
-            <CardHeader>
-              <CardTitle className="text-xl">데일리 모니터링</CardTitle>
+          <GlassCard className="p-6" animate animationDelay={100}>
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-foreground mb-2 flex items-center gap-2">
+                <span className="text-3xl">📝</span> 데일리 모니터링
+              </h2>
               <p className="text-sm text-muted-foreground">
                 오늘 체크리스트와 메모를 관리하세요 (날짜별 로컬 저장)
               </p>
-            </CardHeader>
-            <CardContent className="space-y-4">
+            </div>
+            <div className="space-y-4">
               <div className="grid gap-3 md:grid-cols-5">
                 <div className="space-y-1">
                   <p className="text-xs text-muted-foreground">자산 선택 (선택)</p>
@@ -600,7 +606,9 @@ export default function PortfolioPage() {
                 </div>
               </div>
               <div className="flex justify-end">
-                <Button onClick={handleAddTask}>오늘 항목 추가</Button>
+                <EnhancedButton variant="secondary" onClick={handleAddTask} shimmer>
+                  오늘 항목 추가
+                </EnhancedButton>
               </div>
 
               <div className="space-y-2">
@@ -645,18 +653,20 @@ export default function PortfolioPage() {
                   rows={4}
                 />
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </GlassCard>
 
           {/* 추가 섹션: 리밸런싱 제안 */}
-          <Card className="border border-primary/15 bg-card">
-            <CardHeader>
-              <CardTitle className="text-xl">리밸런싱 제안</CardTitle>
+          <GlassCard className="p-6" animate animationDelay={200}>
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-foreground mb-2 flex items-center gap-2">
+                <span className="text-3xl">⚖️</span> 리밸런싱 제안
+              </h2>
               <p className="text-sm text-muted-foreground">
                 목표 비중을 설정하면 현재 비중과 차이를 보여줍니다 (보기용)
               </p>
-            </CardHeader>
-            <CardContent className="space-y-4">
+            </div>
+            <div className="space-y-4">
               <div className="grid gap-3 md:grid-cols-3">
                 {Object.keys(currentWeights).length === 0 && (
                   <p className="text-muted-foreground text-sm md:col-span-3">
@@ -715,18 +725,20 @@ export default function PortfolioPage() {
                   </tbody>
                 </table>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </GlassCard>
 
           {/* 추가 섹션: 월간 피드백 */}
-          <Card className="border border-border bg-card">
-            <CardHeader>
-              <CardTitle className="text-xl">월간 피드백</CardTitle>
+          <GlassCard className="p-6" animate animationDelay={300}>
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-foreground mb-2 flex items-center gap-2">
+                <span className="text-3xl">📊</span> 월간 피드백
+              </h2>
               <p className="text-sm text-muted-foreground">
                 월별로 성과와 잘한 점/실수/개선을 기록하세요 (로컬 저장)
               </p>
-            </CardHeader>
-            <CardContent className="space-y-4">
+            </div>
+            <div className="space-y-4">
               <div className="grid gap-3 md:grid-cols-4">
                 <div>
                   <p className="text-xs text-muted-foreground mb-1">월 선택</p>
@@ -779,8 +791,8 @@ export default function PortfolioPage() {
                   />
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </GlassCard>
         </div>
       </main>
     </div>

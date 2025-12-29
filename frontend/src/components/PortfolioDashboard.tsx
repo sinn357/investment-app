@@ -1,9 +1,11 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, LineChart, Line } from 'recharts';
+import { LineChart, Line, ResponsiveContainer } from 'recharts';
 import { useAssets, useDeleteAsset, useUpdateAsset } from '../lib/hooks/usePortfolio';
 import { toast } from 'sonner';
+import GlassCard from './GlassCard';
+import { OraclePieChart, OracleBarChart } from './charts';
 
 interface Asset {
   id: number;
@@ -1046,39 +1048,51 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
         <div className="grid grid-cols-1 gap-3">
           {/* 첫 번째 줄: 총 자산, 총 투자원금 */}
           <div className="grid grid-cols-2 gap-3">
-            <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg p-3">
-              <h3 className="text-xs font-medium opacity-90">총 자산</h3>
-              <p className="text-sm font-bold">{formatCurrency(portfolioData.summary.total_assets)}</p>
-            </div>
+            <GlassCard className="p-4" animate animationDelay={0}>
+              <h3 className="text-xs font-medium text-muted-foreground">총 자산</h3>
+              <p className="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                {formatCurrency(portfolioData.summary.total_assets)}
+              </p>
+            </GlassCard>
 
-            <div className="bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg p-3">
-              <h3 className="text-xs font-medium opacity-90">총 투자원금</h3>
-              <p className="text-sm font-bold">{formatCurrency(totalInvestmentPrincipal)}</p>
-            </div>
+            <GlassCard className="p-4" animate animationDelay={100}>
+              <h3 className="text-xs font-medium text-muted-foreground">총 투자원금</h3>
+              <p className="text-2xl font-bold text-foreground">
+                {formatCurrency(totalInvestmentPrincipal)}
+              </p>
+            </GlassCard>
           </div>
 
           {/* 두 번째 줄: 투자현금, 총 손익, 수익률 */}
           <div className="grid grid-cols-3 gap-3">
-            <div className="bg-gradient-to-r from-cyan-500 to-cyan-600 text-white rounded-lg p-3">
-              <h3 className="text-xs font-medium opacity-90">투자현금</h3>
-              <p className="text-sm font-bold">{formatCurrency(totalInvestmentCash)}</p>
-            </div>
+            <GlassCard className="p-4" animate animationDelay={200}>
+              <h3 className="text-xs font-medium text-muted-foreground">투자현금</h3>
+              <p className="text-xl font-bold text-foreground">
+                {formatCurrency(totalInvestmentCash)}
+              </p>
+            </GlassCard>
 
-            <div className="bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg p-3">
-              <h3 className="text-xs font-medium opacity-90">총 손익</h3>
-              <p className="text-sm font-bold">{formatCurrency(portfolioData.summary.total_profit_loss)}</p>
-            </div>
+            <GlassCard className="p-4" animate animationDelay={300} glow={portfolioData.summary.total_profit_loss > 0}>
+              <h3 className="text-xs font-medium text-muted-foreground">총 손익</h3>
+              <p className={`text-xl font-bold ${portfolioData.summary.total_profit_loss >= 0 ? 'text-secondary' : 'text-red-500'}`}>
+                {formatCurrency(portfolioData.summary.total_profit_loss)}
+              </p>
+            </GlassCard>
 
-            <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg p-3">
-              <h3 className="text-xs font-medium opacity-90">수익률</h3>
-              <p className="text-sm font-bold">{portfolioData.summary.profit_rate.toFixed(2)}%</p>
-            </div>
+            <GlassCard className="p-4" animate animationDelay={400} glow={portfolioData.summary.profit_rate > 0}>
+              <h3 className="text-xs font-medium text-muted-foreground">수익률</h3>
+              <p className={`text-xl font-bold ${portfolioData.summary.profit_rate >= 0 ? 'text-secondary' : 'text-red-500'}`}>
+                {portfolioData.summary.profit_rate.toFixed(2)}%
+              </p>
+            </GlassCard>
           </div>
         </div>
 
         {/* 전체 목표 달성률 */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4">
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">전체 목표 달성률</h3>
+        <GlassCard className="p-5" animate animationDelay={500} glow={progressRate >= 100}>
+          <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
+            <span className="text-2xl">🎯</span> 전체 목표 달성률
+          </h3>
 
           {/* 목표 설정 */}
           <div className="space-y-2 mb-4">
@@ -1134,7 +1148,7 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
               </span>
             </div>
           </div>
-        </div>
+        </GlassCard>
 
         {/* 전체 목표 달성률 하단에 펼치기 버튼 */}
         <div className="text-center">
@@ -1460,65 +1474,23 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* 도넛 차트 - 비중 */}
             <div>
-              <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2 text-center">구성 비중</h4>
-              <ResponsiveContainer width="100%" height={250}>
-                <PieChart>
-                  <Pie
-                    data={pieChartData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={40}
-                    outerRadius={80}
-                    paddingAngle={5}
-                    dataKey="value"
-                  >
-                    {pieChartData.map((entry, index) => {
-                      if (chartViewType === '전체') {
-                        // 전체 모드: 기본 색상 사용
-                        return <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />;
-                      } else if (subViewType) {
-                        // 소분류 선택 시: 개별 자산용 색상 (더 다양한 색상)
-                        const extendedColors = [...COLORS, '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F', '#BB8FCE'];
-                        return <Cell key={`cell-${index}`} fill={extendedColors[index % extendedColors.length]} />;
-                      } else {
-                        // 특정 대분류 모드: 해당 대분류 색상 그룹 사용
-                        const mainCategoryColors = MAIN_CATEGORY_COLORS[chartViewType as keyof typeof MAIN_CATEGORY_COLORS] || COLORS;
-                        return <Cell key={`cell-${index}`} fill={mainCategoryColors[index % mainCategoryColors.length]} />;
-                      }
-                    })}
-                  </Pie>
-                  <Tooltip formatter={(value: number) => formatCurrency(value)} />
-                  <Legend wrapperStyle={{ fontSize: '10px' }} />
-                </PieChart>
-              </ResponsiveContainer>
+              <h4 className="text-sm font-medium text-muted-foreground mb-2 text-center">구성 비중</h4>
+              <OraclePieChart
+                data={pieChartData.map(item => ({ name: item.name, value: item.value }))}
+                donut
+                height={250}
+              />
             </div>
 
             {/* 막대 차트 - 원금 */}
             <div>
-              <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2 text-center">투자 원금</h4>
-              <ResponsiveContainer width="100%" height={250}>
-                <BarChart data={barChartData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis tickFormatter={(value) => `${(value / 1000000).toFixed(0)}M`} />
-                  <Tooltip formatter={(value: number) => formatCurrency(value)} />
-                  <Bar dataKey="amount">
-                    {barChartData.map((entry, index) => {
-                      if (chartViewType === '전체') {
-                        return <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />;
-                      } else if (subViewType) {
-                        // 소분류 선택 시: 개별 자산용 색상 (더 다양한 색상)
-                        const extendedColors = [...COLORS, '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F', '#BB8FCE'];
-                        return <Cell key={`cell-${index}`} fill={extendedColors[index % extendedColors.length]} />;
-                      } else {
-                        // 특정 대분류 모드: 해당 대분류 색상 그룹 사용
-                        const mainCategoryColors = MAIN_CATEGORY_COLORS[chartViewType as keyof typeof MAIN_CATEGORY_COLORS] || COLORS;
-                        return <Cell key={`cell-${index}`} fill={mainCategoryColors[index % mainCategoryColors.length]} />;
-                      }
-                    })}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
+              <h4 className="text-sm font-medium text-muted-foreground mb-2 text-center">투자 원금</h4>
+              <OracleBarChart
+                data={barChartData}
+                xKey="name"
+                yKeys={[{ key: 'amount', name: '투자 원금' }]}
+                height={250}
+              />
             </div>
           </div>
         </div>
