@@ -1,7 +1,9 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
+import { OraclePieChart, OracleBarChart } from './charts';
+import GlassCard from './GlassCard';
+import EnhancedButton from './EnhancedButton';
 
 interface Expense {
   id: number;
@@ -1066,37 +1068,11 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
               )}
 
               {compositionPieData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={180}>
-                  <PieChart>
-                    <Pie
-                      data={compositionPieData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={40}
-                      outerRadius={70}
-                      paddingAngle={4}
-                      dataKey="value"
-                      label={(entry) => `${Number(entry.value).toLocaleString()}원`}
-                    >
-                      {compositionPieData.map((_entry, index) => {
-                        if (compositionCategory === '전체') {
-                          return <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />;
-                        } else if (compositionSubCategory) {
-                          const extendedColors = [...COLORS, PALETTE.coral, '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F'];
-                          return <Cell key={`cell-${index}`} fill={extendedColors[index % extendedColors.length]} />;
-                        } else {
-                          const categoryColors = CATEGORY_COLORS[compositionCategory as keyof typeof CATEGORY_COLORS] || COLORS;
-                          return <Cell key={`cell-${index}`} fill={categoryColors[index % categoryColors.length]} />;
-                        }
-                      })}
-                    </Pie>
-                    <Tooltip
-                      contentStyle={{ backgroundColor: '#ffffff', borderRadius: 12, border: '1px solid #e2e8f0', color: '#0f172a' }}
-                      formatter={(value: number) => [`${value.toLocaleString()}원`, '금액']}
-                    />
-                    <Legend wrapperStyle={{ fontSize: '10px', color: '#475569' }} />
-                  </PieChart>
-                </ResponsiveContainer>
+                <OraclePieChart
+                  data={compositionPieData}
+                  donut
+                  height={180}
+                />
               ) : (
                 <div className="h-[180px] flex items-center justify-center text-slate-400">
                   데이터가 없습니다
@@ -1130,27 +1106,15 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
               <div className="flex-1 flex items-center justify-center">
                 {timeSeriesTab === '일별' && (
                   dailyData.length > 0 ? (
-                    <ResponsiveContainer width="100%" height={180}>
-                      <BarChart data={dailyData}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                        <XAxis dataKey="날짜" tick={{ fontSize: 10, fill: '#475569' }} />
-                        <YAxis
-                          tick={{ fontSize: 10, fill: '#475569' }}
-                          tickFormatter={(value) => {
-                            if (value >= 1000000) return `${(value / 1000000).toFixed(0)}M`;
-                            if (value >= 1000) return `${(value / 1000).toFixed(0)}K`;
-                            return value.toString();
-                          }}
-                        />
-                        <Tooltip
-                          contentStyle={{ backgroundColor: '#ffffff', borderRadius: 10, border: '1px solid #e2e8f0', color: '#0f172a' }}
-                          formatter={(value: number) => [`${value.toLocaleString()}원`]}
-                        />
-                        <Legend layout="horizontal" align="center" verticalAlign="bottom" wrapperStyle={{ color: '#475569', fontSize: 10 }} />
-                        <Bar dataKey="지출" fill={PALETTE.coral} radius={[4, 4, 0, 0]} />
-                        <Bar dataKey="수입" fill={PALETTE.emerald} radius={[4, 4, 0, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
+                    <OracleBarChart
+                      data={dailyData}
+                      xKey="날짜"
+                      yKeys={[
+                        { key: '지출', name: '지출' },
+                        { key: '수입', name: '수입' }
+                      ]}
+                      height={180}
+                    />
                   ) : (
                     <div className="h-[180px] flex items-center justify-center text-slate-400">데이터가 없습니다</div>
                   )
@@ -1158,28 +1122,11 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
 
                 {timeSeriesTab === '비율' && (
                   ratioData.length > 0 && (ratioData[0].value > 0 || ratioData[1].value > 0) ? (
-                    <ResponsiveContainer width="100%" height={180}>
-                      <PieChart>
-                        <Pie
-                          data={ratioData}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={52}
-                          outerRadius={80}
-                          paddingAngle={4}
-                          dataKey="value"
-                          label={(entry) => `${Number(entry.value).toLocaleString()}원`}
-                        >
-                          <Cell fill={PALETTE.coral} />
-                          <Cell fill={PALETTE.emerald} />
-                        </Pie>
-                        <Tooltip
-                          contentStyle={{ backgroundColor: '#ffffff', borderRadius: 10, border: '1px solid #e2e8f0', color: '#0f172a' }}
-                          formatter={(value: number) => [`${value.toLocaleString()}원`, '금액']}
-                        />
-                        <Legend layout="horizontal" align="center" verticalAlign="bottom" wrapperStyle={{ color: '#475569', fontSize: 10 }} />
-                      </PieChart>
-                    </ResponsiveContainer>
+                    <OraclePieChart
+                      data={ratioData}
+                      donut
+                      height={180}
+                    />
                   ) : (
                     <div className="h-[180px] flex items-center justify-center text-slate-400">데이터가 없습니다</div>
                   )

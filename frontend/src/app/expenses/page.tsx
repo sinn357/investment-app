@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Navigation from '../../components/Navigation';
 import ExpenseManagementDashboard from '../../components/ExpenseManagementDashboard';
 import AuthForm from '@/components/AuthForm';
+import EnhancedButton from '@/components/EnhancedButton';
 
 interface User {
   id: number;
@@ -68,33 +69,35 @@ export default function ExpensesPage() {
     <div className="min-h-screen bg-background">
       <Navigation />
 
-      <header className="bg-gradient-to-r from-primary/5 to-secondary/5 shadow-sm border-b border-primary/10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <header className="relative overflow-hidden bg-gradient-to-r from-primary/10 to-secondary/10 shadow-sm border-b border-primary/20 animate-gradient">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl font-bold text-foreground">
-                가계부 관리
+            <div className="space-y-3">
+              <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary via-yellow-400 to-secondary bg-clip-text text-transparent animate-fade-in-down">
+                💰 가계부 관리
               </h1>
-              <p className="mt-2 text-muted-foreground">
-                수입과 지출을 체계적으로 관리하세요
+              <p className="text-lg text-muted-foreground animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+                수입과 지출을 체계적으로 관리하세요 · Oracle 2025
               </p>
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-4 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
               <div className="text-sm text-muted-foreground">
                 <span className="font-medium text-foreground">{user.username}</span>님
               </div>
-              <button
+              <EnhancedButton
+                variant="outline"
+                size="sm"
                 onClick={() => router.push('/settings')}
-                className="px-4 py-2 text-sm font-medium text-secondary border border-secondary/30 rounded-md hover:bg-secondary/10 transition-colors"
               >
                 계정 설정
-              </button>
-              <button
+              </EnhancedButton>
+              <EnhancedButton
+                variant="outline"
+                size="sm"
                 onClick={handleLogout}
-                className="px-4 py-2 text-sm font-medium text-primary border border-primary/30 rounded-md hover:bg-primary/10 transition-colors"
               >
                 로그아웃
-              </button>
+              </EnhancedButton>
             </div>
           </div>
         </div>

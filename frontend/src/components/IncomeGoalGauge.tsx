@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
+import GlassCard from './GlassCard';
+import EnhancedButton from './EnhancedButton';
 
 interface IncomeGoalGaugeProps {
   incomeData: Array<{
@@ -71,42 +73,47 @@ export default function IncomeGoalGauge({ incomeData, goals, onSaveGoals }: Inco
   };
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
+    <GlassCard className="p-6" glow>
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold text-gray-900">목표 수입 게이지</h2>
+        <h2 className="text-xl font-bold bg-gradient-to-r from-secondary to-primary bg-clip-text text-transparent">💰 목표 수입 게이지</h2>
         <div className="flex gap-2">
           {editMode ? (
             <>
-              <button
+              <EnhancedButton
+                variant="primary"
+                size="sm"
                 onClick={handleSaveGoals}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+                shimmer
               >
                 저장
-              </button>
-              <button
+              </EnhancedButton>
+              <EnhancedButton
+                variant="outline"
+                size="sm"
                 onClick={() => {
                   setEditMode(false);
                   setEditingGoals(goals);
                 }}
-                className="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-700 rounded-lg text-sm font-medium transition-colors"
               >
                 취소
-              </button>
+              </EnhancedButton>
             </>
           ) : (
-            <button
+            <EnhancedButton
+              variant="secondary"
+              size="sm"
               onClick={() => setEditMode(true)}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
             >
               목표 설정
-            </button>
+            </EnhancedButton>
           )}
-          <button
+          <EnhancedButton
+            variant="outline"
+            size="sm"
             onClick={() => setShowDetails(!showDetails)}
-            className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg text-sm font-medium transition-colors"
           >
             {showDetails ? '접기' : '펼치기'}
-          </button>
+          </EnhancedButton>
         </div>
       </div>
 
@@ -188,6 +195,6 @@ export default function IncomeGoalGauge({ incomeData, goals, onSaveGoals }: Inco
           );
         })}
       </div>
-    </div>
+    </GlassCard>
   );
 }
