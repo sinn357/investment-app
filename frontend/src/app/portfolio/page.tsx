@@ -170,6 +170,36 @@ export default function PortfolioPage() {
     setRefreshKey(prev => prev + 1); // 대시보드 초기화
   };
 
+  const handleExportExcel = async () => {
+    if (!user) return;
+
+    try {
+      const API_BASE_URL = 'https://investment-app-backend-x166.onrender.com';
+      const response = await fetch(
+        `${API_BASE_URL}/api/portfolio/export/excel?user_id=${user.id}`
+      );
+
+      if (!response.ok) {
+        throw new Error('Excel 생성 실패');
+      }
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `portfolio_${new Date().toISOString().slice(0, 10)}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      alert('Excel 파일이 다운로드되었습니다!');
+    } catch (error) {
+      console.error('Excel 다운로드 실패:', error);
+      alert('Excel 다운로드에 실패했습니다.');
+    }
+  };
+
   const persistTradePlans = (plans: TradePlan[]) => {
     setTradePlans(plans);
     if (user) localStorage.setItem(storageKey('plans'), JSON.stringify(plans));
@@ -345,6 +375,14 @@ export default function PortfolioPage() {
               <div className="text-sm text-muted-foreground">
                 <span className="font-medium text-foreground">{user.username}</span>님
               </div>
+              <EnhancedButton
+                variant="secondary"
+                onClick={handleExportExcel}
+                shimmer
+                className="text-sm"
+              >
+                📊 Excel 다운로드
+              </EnhancedButton>
               <button
                 onClick={() => router.push('/settings')}
                 className="px-4 py-2 text-sm font-medium text-secondary border border-secondary/30 rounded-md hover:bg-secondary/10 transition-colors"

@@ -1,9 +1,12 @@
-from flask import Flask, jsonify, request, make_response, Response
+from flask import Flask, jsonify, request, make_response, Response, send_file
 from flask_cors import CORS
 import os
 import functools
 from dotenv import load_dotenv
 from datetime import datetime
+import io
+from openpyxl import Workbook
+from openpyxl.styles import Font, Alignment, PatternFill
 
 # 통합 크롤러
 from crawlers.unified_crawler import crawl_indicator, crawl_category
@@ -1559,6 +1562,165 @@ def get_portfolio():
             "message": f"포트폴리오 조회 실패: {str(e)}"
         }), 500
 
+@app.route('/api/portfolio/export/excel', methods=['GET'])
+def export_portfolio_excel():
+    """포트폴리오 데이터를 Excel 파일로 다운로드"""
+    try:
+        # 쿼리 파라미터에서 user_id 가져오기
+        user_id = request.args.get('user_id')
+        if not user_id:
+            return jsonify({"status": "error", "message": "user_id required"}), 400
+
+        user_id = int(user_id)
+
+        # PostgreSQL에서 사용자별 자산 데이터 조회
+        result = db_service.get_all_assets(user_id)
+
+        if result.get('status') != 'success':
+            return jsonify({"status": "error", "message": "데이터 조회 실패"}), 500
+
+        assets = result.get('data', [])
+
+        # Excel 파일 생성
+        wb = Workbook()
+
+        # Sheet 1: 자산 목록
+        ws1 = wb.active
+        ws1.title = "자산 목록"
+
+        # 헤더 스타일
+        header_fill = PatternFill(start_color="DAA520", end_color="DAA520", fill_type="solid")
+        header_font = Font(bold=True, color="FFFFFF")
+
+        # 헤더
+        headers = ['대분류', '소분류', '자산명', '수량', '매수평균가', '투자원금', '평가금액', '수익률(%)', '등록일']
+        for col, header in enumerate(headers, 1):
+            cell = ws1.cell(row=1, column=col, value=header)
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = Alignment(horizontal='center', vertical='center')
+
+        # 데이터
+        for row_idx, asset in enumerate(assets, 2):
+            ws1.cell(row=row_idx, column=1, value=asset.get('asset_type', ''))
+            ws1.cell(row=row_idx, column=2, value=asset.get('sub_category', ''))
+            ws1.cell(row=row_idx, column=3, value=asset.get('name', ''))
+            ws1.cell(row=row_idx, column=4, value=asset.get('quantity', 0))
+            ws1.cell(row=row_idx, column=5, value=asset.get('avg_price', 0))
+            ws1.cell(row=row_idx, column=6, value=asset.get('principal', asset.get('amount', 0)))
+            ws1.cell(row=row_idx, column=7, value=asset.get('eval_amount', asset.get('amount', 0)))
+            ws1.cell(row=row_idx, column=8, value=round(asset.get('profit_rate', 0), 2))
+            ws1.cell(row=row_idx, column=9, value=asset.get('date', ''))
+
+        # 컬럼 너비 조정
+        ws1.column_dimensions['A'].width = 12
+        ws1.column_dimensions['B'].width = 15
+        ws1.column_dimensions['C'].width = 20
+        ws1.column_dimensions['D'].width = 10
+        ws1.column_dimensions['E'].width = 12
+        ws1.column_dimensions['F'].width = 12
+        ws1.column_dimensions['G'].width = 12
+        ws1.column_dimensions['H'].width = 12
+        ws1.column_dimensions['I'].width = 12
+
+        # Sheet 2: 자산군별 요약
+        ws2 = wb.create_sheet("자산군별 요약")
+
+        # 헤더
+        headers2 = ['자산군', '총액', '비중(%)', '평균수익률(%)', '자산개수']
+        for col, header in enumerate(headers2, 1):
+            cell = ws2.cell(row=1, column=col, value=header)
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = Alignment(horizontal='center', vertical='center')
+
+        # 자산군별 집계
+        asset_summary = {}
+        total_eval = sum(asset.get('eval_amount', asset.get('amount', 0)) for asset in assets)
+
+        for asset in assets:
+            asset_type = asset.get('asset_type', '기타')
+            eval_amount = asset.get('eval_amount', asset.get('amount', 0))
+            profit_rate = asset.get('profit_rate', 0)
+
+            if asset_type not in asset_summary:
+                asset_summary[asset_type] = {
+                    'total': 0,
+                    'count': 0,
+                    'profit_rates': []
+                }
+
+            asset_summary[asset_type]['total'] += eval_amount
+            asset_summary[asset_type]['count'] += 1
+            asset_summary[asset_type]['profit_rates'].append(profit_rate)
+
+        # 데이터
+        for row_idx, (asset_type, summary) in enumerate(asset_summary.items(), 2):
+            ws2.cell(row=row_idx, column=1, value=asset_type)
+            ws2.cell(row=row_idx, column=2, value=summary['total'])
+            ws2.cell(row=row_idx, column=3, value=round((summary['total'] / total_eval * 100) if total_eval > 0 else 0, 2))
+            avg_profit = sum(summary['profit_rates']) / len(summary['profit_rates']) if summary['profit_rates'] else 0
+            ws2.cell(row=row_idx, column=4, value=round(avg_profit, 2))
+            ws2.cell(row=row_idx, column=5, value=summary['count'])
+
+        # 컬럼 너비 조정
+        for col in ['A', 'B', 'C', 'D', 'E']:
+            ws2.column_dimensions[col].width = 15
+
+        # Sheet 3: 목표 달성 현황
+        ws3 = wb.create_sheet("목표 달성 현황")
+
+        # 헤더
+        headers3 = ['항목', '값']
+        for col, header in enumerate(headers3, 1):
+            cell = ws3.cell(row=1, column=col, value=header)
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = Alignment(horizontal='center', vertical='center')
+
+        # 전체 자산 통계
+        total_principal = sum(asset.get('principal', asset.get('amount', 0)) for asset in assets)
+        total_eval_amount = sum(asset.get('eval_amount', asset.get('amount', 0)) for asset in assets)
+        total_profit = total_eval_amount - total_principal
+        total_profit_rate = ((total_eval_amount - total_principal) / total_principal * 100) if total_principal > 0 else 0
+
+        ws3.cell(row=2, column=1, value="투자원금")
+        ws3.cell(row=2, column=2, value=total_principal)
+        ws3.cell(row=3, column=1, value="현재가치")
+        ws3.cell(row=3, column=2, value=total_eval_amount)
+        ws3.cell(row=4, column=1, value="총 수익")
+        ws3.cell(row=4, column=2, value=total_profit)
+        ws3.cell(row=5, column=1, value="수익률(%)")
+        ws3.cell(row=5, column=2, value=round(total_profit_rate, 2))
+        ws3.cell(row=6, column=1, value="자산 개수")
+        ws3.cell(row=6, column=2, value=len(assets))
+
+        # 컬럼 너비 조정
+        ws3.column_dimensions['A'].width = 15
+        ws3.column_dimensions['B'].width = 20
+
+        # 파일명 생성
+        filename = f"portfolio_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+
+        # 메모리 버퍼에 저장
+        buffer = io.BytesIO()
+        wb.save(buffer)
+        buffer.seek(0)
+
+        return send_file(
+            buffer,
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            as_attachment=True,
+            download_name=filename
+        )
+
+    except Exception as e:
+        print(f"Error exporting portfolio to Excel: {e}")
+        return jsonify({
+            "status": "error",
+            "message": f"Excel 생성 실패: {str(e)}"
+        }), 500
+
 @app.route('/api/update-asset/<int:asset_id>', methods=['PUT'])
 def update_asset(asset_id):
     """포트폴리오 자산 수정 API"""
@@ -2550,6 +2712,174 @@ def get_expenses():
         return jsonify({
             "status": "error",
             "message": f"거래내역 조회 중 오류가 발생했습니다: {str(e)}"
+        }), 500
+
+@app.route('/api/expenses/export/excel', methods=['GET'])
+def export_expenses_excel():
+    """가계부 데이터를 Excel 파일로 다운로드"""
+    try:
+        # 쿼리 파라미터에서 user_id, 연도/월 가져오기
+        user_id = request.args.get('user_id')
+        if not user_id:
+            return jsonify({"status": "error", "message": "user_id required"}), 400
+
+        user_id = int(user_id)
+
+        # 날짜 필터 (선택적)
+        filters = {}
+        year = request.args.get('year')
+        month = request.args.get('month')
+
+        if year and month:
+            filters['start_date'] = f"{year}-{month.zfill(2)}-01"
+            # 월의 마지막 날 계산
+            import calendar
+            last_day = calendar.monthrange(int(year), int(month))[1]
+            filters['end_date'] = f"{year}-{month.zfill(2)}-{last_day}"
+
+        # PostgreSQL에서 사용자별 거래내역 데이터 조회
+        result = db_service.get_all_expenses(user_id, filters)
+
+        if result.get('status') != 'success':
+            return jsonify({"status": "error", "message": "데이터 조회 실패"}), 500
+
+        expenses = result.get('data', [])
+
+        # Excel 파일 생성
+        wb = Workbook()
+
+        # Sheet 1: 거래내역
+        ws1 = wb.active
+        ws1.title = "거래내역"
+
+        # 헤더 스타일
+        header_fill = PatternFill(start_color="50C878", end_color="50C878", fill_type="solid")
+        header_font = Font(bold=True, color="FFFFFF")
+
+        # 헤더
+        headers = ['날짜', '거래유형', '대분류', '소분류', '거래처', '금액', '메모']
+        for col, header in enumerate(headers, 1):
+            cell = ws1.cell(row=1, column=col, value=header)
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = Alignment(horizontal='center', vertical='center')
+
+        # 데이터
+        for row_idx, expense in enumerate(expenses, 2):
+            ws1.cell(row=row_idx, column=1, value=expense.get('transaction_date', ''))
+            ws1.cell(row=row_idx, column=2, value=expense.get('transaction_type', ''))
+            ws1.cell(row=row_idx, column=3, value=expense.get('main_category', ''))
+            ws1.cell(row=row_idx, column=4, value=expense.get('sub_category', ''))
+            ws1.cell(row=row_idx, column=5, value=expense.get('merchant', ''))
+            ws1.cell(row=row_idx, column=6, value=expense.get('amount', 0))
+            ws1.cell(row=row_idx, column=7, value=expense.get('memo', ''))
+
+        # 컬럼 너비 조정
+        ws1.column_dimensions['A'].width = 12
+        ws1.column_dimensions['B'].width = 10
+        ws1.column_dimensions['C'].width = 12
+        ws1.column_dimensions['D'].width = 15
+        ws1.column_dimensions['E'].width = 20
+        ws1.column_dimensions['F'].width = 12
+        ws1.column_dimensions['G'].width = 30
+
+        # Sheet 2: 카테고리별 요약
+        ws2 = wb.create_sheet("카테고리별 요약")
+
+        # 헤더
+        headers2 = ['대분류', '소분류', '총액', '건수', '비중(%)']
+        for col, header in enumerate(headers2, 1):
+            cell = ws2.cell(row=1, column=col, value=header)
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = Alignment(horizontal='center', vertical='center')
+
+        # 카테고리별 집계
+        category_summary = {}
+        total_amount = sum(expense.get('amount', 0) for expense in expenses)
+
+        for expense in expenses:
+            main_cat = expense.get('main_category', '기타')
+            sub_cat = expense.get('sub_category', '기타')
+            amount = expense.get('amount', 0)
+
+            key = f"{main_cat}_{sub_cat}"
+
+            if key not in category_summary:
+                category_summary[key] = {
+                    'main_category': main_cat,
+                    'sub_category': sub_cat,
+                    'total': 0,
+                    'count': 0
+                }
+
+            category_summary[key]['total'] += amount
+            category_summary[key]['count'] += 1
+
+        # 데이터
+        for row_idx, summary in enumerate(category_summary.values(), 2):
+            ws2.cell(row=row_idx, column=1, value=summary['main_category'])
+            ws2.cell(row=row_idx, column=2, value=summary['sub_category'])
+            ws2.cell(row=row_idx, column=3, value=summary['total'])
+            ws2.cell(row=row_idx, column=4, value=summary['count'])
+            ws2.cell(row=row_idx, column=5, value=round((summary['total'] / total_amount * 100) if total_amount > 0 else 0, 2))
+
+        # 컬럼 너비 조정
+        for col in ['A', 'B', 'C', 'D', 'E']:
+            ws2.column_dimensions[col].width = 15
+
+        # Sheet 3: 월간 요약
+        ws3 = wb.create_sheet("월간 요약")
+
+        # 헤더
+        headers3 = ['항목', '값']
+        for col, header in enumerate(headers3, 1):
+            cell = ws3.cell(row=1, column=col, value=header)
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = Alignment(horizontal='center', vertical='center')
+
+        # 지출/수입 집계
+        total_expense = sum(expense.get('amount', 0) for expense in expenses if expense.get('transaction_type') == '지출')
+        total_income = sum(expense.get('amount', 0) for expense in expenses if expense.get('transaction_type') == '수입')
+        net_change = total_income - total_expense
+
+        ws3.cell(row=2, column=1, value="총 지출")
+        ws3.cell(row=2, column=2, value=total_expense)
+        ws3.cell(row=3, column=1, value="총 수입")
+        ws3.cell(row=3, column=2, value=total_income)
+        ws3.cell(row=4, column=1, value="순자산 변화")
+        ws3.cell(row=4, column=2, value=net_change)
+        ws3.cell(row=5, column=1, value="총 거래 건수")
+        ws3.cell(row=5, column=2, value=len(expenses))
+
+        # 컬럼 너비 조정
+        ws3.column_dimensions['A'].width = 15
+        ws3.column_dimensions['B'].width = 20
+
+        # 파일명 생성
+        if year and month:
+            filename = f"expenses_{year}_{month.zfill(2)}.xlsx"
+        else:
+            filename = f"expenses_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+
+        # 메모리 버퍼에 저장
+        buffer = io.BytesIO()
+        wb.save(buffer)
+        buffer.seek(0)
+
+        return send_file(
+            buffer,
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            as_attachment=True,
+            download_name=filename
+        )
+
+    except Exception as e:
+        print(f"Error exporting expenses to Excel: {e}")
+        return jsonify({
+            "status": "error",
+            "message": f"Excel 생성 실패: {str(e)}"
         }), 500
 
 @app.route('/api/expenses/<int:expense_id>', methods=['PUT'])

@@ -60,6 +60,42 @@ export default function ExpensesPage() {
     localStorage.removeItem('auth_token');
   };
 
+  const handleExportExcel = async () => {
+    if (!user) return;
+
+    try {
+      const API_BASE_URL = 'https://investment-app-backend-x166.onrender.com';
+
+      // 현재 연도/월 가져오기 (선택적)
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = now.getMonth() + 1;
+
+      const response = await fetch(
+        `${API_BASE_URL}/api/expenses/export/excel?user_id=${user.id}&year=${year}&month=${month}`
+      );
+
+      if (!response.ok) {
+        throw new Error('Excel 생성 실패');
+      }
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `expenses_${year}_${String(month).padStart(2, '0')}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      alert('Excel 파일이 다운로드되었습니다!');
+    } catch (error) {
+      console.error('Excel 다운로드 실패:', error);
+      alert('Excel 다운로드에 실패했습니다.');
+    }
+  };
+
   // 로그인하지 않은 경우 인증 폼 표시
   if (!user) {
     return <AuthForm onLogin={handleLogin} />;
@@ -84,6 +120,14 @@ export default function ExpensesPage() {
               <div className="text-sm text-muted-foreground">
                 <span className="font-medium text-foreground">{user.username}</span>님
               </div>
+              <EnhancedButton
+                variant="secondary"
+                size="sm"
+                onClick={handleExportExcel}
+                shimmer
+              >
+                📊 Excel 다운로드
+              </EnhancedButton>
               <EnhancedButton
                 variant="outline"
                 size="sm"
