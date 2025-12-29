@@ -16,6 +16,7 @@ export default function Navigation() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const { isDarkMode, toggleDarkMode } = useDarkMode();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // localStorage에서 사용자 정보 로드
   useEffect(() => {
@@ -105,95 +106,216 @@ export default function Navigation() {
   };
 
   return (
-    <nav className="bg-gradient-to-r from-primary via-primary/90 to-secondary/20 shadow-lg border-b border-primary/30">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          {/* 로고 */}
-          <div className="flex items-center">
-            <Link href="/" className="flex items-center group">
-              <div className="w-10 h-10 bg-gradient-to-br from-primary via-yellow-400 to-secondary rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-primary/50 transition-all">
-                <span className="text-white font-bold text-lg">Ω</span>
-              </div>
-              <div className="ml-3">
-                <span className="block text-2xl font-bold text-white tracking-wider font-mono">
-                  ORACLE
-                </span>
-                <span className="block text-xs text-white/70 -mt-1">Market Intelligence</span>
-              </div>
-            </Link>
-          </div>
-
-          {/* 중앙 네비게이션 메뉴 */}
-          <div className="flex space-x-4">
-            {navItems.map((item) => {
-              const isActive = pathname === item.href;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                    isActive
-                      ? 'text-white bg-secondary shadow-md'
-                      : 'text-white/90 hover:text-white hover:bg-white/10 backdrop-blur-sm'
-                  }`}
-                >
-                  {getIcon(item.icon)}
-                  <span className="ml-2">{item.label}</span>
-                </Link>
-              );
-            })}
-          </div>
-
-          {/* 우측 인증 UI */}
-          <div className="flex items-center space-x-3">
-            {/* 다크모드 토글 */}
-            <button
-              onClick={toggleDarkMode}
-              className="p-2 text-white/90 hover:text-white hover:bg-white/10 rounded-md transition-colors"
-              aria-label="다크모드 토글"
-            >
-              {isDarkMode ? (
-                // 해 아이콘 (라이트모드로 전환)
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                </svg>
-              ) : (
-                // 달 아이콘 (다크모드로 전환)
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                </svg>
-              )}
-            </button>
-
-            {user ? (
-              <>
-                <div className="text-sm text-white/80">
-                  <span className="font-medium text-white">{user.username}</span>님
+    <>
+      <nav className="bg-gradient-to-r from-primary via-primary/90 to-secondary/20 shadow-lg border-b border-primary/30">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            {/* 로고 */}
+            <div className="flex items-center">
+              <Link href="/" className="flex items-center group">
+                <div className="w-10 h-10 bg-gradient-to-br from-primary via-yellow-400 to-secondary rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-primary/50 transition-all">
+                  <span className="text-white font-bold text-lg">Ω</span>
                 </div>
-                <button
-                  onClick={() => router.push('/settings')}
-                  className="px-3 py-1.5 text-sm font-medium text-white border border-white/30 rounded-md hover:bg-white/10 backdrop-blur-sm transition-colors"
-                >
-                  계정설정
-                </button>
-                <button
-                  onClick={handleLogout}
-                  className="px-3 py-1.5 text-sm font-medium text-white border border-white/30 rounded-md hover:bg-white/10 backdrop-blur-sm transition-colors"
-                >
-                  로그아웃
-                </button>
-              </>
-            ) : (
+                <div className="ml-3">
+                  <span className="block text-xl md:text-2xl font-bold text-white tracking-wider font-mono">
+                    ORACLE
+                  </span>
+                  <span className="hidden md:block text-xs text-white/70 -mt-1">Market Intelligence</span>
+                </div>
+              </Link>
+            </div>
+
+            {/* 중앙 네비게이션 메뉴 (데스크톱) */}
+            <div className="hidden md:flex space-x-4">
+              {navItems.map((item) => {
+                const isActive = pathname === item.href;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                      isActive
+                        ? 'text-white bg-secondary shadow-md'
+                        : 'text-white/90 hover:text-white hover:bg-white/10 backdrop-blur-sm'
+                    }`}
+                  >
+                    {getIcon(item.icon)}
+                    <span className="ml-2">{item.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+
+            {/* 우측 UI */}
+            <div className="flex items-center space-x-2 md:space-x-3">
+              {/* 다크모드 토글 */}
               <button
-                onClick={() => router.push('/portfolio')}
-                className="px-4 py-2 text-sm font-medium text-white bg-secondary hover:bg-secondary/80 rounded-md shadow-md transition-colors"
+                onClick={toggleDarkMode}
+                className="p-2 text-white/90 hover:text-white hover:bg-white/10 rounded-md transition-colors"
+                aria-label="다크모드 토글"
               >
-                로그인
+                {isDarkMode ? (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                  </svg>
+                ) : (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                  </svg>
+                )}
               </button>
-            )}
+
+              {/* 인증 UI (데스크톱) */}
+              <div className="hidden md:flex items-center space-x-3">
+                {user ? (
+                  <>
+                    <div className="text-sm text-white/80">
+                      <span className="font-medium text-white">{user.username}</span>님
+                    </div>
+                    <button
+                      onClick={() => router.push('/settings')}
+                      className="px-3 py-1.5 text-sm font-medium text-white border border-white/30 rounded-md hover:bg-white/10 backdrop-blur-sm transition-colors"
+                    >
+                      계정설정
+                    </button>
+                    <button
+                      onClick={handleLogout}
+                      className="px-3 py-1.5 text-sm font-medium text-white border border-white/30 rounded-md hover:bg-white/10 backdrop-blur-sm transition-colors"
+                    >
+                      로그아웃
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={() => router.push('/portfolio')}
+                    className="px-4 py-2 text-sm font-medium text-white bg-secondary hover:bg-secondary/80 rounded-md shadow-md transition-colors"
+                  >
+                    로그인
+                  </button>
+                )}
+              </div>
+
+              {/* 햄버거 메뉴 버튼 (모바일) */}
+              <button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="md:hidden p-2 text-white hover:bg-white/10 rounded-md transition-colors"
+                aria-label="메뉴 열기"
+              >
+                {isMobileMenuOpen ? (
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                ) : (
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                  </svg>
+                )}
+              </button>
+            </div>
           </div>
         </div>
-      </div>
-    </nav>
+      </nav>
+
+      {/* 모바일 슬라이드 메뉴 */}
+      {isMobileMenuOpen && (
+        <>
+          {/* 오버레이 */}
+          <div
+            className="fixed inset-0 bg-black/50 z-40 md:hidden"
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+
+          {/* 사이드바 */}
+          <div className="fixed top-0 right-0 h-full w-80 bg-gradient-to-b from-primary/95 via-primary/90 to-secondary/20 backdrop-blur-lg shadow-2xl z-50 md:hidden overflow-y-auto">
+            {/* 헤더 */}
+            <div className="p-6 border-b border-white/10">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <div className="w-10 h-10 bg-gradient-to-br from-primary via-yellow-400 to-secondary rounded-xl flex items-center justify-center shadow-lg">
+                    <span className="text-white font-bold text-lg">Ω</span>
+                  </div>
+                  <div className="ml-3">
+                    <span className="block text-xl font-bold text-white tracking-wider font-mono">ORACLE</span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="p-2 text-white hover:bg-white/10 rounded-md transition-colors"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* 사용자 정보 (모바일) */}
+              {user && (
+                <div className="mt-4 pt-4 border-t border-white/10">
+                  <div className="text-sm text-white/80 mb-3">
+                    <span className="font-medium text-white">{user.username}</span>님
+                  </div>
+                  <div className="flex flex-col space-y-2">
+                    <button
+                      onClick={() => {
+                        router.push('/settings');
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className="w-full px-3 py-2 text-sm font-medium text-white border border-white/30 rounded-md hover:bg-white/10 transition-colors text-left"
+                    >
+                      계정설정
+                    </button>
+                    <button
+                      onClick={() => {
+                        handleLogout();
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className="w-full px-3 py-2 text-sm font-medium text-white border border-white/30 rounded-md hover:bg-white/10 transition-colors text-left"
+                    >
+                      로그아웃
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {!user && (
+                <div className="mt-4 pt-4 border-t border-white/10">
+                  <button
+                    onClick={() => {
+                      router.push('/portfolio');
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="w-full px-4 py-2 text-sm font-medium text-white bg-secondary hover:bg-secondary/80 rounded-md shadow-md transition-colors"
+                  >
+                    로그인
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* 메뉴 아이템 */}
+            <div className="p-6 space-y-2">
+              {navItems.map((item) => {
+                const isActive = pathname === item.href;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className={`flex items-center px-4 py-3 text-base font-medium rounded-lg transition-colors ${
+                      isActive
+                        ? 'text-white bg-secondary shadow-md'
+                        : 'text-white/90 hover:text-white hover:bg-white/10'
+                    }`}
+                  >
+                    {getIcon(item.icon)}
+                    <span className="ml-3">{item.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        </>
+      )}
+    </>
   );
 }
