@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import Navigation from '@/components/Navigation';
+import GlassCard from '@/components/GlassCard';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -471,8 +472,43 @@ export default function AnalysisPage() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-        <section className="flex gap-4">
-          <aside className="w-52 shrink-0 space-y-3">
+        <section className="space-y-4 md:space-y-0 md:flex md:gap-4">
+          {/* 모바일: 드롭다운 + 새 분석 버튼 */}
+          <div className="md:hidden space-y-3">
+            <Button
+              onClick={handleAdd}
+              size="sm"
+              className="w-full bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-white font-medium shadow"
+            >
+              ➕ 새 분석
+            </Button>
+            <Select
+              value={selected?.id?.toString() || ''}
+              onValueChange={(value) => {
+                setSelectedId(Number(value));
+                setActiveTab('thesis');
+              }}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="분석 선택" />
+              </SelectTrigger>
+              <SelectContent>
+                {analyses.map(item => (
+                  <SelectItem key={item.id} value={item.id.toString()}>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="truncate">{item.symbol} · {item.name}</span>
+                      <Badge className={`${actionBadgeStyle[item.deepDive?.decision?.action ?? 'WAIT']} text-xs`}>
+                        {item.deepDive?.decision?.action ?? 'WAIT'}
+                      </Badge>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* 데스크톱: 사이드바 */}
+          <aside className="hidden md:block w-52 shrink-0 space-y-3">
             {/* 새 분석 추가 버튼 */}
             <Button
               onClick={handleAdd}
@@ -483,15 +519,17 @@ export default function AnalysisPage() {
             </Button>
 
             {analyses.map(item => (
-              <Card
+              <GlassCard
                 key={item.id}
-                className={`cursor-pointer transition shadow-sm hover:-translate-y-0.5 p-3 ${
-                  item.id === selected?.id ? 'ring-2 ring-primary/60 border-primary/50' : 'border-border'
+                className={`cursor-pointer transition p-3 ${
+                  item.id === selected?.id ? 'ring-2 ring-primary/60' : ''
                 }`}
                 onClick={() => {
                   setSelectedId(item.id);
                   setActiveTab('thesis');
                 }}
+                glow={item.id === selected?.id}
+                animate
               >
                 <div className="flex items-start justify-between mb-2">
                   <div className="min-w-0 flex-1">
@@ -513,14 +551,121 @@ export default function AnalysisPage() {
                     <span>가격 미설정</span>
                   )}
                 </div>
-              </Card>
+              </GlassCard>
             ))}
           </aside>
 
           <div className="flex-1 space-y-4">
             {detail ? (
-              <Card className="border border-primary/20 bg-card">
-                <CardHeader className="flex flex-col gap-2">
+              <>
+                {/* 상단 요약 카드 3열 그리드 */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                  {/* 1️⃣ 종목 정보 카드 */}
+                  <GlassCard className="p-6" animate>
+                    <div className="flex items-center gap-2 mb-4">
+                      <span className="text-2xl">📊</span>
+                      <h3 className="text-lg font-semibold text-foreground">종목 정보</h3>
+                    </div>
+                    <div className="space-y-3">
+                      <div>
+                        <p className="text-xs text-muted-foreground">심볼</p>
+                        <p className="text-xl font-bold text-primary">{detail.symbol}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">이름</p>
+                        <p className="text-sm font-medium text-foreground">{detail.name}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">자산 타입</p>
+                        <Badge variant="outline" className="mt-1">{detail.type}</Badge>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">상태</p>
+                        <div className="flex gap-2 mt-1">
+                          {detail.inPortfolio && <Badge variant="default">포트폴리오</Badge>}
+                          {detail.inWatchlist && <Badge variant="secondary">워치리스트</Badge>}
+                        </div>
+                      </div>
+                    </div>
+                  </GlassCard>
+
+                  {/* 2️⃣ 주요 지표 카드 */}
+                  <GlassCard className="p-6" animate animationDelay={100}>
+                    <div className="flex items-center gap-2 mb-4">
+                      <span className="text-2xl">💰</span>
+                      <h3 className="text-lg font-semibold text-foreground">주요 지표</h3>
+                    </div>
+                    <div className="space-y-3">
+                      <div>
+                        <p className="text-xs text-muted-foreground">현재가</p>
+                        <p className="text-2xl font-bold text-foreground">
+                          ${detail.deepDive?.pricing?.stock_price?.toLocaleString() || '-'}
+                        </p>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <p className="text-xs text-muted-foreground">P/E</p>
+                          <p className="text-sm font-semibold">{detail.deepDive?.pricing?.valuation_metrics?.per || '-'}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">P/B</p>
+                          <p className="text-sm font-semibold">{detail.deepDive?.pricing?.valuation_metrics?.pbr || '-'}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">ROE</p>
+                          <p className="text-sm font-semibold">{detail.deepDive?.pricing?.valuation_metrics?.roe ? `${detail.deepDive.pricing.valuation_metrics.roe}%` : '-'}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">시가총액</p>
+                          <p className="text-sm font-semibold">{detail.deepDive?.pricing?.market_cap || '-'}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </GlassCard>
+
+                  {/* 3️⃣ 투자의견 카드 */}
+                  <GlassCard className="p-6" animate animationDelay={200} glow={detail.deepDive?.decision?.action === 'BUY'}>
+                    <div className="flex items-center gap-2 mb-4">
+                      <span className="text-2xl">🎯</span>
+                      <h3 className="text-lg font-semibold text-foreground">투자의견</h3>
+                    </div>
+                    <div className="space-y-3">
+                      <div>
+                        <p className="text-xs text-muted-foreground">액션</p>
+                        <Badge className={`mt-1 ${
+                          detail.deepDive?.decision?.action === 'BUY' ? 'bg-green-500 hover:bg-green-600' :
+                          detail.deepDive?.decision?.action === 'SELL' ? 'bg-red-500 hover:bg-red-600' :
+                          'bg-yellow-500 hover:bg-yellow-600'
+                        } text-white text-lg px-4 py-2`}>
+                          {detail.deepDive?.decision?.action || 'WAIT'}
+                        </Badge>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">목표가</p>
+                        <p className="text-xl font-bold text-secondary">
+                          ${detail.deepDive?.decision?.target_price?.toLocaleString() || '-'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">기대수익률</p>
+                        <p className={`text-lg font-semibold ${
+                          (detail.deepDive?.decision?.target_price && detail.deepDive?.pricing?.stock_price)
+                            ? ((detail.deepDive.decision.target_price - detail.deepDive.pricing.stock_price) / detail.deepDive.pricing.stock_price * 100) > 0
+                              ? 'text-green-600 dark:text-green-400'
+                              : 'text-red-600 dark:text-red-400'
+                            : 'text-muted-foreground'
+                        }`}>
+                          {(detail.deepDive?.decision?.target_price && detail.deepDive?.pricing?.stock_price)
+                            ? `${(((detail.deepDive.decision.target_price - detail.deepDive.pricing.stock_price) / detail.deepDive.pricing.stock_price) * 100).toFixed(2)}%`
+                            : '-'}
+                        </p>
+                      </div>
+                    </div>
+                  </GlassCard>
+                </div>
+
+                <GlassCard className="p-6" animate animationDelay={300}>
+                <div className="flex flex-col gap-2">
                   <div className="flex flex-wrap items-center gap-2 justify-between">
                     <div>
                       <div className="flex flex-wrap items-center gap-3">
@@ -551,9 +696,9 @@ export default function AnalysisPage() {
                           </div>
                         </div>
                       </div>
-                      <CardTitle className="text-2xl">
+                      <h2 className="text-2xl font-bold text-foreground">
                         {detail.symbol} · {detail.name}
-                      </CardTitle>
+                      </h2>
                     </div>
                     <div className="flex items-center gap-2">
                       <Badge className={actionBadgeStyle[detail.deepDive?.decision?.action ?? 'WAIT']}>
@@ -605,9 +750,9 @@ export default function AnalysisPage() {
                       </Button>
                     </div>
                   </div>
-                </CardHeader>
+                </div>
 
-                <CardContent className="space-y-4">
+                <div className="space-y-4 mt-6">
                   <div className="sticky top-0 z-10 bg-card pb-3 border-b border-border flex flex-wrap items-center justify-between gap-2">
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <span>기본적분석</span>
@@ -2333,14 +2478,12 @@ export default function AnalysisPage() {
                       </section>
                     </div>
                   )}
-                </CardContent>
-              </Card>
-            ) : (
-              <Card>
-                <CardContent className="py-10 text-center text-muted-foreground">
-                  필터 조건에 맞는 분석이 없습니다. 새 리포트를 추가해 주세요.
-                </CardContent>
-              </Card>
+                </div>
+              </GlassCard>
+            </>) : (
+              <GlassCard className="py-10 text-center text-muted-foreground" animate>
+                필터 조건에 맞는 분석이 없습니다. 새 리포트를 추가해 주세요.
+              </GlassCard>
             )}
           </div>
         </section>
