@@ -9,6 +9,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import GlassCard from '@/components/GlassCard';
+import EnhancedButton from '@/components/EnhancedButton';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://investment-app-backend-x166.onrender.com';
 
@@ -299,29 +301,38 @@ export default function IndustriesPage() {
     <div className="min-h-screen bg-background">
       <Navigation />
 
-      <header className="bg-gradient-to-r from-primary/5 to-secondary/5 shadow-sm border-b border-primary/10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <h1 className="text-3xl font-bold text-foreground">🏭 산업군 & 종목 분석</h1>
-          <p className="mt-2 text-muted-foreground">6대 산업군별 하위 산업 분석 시스템</p>
+      <header className="relative overflow-hidden bg-gradient-to-r from-primary/10 to-secondary/10 shadow-sm border-b border-primary/20 animate-gradient">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary via-yellow-400 to-secondary bg-clip-text text-transparent animate-fade-in-down">
+            🏭 산업군 & 종목 분석
+          </h1>
+          <p className="mt-3 text-lg text-muted-foreground animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+            6대 산업군별 하위 산업 분석 시스템 · Oracle 2025
+          </p>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
         {/* 상단: 6대 산업군 탭 */}
-        <div className="flex flex-wrap gap-2 pb-4 border-b border-border">
-          {MAJOR_CATEGORIES.map(category => (
-            <button
+        <div className="flex flex-wrap gap-4 pb-6 border-b border-border">
+          {MAJOR_CATEGORIES.map((category, i) => (
+            <GlassCard
               key={category.id}
-              onClick={() => handleMajorClick(category.name)}
-              className={`px-4 py-2 rounded-lg font-semibold transition-all ${
-                expandedMajor === category.name
-                  ? `bg-gradient-to-br ${category.color} ring-2 ring-primary border-primary/50`
-                  : 'bg-muted/50 hover:bg-muted border border-border'
+              className={`relative px-6 py-4 cursor-pointer transition-all hover:scale-105 ${
+                expandedMajor === category.name ? 'ring-2 ring-primary shadow-2xl' : ''
               }`}
+              animationDelay={i * 100}
+              glow={expandedMajor === category.name}
+              onClick={() => handleMajorClick(category.name)}
             >
-              <span className="text-xl mr-2">{category.icon}</span>
-              <span className="text-sm">{category.name}</span>
-            </button>
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">{category.icon}</span>
+                <span className="font-semibold text-foreground">{category.name}</span>
+              </div>
+              {expandedMajor === category.name && (
+                <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-secondary/5 rounded-2xl pointer-events-none animate-pulse" />
+              )}
+            </GlassCard>
           ))}
         </div>
 
@@ -329,20 +340,28 @@ export default function IndustriesPage() {
         {expandedMajor && (
           <div className="flex gap-4">
             {/* 왼쪽: 소분류 사이드바 */}
-            <aside className="w-52 shrink-0 space-y-2">
+            <aside className="w-64 shrink-0 space-y-3">
               {MAJOR_CATEGORIES.find(c => c.name === expandedMajor)?.subIndustries.map((subIndustry, index) => (
-                <Button
+                <GlassCard
                   key={index}
-                  onClick={() => handleSubIndustryClick(expandedMajor, subIndustry)}
-                  className={`w-full h-auto py-2 text-left justify-start text-sm ${
+                  className={`p-4 cursor-pointer transition-all hover:scale-[1.02] ${
                     selectedSubIndustry?.major === expandedMajor && selectedSubIndustry?.sub === subIndustry
-                      ? 'bg-gradient-to-r from-primary to-secondary text-primary-foreground'
-                      : 'bg-gradient-to-r from-primary/10 to-secondary/10 hover:from-primary/20 hover:to-secondary/20 border border-primary/20'
+                      ? 'ring-2 ring-primary shadow-lg'
+                      : ''
                   }`}
-                  variant={selectedSubIndustry?.major === expandedMajor && selectedSubIndustry?.sub === subIndustry ? 'default' : 'outline'}
+                  animationDelay={index * 50}
+                  glow={selectedSubIndustry?.major === expandedMajor && selectedSubIndustry?.sub === subIndustry}
+                  onClick={() => handleSubIndustryClick(expandedMajor, subIndustry)}
                 >
-                  <span className="font-medium">{subIndustry}</span>
-                </Button>
+                  <div className="flex items-center gap-3">
+                    <div className={`w-2 h-2 rounded-full ${
+                      selectedSubIndustry?.major === expandedMajor && selectedSubIndustry?.sub === subIndustry
+                        ? 'bg-primary animate-pulse'
+                        : 'bg-muted-foreground/30'
+                    }`} />
+                    <span className="font-medium text-sm text-foreground">{subIndustry}</span>
+                  </div>
+                </GlassCard>
               ))}
             </aside>
 
@@ -351,23 +370,24 @@ export default function IndustriesPage() {
               <div className="flex-1 space-y-4">
                             {/* 저장 버튼 */}
                             <div className="flex items-center gap-3 justify-end sticky top-0 bg-background/95 backdrop-blur-sm z-10 py-2 border-b">
-                              {saveMessage && <span className="text-sm font-medium">{saveMessage}</span>}
-                              <Button
+                              {saveMessage && <span className="text-sm font-medium text-primary animate-fade-in-up">{saveMessage}</span>}
+                              <EnhancedButton
+                                variant="primary"
+                                size="md"
                                 onClick={handleSave}
-                                disabled={isSaving}
-                                size="sm"
-                                className="bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90"
+                                loading={isSaving}
+                                shimmer
                               >
                                 {isSaving ? '저장 중...' : '💾 저장'}
-                              </Button>
+                              </EnhancedButton>
                             </div>
 
                             {/* 🔬 핵심기술 */}
-                            <Card>
-                              <CardHeader>
-                                <CardTitle className="text-primary text-lg">🔬 핵심기술</CardTitle>
-                              </CardHeader>
-                              <CardContent className="space-y-3">
+                            <GlassCard className="p-6 border-l-4 border-blue-500" animationDelay={0}>
+                              <h3 className="text-lg font-bold bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent mb-4 flex items-center gap-2">
+                                <span className="text-2xl">🔬</span> 핵심기술
+                              </h3>
+                              <div className="space-y-3">
                                 <div>
                                   <Label className="text-sm">정의</Label>
                                   <Textarea
@@ -404,15 +424,15 @@ export default function IndustriesPage() {
                                     placeholder="다음 세대 기술 및 패러다임 전환 시점..."
                                   />
                                 </div>
-                              </CardContent>
-                            </Card>
+                              </div>
+                            </GlassCard>
 
                             {/* 💰 거시경제 영향 */}
-                            <Card>
-                              <CardHeader>
-                                <CardTitle className="text-primary text-lg">💰 거시경제 영향</CardTitle>
-                              </CardHeader>
-                              <CardContent className="space-y-3">
+                            <GlassCard className="p-6 border-l-4 border-green-500" animationDelay={100}>
+                              <h3 className="text-lg font-bold bg-gradient-to-r from-green-600 to-emerald-400 bg-clip-text text-transparent mb-4 flex items-center gap-2">
+                                <span className="text-2xl">💰</span> 거시경제 영향
+                              </h3>
+                              <div className="space-y-3">
                                 <div>
                                   <Label className="text-sm">금리/유동성</Label>
                                   <Textarea
@@ -453,15 +473,15 @@ export default function IndustriesPage() {
                                     placeholder="정부 보조금, 규제 강화, 무역정책..."
                                   />
                                 </div>
-                              </CardContent>
-                            </Card>
+                              </div>
+                            </GlassCard>
 
                             {/* 📈 성장동력/KPI */}
-                            <Card>
-                              <CardHeader>
-                                <CardTitle className="text-primary text-lg">📈 성장동력/KPI</CardTitle>
-                              </CardHeader>
-                              <CardContent className="space-y-3">
+                            <GlassCard className="p-6 border-l-4 border-purple-500" animationDelay={200}>
+                              <h3 className="text-lg font-bold bg-gradient-to-r from-purple-600 to-violet-400 bg-clip-text text-transparent mb-4 flex items-center gap-2">
+                                <span className="text-2xl">📈</span> 성장동력/KPI
+                              </h3>
+                              <div className="space-y-3">
                                 <div>
                                   <Label className="text-sm">내부 요인</Label>
                                   <Textarea
@@ -492,15 +512,15 @@ export default function IndustriesPage() {
                                     placeholder="생산량, ASP, 가동률, 점유율, ARR/NRR, Take Rate 등..."
                                   />
                                 </div>
-                              </CardContent>
-                            </Card>
+                              </div>
+                            </GlassCard>
 
                             {/* 🔗 가치사슬 */}
-                            <Card>
-                              <CardHeader>
-                                <CardTitle className="text-primary text-lg">🔗 가치사슬</CardTitle>
-                              </CardHeader>
-                              <CardContent className="space-y-3">
+                            <GlassCard className="p-6 border-l-4 border-orange-500" animationDelay={300}>
+                              <h3 className="text-lg font-bold bg-gradient-to-r from-orange-600 to-amber-400 bg-clip-text text-transparent mb-4 flex items-center gap-2">
+                                <span className="text-2xl">🔗</span> 가치사슬
+                              </h3>
+                              <div className="space-y-3">
                                 <div>
                                   <Label className="text-sm">단계별 흐름</Label>
                                   <Textarea
@@ -531,15 +551,15 @@ export default function IndustriesPage() {
                                     placeholder="공급이 제한된 단계, 필수 기술·소재..."
                                   />
                                 </div>
-                              </CardContent>
-                            </Card>
+                              </div>
+                            </GlassCard>
 
                             {/* 📊 공급/수요 요인 */}
-                            <Card>
-                              <CardHeader>
-                                <CardTitle className="text-primary text-lg">📊 공급/수요 요인</CardTitle>
-                              </CardHeader>
-                              <CardContent className="space-y-4">
+                            <GlassCard className="p-6 border-l-4 border-red-500" animationDelay={400}>
+                              <h3 className="text-lg font-bold bg-gradient-to-r from-red-600 to-rose-400 bg-clip-text text-transparent mb-4 flex items-center gap-2">
+                                <span className="text-2xl">📊</span> 공급/수요 요인
+                              </h3>
+                              <div className="space-y-4">
                                 <div className="space-y-3">
                                   <h3 className="font-semibold">수요</h3>
                                   <div>
@@ -666,15 +686,15 @@ export default function IndustriesPage() {
                                     placeholder="기술, 정책/규제, 수요 이벤트, 거시 변수..."
                                   />
                                 </div>
-                              </CardContent>
-                            </Card>
+                              </div>
+                            </GlassCard>
 
                             {/* 🗺️ 시장 지도 */}
-                            <Card>
-                              <CardHeader>
-                                <CardTitle className="text-primary text-lg">🗺️ 시장 지도</CardTitle>
-                              </CardHeader>
-                              <CardContent className="space-y-3">
+                            <GlassCard className="p-6 border-l-4 border-teal-500" animationDelay={500}>
+                              <h3 className="text-lg font-bold bg-gradient-to-r from-teal-600 to-cyan-400 bg-clip-text text-transparent mb-4 flex items-center gap-2">
+                                <span className="text-2xl">🗺️</span> 시장 지도
+                              </h3>
+                              <div className="space-y-3">
                                 <div>
                                   <Label className="text-sm">시장 구조</Label>
                                   <Textarea
@@ -715,15 +735,15 @@ export default function IndustriesPage() {
                                     placeholder="도입기/성장기/성숙기/쇠퇴기 중 현재 단계..."
                                   />
                                 </div>
-                              </CardContent>
-                            </Card>
+                              </div>
+                            </GlassCard>
 
                             {/* 🏢 대표 대형주 */}
-                            <Card>
-                              <CardHeader>
-                                <CardTitle className="text-primary text-lg">🏢 대표 대형주</CardTitle>
-                              </CardHeader>
-                              <CardContent className="space-y-3">
+                            <GlassCard className="p-6 border-l-4 border-indigo-500" animationDelay={600}>
+                              <h3 className="text-lg font-bold bg-gradient-to-r from-indigo-600 to-blue-400 bg-clip-text text-transparent mb-4 flex items-center gap-2">
+                                <span className="text-2xl">🏢</span> 대표 대형주
+                              </h3>
+                              <div className="space-y-3">
                                 <div className="flex gap-2">
                                   <Input
                                     value={newLeadingStock}
@@ -747,15 +767,15 @@ export default function IndustriesPage() {
                                     </Badge>
                                   ))}
                                 </div>
-                              </CardContent>
-                            </Card>
+                              </div>
+                            </GlassCard>
 
                             {/* 🌟 중소형 유망주 */}
-                            <Card>
-                              <CardHeader>
-                                <CardTitle className="text-primary text-lg">🌟 중소형 유망주</CardTitle>
-                              </CardHeader>
-                              <CardContent className="space-y-3">
+                            <GlassCard className="p-6 border-l-4 border-yellow-500" animationDelay={700}>
+                              <h3 className="text-lg font-bold bg-gradient-to-r from-yellow-600 to-amber-400 bg-clip-text text-transparent mb-4 flex items-center gap-2">
+                                <span className="text-2xl">🌟</span> 중소형 유망주
+                              </h3>
+                              <div className="space-y-3">
                                 <div className="flex gap-2">
                                   <Input
                                     value={newEmergingStock}
@@ -779,8 +799,8 @@ export default function IndustriesPage() {
                                     </Badge>
                                   ))}
                                 </div>
-                              </CardContent>
-                            </Card>
+                              </div>
+                            </GlassCard>
 
                             {/* 하단 저장 버튼 */}
                             <div className="flex justify-end sticky bottom-0 bg-background/95 backdrop-blur-sm py-2 border-t">
