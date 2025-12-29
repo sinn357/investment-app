@@ -550,7 +550,7 @@ export default function IndicatorsPage() {
               <h3 className="text-lg font-semibold text-foreground mb-3">
                 📊 지표 상태 요약
               </h3>
-              <div className="flex flex-wrap gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="flex items-center gap-2">
                   <span className="text-2xl">✅</span>
                   <div>

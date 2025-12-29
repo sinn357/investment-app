@@ -339,3 +339,35 @@
 .animate-spin-slow {
   animation: spin-slow 20s linear infinite;
 }
+
+/* ====================================
+   📱 Mobile Responsive Optimizations
+   ==================================== */
+
+/* 모바일에서 제목 폰트 크기 축소 */
+@media (max-width: 768px) {
+  h1 {
+    @apply text-3xl;
+  }
+  h2 {
+    @apply text-2xl;
+  }
+  h3 {
+    @apply text-xl;
+  }
+
+  /* 컨테이너 패딩 축소 */
+  .max-w-7xl {
+    @apply px-3;
+  }
+
+  /* 버튼 크기 최적화 */
+  button {
+    @apply py-2 text-sm;
+  }
+
+  /* 카드 패딩 축소 */
+  .glass-card {
+    @apply p-4;
+  }
+}

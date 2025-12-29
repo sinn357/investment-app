@@ -96,8 +96,8 @@ export default function IndicatorGrid({ indicators, selectedId, onIndicatorClick
         {/* 카테고리 필터 및 정렬 */}
         <div className="mb-6">
           {/* 카테고리 필터 */}
-          <div className="overflow-x-auto mb-4">
-            <div className="flex gap-2 pb-2">
+          <div className="overflow-x-auto md:overflow-x-visible mb-4">
+            <div className="flex md:flex-wrap gap-2 pb-2">
               {CATEGORY_FILTERS.map((filter) => {
                 const count = getCategoryCount(filter.id);
                 const isActive = activeFilter === filter.id;
@@ -107,7 +107,7 @@ export default function IndicatorGrid({ indicators, selectedId, onIndicatorClick
                     key={filter.id}
                     onClick={() => setActiveFilter(filter.id)}
                     className={`
-                      flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all whitespace-nowrap
+                      flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all whitespace-nowrap flex-shrink-0 md:flex-shrink
                       ${isActive
                         ? 'bg-gradient-to-r from-[#DAA520] to-[#D4AF37] text-white shadow-lg shadow-[#DAA520]/30 scale-105 shimmer-effect'
                         : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:border-[#DAA520] hover:shadow-md hover:scale-105'
@@ -132,9 +132,9 @@ export default function IndicatorGrid({ indicators, selectedId, onIndicatorClick
           </div>
 
           {/* 정렬 옵션 */}
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <span className="text-sm text-gray-600 dark:text-gray-400 font-medium">정렬:</span>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               {SORT_OPTIONS.map((option) => {
                 const isActive = sortOption === option.id;
                 return (

@@ -314,33 +314,54 @@ export default function IndustriesPage() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
         {/* 상단: 6대 산업군 탭 */}
-        <div className="flex flex-wrap gap-4 pb-6 border-b border-border">
-          {MAJOR_CATEGORIES.map((category, i) => (
-            <GlassCard
-              key={category.id}
-              className={`relative px-6 py-4 cursor-pointer transition-all hover:scale-105 ${
-                expandedMajor === category.name ? 'ring-2 ring-primary shadow-2xl' : ''
-              }`}
-              animationDelay={i * 100}
-              glow={expandedMajor === category.name}
-              onClick={() => handleMajorClick(category.name)}
-            >
-              <div className="flex items-center gap-3">
-                <span className="text-2xl">{category.icon}</span>
-                <span className="font-semibold text-foreground">{category.name}</span>
-              </div>
-              {expandedMajor === category.name && (
-                <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-secondary/5 rounded-2xl pointer-events-none animate-pulse" />
-              )}
-            </GlassCard>
-          ))}
+        <div className="overflow-x-auto md:overflow-x-visible pb-6 border-b border-border">
+          <div className="flex md:flex-wrap gap-4 pb-2">
+            {MAJOR_CATEGORIES.map((category, i) => (
+              <GlassCard
+                key={category.id}
+                className={`relative px-6 py-4 cursor-pointer transition-all hover:scale-105 flex-shrink-0 md:flex-shrink ${
+                  expandedMajor === category.name ? 'ring-2 ring-primary shadow-2xl' : ''
+                }`}
+                animationDelay={i * 100}
+                glow={expandedMajor === category.name}
+                onClick={() => handleMajorClick(category.name)}
+              >
+                <div className="flex items-center gap-3 whitespace-nowrap">
+                  <span className="text-2xl">{category.icon}</span>
+                  <span className="font-semibold text-foreground">{category.name}</span>
+                </div>
+                {expandedMajor === category.name && (
+                  <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-secondary/5 rounded-2xl pointer-events-none animate-pulse" />
+                )}
+              </GlassCard>
+            ))}
+          </div>
         </div>
 
         {/* 하단: 사이드바 + 메인 */}
         {expandedMajor && (
-          <div className="flex gap-4">
-            {/* 왼쪽: 소분류 사이드바 */}
-            <aside className="w-64 shrink-0 space-y-3">
+          <div className="space-y-4 md:space-y-0 md:flex md:gap-4">
+            {/* 모바일: 소분류 드롭다운 */}
+            <div className="md:hidden">
+              <Select
+                value={selectedSubIndustry?.sub || ''}
+                onValueChange={(value) => handleSubIndustryClick(expandedMajor, value)}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="하위 산업 선택" />
+                </SelectTrigger>
+                <SelectContent>
+                  {MAJOR_CATEGORIES.find(c => c.name === expandedMajor)?.subIndustries.map((subIndustry, index) => (
+                    <SelectItem key={index} value={subIndustry}>
+                      {subIndustry}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* 데스크톱: 소분류 사이드바 */}
+            <aside className="hidden md:block w-64 shrink-0 space-y-3">
               {MAJOR_CATEGORIES.find(c => c.name === expandedMajor)?.subIndustries.map((subIndustry, index) => (
                 <GlassCard
                   key={index}

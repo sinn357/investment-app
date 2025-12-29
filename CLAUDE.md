@@ -8,18 +8,17 @@
 - **Project:** Investment App - Economic Indicators Dashboard
 - **Repo Root:** /home/user/investment-app
 - **Owner:** Partner
-- **Last Updated:** 2025-12-03 18:00 KST
-- **Session Goal (2025-12-03):** ✅ B-020 BEA 완료 + B-021 Freightos 조사 + 사이클 시스템 재설계 계획 수립
-  - Current Account Balance 경상수지 (BEA API 신규 크롤러)
-  - bea_crawler.py 생성 및 파라미터 수정 (BalCurAct→BalCurrAcct, Q→QSA, TimeLabel→TimePeriod)
-  - 실제 데이터 크롤링 성공 (2025Q2: -$251.3B, surprise: +$188.5B)
-  - Freightos Baltic Index 크롤링 불가능 확인 (API Enterprise 전용, MacroMicro 403 차단, Investing.com FBX 데이터 없음)
-  - 경제 사이클 판별 시스템 재설계 계획 수립 (3대 메타 사이클 + 계층적 구조)
-  - 지표 선정 전략 확립 ("Less is More", 47개 → 17개 핵심 지표)
-  - 크롤러: 4개 → 5개 (investing, rates_bonds, fred, tradingeconomics, bea)
-  - 무역지표: 14개 유지 (current-account → current-account-balance 교체)
+- **Last Updated:** 2025-12-30 23:00 KST
+- **Session Goal (2025-12-30):** ✅ CLAUDE.md 아카이브 정리 + 모바일 반응형 최적화 Phase 1-2 완료
+  - docs/ARCHIVE.md 생성 (66개 작업 T-000~T-060 이동)
+  - 파일 크기 12% 감소 (성능 개선)
+  - 포트폴리오 페이지 모바일 반응형 (헤더, 요약카드, 차트)
+  - 가계부 페이지 모바일 반응형 (헤더 완료, 나머지 이미 반응형)
+  - docs/NEXT_SESSION_CONTINUE.md 작성 (다음 세션 가이드)
+  - 커밋: 0283816 "feat: 모바일 반응형 최적화 Phase 1-2 완료 + CLAUDE.md 아카이브 정리"
+  - 진행률: 40% 완료 (5개 중 2개), 예상 남은 시간: 1.5-2시간
+- **Previous Session (2025-12-03):** ✅ B-020 BEA 완료 + B-021 Freightos 조사 + 사이클 시스템 재설계 계획 수립
 - **Previous Session (2025-12-02):** ✅ 무역지표 5개 추가 + TradingEconomics 크롤러 개발 완료
-- **Previous Session (2025-12-01):** ✅ 금리지표 5개 크롤링 시스템 완전 구현
 
 ---
 
@@ -131,7 +130,10 @@ investment-app/
 ### Active (in this session)
 - 없음
 
-### Recent Done (Current Session - 2025-12-03)
+### Recent Done (Current Session - 2025-12-30)
+- **T-105:** CLAUDE.md 아카이브 정리 + 모바일 반응형 최적화 Phase 1-2 완료 ✅ (2025-12-30) - **Phase 1 문서 정리**: docs/ARCHIVE.md 생성 (66개 작업 T-000~T-060 이동, 2025-09-23 이전 작업 아카이브화) + CLAUDE.md 파일 크기 12% 감소 (성능 개선) + 토큰 효율성 향상 | **Phase 2 포트폴리오 모바일 반응형**: 네비게이션 헤더 (모바일 햄버거 메뉴, 2열 그리드) + 요약카드 (모바일 2열 → 데스크톱 4열) + 자산 흐름 차트 (모바일 세로 스택 → 데스크톱 가로 배치) + 반응형 그리드 시스템 (sm/md/lg/xl/2xl 브레이크포인트) | **Phase 3 가계부 모바일 반응형**: 네비게이션 헤더 완료 (나머지는 이미 반응형) | **문서화**: docs/NEXT_SESSION_CONTINUE.md 작성 (다음 세션 가이드, 경제지표/섹터/종목 페이지 계획) | **커밋**: 0283816 "feat: 모바일 반응형 최적화 Phase 1-2 완료 + CLAUDE.md 아카이브 정리" | **진행률**: 40% 완료 (5개 중 2개), 예상 남은 시간 1.5-2시간 | **다음 작업**: 경제지표 페이지부터 시작
+
+### Recent Done (Previous Session - 2025-12-03)
 - **T-103:** BEA API 크롤러 개발 + Current Account Balance 지표 추가 + 파라미터 수정 ✅ (2025-12-03) - **Phase 1 크롤러**: bea_crawler.py 생성 (205줄, ITA 데이터셋, 분기별 데이터 2025Q2/Q1, 백만 단위 -251,300M, surprise=current-previous, 최근 8분기 히스토리) | **Phase 2 설정**: indicators_config.py에 current-account-balance 지표 추가 (Investing.com → BEA API 교체, apps.bea.gov URL) | **Phase 3 통합**: crawler_service.py에 BEA 라우팅 추가 (apps.bea.gov 패턴 자동 감지, indicator_id→BEA code 매핑) | **Phase 4 환경**: .env.example에 BEA_API_KEY 필드 추가 (발급: apps.bea.gov/API/signup, 36자 UserID 무료, 이메일 인증) | **Phase 5 파라미터 수정**: BalCurAct→BalCurrAcct (올바른 indicator), Q→QSA (Quarterly Seasonally Adjusted), TimeLabel→TimePeriod (실제 API 응답 필드), .env 파일 형식 수정 (DATABASE_URL과 BEA_API_KEY 분리) | **테스트 성공**: 2025Q2 -$251.3B, surprise +$188.5B, 8개 분기 데이터 크롤링 확인 | **Freightos 조사**: B-021 크롤링 불가능 확인 (공식 API Enterprise 전용, MacroMicro 403 차단, Investing.com FBX 데이터 없음, Baltic Dry Index로 대체 충분) | **커밋 3개**: 0d9a388 (크롤러 개발), cefefb9 (파라미터 수정), ae1d143 (문서화) | **결과**: 크롤러 4개→5개 (investing, rates_bonds, fred, tradingeconomics, **bea**), 무역지표 14개 유지
 
 - **T-104:** 경제 사이클 판별 시스템 재설계 계획 수립 ✅ (2025-12-03) - **현황 분석**: 47개 보유 지표 분석 (Business 12, Employment 6, Inflation 10, Interest 5, Trade 14) + 기존 4개 게이지 시스템 한계 파악 (정보 과부하, 투자 의사결정 연결 부족, 노이즈 vs 시그널 혼재) | **목표 시스템 설계**: Option 1 계층적 구조 선택 (3대 메타 사이클 상단 + 4개 세부 게이지 하단) + "Less is More" 원칙 확립 (레이 달리오, 하워드 막스, JP모건 접근법 참고) | **지표 선정 전략**: 47개 → 17개 핵심 지표 선별 (반복성·예측력·전문가 사용·독립성 기준) + 30개 제외 (중복·후행·노이즈·섹터별) | **3대 사이클 정의**: (1) 거시경제 사이클 6지표 (ISM PMI 2개, 근원 CPI/PCE, Fed 금리, 장단기차) - 현재 모두 보유 | (2) 신용/유동성 사이클 5지표 (HY/IG Spread, FCI, M2 YoY, Loan Survey) - 신규 크롤링 필요 | (3) 심리/밸류 사이클 6지표 (VIX, AAII, Fwd PER, CAPE, ETF Flow, Put/Call) - 신규 크롤링 필요 | **계산 로직 수립**: 각 사이클별 0~100점 점수화 + 가중평균 + 국면 판별 (거시 4단계, 신용 3단계, 심리 3단계) + 투자 행동 추천 로직 | **구현 계획**: Phase 1 거시경제 (1세션), Phase 2 신용/유동성 (1-2세션), Phase 3 심리/밸류 (2세션), Phase 4 통합 (1세션) - 총 3주 6세션 예상 | **문서화**: docs/CYCLE_SYSTEM_REDESIGN.md 작성 (45페이지, 상세 계획서) | **Backlog 생성**: B-022~B-025 (4개 Phase별 작업) | **다음 세션**: Phase 1 거시경제 사이클 구현 (calc_macro_cycle 함수, MacroCycleCard 컴포넌트, 상단 패널 UI)
@@ -277,70 +279,79 @@ investment-app/
 
 ---
 
-## 12.1) Session Summary (2025-12-03)
+## 12.1) Session Summary (2025-12-30)
 
 ### 세션 목표
-B-020 BEA API 크롤러 개발 + B-021 Freightos 크롤링 가능성 조사
+CLAUDE.md 아카이브 정리 + 모바일 반응형 최적화 Phase 1-2 완료
 
 ### 완료된 작업 (커밋 1개)
 
-**Phase 1: BEA API 크롤러 개발**
-- `0d9a388` - feat: BEA API 크롤러 개발 + Current Account Balance 지표 추가
-  - bea_crawler.py 생성 (205줄)
-  - ITA 데이터셋 (International Transactions Accounts) 지원
-  - BalCurAct 지표 코드로 Current Account Balance 크롤링
-  - 분기별 데이터 제공 (2025Q2: -$251.3B, 2025Q1: -$450.2B)
-  - 백만 단위 표시 (예: -251,300M)
-  - surprise 계산: current - previous quarter
-  - 최근 8분기 (2년치) 히스토리 제공
+**Phase 1: CLAUDE.md 문서 정리**
+- `docs/ARCHIVE.md` 생성
+  - 66개 작업 (T-000 ~ T-060) 이동
+  - 2025-09-23 이전 작업 아카이브화
+  - 프로젝트 초기 구조부터 2단계 카테고리 시스템까지 히스토리 보존
+- CLAUDE.md 파일 크기 12% 감소
+  - 토큰 효율성 향상
+  - 읽기 성능 개선
 
-**Phase 2: 지표 설정 통합**
-- indicators_config.py 수정
-  - current-account (Investing.com) → current-account-balance (BEA API)로 교체
-  - 무역지표 카테고리에 포함
-  - URL: apps.bea.gov/iTable 공식 데이터 소스
+**Phase 2: 포트폴리오 페이지 모바일 반응형**
+- 네비게이션 헤더
+  - 모바일: 햄버거 메뉴 (펼치기/접기)
+  - 데스크톱: 2열 그리드 (좌측 로고/우측 메뉴)
+- 요약카드
+  - 모바일: 2열 그리드 (총자산/목표진행률 1행, 총손익/수익률 2행)
+  - 데스크톱: 4열 그리드 (모두 1행)
+- 자산 흐름 차트
+  - 모바일: 세로 스택 (차트 → 범례)
+  - 데스크톱: 가로 배치 (차트 80% / 범례 20%)
+- 반응형 그리드 시스템
+  - sm (640px), md (768px), lg (1024px), xl (1280px), 2xl (1536px) 브레이크포인트 활용
 
-**Phase 3: CrawlerService 통합**
-- crawler_service.py에 BEA 크롤러 라우팅 추가
-  - apps.bea.gov URL 패턴 자동 감지
-  - indicator_id → BEA code 매핑 (current-account-balance → BalCurAct)
-  - 표준 데이터 구조 자동 변환
+**Phase 3: 가계부 페이지 모바일 반응형**
+- 네비게이션 헤더 완료
+  - 나머지 컴포넌트는 이미 반응형 대응 완료
 
-**Phase 4: Freightos 조사**
-- B-021 크롤링 불가능 확인
-  - Freightos 공식 API: Enterprise 패키지만 제공
-  - MacroMicro: 403 크롤링 차단
-  - Investing.com: FBX 데이터 없음
-  - 결론: Baltic Dry Index (이미 추가됨)로 충분
+**Phase 4: 다음 세션 준비**
+- `docs/NEXT_SESSION_CONTINUE.md` 작성
+  - 경제지표 페이지 작업 계획 (30분-1시간)
+  - 섹터/종목 페이지 작업 계획 (30분-1시간)
+  - 전역 최적화 작업 계획 (30분)
 
-### 생성된 파일 (1개)
-- `/backend/crawlers/bea_crawler.py` (205줄) - BEA JSON API 크롤러
+### 생성된 파일 (2개)
+- `/docs/ARCHIVE.md` - 66개 작업 아카이브 (2025-09-23 이전)
+- `/docs/NEXT_SESSION_CONTINUE.md` - 다음 세션 가이드
 
 ### 수정된 파일 (3개)
-- `/backend/.env.example` - BEA_API_KEY 필드 추가
-- `/backend/crawlers/indicators_config.py` - current-account-balance 지표 추가
-- `/backend/services/crawler_service.py` - BEA 크롤러 통합
+- `/frontend/src/app/(dashboard)/portfolio/page.tsx` - 모바일 반응형 그리드
+- `/frontend/src/app/(dashboard)/expenses/page.tsx` - 네비게이션 헤더 반응형
+- `/Users/woocheolshin/Documents/Vibecoding/projects/investment-app/CLAUDE.md` - 파일 크기 감소
 
 ### 성과
-- **크롤러**: 4개 → 5개 (investing, rates_bonds, fred, tradingeconomics, **bea**)
-- **무역지표**: 14개 유지 (current-account → current-account-balance 교체)
-- **전체 지표**: 47개 유지
+- **문서 효율성**: 파일 크기 12% 감소, 토큰 사용량 최적화
+- **모바일 UX**: 포트폴리오/가계부 페이지 모바일 최적화 완료
+- **진행률**: 40% 완료 (5개 페이지 중 2개)
+- **예상 남은 시간**: 1.5-2시간
 
 ### 남은 작업
-- BEA API 키 발급 (apps.bea.gov/API/signup) - 사용자 작업
-- .env 파일에 BEA_API_KEY 설정
-- 실제 데이터 크롤링 테스트
-- 프론트엔드 자동 통합 확인
+- 경제지표 페이지 모바일 반응형 (다음 세션 우선순위)
+- 섹터/종목 페이지 모바일 반응형
+- 전역 컴포넌트 최적화 (네비게이션, 푸터 등)
 
 ### 브랜치
 - **작업 브랜치**: `main`
-- **커밋**: 0d9a388
+- **커밋**: 0283816
 
 ---
 
-## 12.2) Previous Sessions (2025-11-21 ~ 2025-12-02)
+## 12.2) Previous Sessions (2025-11-21 ~ 2025-12-03)
 
 > **아카이브 요약**: 이전 세션 상세 내역
+>
+> **2025-12-03**: BEA API 크롤러 개발 + 경제 사이클 시스템 재설계 계획
+> - 커밋: 0d9a388, cefefb9, ae1d143
+> - 크롤러 4개 → 5개 (bea 추가)
+> - docs/CYCLE_SYSTEM_REDESIGN.md 작성 (45페이지)
 >
 > **2025-12-02**: 무역지표 5개 추가 + TradingEconomics 크롤러 개발
 > - 커밋: 48066a3, 7be3952, 70e3b4f
