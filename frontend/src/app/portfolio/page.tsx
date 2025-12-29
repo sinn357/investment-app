@@ -539,9 +539,9 @@ export default function PortfolioPage() {
                           </Select>
                         </td>
                         <td className="px-2 py-3 text-right">
-                          <Button variant="ghost" size="sm" onClick={() => handleDeletePlan(plan.id)}>
+                          <EnhancedButton variant="ghost" size="sm" onClick={() => handleDeletePlan(plan.id)}>
                             삭제
-                          </Button>
+                          </EnhancedButton>
                         </td>
                       </tr>
                     ))}
@@ -636,9 +636,9 @@ export default function PortfolioPage() {
                           ) : null}
                         </div>
                       </div>
-                      <Button variant="ghost" size="sm" onClick={() => handleDeleteTask(task.id)}>
+                      <EnhancedButton variant="ghost" size="sm" onClick={() => handleDeleteTask(task.id)}>
                         삭제
-                      </Button>
+                      </EnhancedButton>
                     </div>
                   ))}
                 </div>
