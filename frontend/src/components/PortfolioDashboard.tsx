@@ -170,7 +170,41 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
   useEffect(() => {
     if (assets) {
       // 백엔드 응답 구조를 기존 portfolioData 형식으로 변환
-      // 필요한 경우 여기서 추가 집계 로직 구현
+      // 대분류별 데이터 집계
+      const categoryMap: Record<string, { total_principal: number; total_amount: number; count: number; assets: unknown[] }> = {};
+
+      assets.forEach(asset => {
+        const category = asset.asset_type || '기타';
+        if (!categoryMap[category]) {
+          categoryMap[category] = { total_principal: 0, total_amount: 0, count: 0, assets: [] };
+        }
+        categoryMap[category].total_principal += asset.principal || 0;
+        categoryMap[category].total_amount += asset.evaluation_amount || asset.amount || 0;
+        categoryMap[category].count += 1;
+        categoryMap[category].assets.push(asset);
+      });
+
+      // 백분율 계산
+      const totalPrincipal = Object.values(categoryMap).reduce((sum, cat) => sum + cat.total_principal, 0);
+      const totalAmount = Object.values(categoryMap).reduce((sum, cat) => sum + cat.total_amount, 0);
+
+      const by_category: Record<string, {
+        total_principal: number;
+        total_amount: number;
+        count: number;
+        principal_percentage: number;
+        percentage: number;
+        assets: unknown[];
+      }> = {};
+
+      Object.entries(categoryMap).forEach(([category, data]) => {
+        by_category[category] = {
+          ...data,
+          principal_percentage: totalPrincipal > 0 ? (data.total_principal / totalPrincipal) * 100 : 0,
+          percentage: totalAmount > 0 ? (data.total_amount / totalAmount) * 100 : 0
+        };
+      });
+
       const transformedData: PortfolioData = {
         status: 'success',
         data: assets.map(a => ({
@@ -184,7 +218,7 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
           total_profit_loss: assets.reduce((sum, a) => sum + (a.profit_loss || 0), 0),
           profit_rate: 0 // 필요시 계산
         },
-        by_category: {} // 필요시 계산
+        by_category
       };
       setPortfolioData(transformedData);
     }
