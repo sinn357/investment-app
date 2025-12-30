@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import dynamic from 'next/dynamic';
+import * as XLSX from 'xlsx';
+import { toast } from 'sonner';
 
 // Dynamic imports로 Oracle 차트 컴포넌트 코드 스플리팅
 const OraclePieChart = dynamic(() => import('./charts/OraclePieChart'), {
@@ -191,6 +193,170 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
     const dayOfWeek = dayNames[date.getDay()];
 
     return `${year}년 ${month}월 ${day}일 (${dayOfWeek})`;
+  };
+
+  // 금액 포맷팅 함수
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('ko-KR').format(amount);
+  };
+
+  // 엑셀 추출 함수
+  const exportToExcel = () => {
+    if (!expenseData) {
+      toast.error('가계부 데이터가 없습니다.');
+      return;
+    }
+
+    const workbook = XLSX.utils.book_new();
+    const worksheetData: unknown[][] = [];
+
+    // 헤더 행
+    worksheetData.push([
+      '날짜',
+      '거래유형',
+      '금액',
+      '대분류',
+      '소분류',
+      '세부내역',
+      '결제방법',
+      '메모'
+    ]);
+
+    // 거래유형별 그룹화
+    const incomeData = expenses.filter(e => e.transaction_type === '수입');
+    const expenseDataList = expenses.filter(e => e.transaction_type === '지출');
+    const transferData = expenses.filter(e => e.transaction_type === '이체');
+
+    // 지출 데이터
+    if (expenseDataList.length > 0) {
+      worksheetData.push(['=== 지출 ===', '', '', '', '', '', '', '']);
+      expenseDataList.forEach((expense) => {
+        worksheetData.push([
+          new Date(expense.transaction_date).toLocaleDateString('ko-KR'),
+          expense.transaction_type,
+          formatCurrency(expense.amount),
+          expense.category,
+          expense.subcategory,
+          expense.name,
+          expense.payment_method_name || expense.payment_method,
+          expense.memo || '-'
+        ]);
+      });
+      // 지출 소계
+      const totalExpense = expenseDataList.reduce((sum, e) => sum + e.amount, 0);
+      worksheetData.push([
+        '지출 소계',
+        '',
+        formatCurrency(totalExpense),
+        '',
+        '',
+        '',
+        '',
+        ''
+      ]);
+      worksheetData.push([]);
+    }
+
+    // 수입 데이터
+    if (incomeData.length > 0) {
+      worksheetData.push(['=== 수입 ===', '', '', '', '', '', '', '']);
+      incomeData.forEach((income) => {
+        worksheetData.push([
+          new Date(income.transaction_date).toLocaleDateString('ko-KR'),
+          income.transaction_type,
+          formatCurrency(income.amount),
+          income.category,
+          income.subcategory,
+          income.name,
+          income.payment_method_name || income.payment_method,
+          income.memo || '-'
+        ]);
+      });
+      // 수입 소계
+      const totalIncome = incomeData.reduce((sum, e) => sum + e.amount, 0);
+      worksheetData.push([
+        '수입 소계',
+        '',
+        formatCurrency(totalIncome),
+        '',
+        '',
+        '',
+        '',
+        ''
+      ]);
+      worksheetData.push([]);
+    }
+
+    // 이체 데이터
+    if (transferData.length > 0) {
+      worksheetData.push(['=== 이체 ===', '', '', '', '', '', '', '']);
+      transferData.forEach((transfer) => {
+        worksheetData.push([
+          new Date(transfer.transaction_date).toLocaleDateString('ko-KR'),
+          transfer.transaction_type,
+          formatCurrency(transfer.amount),
+          transfer.category,
+          transfer.subcategory,
+          transfer.name,
+          transfer.payment_method_name || transfer.payment_method,
+          transfer.memo || '-'
+        ]);
+      });
+      worksheetData.push([]);
+    }
+
+    // 전체 요약
+    worksheetData.push([]);
+    worksheetData.push(['=== 전체 요약 ===', '', '', '', '', '', '', '']);
+    worksheetData.push([
+      '총 수입',
+      '',
+      formatCurrency(expenseData.summary.total_income),
+      '',
+      '',
+      '',
+      '',
+      ''
+    ]);
+    worksheetData.push([
+      '총 지출',
+      '',
+      formatCurrency(expenseData.summary.total_expense),
+      '',
+      '',
+      '',
+      '',
+      ''
+    ]);
+    worksheetData.push([
+      '순액',
+      '',
+      formatCurrency(expenseData.summary.net_amount),
+      '',
+      '',
+      '',
+      '',
+      ''
+    ]);
+
+    const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+
+    // 컬럼 너비 설정
+    worksheet['!cols'] = [
+      { wch: 16 }, // 날짜
+      { wch: 10 }, // 거래유형
+      { wch: 14 }, // 금액
+      { wch: 12 }, // 대분류
+      { wch: 14 }, // 소분류
+      { wch: 20 }, // 세부내역
+      { wch: 12 }, // 결제방법
+      { wch: 20 }  // 메모
+    ];
+
+    XLSX.utils.book_append_sheet(workbook, worksheet, '가계부');
+    const fileName = `가계부_${selectedYear}년${String(selectedMonth).padStart(2, '0')}월_${new Date().toISOString().split('T')[0]}.xlsx`;
+    XLSX.writeFile(workbook, fileName);
+    toast.success('엑셀 파일이 다운로드되었습니다.');
   };
 
   // 거래내역 조회
@@ -733,6 +899,16 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
                 </div>
 
                 <button
+                  onClick={exportToExcel}
+                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary to-secondary text-white rounded-2xl hover:opacity-90 transition-opacity font-medium shadow-sm"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  Excel 추출
+                </button>
+
+                <button
                   onClick={() => setIsFormVisible(true)}
                   className="inline-flex items-center gap-2 bg-[var(--secondary)] text-[var(--secondary-foreground)] font-semibold px-4 py-2 rounded-xl shadow-sm hover:opacity-90 transition-all"
                 >
@@ -749,7 +925,7 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
             </div>
             <div className="bg-white border border-gray-200 rounded-lg p-2.5 shadow-sm">
               <p className="text-xs text-slate-500">총 지출</p>
-              <p className="text-xl font-bold text-[var(--primary)] mt-1">{expenseSummary.expense.toLocaleString()}원</p>
+              <p className="text-xl font-bold text-red-600 mt-1">{expenseSummary.expense.toLocaleString()}원</p>
             </div>
             <div className="bg-white border border-gray-200 rounded-lg p-2.5 shadow-sm">
               <p className="text-xs text-slate-500">순수입</p>
@@ -1214,7 +1390,7 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
                                 </div>
                                 <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                                   <div
-                                    className={`h-full ${goalMode === '지출' ? 'bg-[var(--primary)]' : 'bg-[var(--secondary)]'}`}
+                                    className={`h-full ${goalMode === '지출' ? 'bg-red-600' : 'bg-[var(--secondary)]'}`}
                                     style={{ width: `${goal > 0 ? Math.min(100, (total / goal) * 100) : 0}%` }}
                                   />
                                 </div>

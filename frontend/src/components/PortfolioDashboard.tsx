@@ -6,6 +6,7 @@ import { LineChart, Line, ResponsiveContainer, CartesianGrid, XAxis, YAxis, Tool
 import { useAssets, useDeleteAsset, useUpdateAsset } from '../lib/hooks/usePortfolio';
 import { toast } from 'sonner';
 import GlassCard from './GlassCard';
+import * as XLSX from 'xlsx';
 
 // Dynamic imports로 Oracle 차트 컴포넌트 코드 스플리팅
 const OraclePieChart = dynamic(() => import('./charts/OraclePieChart'), {
@@ -423,6 +424,110 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
 
   const formatNumber = (num: number) => {
     return new Intl.NumberFormat('ko-KR').format(num);
+  };
+
+  // 엑셀 추출 함수
+  const exportToExcel = () => {
+    if (!portfolioData) {
+      toast.error('포트폴리오 데이터가 없습니다.');
+      return;
+    }
+
+    const workbook = XLSX.utils.book_new();
+    const worksheetData: unknown[][] = [];
+
+    // 헤더 행
+    worksheetData.push([
+      '자산명',
+      '대분류',
+      '소분류',
+      '보유수량',
+      '매수평균가',
+      '투자원금',
+      '현재가치',
+      '손익',
+      '수익률(%)',
+      '등록일',
+      '메모'
+    ]);
+
+    // 대분류별 데이터 및 소계
+    const categories = Object.keys(portfolioData.by_category).sort();
+    categories.forEach((category) => {
+      const categoryAssets = portfolioData.data.filter(a => a.asset_type === category);
+      const categoryData = portfolioData.by_category[category];
+
+      // 자산 데이터
+      categoryAssets.forEach((asset) => {
+        worksheetData.push([
+          asset.name,
+          asset.asset_type,
+          asset.sub_category || '-',
+          asset.quantity ? formatNumber(asset.quantity) : '-',
+          asset.avg_price ? formatNumber(asset.avg_price) : '-',
+          formatNumber(asset.principal || 0),
+          formatNumber(asset.eval_amount || asset.amount),
+          formatNumber(asset.profit_loss),
+          asset.profit_rate.toFixed(2),
+          new Date(asset.date).toLocaleDateString('ko-KR'),
+          asset.note || '-'
+        ]);
+      });
+
+      // 소계 행
+      worksheetData.push([
+        `${category} 소계`,
+        '',
+        '',
+        '',
+        '',
+        formatNumber(categoryData.total_principal || 0),
+        formatNumber(categoryData.total_eval_amount || categoryData.total_amount),
+        '',
+        '',
+        '',
+        ''
+      ]);
+    });
+
+    // 빈 행
+    worksheetData.push([]);
+
+    // 전체 합계 행
+    worksheetData.push([
+      '전체 합계',
+      '',
+      '',
+      '',
+      '',
+      formatNumber(portfolioData.summary.total_principal),
+      formatNumber(portfolioData.summary.total_assets),
+      formatNumber(portfolioData.summary.total_profit_loss),
+      portfolioData.summary.profit_rate.toFixed(2),
+      '',
+      ''
+    ]);
+
+    const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+
+    // 컬럼 너비 설정
+    worksheet['!cols'] = [
+      { wch: 20 }, // 자산명
+      { wch: 12 }, // 대분류
+      { wch: 12 }, // 소분류
+      { wch: 12 }, // 보유수량
+      { wch: 14 }, // 매수평균가
+      { wch: 16 }, // 투자원금
+      { wch: 16 }, // 현재가치
+      { wch: 16 }, // 손익
+      { wch: 12 }, // 수익률
+      { wch: 14 }, // 등록일
+      { wch: 20 }  // 메모
+    ];
+
+    XLSX.utils.book_append_sheet(workbook, worksheet, '포트폴리오');
+    XLSX.writeFile(workbook, `포트폴리오_${new Date().toISOString().split('T')[0]}.xlsx`);
+    toast.success('엑셀 파일이 다운로드되었습니다.');
   };
 
   // 소분류별 맞춤 컬럼 정의
@@ -1073,6 +1178,24 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
 
     return (
       <div className="space-y-6">
+        {/* 헤더 + 엑셀 추출 버튼 */}
+        {!showSideInfo && (
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+              💼 포트폴리오 요약
+            </h2>
+            <button
+              onClick={exportToExcel}
+              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary to-secondary text-white rounded-lg hover:opacity-90 transition-opacity font-medium"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Excel 추출
+            </button>
+          </div>
+        )}
+
         {/* 요약 카드 - 5개 블록 */}
         <div className="grid grid-cols-2 md:grid-cols-2 xl:grid-cols-5 gap-3">
           <GlassCard className="p-3 md:p-4" animate animationDelay={0}>

@@ -118,34 +118,9 @@ export default function Philosophy() {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <GlassCard className="p-8 text-center" animate glow>
-          <div className="animate-spin rounded-full h-16 w-16 border-4 border-primary border-t-transparent mx-auto"></div>
-          <p className="mt-6 text-lg font-medium text-foreground">투자 철학 불러오는 중...</p>
-          <p className="mt-2 text-sm text-muted-foreground">잠시만 기다려주세요</p>
-        </GlassCard>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
-
-      {/* 헤더 */}
-      <header className="relative bg-gradient-to-r from-primary/10 to-secondary/10 shadow-sm border-b border-primary/20 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-secondary/5 animate-gradient"></div>
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-primary via-yellow-400 to-secondary bg-clip-text text-transparent mb-4 fade-in-down">
-            💎 투자 철학 & 원칙
-          </h1>
-          <p className="text-lg md:text-xl text-muted-foreground leading-relaxed max-w-3xl fade-in-up">
-            모든 투자 결정의 기준점 - 나만의 투자 나침반을 설정하세요
-          </p>
-        </div>
-      </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* 2단 그리드 레이아웃 */}
