@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { User } from 'lucide-react';
+import Confetti from 'react-confetti';
 import {
   changePasswordSchema,
   deleteAccountSchema,
@@ -39,6 +40,7 @@ export default function AccountSettings({ user, onLogout }: AccountSettingsProps
   const [activeTab, setActiveTab] = useState<'password' | 'delete'>('password');
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [passwordChangeSuccess, setPasswordChangeSuccess] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
   const router = useRouter();
 
   // 비밀번호 변경 폼
@@ -83,6 +85,10 @@ export default function AccountSettings({ user, onLogout }: AccountSettingsProps
         setMessage({ type: 'success', text: '비밀번호가 성공적으로 변경되었습니다.' });
         passwordForm.reset();
         setPasswordChangeSuccess(true);
+
+        // Confetti 효과 시작
+        setShowConfetti(true);
+        setTimeout(() => setShowConfetti(false), 3000);
       } else {
         setMessage({ type: 'error', text: result.message || '비밀번호 변경에 실패했습니다.' });
       }
@@ -124,6 +130,17 @@ export default function AccountSettings({ user, onLogout }: AccountSettingsProps
 
   return (
     <div className="min-h-screen relative overflow-hidden">
+      {/* Confetti 효과 */}
+      {showConfetti && (
+        <Confetti
+          width={typeof window !== 'undefined' ? window.innerWidth : 1920}
+          height={typeof window !== 'undefined' ? window.innerHeight : 1080}
+          recycle={false}
+          numberOfPieces={500}
+          colors={['#FFD700', '#FFA500', '#50C878', '#3CB371', '#FFEB3B', '#FFD54F']}
+        />
+      )}
+
       {/* Oracle 2025 그라디언트 배경 */}
       <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-secondary/5 animate-gradient" />
       <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-float" />
