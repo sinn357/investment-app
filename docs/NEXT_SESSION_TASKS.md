@@ -14,24 +14,110 @@
 - 페이지 로딩 시간: **몇십 초** (심각한 성능 문제)
 - 사용자 경험 매우 나쁨
 
-**원인 추정**:
-- 무거운 컴포넌트 또는 이미지
-- 동기적 데이터 로딩
-- 불필요한 렌더링
-- 대용량 라이브러리 로드
+#### 📊 성능 분석 결과 (2025-12-30)
 
-**해결 방안**:
-1. React DevTools Profiler로 병목 지점 파악
-2. Dynamic imports 적용 (무거운 컴포넌트)
-3. Lazy loading 이미지/컴포넌트
-4. Suspense 경계 추가
-5. 번들 분석 (webpack-bundle-analyzer)
+**✅ 확인 완료**:
+- API 응답 시간: **1.1초** (정상)
+- 컴포넌트 크기: **837줄** (보통)
+- 무거운 라이브러리: **없음** (Particles, framer-motion 등 미사용)
+- 백엔드 Cold Start: **문제 없음**
+
+**⚠️ 발견된 문제점**:
+1. **Turbopack 사용** (실험적 기능, 개발 모드 성능 이슈 가능)
+2. **순차 애니메이션 지연** (500ms 체감 지연)
+   ```typescript
+   <GlassCard animationDelay={0}>...</GlassCard>
+   <GlassCard animationDelay={100}>...</GlassCard>
+   <GlassCard animationDelay={200}>...</GlassCard>
+   <GlassCard animationDelay={300}>...</GlassCard>
+   <GlassCard animationDelay={400}>...</GlassCard>
+   ```
+3. **클라이언트 사이드 렌더링만 사용** ('use client')
+4. **개발 모드 HMR 이슈** 가능성
+
+#### 🔧 해결 방안 (우선순위별)
+
+**🟢 1단계: 프로덕션 빌드 테스트** (5분)
+```bash
+cd frontend
+npm run build
+npm run start
+# 브라우저에서 /philosophy 접속하여 로딩 시간 측정
+```
+- 개발 모드 이슈인지 확인
+- 실제 성능 문제인지 검증
+
+**🟢 2단계: 애니메이션 지연 제거** (10분)
+```typescript
+// Before
+<GlassCard animationDelay={400}>...</GlassCard>
+
+// After
+<GlassCard animationDelay={0}>...</GlassCard>
+```
+- 모든 animationDelay를 0으로 설정
+- 예상 개선: **500ms 체감 속도 향상**
+
+**🟡 3단계: Turbopack 비활성화 테스트** (5분)
+```json
+// package.json
+"dev": "next dev"  // --turbopack 제거
+```
+- 일반 webpack 모드로 실행
+- 성능 비교 측정
+
+**🟡 4단계: Dynamic imports 적용** (30분)
+```typescript
+import dynamic from 'next/dynamic';
+
+const InvestmentGoal = dynamic(() => import('@/components/InvestmentGoal'), {
+  ssr: false,
+  loading: () => <LoadingSpinner />
+});
+const ForbiddenAssets = dynamic(() => import('@/components/ForbiddenAssets'), {
+  ssr: false,
+  loading: () => <LoadingSpinner />
+});
+const AllocationRange = dynamic(() => import('@/components/AllocationRange'), {
+  ssr: false,
+  loading: () => <LoadingSpinner />
+});
+const InvestmentPrinciples = dynamic(() => import('@/components/InvestmentPrinciples'), {
+  ssr: false,
+  loading: () => <LoadingSpinner />
+});
+const InvestmentMethods = dynamic(() => import('@/components/InvestmentMethods'), {
+  ssr: false,
+  loading: () => <LoadingSpinner />
+});
+```
+- 5개 컴포넌트 코드 스플리팅
+- 예상 개선: **초기 번들 크기 30-40% 감소**
+
+**🔴 5단계: React.memo 최적화** (20분)
+```typescript
+// 각 컴포넌트 파일 끝에 추가
+export default React.memo(InvestmentGoal);
+export default React.memo(ForbiddenAssets);
+export default React.memo(AllocationRange);
+export default React.memo(InvestmentPrinciples);
+export default React.memo(InvestmentMethods);
+```
+- 불필요한 리렌더링 방지
 
 **예상 시간**: 1-2시간
 
-**파일 위치**: `frontend/src/app/philosophy/page.tsx`
+**파일 위치**:
+- `frontend/src/app/philosophy/page.tsx`
+- `frontend/src/components/Investment*.tsx`
+- `frontend/src/components/{ForbiddenAssets,AllocationRange}.tsx`
 
 **우선순위**: 🔴🔴🔴 **최고 우선순위**
+
+**예상 개선 효과**:
+- 애니메이션 제거: **0.5초 개선**
+- Dynamic imports: **초기 로딩 30-40% 개선**
+- 전체 예상: **몇십 초 → 2-3초 이내**
 
 ---
 
