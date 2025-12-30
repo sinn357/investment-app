@@ -22,7 +22,7 @@ const CATEGORY_OPTIONS = [
   { name: '대체투자', color: '#ef4444' },
 ];
 
-export default function AllocationRange({ allocationRange, onChange }: AllocationRangeProps) {
+function AllocationRange({ allocationRange, onChange }: AllocationRangeProps) {
   const [isAdding, setIsAdding] = useState(false);
   const [newItem, setNewItem] = useState({
     category: '',
@@ -223,3 +223,5 @@ export default function AllocationRange({ allocationRange, onChange }: Allocatio
     </div>
   );
 }
+
+export default React.memo(AllocationRange);

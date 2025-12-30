@@ -16,7 +16,7 @@ interface InvestmentPrinciplesProps {
 
 const CATEGORY_OPTIONS = ['리스크 관리', '매매 규칙', '심리 통제', '포트폴리오 관리', '기타'];
 
-export default function InvestmentPrinciples({ principles, onChange }: InvestmentPrinciplesProps) {
+function InvestmentPrinciples({ principles, onChange }: InvestmentPrinciplesProps) {
   const [isAdding, setIsAdding] = useState(false);
   const [newPrinciple, setNewPrinciple] = useState({
     category: '리스크 관리',
@@ -168,3 +168,5 @@ export default function InvestmentPrinciples({ principles, onChange }: Investmen
     </div>
   );
 }
+
+export default React.memo(InvestmentPrinciples);

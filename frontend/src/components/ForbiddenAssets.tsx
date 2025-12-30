@@ -13,7 +13,7 @@ interface ForbiddenAssetsProps {
   onChange: (assets: ForbiddenAsset[]) => void;
 }
 
-export default function ForbiddenAssets({ forbiddenAssets, onChange }: ForbiddenAssetsProps) {
+function ForbiddenAssets({ forbiddenAssets, onChange }: ForbiddenAssetsProps) {
   const [newAsset, setNewAsset] = useState({ name: '', reason: '', icon: '🚫' });
   const [isAdding, setIsAdding] = useState(false);
 
@@ -119,3 +119,5 @@ export default function ForbiddenAssets({ forbiddenAssets, onChange }: Forbidden
     </div>
   );
 }
+
+export default React.memo(ForbiddenAssets);

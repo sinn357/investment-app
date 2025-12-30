@@ -19,7 +19,7 @@ interface InvestmentGoalProps {
   onChange: (goal: InvestmentGoalProps['goal']) => void;
 }
 
-export default function InvestmentGoal({ goal, onChange }: InvestmentGoalProps) {
+function InvestmentGoal({ goal, onChange }: InvestmentGoalProps) {
   const handleInputChange = (field: string, value: number | string) => {
     const newGoal = { ...goal };
     if (field.includes('.')) {
@@ -152,3 +152,5 @@ export default function InvestmentGoal({ goal, onChange }: InvestmentGoalProps) 
     </div>
   );
 }
+
+export default React.memo(InvestmentGoal);

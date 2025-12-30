@@ -1,14 +1,32 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import Navigation from '@/components/Navigation';
-import InvestmentGoal from '@/components/InvestmentGoal';
-import ForbiddenAssets from '@/components/ForbiddenAssets';
-import AllocationRange from '@/components/AllocationRange';
-import InvestmentPrinciples from '@/components/InvestmentPrinciples';
-import InvestmentMethods from '@/components/InvestmentMethods';
 import GlassCard from '@/components/GlassCard';
 import EnhancedButton from '@/components/EnhancedButton';
+
+// Dynamic imports for code splitting
+const InvestmentGoal = dynamic(() => import('@/components/InvestmentGoal'), {
+  ssr: false,
+  loading: () => <div className="animate-pulse bg-muted/20 rounded-lg h-64"></div>
+});
+const ForbiddenAssets = dynamic(() => import('@/components/ForbiddenAssets'), {
+  ssr: false,
+  loading: () => <div className="animate-pulse bg-muted/20 rounded-lg h-64"></div>
+});
+const AllocationRange = dynamic(() => import('@/components/AllocationRange'), {
+  ssr: false,
+  loading: () => <div className="animate-pulse bg-muted/20 rounded-lg h-64"></div>
+});
+const InvestmentPrinciples = dynamic(() => import('@/components/InvestmentPrinciples'), {
+  ssr: false,
+  loading: () => <div className="animate-pulse bg-muted/20 rounded-lg h-64"></div>
+});
+const InvestmentMethods = dynamic(() => import('@/components/InvestmentMethods'), {
+  ssr: false,
+  loading: () => <div className="animate-pulse bg-muted/20 rounded-lg h-64"></div>
+});
 
 // TypeScript interfaces
 interface InvestmentPhilosophy {
@@ -143,7 +161,7 @@ export default function Philosophy() {
             </GlassCard>
 
             {/* 섹션 2: 금지 자산 */}
-            <GlassCard className="p-6" animationDelay={100}>
+            <GlassCard className="p-6" animationDelay={0}>
               <ForbiddenAssets
                 forbiddenAssets={philosophy.forbiddenAssets}
                 onChange={(forbiddenAssets) => setPhilosophy({ ...philosophy, forbiddenAssets })}
@@ -151,7 +169,7 @@ export default function Philosophy() {
             </GlassCard>
 
             {/* 섹션 3: 운용 범위 */}
-            <GlassCard className="p-6" animationDelay={200}>
+            <GlassCard className="p-6" animationDelay={0}>
               <AllocationRange
                 allocationRange={philosophy.allocationRange}
                 onChange={(allocationRange) => setPhilosophy({ ...philosophy, allocationRange })}
@@ -162,7 +180,7 @@ export default function Philosophy() {
           {/* 오른쪽 컬럼 */}
           <div className="space-y-8">
             {/* 섹션 4: 투자 원칙 */}
-            <GlassCard className="p-6" animationDelay={300}>
+            <GlassCard className="p-6" animationDelay={0}>
               <InvestmentPrinciples
                 principles={philosophy.principles}
                 onChange={(principles) => setPhilosophy({ ...philosophy, principles })}
@@ -170,7 +188,7 @@ export default function Philosophy() {
             </GlassCard>
 
             {/* 섹션 5: 투자 방법 */}
-            <GlassCard className="p-6" animationDelay={400}>
+            <GlassCard className="p-6" animationDelay={0}>
               <InvestmentMethods
                 methods={philosophy.methods}
                 onChange={(methods) => setPhilosophy({ ...philosophy, methods })}
@@ -180,7 +198,7 @@ export default function Philosophy() {
         </div>
 
         {/* 저장 버튼 */}
-        <div className="flex justify-center fade-in-up" style={{ animationDelay: '500ms' }}>
+        <div className="flex justify-center fade-in-up" style={{ animationDelay: '0ms' }}>
           <EnhancedButton
             variant="primary"
             size="lg"

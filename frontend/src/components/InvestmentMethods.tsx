@@ -22,7 +22,7 @@ const DEFAULT_PHASES = [
   '4. 트레이드 & 모니터링'
 ];
 
-export default function InvestmentMethods({ methods, onChange }: InvestmentMethodsProps) {
+function InvestmentMethods({ methods, onChange }: InvestmentMethodsProps) {
   const [isAdding, setIsAdding] = useState(false);
   const [newMethod, setNewMethod] = useState({
     phase: '0. 투자 철학 정립',
@@ -165,3 +165,5 @@ export default function InvestmentMethods({ methods, onChange }: InvestmentMetho
     </div>
   );
 }
+
+export default React.memo(InvestmentMethods);
