@@ -1043,14 +1043,14 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
         <div className="grid grid-cols-2 md:grid-cols-2 xl:grid-cols-5 gap-3">
           <GlassCard className="p-3 md:p-4" animate animationDelay={0}>
             <h3 className="text-xs font-medium text-muted-foreground">총 자산</h3>
-            <p className="text-lg md:text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+            <p className="text-lg md:text-xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
               {formatCurrency(portfolioData.summary.total_assets)}
             </p>
           </GlassCard>
 
           <GlassCard className="p-3 md:p-4" animate animationDelay={100}>
             <h3 className="text-xs font-medium text-muted-foreground">총 투자원금</h3>
-            <p className="text-lg md:text-2xl font-bold text-foreground">
+            <p className="text-lg md:text-xl font-bold text-foreground">
               {formatCurrency(totalInvestmentPrincipal)}
             </p>
           </GlassCard>
