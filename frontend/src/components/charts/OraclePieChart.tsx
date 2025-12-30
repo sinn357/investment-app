@@ -75,7 +75,12 @@ export default function OraclePieChart({
           contentStyle={CHART_THEME.tooltip.contentStyle}
           animationDuration={CHART_THEME.animation.duration}
         />
-        {showLegend && <Legend />}
+        {showLegend && (
+          <Legend
+            wrapperStyle={{ fontSize: '12px' }}
+            iconSize={10}
+          />
+        )}
       </PieChart>
     </ResponsiveContainer>
   );

@@ -464,13 +464,6 @@ export default function AnalysisPage() {
     <div className="min-h-screen bg-background">
       <Navigation />
 
-      <header className="bg-gradient-to-r from-primary/5 to-secondary/5 shadow-sm border-b border-primary/10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <h1 className="text-3xl font-bold text-foreground">🔎 개별 자산 분석</h1>
-          <p className="mt-2 text-muted-foreground">기본적/기술적/총평/참고 자료를 한 곳에서 관리하는 리포트</p>
-        </div>
-      </header>
-
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         <section className="space-y-4 md:space-y-0 md:flex md:gap-4">
           {/* 모바일: 드롭다운 + 새 분석 버튼 */}
@@ -739,15 +732,6 @@ export default function AnalysisPage() {
                         }
                         className="w-64"
                       />
-                      <Button variant="ghost" onClick={() => setDraft(selected ?? null)}>
-                        되돌리기
-                      </Button>
-                      <Button variant="destructive" onClick={handleDelete}>
-                        삭제
-                      </Button>
-                      <Button onClick={handleSave} disabled={saveState === 'saved'}>
-                        {saveState === 'saved' ? '저장됨' : '저장'}
-                      </Button>
                     </div>
                   </div>
                 </div>

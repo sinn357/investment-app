@@ -300,17 +300,6 @@ export default function IndustriesPage() {
     <div className="min-h-screen bg-background">
       <Navigation />
 
-      <header className="relative overflow-hidden bg-gradient-to-r from-primary/10 to-secondary/10 shadow-sm border-b border-primary/20 animate-gradient">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary via-yellow-400 to-secondary bg-clip-text text-transparent animate-fade-in-down">
-            🏭 산업군 & 종목 분석
-          </h1>
-          <p className="mt-3 text-lg text-muted-foreground animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-            6대 산업군별 하위 산업 분석 시스템 · Oracle 2025
-          </p>
-        </div>
-      </header>
-
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
         {/* 상단: 6대 산업군 탭 */}
         <div className="overflow-x-auto md:overflow-x-visible pb-6 border-b border-border">

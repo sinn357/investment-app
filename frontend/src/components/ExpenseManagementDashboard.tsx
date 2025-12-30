@@ -1237,6 +1237,7 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
                   data={compositionPieData}
                   donut
                   height={180}
+                  colors={compositionMode === '지출' ? ['#EF4444', '#DC2626', '#B91C1C', '#991B1B', '#7F1D1D'] : ['#50C878', '#3CB371', '#2F9E5F', '#27864D', '#1E6E3B']}
                 />
               ) : (
                 <div className="h-[180px] flex items-center justify-center text-slate-400">
@@ -1275,8 +1276,8 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
                       data={dailyData}
                       xKey="날짜"
                       yKeys={[
-                        { key: '지출', name: '지출' },
-                        { key: '수입', name: '수입' }
+                        { key: '지출', name: '지출', color: '#EF4444' },
+                        { key: '수입', name: '수입', color: '#50C878' }
                       ]}
                       height={180}
                     />
@@ -1291,6 +1292,7 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
                       data={ratioData}
                       donut
                       height={180}
+                      colors={['#EF4444', '#50C878']}
                     />
                   ) : (
                     <div className="h-[180px] flex items-center justify-center text-slate-400">데이터가 없습니다</div>
@@ -1506,7 +1508,7 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
                           ? 'bg-[var(--secondary)]/10 text-[var(--secondary)]'
                           : expense.transaction_type === '이체'
                           ? 'bg-blue-100 text-blue-700'
-                          : 'bg-[var(--primary)]/15 text-[var(--primary)]'
+                          : 'bg-red-100 text-red-600'
                       }`}>
                         {expense.transaction_type}
                       </span>
@@ -1514,7 +1516,7 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
                     <td className={`px-6 py-4 whitespace-nowrap font-semibold ${
                       expense.transaction_type === '수입' ? 'text-[var(--secondary)]' :
                       expense.transaction_type === '이체' ? 'text-blue-600' :
-                      'text-[var(--primary)]'
+                      'text-red-600'
                     }`}>
                       {expense.transaction_type === '수입' ? '+' : expense.transaction_type === '이체' ? '' : '-'}{Number(expense.amount).toLocaleString()}{expense.currency === 'USD' ? '$' : '원'}
                     </td>
