@@ -1,7 +1,18 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { OraclePieChart, OracleBarChart } from './charts';
+import dynamic from 'next/dynamic';
+
+// Dynamic imports로 Oracle 차트 컴포넌트 코드 스플리팅
+const OraclePieChart = dynamic(() => import('./charts/OraclePieChart'), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center h-64"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div></div>
+});
+
+const OracleBarChart = dynamic(() => import('./charts/OracleBarChart'), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center h-64"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div></div>
+});
 
 interface Expense {
   id: number;

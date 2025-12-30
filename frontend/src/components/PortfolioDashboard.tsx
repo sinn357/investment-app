@@ -1,11 +1,22 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import dynamic from 'next/dynamic';
 import { LineChart, Line, ResponsiveContainer, CartesianGrid, XAxis, YAxis, Tooltip } from 'recharts';
 import { useAssets, useDeleteAsset, useUpdateAsset } from '../lib/hooks/usePortfolio';
 import { toast } from 'sonner';
 import GlassCard from './GlassCard';
-import { OraclePieChart, OracleBarChart } from './charts';
+
+// Dynamic imports로 Oracle 차트 컴포넌트 코드 스플리팅
+const OraclePieChart = dynamic(() => import('./charts/OraclePieChart'), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center h-64"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div></div>
+});
+
+const OracleBarChart = dynamic(() => import('./charts/OracleBarChart'), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center h-64"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div></div>
+});
 
 interface Asset {
   id: number;
