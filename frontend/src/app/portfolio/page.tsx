@@ -170,36 +170,6 @@ export default function PortfolioPage() {
     setRefreshKey(prev => prev + 1); // 대시보드 초기화
   };
 
-  const handleExportExcel = async () => {
-    if (!user) return;
-
-    try {
-      const API_BASE_URL = 'https://investment-app-backend-x166.onrender.com';
-      const response = await fetch(
-        `${API_BASE_URL}/api/portfolio/export/excel?user_id=${user.id}`
-      );
-
-      if (!response.ok) {
-        throw new Error('Excel 생성 실패');
-      }
-
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `portfolio_${new Date().toISOString().slice(0, 10)}.xlsx`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-
-      alert('Excel 파일이 다운로드되었습니다!');
-    } catch (error) {
-      console.error('Excel 다운로드 실패:', error);
-      alert('Excel 다운로드에 실패했습니다.');
-    }
-  };
-
   const persistTradePlans = (plans: TradePlan[]) => {
     setTradePlans(plans);
     if (user) localStorage.setItem(storageKey('plans'), JSON.stringify(plans));
@@ -359,48 +329,6 @@ export default function PortfolioPage() {
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
-
-      <header className="relative overflow-hidden bg-gradient-to-r from-primary/10 via-secondary/10 to-primary/10 animate-gradient shadow-sm border-b border-primary/20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex justify-between items-center">
-            <div className="animate-fade-in-up">
-              <h1 className="text-4xl lg:text-5xl font-bold bg-gradient-to-r from-primary via-yellow-400 to-secondary bg-clip-text text-transparent">
-                💎 포트폴리오 관리
-              </h1>
-              <p className="mt-3 text-lg text-muted-foreground animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-                보유 자산을 체계적으로 관리하세요 - Oracle 2025
-              </p>
-            </div>
-            <div className="flex flex-col md:flex-row items-start md:items-center space-y-2 md:space-y-0 md:space-x-4">
-              <div className="text-sm text-muted-foreground">
-                <span className="font-medium text-foreground">{user.username}</span>님
-              </div>
-              <div className="flex space-x-2">
-                <EnhancedButton
-                  variant="secondary"
-                  onClick={handleExportExcel}
-                  shimmer
-                  className="text-xs md:text-sm py-1.5 md:py-2 px-3 md:px-4"
-                >
-                  📊 Excel
-                </EnhancedButton>
-                <button
-                  onClick={() => router.push('/settings')}
-                  className="px-2 md:px-4 py-1.5 md:py-2 text-xs md:text-sm font-medium text-secondary border border-secondary/30 rounded-md hover:bg-secondary/10 transition-colors"
-                >
-                  계정 설정
-                </button>
-                <button
-                  onClick={handleLogout}
-                  className="px-2 md:px-4 py-1.5 md:py-2 text-xs md:text-sm font-medium text-primary border border-primary/30 rounded-md hover:bg-primary/10 transition-colors"
-                >
-                  로그아웃
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="space-y-8">
