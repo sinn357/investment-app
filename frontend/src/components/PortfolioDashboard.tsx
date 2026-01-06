@@ -599,6 +599,29 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
     }
   };
 
+  // 소분류 컬럼 값 처리 (부동산 임대형태 예외 포함)
+  const getSubCategoryColumnValue = (
+    asset: Asset,
+    col: { key: string; label: string; format: (val: any) => string }
+  ) => {
+    if (asset.sub_category === '부동산') {
+      if (col.key === 'jeonse_deposit' && asset.rent_type === 'monthly') {
+        return '-';
+      }
+      if (col.key === 'rental_income' && asset.rent_type === 'jeonse') {
+        return '-';
+      }
+      if (col.key === 'jeonse_deposit' && asset.rent_type === 'jeonse' && asset.jeonse_deposit) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return col.format(asset.jeonse_deposit as any);
+      }
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const value = asset[col.key as keyof Asset] as any;
+    return value !== null && value !== undefined ? col.format(value) : '-';
+  };
+
   // 소분류별로 수량×평균가 표시 여부 결정
   const shouldShowQuantityPrice = (subCategory: string | null) => {
     const subCat = subCategory?.toLowerCase();
@@ -1251,7 +1274,7 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
                     setGoalSettings(newSettings);
                     saveGoalSettings(newSettings);
                   }}
-                  className="w-full min-w-0 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  className="w-full min-w-0 px-1.5 py-1 h-8 text-[11px] sm:text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white appearance-none"
                 />
               </div>
               <div>
@@ -1264,7 +1287,7 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
                     setGoalSettings(newSettings);
                     saveGoalSettings(newSettings);
                   }}
-                  className="w-full min-w-0 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  className="w-full min-w-0 px-1.5 py-1 h-8 text-[11px] sm:text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white appearance-none"
                 />
               </div>
             </div>
@@ -1348,7 +1371,7 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
                           setGoalSettings(newSettings);
                           saveGoalSettings(newSettings);
                         }}
-                        className="w-full min-w-0 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        className="w-full min-w-0 px-1.5 py-1 h-8 text-[11px] sm:text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white appearance-none"
                         placeholder="목표액"
                       />
                     </div>
@@ -1371,7 +1394,7 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
                           setGoalSettings(newSettings);
                           saveGoalSettings(newSettings);
                         }}
-                        className="w-full min-w-0 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        className="w-full min-w-0 px-1.5 py-1 h-8 text-[11px] sm:text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white appearance-none"
                       />
                     </div>
                   </div>
@@ -1712,7 +1735,7 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
             <div key={category} className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
               {/* 자산군 헤더 */}
               <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4">
-                <div className="flex justify-between items-center">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                   <div className="flex items-center space-x-3">
                     <h3 className="text-lg font-semibold text-white">{category}</h3>
                     <button
@@ -1728,7 +1751,7 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
                     </button>
                   </div>
                   <div className="text-white text-sm">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                       <div className="bg-blue-600 bg-opacity-30 px-3 py-2 rounded">
                         <div className="text-xs opacity-80">자산 수</div>
                         <div className="font-medium">{allAssets.length}개</div>
@@ -1767,7 +1790,7 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
                 <div key={`${category}-${subCategory}`}>
                   {/* 소분류 헤더 */}
                   <div className="bg-gray-100 dark:bg-gray-700 px-6 py-3 border-t border-gray-200 dark:border-gray-600">
-                    <div className="flex justify-between items-center">
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                       <div className="flex items-center space-x-2">
                         <h4 className="text-md font-medium text-gray-800 dark:text-gray-200">{subCategory}</h4>
                         <button
@@ -1809,7 +1832,79 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
 
                   {/* 소분류 테이블 (접기/펼치기) */}
                   {expandedSubCategories[`${category}-${subCategory}`] && (
-                    <div className="overflow-x-auto">
+                    <>
+                      {/* 모바일 카드 뷰 */}
+                      <div className="block md:hidden px-4 py-4 space-y-4">
+                        {assets.map((asset) => {
+                          const columns = getSubCategoryColumns(asset.sub_category);
+                          const infoItems = [
+                            ...(shouldShowQuantityPrice(asset.sub_category)
+                              ? [
+                                  { label: '수량', value: asset.quantity ? formatNumber(asset.quantity) : '-' },
+                                  { label: '평균가', value: asset.avg_price ? formatCurrency(asset.avg_price) : '-' }
+                                ]
+                              : []),
+                            ...columns.map(col => ({
+                              label: col.label,
+                              value: getSubCategoryColumnValue(asset, col)
+                            })),
+                            { label: '평가금액', value: formatCurrency(asset.eval_amount || asset.amount) },
+                            { label: '원금', value: formatCurrency(asset.principal || asset.amount) },
+                            { label: '손익', value: formatCurrency(asset.profit_loss) },
+                            { label: '수익률', value: `${asset.profit_rate ? asset.profit_rate.toFixed(2) : '0.00'}%` },
+                            { label: getDateLabel(asset.sub_category), value: new Date(asset.date).toLocaleDateString('ko-KR') }
+                          ];
+
+                          return (
+                            <div key={asset.id} className="border border-gray-200 dark:border-gray-700 rounded-xl p-4 bg-white dark:bg-gray-800 shadow-sm">
+                              <div className="flex items-start justify-between gap-3">
+                                <div>
+                                  <p className="text-sm font-semibold text-gray-900 dark:text-white">{asset.name}</p>
+                                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                                    {subCategory} · 등록 {new Date(asset.created_at).toLocaleDateString('ko-KR')}
+                                  </p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    onClick={() => handleEditAsset(asset)}
+                                    className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+                                    title={`${asset.name} 수정`}
+                                  >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    </svg>
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteAsset(asset.id, asset.name)}
+                                    className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                                    title={`${asset.name} 삭제`}
+                                  >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                  </button>
+                                </div>
+                              </div>
+                              <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                                {infoItems.map(item => (
+                                  <div key={`${asset.id}-${item.label}`} className="flex flex-col bg-gray-50 dark:bg-gray-700/40 rounded-lg px-2 py-1.5">
+                                    <span className="text-[10px] text-gray-500 dark:text-gray-400">{item.label}</span>
+                                    <span className="text-xs font-medium text-gray-900 dark:text-white">{item.value}</span>
+                                  </div>
+                                ))}
+                              </div>
+                              {asset.note && (
+                                <div className="mt-3 text-xs text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700/40 rounded-lg px-3 py-2">
+                                  {asset.note}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* 데스크톱 테이블 뷰 */}
+                      <div className="hidden md:block overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead className="bg-gray-50 dark:bg-gray-700">
                   <tr>
@@ -1869,29 +1964,7 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
                       {/* 소분류별 맞춤 컬럼들 */}
                       {getSubCategoryColumns(asset.sub_category).map((col) => (
                         <td key={col.key} className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300 text-right">
-                          {(() => {
-                            const value = asset[col.key as keyof Asset];
-
-                            // 부동산 임대형태별 조건부 렌더링
-                            if (asset.sub_category === '부동산') {
-                              // 월세인 경우 전세보증금 숨김
-                              if (col.key === 'jeonse_deposit' && asset.rent_type === 'monthly') {
-                                return '-';
-                              }
-                              // 전세인 경우 임대수익 숨김
-                              if (col.key === 'rental_income' && asset.rent_type === 'jeonse') {
-                                return '-';
-                              }
-                              // 전세인 경우 전세보증금이 있으면 표시
-                              if (col.key === 'jeonse_deposit' && asset.rent_type === 'jeonse' && asset.jeonse_deposit) {
-                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                return col.format(asset.jeonse_deposit as any);
-                              }
-                            }
-
-                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                            return value !== null && value !== undefined ? col.format(value as any) : '-';
-                          })()}
+                          {getSubCategoryColumnValue(asset, col)}
                         </td>
                       ))}
 
@@ -1943,7 +2016,8 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
                   ))}
                 </tbody>
               </table>
-                    </div>
+                      </div>
+                    </>
                   )}
                 </div>
                 );
