@@ -922,59 +922,62 @@ def get_all_indicators_from_db():
         # 3. 조회한 데이터로 results 구성
         for indicator_id in all_indicator_ids:
             data = all_data.get(indicator_id, {})
-            if "error" not in data:
-                # 히스토리 데이터 가져오기
-                history = all_history.get(indicator_id, [])
+            has_error = "error" in data
 
-                # 메타데이터 추가 - 안전한 방식으로 get_indicator_config 사용
-                metadata = get_indicator_config(indicator_id)
+            # 히스토리 데이터 가져오기
+            history = all_history.get(indicator_id, [])
 
-                # last_updated 추출 (가장 최신 업데이트 시간)
-                indicator_updated = data.get("last_updated")
-                if indicator_updated:
-                    if not last_updated or indicator_updated > last_updated:
-                        last_updated = indicator_updated
+            # 메타데이터 추가 - 안전한 방식으로 get_indicator_config 사용
+            metadata = get_indicator_config(indicator_id)
 
-                # 해석 메타데이터 추가
-                interpretation = IndicatorMetadata.get_interpretation(indicator_id)
+            # last_updated 추출 (가장 최신 업데이트 시간)
+            indicator_updated = data.get("last_updated") if not has_error else None
+            if indicator_updated:
+                if not last_updated or indicator_updated > last_updated:
+                    last_updated = indicator_updated
 
-                # Surprise 계산 (actual - forecast)
-                latest = data.get("latest_release", {})
-                actual = latest.get("actual")
-                forecast = latest.get("forecast")
-                surprise = None
+            # 해석 메타데이터 추가
+            interpretation = IndicatorMetadata.get_interpretation(indicator_id)
 
-                if actual is not None and forecast is not None:
-                    try:
-                        # 문자열 처리 (%, K 단위)
-                        actual_num = float(str(actual).replace('%', '').replace('K', '000')) if isinstance(actual, str) else float(actual)
-                        forecast_num = float(str(forecast).replace('%', '').replace('K', '000')) if isinstance(forecast, str) else float(forecast)
-                        surprise = round(actual_num - forecast_num, 2)
-                    except (ValueError, TypeError):
-                        surprise = None
+            # Surprise 계산 (actual - forecast)
+            latest = data.get("latest_release", {}) if not has_error else {}
+            next_release = data.get("next_release", {}) if not has_error else {}
+            actual = latest.get("actual")
+            forecast = latest.get("forecast")
+            surprise = None
 
-                results.append({
-                    "indicator_id": indicator_id,
-                    "name": CrawlerService.get_indicator_name(indicator_id),
-                    "name_ko": metadata.name_ko if metadata else None,
-                    "category": metadata.category if metadata else "business",
-                    "reverse_color": metadata.reverse_color if metadata else False,
-                    "manual_check": metadata.manual_check if metadata else False,  # 직접 확인 필요 여부
-                    "url": metadata.url if metadata else None,  # 직접 확인 URL
-                    "surprise": surprise,  # Surprise 값 추가
-                    "interpretation": interpretation,  # 5개 섹션 해석 추가
-                    "data": {
-                        "latest_release": data.get("latest_release", {}),
-                        "next_release": data.get("next_release", {}),
-                        "history_table": history
-                    }
-                })
+            if actual is not None and forecast is not None:
+                try:
+                    # 문자열 처리 (%, K 단위)
+                    actual_num = float(str(actual).replace('%', '').replace('K', '000')) if isinstance(actual, str) else float(actual)
+                    forecast_num = float(str(forecast).replace('%', '').replace('K', '000')) if isinstance(forecast, str) else float(forecast)
+                    surprise = round(actual_num - forecast_num, 2)
+                except (ValueError, TypeError):
+                    surprise = None
+
+            results.append({
+                "indicator_id": indicator_id,
+                "name": CrawlerService.get_indicator_name(indicator_id),
+                "name_ko": metadata.name_ko if metadata else None,
+                "category": metadata.category if metadata else "business",
+                "reverse_color": metadata.reverse_color if metadata else False,
+                "manual_check": metadata.manual_check if metadata else False,  # 직접 확인 필요 여부
+                "url": metadata.url if metadata else None,  # 직접 확인 URL
+                "surprise": surprise,  # Surprise 값 추가
+                "interpretation": interpretation,  # 5개 섹션 해석 추가
+                "data": {
+                    "latest_release": latest,
+                    "next_release": next_release,
+                    "history_table": history
+                }
+            })
 
         # ✅ results 배열을 딕셔너리로 변환 (중복 DB 조회 방지)
         indicators_dict = {}
         for item in results:
             indicator_id = item.get('indicator_id')
-            if indicator_id and item.get('data'):
+            latest_release = item.get('data', {}).get('latest_release') if item.get('data') else None
+            if indicator_id and latest_release:
                 # 전체 item을 저장 (latest_release뿐만 아니라 next_release, history도 포함)
                 indicators_dict[indicator_id] = item
 

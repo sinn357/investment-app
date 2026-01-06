@@ -330,7 +330,7 @@ export default function PortfolioPage() {
     <div className="min-h-screen bg-background">
       <Navigation />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 overflow-x-hidden">
         <div className="space-y-8">
           {/* 상단 섹션: 입력 폼 + 우측 정보 영역 */}
           <div className={`grid grid-cols-1 gap-6 ${

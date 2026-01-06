@@ -303,7 +303,7 @@ export default function IndicatorsPage() {
           // 그리드용 지표 데이터 생성 (백엔드에서 메타데이터 포함됨)
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const gridIndicators: GridIndicator[] = result.indicators.map((item: any) => {
-            const latest = item.data.latest_release;
+            const latest = item.data?.latest_release ?? {};
 
             // 히스토리 데이터에서 스파크라인 데이터 추출 (최근 6개월)
             // release_date 기준으로 최신순 정렬 후 사용 (일부 지표는 역순 정렬되어 있음)
@@ -326,9 +326,9 @@ export default function IndicatorsPage() {
               id: item.indicator_id,
               name: item.name,
               nameKo: item.name_ko || item.name,
-              actual: latest.actual,
-              previous: latest.previous,
-              forecast: latest.forecast,
+              actual: latest.actual ?? null,
+              previous: latest.previous ?? '-',
+              forecast: latest.forecast ?? null,
               surprise: item.surprise ?? null,  // 최상위 레벨에서 가져옴
               category: item.category || mapIndicatorToCategory(item.name),
               sparklineData,
@@ -526,7 +526,7 @@ export default function IndicatorsPage() {
         onTabChange={setActiveTab}
       /> */}
 
-      <main>
+      <main className="overflow-x-hidden">
         {/* ✅ NEW: Master Market Cycle (Phase 1) */}
         {!loading && masterCycleData && (
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">

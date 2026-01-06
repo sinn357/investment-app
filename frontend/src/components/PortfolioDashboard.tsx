@@ -1240,7 +1240,7 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
 
           {/* 목표 설정 */}
           <div className="space-y-2 mb-4">
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div>
                 <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">목표 금액</label>
                 <input
@@ -1251,7 +1251,7 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
                     setGoalSettings(newSettings);
                     saveGoalSettings(newSettings);
                   }}
-                  className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  className="w-full min-w-0 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 />
               </div>
               <div>
@@ -1264,7 +1264,7 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
                     setGoalSettings(newSettings);
                     saveGoalSettings(newSettings);
                   }}
-                  className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  className="w-full min-w-0 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 />
               </div>
             </div>
@@ -1348,7 +1348,7 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
                           setGoalSettings(newSettings);
                           saveGoalSettings(newSettings);
                         }}
-                        className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        className="w-full min-w-0 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                         placeholder="목표액"
                       />
                     </div>
@@ -1371,7 +1371,7 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
                           setGoalSettings(newSettings);
                           saveGoalSettings(newSettings);
                         }}
-                        className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        className="w-full min-w-0 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                       />
                     </div>
                   </div>
