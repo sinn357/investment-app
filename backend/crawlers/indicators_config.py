@@ -87,15 +87,6 @@ INDICATORS: Dict[str, IndicatorConfig] = {
         url="https://www.investing.com/economic-calendar/retail-sales-1777",
         category="business",
     ),
-    "business-inventories": IndicatorConfig(
-        id="business-inventories",
-        name="Business Inventories",
-        name_ko="기업재고",
-        url="https://www.investing.com/economic-calendar/business-inventories-29",
-        category="business",
-        enabled=True,
-        manual_check=True,  # 직접 확인 필요
-    ),
     "cb-consumer-confidence": IndicatorConfig(
         id="cb-consumer-confidence",
         name="CB Consumer Confidence",
