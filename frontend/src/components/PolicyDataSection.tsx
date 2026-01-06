@@ -24,7 +24,6 @@ export default function PolicyDataSection({ refreshTrigger }: { refreshTrigger: 
   const [tabData, setTabData] = useState<TabData>({
     'fomc-minutes': { title: 'FOMC 회의록', data: [], loading: true },
     'consumer-confidence': { title: '소비자 신뢰지수', data: [], loading: true },
-    'business-inventories': { title: '기업재고', data: [], loading: true },
     'leading-indicators': { title: '선행지표', data: [], loading: true }
   });
 
@@ -62,7 +61,6 @@ export default function PolicyDataSection({ refreshTrigger }: { refreshTrigger: 
     await Promise.all([
       fetchTabData('fomc-minutes'),
       fetchTabData('consumer-confidence'),
-      fetchTabData('business-inventories'),
       fetchTabData('leading-indicators')
     ]);
   };
@@ -80,7 +78,6 @@ export default function PolicyDataSection({ refreshTrigger }: { refreshTrigger: 
   const tabs = [
     { key: 'fomc-minutes', label: 'FOMC 회의록', shortLabel: 'FOMC' },
     { key: 'consumer-confidence', label: '소비자 신뢰지수', shortLabel: '신뢰지수' },
-    { key: 'business-inventories', label: '기업재고', shortLabel: '기업재고' },
     { key: 'leading-indicators', label: '선행지표', shortLabel: '선행지표' }
   ];
 
