@@ -1059,7 +1059,7 @@ def get_indicators_health_check():
     """모든 지표의 데이터 신선도 및 상태 확인"""
     try:
         from datetime import datetime, timedelta
-        from crawlers.indicators_config import get_all_enabled_indicators
+        from crawlers.indicators_config import get_all_enabled_indicators, get_indicator_config
 
         all_indicator_ids = list(get_all_enabled_indicators().keys())
         health_results = []
@@ -1070,14 +1070,39 @@ def get_indicators_health_check():
             "healthy": 0,
             "stale": 0,
             "outdated": 0,
+            "manual_check": 0,
+            "updated_recent": 0,
             "error": 0
         }
 
         for indicator_id in all_indicator_ids:
+            metadata = get_indicator_config(indicator_id)
+            if metadata and metadata.manual_check:
+                health_results.append({
+                    "indicator_id": indicator_id,
+                    "name": CrawlerService.get_indicator_name(indicator_id),
+                    "status": "manual_check",
+                    "last_update": None,
+                    "days_old": None,
+                    "message": "직접 확인 필요"
+                })
+                counts["manual_check"] += 1
+                continue
+
             # 지표 데이터 조회
             data = db_service.get_indicator_data(indicator_id)
 
+            crawl_info = db_service.get_crawl_info(indicator_id)
+            if crawl_info and crawl_info.get("status") == "success":
+                last_crawl_time = crawl_info.get("last_crawl_time")
+                if last_crawl_time and last_crawl_time >= now - timedelta(hours=24):
+                    counts["updated_recent"] += 1
+
             if "error" in data:
+                error_message = None
+                if crawl_info and crawl_info.get("status") == "error":
+                    error_message = crawl_info.get("error_message")
+
                 # 데이터 조회 오류
                 health_results.append({
                     "indicator_id": indicator_id,
@@ -1085,7 +1110,7 @@ def get_indicators_health_check():
                     "status": "error",
                     "last_update": None,
                     "days_old": None,
-                    "message": "데이터 조회 실패"
+                    "message": error_message or "데이터 조회 실패"
                 })
                 counts["error"] += 1
                 continue
@@ -1147,7 +1172,7 @@ def get_indicators_health_check():
                 counts["error"] += 1
 
         # 상태별 정렬 (error > outdated > stale > healthy)
-        status_priority = {"error": 0, "outdated": 1, "stale": 2, "healthy": 3}
+        status_priority = {"error": 0, "manual_check": 1, "outdated": 2, "stale": 3, "healthy": 4}
         health_results.sort(key=lambda x: (status_priority.get(x["status"], 4), x["days_old"] if x["days_old"] is not None else 999))
 
         return jsonify({

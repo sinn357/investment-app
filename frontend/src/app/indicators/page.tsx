@@ -541,7 +541,7 @@ export default function IndicatorsPage() {
               <h3 className="text-lg font-semibold text-foreground mb-3">
                 📊 지표 상태 요약
               </h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
                 <div className="flex items-center gap-2">
                   <span className="text-2xl">✅</span>
                   <div>
@@ -563,6 +563,16 @@ export default function IndicatorsPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
+                  <span className="text-2xl">🔗</span>
+                  <div>
+                    <span className="text-sm text-muted-foreground">Direct Check</span>
+                    <p className="text-xl font-bold text-blue-600 dark:text-blue-400">
+                      {healthCheck.summary.manual_check ?? 0}개
+                    </p>
+                    <span className="text-xs text-muted-foreground">(직접 확인)</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
                   <span className="text-2xl">🚨</span>
                   <div>
                     <span className="text-sm text-muted-foreground">Outdated</span>
@@ -570,6 +580,16 @@ export default function IndicatorsPage() {
                       {healthCheck.summary.outdated}개
                     </p>
                     <span className="text-xs text-muted-foreground">(30일+)</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">🆕</span>
+                  <div>
+                    <span className="text-sm text-muted-foreground">Updated 24h</span>
+                    <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400">
+                      {healthCheck.summary.updated_recent ?? 0}개
+                    </p>
+                    <span className="text-xs text-muted-foreground">(최근 업데이트)</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
