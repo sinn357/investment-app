@@ -2075,9 +2075,13 @@ def save_economic_narrative():
                 "message": "user_id와 date가 필요합니다."
             }), 400
 
+        my_narrative = data.get('my_narrative')
+        if my_narrative is None:
+            my_narrative = data.get('myNarrative', '')
+
         narrative_data = {
             'articles': data.get('articles', []),
-            'my_narrative': data.get('myNarrative', ''),
+            'my_narrative': my_narrative,
             'risks': data.get('risks', [])
         }
 

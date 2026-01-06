@@ -2,17 +2,26 @@
 
 import { useState, useEffect, useCallback } from 'react';
 
+interface Article {
+  title: string;
+  url: string;
+  summary?: string;
+  keyword?: string;
+}
+
 interface PastNarrative {
   date: string;
   narrative: string;
   articles_count: number;
+  articles?: Article[];
 }
 
 interface NarrativeReviewProps {
   userId: number;
+  refreshKey?: number;
 }
 
-export default function NarrativeReview({ userId }: NarrativeReviewProps) {
+export default function NarrativeReview({ userId, refreshKey }: NarrativeReviewProps) {
   const [history, setHistory] = useState<PastNarrative[]>([]);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -38,7 +47,7 @@ export default function NarrativeReview({ userId }: NarrativeReviewProps) {
     if (userId) {
       fetchHistory();
     }
-  }, [userId, fetchHistory]);
+  }, [userId, refreshKey, fetchHistory]);
 
   if (loading) {
     return (
@@ -104,6 +113,47 @@ export default function NarrativeReview({ userId }: NarrativeReviewProps) {
                   <p className="text-sm text-muted-foreground italic">
                     작성된 담론이 없습니다.
                   </p>
+                )}
+
+                {item.articles && item.articles.length > 0 && (
+                  <div className="mt-4">
+                    <h4 className="text-xs font-semibold text-muted-foreground mb-2">
+                      📰 담론에 포함된 뉴스
+                    </h4>
+                    <div className="space-y-2">
+                      {item.articles.map((article, articleIndex) => (
+                        <div
+                          key={`${item.date}-article-${articleIndex}`}
+                          className="p-3 bg-background rounded border border-primary/10"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex-1">
+                              {article.keyword && (
+                                <span className="inline-block px-2 py-0.5 text-xs bg-secondary/20 text-secondary rounded mb-2">
+                                  #{article.keyword}
+                                </span>
+                              )}
+                              <h5 className="text-sm font-medium text-foreground">
+                                <a
+                                  href={article.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="hover:text-primary transition-colors"
+                                >
+                                  {article.title}
+                                </a>
+                              </h5>
+                              {article.summary && (
+                                <p className="text-xs text-muted-foreground mt-1 whitespace-pre-wrap">
+                                  {article.summary}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 )}
 
                 <div className="mt-4 p-3 bg-primary/5 rounded">

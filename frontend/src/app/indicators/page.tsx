@@ -137,6 +137,7 @@ interface BigWaveData {
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://investment-app-backend-x166.onrender.com';
 const RISK_STORAGE_KEY = 'risk_radar_v1';
 const BIGWAVE_STORAGE_KEY = 'bigwave_v1';
+const NARRATIVE_DRAFT_STORAGE_KEY = 'economic_narrative_draft_v1';
 
 export default function IndicatorsPage() {
   const [userId] = useState(1); // 임시 user_id
@@ -176,6 +177,11 @@ export default function IndicatorsPage() {
   const [isSavingNarrative, setIsSavingNarrative] = useState(false);
   const [savingRisk, setSavingRisk] = useState(false);
   const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
+  const [narrativeRefreshKey, setNarrativeRefreshKey] = useState(0);
+
+  const getNarrativeDraftKey = useCallback((date: string) => {
+    return `${NARRATIVE_DRAFT_STORAGE_KEY}_${userId}_${date}`;
+  }, [userId]);
 
   // 리스크 레이더 로드 (로컬 스토리지)
   useEffect(() => {
@@ -438,23 +444,44 @@ export default function IndicatorsPage() {
   // 경제 담론 데이터 로드
   useEffect(() => {
     const fetchNarrative = async () => {
+      let hasDraft = false;
+      try {
+        const draftKey = getNarrativeDraftKey(selectedDate);
+        const draftRaw = localStorage.getItem(draftKey);
+        if (draftRaw) {
+          const draft = JSON.parse(draftRaw) as EconomicNarrative;
+          setNarrative({
+            articles: draft.articles || [],
+            myNarrative: draft.myNarrative || '',
+            risks: draft.risks || []
+          });
+          hasDraft = true;
+        }
+      } catch (error) {
+        console.warn('담론 임시저장 로드 실패:', error);
+      }
+
       try {
         const response = await fetch(`${API_URL}/api/economic-narrative?user_id=${userId}&date=${selectedDate}`);
         const result = await response.json();
 
         if (result.status === 'success' && result.data) {
-          setNarrative({
-            articles: result.data.articles || [],
-            myNarrative: result.data.my_narrative || '',
-            risks: result.data.risks || []
-          });
+          if (!hasDraft) {
+            setNarrative({
+              articles: result.data.articles || [],
+              myNarrative: result.data.my_narrative || '',
+              risks: result.data.risks || []
+            });
+          }
         } else {
           // 데이터 없으면 초기화
-          setNarrative({
-            articles: [],
-            myNarrative: '',
-            risks: []
-          });
+          if (!hasDraft) {
+            setNarrative({
+              articles: [],
+              myNarrative: '',
+              risks: []
+            });
+          }
         }
       } catch (error) {
         console.error('담론 로드 실패:', error);
@@ -462,7 +489,36 @@ export default function IndicatorsPage() {
     };
 
     fetchNarrative();
-  }, [userId, selectedDate]);
+  }, [userId, selectedDate, getNarrativeDraftKey]);
+
+  useEffect(() => {
+    if (!userId || !selectedDate) return;
+
+    const hasContent = Boolean(
+      narrative.myNarrative.trim() ||
+      narrative.articles.length > 0 ||
+      narrative.risks.length > 0
+    );
+    const draftKey = getNarrativeDraftKey(selectedDate);
+
+    const timer = setTimeout(() => {
+      try {
+        if (!hasContent) {
+          localStorage.removeItem(draftKey);
+          return;
+        }
+        localStorage.setItem(draftKey, JSON.stringify({
+          articles: narrative.articles,
+          myNarrative: narrative.myNarrative,
+          risks: narrative.risks
+        }));
+      } catch (error) {
+        console.warn('담론 임시저장 실패:', error);
+      }
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [userId, selectedDate, narrative, getNarrativeDraftKey]);
 
   // 경제 담론 저장
   const handleSaveNarrative = async () => {
@@ -484,6 +540,13 @@ export default function IndicatorsPage() {
 
       if (result.status === 'success') {
         alert('✅ 경제 담론이 저장되었습니다!');
+        try {
+          const draftKey = getNarrativeDraftKey(selectedDate);
+          localStorage.removeItem(draftKey);
+        } catch (error) {
+          console.warn('담론 임시저장 삭제 실패:', error);
+        }
+        setNarrativeRefreshKey((prev) => prev + 1);
       } else {
         alert('❌ 저장 실패: ' + result.message);
       }
@@ -830,7 +893,7 @@ export default function IndicatorsPage() {
           </div>
 
           {/* 과거 담론 리뷰 섹션 */}
-          <NarrativeReview userId={userId} />
+          <NarrativeReview userId={userId} refreshKey={narrativeRefreshKey} />
         </div>
 
         {/* 리스크 레이더 섹션 */}

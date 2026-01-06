@@ -2581,7 +2581,8 @@ class PostgresDatabaseService:
                         history.append({
                             'date': row['date'].isoformat() if hasattr(row['date'], 'isoformat') else str(row['date']),
                             'narrative': row['my_narrative'] or '',
-                            'articles_count': len(articles)
+                            'articles_count': len(articles),
+                            'articles': articles
                         })
 
                     return {
