@@ -458,7 +458,8 @@ export default function PortfolioPage() {
                 </EnhancedButton>
               </div>
 
-              <div className="overflow-x-auto">
+              {/* 데스크톱: 테이블 */}
+              <div className="hidden md:block overflow-x-auto">
                 <table className="min-w-full text-sm">
                   <thead>
                     <tr className="text-left text-muted-foreground">
@@ -515,6 +516,63 @@ export default function PortfolioPage() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+
+              {/* 모바일: 카드 */}
+              <div className="block md:hidden space-y-3">
+                {tradePlans.length === 0 && (
+                  <div className="px-4 py-3 text-muted-foreground text-center">
+                    계획이 없습니다. 계획을 추가하세요.
+                  </div>
+                )}
+                {tradePlans.map(plan => (
+                  <div key={plan.id} className="border border-border/60 rounded-lg p-4 space-y-3">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <div className="text-lg font-semibold">{plan.symbol}</div>
+                        <Badge variant={plan.type === '매수' ? 'default' : 'secondary'} className="mt-1">
+                          {plan.type}
+                        </Badge>
+                      </div>
+                      <EnhancedButton variant="ghost" size="sm" onClick={() => handleDeletePlan(plan.id)}>
+                        삭제
+                      </EnhancedButton>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div>
+                        <div className="text-muted-foreground">목표가</div>
+                        <div className="font-medium">{plan.targetPrice ? `$${plan.targetPrice}` : '-'}</div>
+                      </div>
+                      <div>
+                        <div className="text-muted-foreground">수량/예산</div>
+                        <div className="font-medium">{plan.quantity ?? '-'}</div>
+                      </div>
+                    </div>
+                    {plan.condition && (
+                      <div className="text-sm">
+                        <div className="text-muted-foreground">조건</div>
+                        <div className="font-medium break-words">{plan.condition}</div>
+                      </div>
+                    )}
+                    <div>
+                      <div className="text-muted-foreground text-sm mb-1">상태</div>
+                      <Select
+                        value={plan.status}
+                        onValueChange={val => handleUpdatePlanStatus(plan.id, val as PlanStatus)}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="대기">대기</SelectItem>
+                          <SelectItem value="부분체결">부분체결</SelectItem>
+                          <SelectItem value="완료">완료</SelectItem>
+                          <SelectItem value="취소">취소</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </GlassCard>
@@ -658,7 +716,8 @@ export default function PortfolioPage() {
                   </div>
                 ))}
               </div>
-              <div className="overflow-x-auto">
+              {/* 데스크톱: 테이블 */}
+              <div className="hidden md:block overflow-x-auto">
                 <table className="min-w-full text-sm">
                   <thead>
                     <tr className="text-left text-muted-foreground">
@@ -692,6 +751,42 @@ export default function PortfolioPage() {
                     })}
                   </tbody>
                 </table>
+              </div>
+
+              {/* 모바일: 카드 */}
+              <div className="block md:hidden space-y-3">
+                {Array.from(new Set([...Object.keys(currentWeights), ...Object.keys(targetWeights)])).map(cat => {
+                  const current = currentWeights[cat] ?? 0;
+                  const target = targetWeights[cat] ?? 0;
+                  const delta = target - current;
+                  return (
+                    <div key={cat} className="border border-border/60 rounded-lg p-4">
+                      <div className="font-semibold text-lg mb-3">{cat}</div>
+                      <div className="grid grid-cols-3 gap-3 text-sm">
+                        <div>
+                          <div className="text-muted-foreground">현재</div>
+                          <div className="font-medium text-base">{current.toFixed(1)}%</div>
+                        </div>
+                        <div>
+                          <div className="text-muted-foreground">목표</div>
+                          <div className="font-medium text-base">{target.toFixed(1)}%</div>
+                        </div>
+                        <div>
+                          <div className="text-muted-foreground">제안</div>
+                          <div className="font-medium text-base">
+                            {delta > 0 ? (
+                              <span className="text-emerald-600">매수 +{delta.toFixed(1)}%</span>
+                            ) : delta < 0 ? (
+                              <span className="text-rose-600">매도 {delta.toFixed(1)}%</span>
+                            ) : (
+                              <span className="text-muted-foreground">적정</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </GlassCard>

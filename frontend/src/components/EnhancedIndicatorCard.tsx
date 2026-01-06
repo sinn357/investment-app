@@ -30,6 +30,8 @@ export interface EnhancedIndicatorCardProps {
   reverseColor?: boolean;
   isSelected?: boolean;
   onClick?: () => void;
+  manualCheck?: boolean;  // 직접 확인 필요 여부
+  url?: string;  // 직접 확인 URL
 }
 
 // ✅ 성능 최적화: 카테고리 한글명을 컴포넌트 외부로 이동 (매 렌더링마다 재생성 방지)
@@ -53,6 +55,8 @@ const EnhancedIndicatorCard = React.memo(function EnhancedIndicatorCard({
   reverseColor = false,
   isSelected = false,
   onClick,
+  manualCheck = false,
+  url,
 }: EnhancedIndicatorCardProps) {
   const [showModal, setShowModal] = useState(false);
 
@@ -134,6 +138,19 @@ const EnhancedIndicatorCard = React.memo(function EnhancedIndicatorCard({
         }`}
         onClick={handleCardClick}
       >
+        {/* 직접 확인 배지 (최상단) */}
+        {manualCheck && url && (
+          <a
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 px-2 py-1 mb-2 rounded text-xs font-medium bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-200 dark:hover:bg-yellow-900/50 transition-colors"
+            onClick={(e) => e.stopPropagation()}
+          >
+            🔗 직접 확인 필요
+          </a>
+        )}
+
         {/* 헤더: 카테고리 태그 + 상태 배지 */}
         <div className="flex items-center justify-between mb-3">
           <span className={`px-2 py-1 rounded text-xs font-medium ${categoryClasses}`}>

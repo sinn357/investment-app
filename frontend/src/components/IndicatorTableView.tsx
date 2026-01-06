@@ -26,8 +26,8 @@ const CATEGORY_NAMES: Record<string, string> = {
   interest: '금리',
   trade: '무역',
   inflation: '물가',
-  policy: '정책',
   credit: '신용',
+  sentiment: '심리',
 };
 
 export default function IndicatorTableView({ indicators, selectedId, onIndicatorClick }: IndicatorTableViewProps) {

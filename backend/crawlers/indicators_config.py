@@ -19,6 +19,7 @@ class IndicatorConfig:
         enabled: bool = True,
         threshold: Optional[Dict[str, float]] = None,
         reverse_color: bool = False,  # True면 낮을수록 좋은 지표 (실업률 등)
+        manual_check: bool = False,  # True면 크롤링 불가, 직접 확인 필요
     ):
         self.id = id
         self.name = name
@@ -28,6 +29,7 @@ class IndicatorConfig:
         self.enabled = enabled
         self.threshold = threshold or {}
         self.reverse_color = reverse_color
+        self.manual_check = manual_check
 
 # 전체 지표 설정 (정책지표 제외, 활성 지표만)
 INDICATORS: Dict[str, IndicatorConfig] = {
@@ -58,11 +60,11 @@ INDICATORS: Dict[str, IndicatorConfig] = {
     ),
     "industrial-production": IndicatorConfig(
         id="industrial-production",
-        name="Industrial Production",
-        name_ko="산업생산",
-        url="https://www.investing.com/economic-calendar/industrial-production-175",
+        name="Industrial Production MoM",
+        name_ko="산업생산 (MoM)",
+        url="https://www.investing.com/economic-calendar/industrial-production-161",
         category="business",
-        enabled=False,  # 404 오류로 비활성화
+        enabled=True,  # ✅ URL 수정으로 재활성화
     ),
     "industrial-production-1755": IndicatorConfig(
         id="industrial-production-1755",
@@ -91,7 +93,8 @@ INDICATORS: Dict[str, IndicatorConfig] = {
         name_ko="기업재고",
         url="https://www.investing.com/economic-calendar/business-inventories-184",
         category="business",
-        enabled=False,  # 크롤링 실패 - 임시 비활성화
+        enabled=True,
+        manual_check=True,  # 직접 확인 필요
     ),
     "cb-consumer-confidence": IndicatorConfig(
         id="cb-consumer-confidence",
@@ -122,7 +125,8 @@ INDICATORS: Dict[str, IndicatorConfig] = {
         name_ko="경기선행지수",
         url="https://www.investing.com/economic-calendar/leading-indicators-214",
         category="business",
-        enabled=False,  # 크롤링 실패 - 임시 비활성화
+        enabled=True,
+        manual_check=True,  # 직접 확인 필요
     ),
 
     # ========== 고용지표 (Employment) ==========
@@ -154,9 +158,9 @@ INDICATORS: Dict[str, IndicatorConfig] = {
         id="average-hourly-earnings",
         name="Average Hourly Earnings MoM",
         name_ko="평균시간당임금 (MoM)",
-        url="https://www.investing.com/economic-calendar/average-hourly-earnings-1776",
+        url="https://www.investing.com/economic-calendar/average-hourly-earnings-8",
         category="employment",
-        enabled=False,  # 파싱 오류로 비활성화
+        enabled=True,  # ✅ URL 수정으로 재활성화
     ),
     "average-hourly-earnings-1777": IndicatorConfig(
         id="average-hourly-earnings-1777",
@@ -224,7 +228,8 @@ INDICATORS: Dict[str, IndicatorConfig] = {
         name_ko="수출",
         url="https://www.investing.com/economic-calendar/exports-1779",
         category="trade",
-        enabled=False,  # 크롤링 실패 - 임시 비활성화
+        enabled=True,
+        manual_check=True,  # 직접 확인 필요
     ),
     "imports": IndicatorConfig(
         id="imports",
@@ -232,7 +237,8 @@ INDICATORS: Dict[str, IndicatorConfig] = {
         name_ko="수입",
         url="https://www.investing.com/economic-calendar/imports-1780",
         category="trade",
-        enabled=False,  # 크롤링 실패 - 임시 비활성화
+        enabled=True,
+        manual_check=True,  # 직접 확인 필요
     ),
     "current-account-balance": IndicatorConfig(
         id="current-account-balance",
@@ -240,7 +246,8 @@ INDICATORS: Dict[str, IndicatorConfig] = {
         name_ko="경상수지",
         url="https://apps.bea.gov/iTable/?reqid=62&step=1#eyJhcHBpZCI6NjIsInN0ZXBzIjpbMSwyLDNdLCJkYXRhIjpbWyJwcm9kdWN0IiwiMTAiXV19",
         category="trade",
-        enabled=False,  # BEA API 키 문제 - 임시 비활성화
+        enabled=True,
+        manual_check=True,  # 직접 확인 필요 (BEA API 키 필요)
     ),
 
     # ========== 수출입물가 ==========
@@ -354,14 +361,6 @@ INDICATORS: Dict[str, IndicatorConfig] = {
         url="https://www.investing.com/economic-calendar/personal-spending-235",
         category="inflation",
     ),
-    "core-pce": IndicatorConfig(
-        id="core-pce",
-        name="Core PCE",
-        name_ko="근원 개인소비지출",
-        url="https://www.investing.com/economic-calendar/core-pce-prices-326",
-        category="inflation",
-        enabled=False,  # 크롤링 실패 - 임시 비활성화
-    ),
 
     # ========== 기대 인플레이션 ==========
     "michigan-1y-inflation": IndicatorConfig(
@@ -406,7 +405,8 @@ INDICATORS: Dict[str, IndicatorConfig] = {
         name_ko="S&P GSCI 원자재지수",
         url="https://www.investing.com/indices/s-p-gsci",
         category="inflation",
-        enabled=False,  # Historical Data 크롤러 실패 - 임시 비활성화
+        enabled=True,
+        manual_check=True,  # 직접 확인 필요
     ),
 
     # ========== 신용/유동성지표 (Credit) ==========
@@ -433,7 +433,8 @@ INDICATORS: Dict[str, IndicatorConfig] = {
         url="https://fred.stlouisfed.org/series/NFCI",
         category="credit",
         threshold={"loose": -0.5, "neutral": 0, "tight": 0.5},
-        enabled=False,  # FRED 데이터 부족으로 비활성화
+        enabled=True,
+        manual_check=True,  # ⚠️ 직접 확인 필요 (Credit Cycle 가중치 25%)
     ),
     "m2-yoy": IndicatorConfig(
         id="m2-yoy",
@@ -460,7 +461,8 @@ INDICATORS: Dict[str, IndicatorConfig] = {
         url="https://www.aaii.com/sentimentsurvey",
         category="sentiment",
         threshold={"low": 25, "normal": 35, "high": 45},
-        enabled=False,  # API 접근 제한으로 비활성화
+        enabled=True,
+        manual_check=True,  # 직접 확인 필요 (API 접근 제한)
     ),
     "sp500-pe": IndicatorConfig(
         id="sp500-pe",

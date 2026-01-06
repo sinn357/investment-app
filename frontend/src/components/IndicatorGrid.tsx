@@ -22,6 +22,8 @@ interface Indicator {
   category: string;
   sparklineData?: number[];
   reverseColor?: boolean;
+  manualCheck?: boolean;  // 직접 확인 필요 여부
+  url?: string;  // 직접 확인 URL
 }
 
 interface IndicatorGridProps {
@@ -30,7 +32,7 @@ interface IndicatorGridProps {
   onIndicatorClick?: (indicator: Indicator) => void;
 }
 
-type FilterCategory = 'all' | 'business' | 'employment' | 'interest' | 'trade' | 'inflation';
+type FilterCategory = 'all' | 'business' | 'employment' | 'interest' | 'trade' | 'inflation' | 'credit' | 'sentiment';
 type SortOption = 'default' | 'alphabetical' | 'impact';
 
 const CATEGORY_FILTERS = [
@@ -40,6 +42,8 @@ const CATEGORY_FILTERS = [
   { id: 'interest' as FilterCategory, name: '금리', icon: '🏦' },
   { id: 'trade' as FilterCategory, name: '무역', icon: '🚢' },
   { id: 'inflation' as FilterCategory, name: '물가', icon: '💰' },
+  { id: 'credit' as FilterCategory, name: '신용', icon: '🏛️' },
+  { id: 'sentiment' as FilterCategory, name: '심리', icon: '🧠' },
 ];
 
 const SORT_OPTIONS = [
@@ -83,6 +87,8 @@ export default function IndicatorGrid({ indicators, selectedId, onIndicatorClick
       interest: 0,
       trade: 0,
       inflation: 0,
+      credit: 0,
+      sentiment: 0,
     };
 
     indicators.forEach(ind => {
@@ -116,8 +122,8 @@ export default function IndicatorGrid({ indicators, selectedId, onIndicatorClick
         {/* 카테고리 필터 및 정렬 */}
         <div className="mb-6">
           {/* 카테고리 필터 */}
-          <div className="overflow-x-auto md:overflow-x-visible mb-4">
-            <div className="flex md:flex-wrap gap-2 pb-2">
+          <div className="overflow-x-auto mb-4">
+            <div className="flex flex-nowrap gap-2 pb-2 min-w-max md:min-w-0 md:flex-wrap">
               {CATEGORY_FILTERS.map((filter) => {
                 const count = getCategoryCount(filter.id);
                 const isActive = activeFilter === filter.id;
@@ -127,17 +133,17 @@ export default function IndicatorGrid({ indicators, selectedId, onIndicatorClick
                     key={filter.id}
                     onClick={() => setActiveFilter(filter.id)}
                     className={`
-                      flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all whitespace-nowrap flex-shrink-0 md:flex-shrink
+                      flex items-center gap-1.5 px-3 py-1.5 md:px-4 md:py-2 rounded-lg font-medium text-xs md:text-sm transition-all whitespace-nowrap flex-shrink-0
                       ${isActive
-                        ? 'bg-gradient-to-r from-[#DAA520] to-[#D4AF37] text-white shadow-lg shadow-[#DAA520]/30 scale-105 shimmer-effect'
-                        : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:border-[#DAA520] hover:shadow-md hover:scale-105'
+                        ? 'bg-gradient-to-r from-[#DAA520] to-[#D4AF37] text-white shadow-lg shadow-[#DAA520]/30'
+                        : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:border-[#DAA520] hover:shadow-md'
                       }
                     `}
                   >
-                    <span>{filter.icon}</span>
+                    <span className="text-sm md:text-base">{filter.icon}</span>
                     <span>{filter.name}</span>
                     <span className={`
-                      px-2 py-0.5 rounded-full text-xs font-semibold
+                      px-1.5 py-0.5 rounded-full text-xs font-semibold
                       ${isActive
                         ? 'bg-white/20 text-white'
                         : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
@@ -180,7 +186,7 @@ export default function IndicatorGrid({ indicators, selectedId, onIndicatorClick
 
         {/* 지표 그리드 */}
         {filteredIndicators.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 sm:gap-4">
             {filteredIndicators.map((indicator, index) => (
               <EnhancedIndicatorCard
                 key={`${indicator.id}-${index}`}
@@ -194,6 +200,8 @@ export default function IndicatorGrid({ indicators, selectedId, onIndicatorClick
                 category={indicator.category}
                 sparklineData={indicator.sparklineData}
                 reverseColor={indicator.reverseColor}
+                manualCheck={indicator.manualCheck}
+                url={indicator.url}
                 isSelected={selectedId === indicator.id}
                 onClick={() => onIndicatorClick?.(indicator)}
               />

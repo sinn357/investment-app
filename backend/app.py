@@ -959,6 +959,8 @@ def get_all_indicators_from_db():
                     "name_ko": metadata.name_ko if metadata else None,
                     "category": metadata.category if metadata else "business",
                     "reverse_color": metadata.reverse_color if metadata else False,
+                    "manual_check": metadata.manual_check if metadata else False,  # 직접 확인 필요 여부
+                    "url": metadata.url if metadata else None,  # 직접 확인 URL
                     "surprise": surprise,  # Surprise 값 추가
                     "interpretation": interpretation,  # 5개 섹션 해석 추가
                     "data": {

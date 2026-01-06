@@ -41,6 +41,8 @@ interface GridIndicator {
   category: string;
   sparklineData?: number[];
   reverseColor?: boolean;
+  manualCheck?: boolean;  // 직접 확인 필요 여부
+  url?: string;  // 직접 확인 URL
   interpretation?: Interpretation;
   data?: {
     latest_release?: {
@@ -331,6 +333,8 @@ export default function IndicatorsPage() {
               category: item.category || mapIndicatorToCategory(item.name),
               sparklineData,
               reverseColor: item.reverse_color || false,
+              manualCheck: item.manual_check || false,  // 직접 확인 필요 여부
+              url: item.url || undefined,  // 직접 확인 URL
               interpretation: item.interpretation,  // 해석 데이터 전달
               data: item.data,  // 히스토리 포함한 전체 데이터 전달
             };

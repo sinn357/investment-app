@@ -837,7 +837,7 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
     <div className="min-h-screen bg-gray-50 text-slate-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         {/* 히어로 + 기간/필터 스위치 */}
-        <div className="sticky top-0 z-30 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 pt-4 pb-5 bg-white/95 border-b border-gray-200 backdrop-blur">
+        <div className="lg:sticky top-0 z-30 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 pt-4 pb-5 bg-white/95 border-b border-gray-200 backdrop-blur">
           <div className="flex flex-col gap-4">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
               <div>
