@@ -177,6 +177,7 @@ export default function IndicatorsPage() {
   const [isSavingNarrative, setIsSavingNarrative] = useState(false);
   const [savingRisk, setSavingRisk] = useState(false);
   const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
+  const [isIndicatorsCollapsed, setIsIndicatorsCollapsed] = useState(false);
   const [narrativeRefreshKey, setNarrativeRefreshKey] = useState(0);
 
   const getNarrativeDraftKey = useCallback((date: string) => {
@@ -696,199 +697,220 @@ export default function IndicatorsPage() {
           </div>
         )}
 
-        {/* 경제지표 그리드 (Phase 8 - 한눈에 보기) */}
-        {loading ? (
-          <IndicatorGridSkeleton />
-        ) : allIndicators.length > 0 ? (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-4">
+          <div className="flex items-center justify-between p-4 bg-card rounded-lg border border-primary/20">
+            <div>
+              <h3 className="text-lg font-semibold text-foreground">경제지표 한눈에 보기</h3>
+              <p className="text-xs text-muted-foreground">
+                필요할 때만 펼쳐서 확인할 수 있습니다.
+              </p>
+            </div>
+            <button
+              onClick={() => setIsIndicatorsCollapsed((prev) => !prev)}
+              className="px-4 py-2 bg-muted hover:bg-muted/80 text-muted-foreground rounded-md text-sm font-medium"
+            >
+              {isIndicatorsCollapsed ? '펼치기' : '접기'}
+            </button>
+          </div>
+        </div>
+
+        {!isIndicatorsCollapsed && (
           <>
-            {/* 업데이트 정보 및 뷰 토글 */}
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-4">
-              <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
-                <div className="flex items-center gap-3">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">
-                    {(() => {
-                      // ✅ 수정 4: localStorage 시간 우선 사용
-                      const actualUpdate = localStorage.getItem('actualLastUpdate');
-                      const displayTime = actualUpdate && new Date(actualUpdate) > new Date(lastUpdated || 0)
-                        ? actualUpdate
-                        : lastUpdated;
+            {/* 경제지표 그리드 (Phase 8 - 한눈에 보기) */}
+            {loading ? (
+              <IndicatorGridSkeleton />
+            ) : allIndicators.length > 0 ? (
+              <>
+                {/* 업데이트 정보 및 뷰 토글 */}
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-4">
+                  <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">
+                        {(() => {
+                          // ✅ 수정 4: localStorage 시간 우선 사용
+                          const actualUpdate = localStorage.getItem('actualLastUpdate');
+                          const displayTime = actualUpdate && new Date(actualUpdate) > new Date(lastUpdated || 0)
+                            ? actualUpdate
+                            : lastUpdated;
 
-                      return displayTime ? (
-                        <>
-                          마지막 업데이트: <span className="font-medium text-gray-900 dark:text-gray-100">{new Date(displayTime).toLocaleString('ko-KR', {
-                            timeZone: 'Asia/Seoul',  // ✅ KST 명시
-                            month: 'long',
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}</span>
-                        </>
-                      ) : (
-                        '업데이트 정보 없음'
-                      );
-                    })()}
-                  </span>
-                  {/* ✅ Phase 3: 로딩/업데이트 정보 배지 */}
-                  {loadingInfo.duration > 0 && (
-                    <span className={`inline-flex items-center gap-1 px-3 py-1 text-xs font-semibold rounded-full border ${
-                      loadingInfo.type === 'loading'
-                        ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border-green-300 dark:border-green-700'
-                        : 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 border-blue-300 dark:border-blue-700'
-                    }`}>
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                      </svg>
-                      {loadingInfo.type === 'loading'
-                        ? `데이터 로딩: ${loadingInfo.duration}초`
-                        : `업데이트 완료: ${loadingInfo.count}개 지표 (${Math.floor(loadingInfo.duration)}초)`
-                      }
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center gap-3">
-                  {/* 뷰 토글 버튼 */}
-                  <div className="flex items-center gap-2 bg-white dark:bg-gray-700 rounded-lg p-1 border border-gray-300 dark:border-gray-600">
-                    <button
-                      onClick={() => setViewMode('card')}
-                      className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                        viewMode === 'card'
-                          ? 'bg-blue-600 text-white'
-                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
-                      }`}
-                      title="카드 뷰"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-                      </svg>
-                      카드
-                    </button>
-                    <button
-                      onClick={() => setViewMode('table')}
-                      className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                        viewMode === 'table'
-                          ? 'bg-blue-600 text-white'
-                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
-                      }`}
-                      title="테이블 뷰"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                      </svg>
-                      테이블
-                    </button>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    {/* 업데이트 시간 배지 */}
-                    {(() => {
-                      // ✅ localStorage 시간 우선 사용 (마지막 업데이트 시간 표시와 동일)
-                      const actualUpdate = localStorage.getItem('actualLastUpdate');
-                      const displayTime = actualUpdate && new Date(actualUpdate) > new Date(lastUpdated || 0)
-                        ? actualUpdate
-                        : lastUpdated;
-
-                      if (!displayTime) return null;
-
-                      const totalMinutes = (Date.now() - new Date(displayTime).getTime()) / (1000 * 60);
-                      const hours = Math.floor(totalMinutes / 60);
-                      const minutes = Math.floor(totalMinutes % 60);
-                      const isStale = hours >= 24;
-
-                      // ✅ 분까지 표시
-                      let timeText;
-                      if (hours > 0) {
-                        timeText = `${hours}시간 ${minutes}분 전 업데이트`;
-                      } else {
-                        timeText = `${minutes}분 전 업데이트`;
-                      }
-
-                      return (
-                        <Badge
-                          variant={isStale ? "destructive" : "default"}
-                          className="text-xs font-medium"
-                        >
-                          {isStale ? '🔴 크롤링 권장' : `🟢 ${timeText}`}
-                        </Badge>
-                      );
-                    })()}
-                    {/* 업데이트 버튼 */}
-                    <div className="flex flex-col items-end gap-2">
-                      <Button
-                        onClick={handleManualUpdate}
-                        disabled={isUpdating}
-                        className="bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-white font-semibold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {isUpdating ? (
-                          <>
-                            <svg className="animate-spin h-4 w-4 mr-2" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                            </svg>
-                            업데이트 중...
-                          </>
-                        ) : (
-                          <>
-                            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                            </svg>
-                            지표 업데이트
-                          </>
-                        )}
-                      </Button>
-                      {isUpdating && updateProgress && (
-                        <div className="text-xs text-muted-foreground">
-                          {updateProgress.completed} / {updateProgress.total} 완료
-                          {updateProgress.current && ` (${updateProgress.current})`}
-                        </div>
-                      )}
-                      {/* ✅ Phase 2: 카운트다운 메시지 */}
-                      {countdownSeconds !== null && countdownSeconds > 0 && (
-                        <div className="flex items-center gap-2 px-4 py-2 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 text-sm font-semibold rounded-lg border border-green-300 dark:border-green-700 animate-pulse">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          return displayTime ? (
+                            <>
+                              마지막 업데이트: <span className="font-medium text-gray-900 dark:text-gray-100">{new Date(displayTime).toLocaleString('ko-KR', {
+                                timeZone: 'Asia/Seoul',  // ✅ KST 명시
+                                month: 'long',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}</span>
+                            </>
+                          ) : (
+                            '업데이트 정보 없음'
+                          );
+                        })()}
+                      </span>
+                      {/* ✅ Phase 3: 로딩/업데이트 정보 배지 */}
+                      {loadingInfo.duration > 0 && (
+                        <span className={`inline-flex items-center gap-1 px-3 py-1 text-xs font-semibold rounded-full border ${
+                          loadingInfo.type === 'loading'
+                            ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border-green-300 dark:border-green-700'
+                            : 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 border-blue-300 dark:border-blue-700'
+                        }`}>
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                           </svg>
-                          {countdownSeconds}초 후 자동 새로고침...
-                        </div>
+                          {loadingInfo.type === 'loading'
+                            ? `데이터 로딩: ${loadingInfo.duration}초`
+                            : `업데이트 완료: ${loadingInfo.count}개 지표 (${Math.floor(loadingInfo.duration)}초)`
+                          }
+                        </span>
                       )}
+                    </div>
+                    <div className="flex items-center gap-3">
+                      {/* 뷰 토글 버튼 */}
+                      <div className="flex items-center gap-2 bg-white dark:bg-gray-700 rounded-lg p-1 border border-gray-300 dark:border-gray-600">
+                        <button
+                          onClick={() => setViewMode('card')}
+                          className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                            viewMode === 'card'
+                              ? 'bg-blue-600 text-white'
+                              : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
+                          }`}
+                          title="카드 뷰"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                          </svg>
+                          카드
+                        </button>
+                        <button
+                          onClick={() => setViewMode('table')}
+                          className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                            viewMode === 'table'
+                              ? 'bg-blue-600 text-white'
+                              : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
+                          }`}
+                          title="테이블 뷰"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                          </svg>
+                          테이블
+                        </button>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        {/* 업데이트 시간 배지 */}
+                        {(() => {
+                          // ✅ localStorage 시간 우선 사용 (마지막 업데이트 시간 표시와 동일)
+                          const actualUpdate = localStorage.getItem('actualLastUpdate');
+                          const displayTime = actualUpdate && new Date(actualUpdate) > new Date(lastUpdated || 0)
+                            ? actualUpdate
+                            : lastUpdated;
+
+                          if (!displayTime) return null;
+
+                          const totalMinutes = (Date.now() - new Date(displayTime).getTime()) / (1000 * 60);
+                          const hours = Math.floor(totalMinutes / 60);
+                          const minutes = Math.floor(totalMinutes % 60);
+                          const isStale = hours >= 24;
+
+                          // ✅ 분까지 표시
+                          let timeText;
+                          if (hours > 0) {
+                            timeText = `${hours}시간 ${minutes}분 전 업데이트`;
+                          } else {
+                            timeText = `${minutes}분 전 업데이트`;
+                          }
+
+                          return (
+                            <Badge
+                              variant={isStale ? "destructive" : "default"}
+                              className="text-xs font-medium"
+                            >
+                              {isStale ? '🔴 크롤링 권장' : `🟢 ${timeText}`}
+                            </Badge>
+                          );
+                        })()}
+                        {/* 업데이트 버튼 */}
+                        <div className="flex flex-col items-end gap-2">
+                          <Button
+                            onClick={handleManualUpdate}
+                            disabled={isUpdating}
+                            className="bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-white font-semibold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {isUpdating ? (
+                              <>
+                                <svg className="animate-spin h-4 w-4 mr-2" viewBox="0 0 24 24">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                </svg>
+                                업데이트 중...
+                              </>
+                            ) : (
+                              <>
+                                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                </svg>
+                                지표 업데이트
+                              </>
+                            )}
+                          </Button>
+                          {isUpdating && updateProgress && (
+                            <div className="text-xs text-muted-foreground">
+                              {updateProgress.completed} / {updateProgress.total} 완료
+                              {updateProgress.current && ` (${updateProgress.current})`}
+                            </div>
+                          )}
+                          {/* ✅ Phase 2: 카운트다운 메시지 */}
+                          {countdownSeconds !== null && countdownSeconds > 0 && (
+                            <div className="flex items-center gap-2 px-4 py-2 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 text-sm font-semibold rounded-lg border border-green-300 dark:border-green-700 animate-pulse">
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              {countdownSeconds}초 후 자동 새로고침...
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            </div>
 
-            {/* 조건부 렌더링: 카드 뷰 vs 테이블 뷰 */}
-            {viewMode === 'card' ? (
-              <IndicatorGrid
-                indicators={allIndicators}
-                selectedId={selectedIndicatorId}
-                onIndicatorClick={(indicator) => {
-                  setSelectedIndicatorId(indicator.id);
-                  setTimeout(() => {
-                    document.getElementById('chart-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                  }, 100);
-                }}
-              />
-            ) : (
-              <IndicatorTableView
-                indicators={allIndicators}
-                selectedId={selectedIndicatorId}
-                onIndicatorClick={(indicator) => {
-                  setSelectedIndicatorId(indicator.id);
-                  setTimeout(() => {
-                    document.getElementById('chart-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                  }, 100);
-                }}
+                {/* 조건부 렌더링: 카드 뷰 vs 테이블 뷰 */}
+                {viewMode === 'card' ? (
+                  <IndicatorGrid
+                    indicators={allIndicators}
+                    selectedId={selectedIndicatorId}
+                    onIndicatorClick={(indicator) => {
+                      setSelectedIndicatorId(indicator.id);
+                      setTimeout(() => {
+                        document.getElementById('chart-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      }, 100);
+                    }}
+                  />
+                ) : (
+                  <IndicatorTableView
+                    indicators={allIndicators}
+                    selectedId={selectedIndicatorId}
+                    onIndicatorClick={(indicator) => {
+                      setSelectedIndicatorId(indicator.id);
+                      setTimeout(() => {
+                        document.getElementById('chart-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      }, 100);
+                    }}
+                  />
+                )}
+              </>
+            ) : null}
+
+            {/* 선택된 지표 상세 차트 */}
+            {selectedIndicatorId && allIndicators.length > 0 && (
+              <IndicatorChartPanel
+                selectedIndicatorId={selectedIndicatorId}
+                allIndicators={allIndicators}
+                onSelectIndicator={setSelectedIndicatorId}
               />
             )}
           </>
-        ) : null}
-
-        {/* 선택된 지표 상세 차트 */}
-        {selectedIndicatorId && allIndicators.length > 0 && (
-          <IndicatorChartPanel
-            selectedIndicatorId={selectedIndicatorId}
-            allIndicators={allIndicators}
-            onSelectIndicator={setSelectedIndicatorId}
-          />
         )}
 
         {/* 상세 지표 섹션 (Raw Data + History Table) - 통합으로 비활성화 */}
