@@ -24,6 +24,8 @@ interface NarrativeReviewProps {
   onDeleteDate?: (date: string) => void;
 }
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://investment-app-backend-x166.onrender.com';
+
 export default function NarrativeReview({ userId, refreshKey, onSelectDate, onDeleteDate }: NarrativeReviewProps) {
   const [history, setHistory] = useState<PastNarrative[]>([]);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -34,7 +36,7 @@ export default function NarrativeReview({ userId, refreshKey, onSelectDate, onDe
     setLoading(true);
     try {
       const res = await fetch(
-        `https://investment-app-backend-x166.onrender.com/api/economic-narrative/history?user_id=${userId}&limit=10`
+        `${API_URL}/api/economic-narrative/history?user_id=${userId}&limit=10`
       );
       const result = await res.json();
       if (result.status === 'success') {
@@ -67,19 +69,27 @@ export default function NarrativeReview({ userId, refreshKey, onSelectDate, onDe
     setDeletingDate(date);
     try {
       const res = await fetch(
-        `https://investment-app-backend-x166.onrender.com/api/economic-narrative?user_id=${userId}&date=${date}`,
+        `${API_URL}/api/economic-narrative?user_id=${userId}&date=${date}`,
         {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' }
         }
       );
-      const result = await res.json();
-      if (result.status === 'success') {
+      const rawText = await res.text();
+      let result: { status?: string; message?: string } = {};
+      try {
+        result = JSON.parse(rawText);
+      } catch (error) {
+        console.warn('담론 삭제 응답 파싱 실패:', error);
+      }
+
+      if (res.ok && result.status === 'success') {
         onDeleteDate?.(date);
         setSelectedDate((prev) => (prev === date ? null : prev));
         fetchHistory();
       } else {
-        alert('삭제 실패: ' + result.message);
+        const fallbackMessage = result.message || `삭제 실패 (HTTP ${res.status})`;
+        alert(fallbackMessage);
       }
     } catch (error) {
       console.error('담론 삭제 실패:', error);

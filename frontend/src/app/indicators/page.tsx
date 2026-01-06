@@ -567,6 +567,11 @@ export default function IndicatorsPage() {
         } catch (error) {
           console.warn('담론 임시저장 삭제 실패:', error);
         }
+        setNarrative({
+          articles: [],
+          myNarrative: '',
+          risks: []
+        });
         setNarrativeRefreshKey((prev) => prev + 1);
       } else {
         alert('❌ 저장 실패: ' + result.message);
