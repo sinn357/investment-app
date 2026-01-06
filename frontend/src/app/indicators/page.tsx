@@ -183,6 +183,27 @@ export default function IndicatorsPage() {
     return `${NARRATIVE_DRAFT_STORAGE_KEY}_${userId}_${date}`;
   }, [userId]);
 
+  const handleSelectNarrativeDate = useCallback((date: string) => {
+    setSelectedDate(date);
+  }, []);
+
+  const handleDeleteNarrativeDate = useCallback((date: string) => {
+    try {
+      const draftKey = getNarrativeDraftKey(date);
+      localStorage.removeItem(draftKey);
+    } catch (error) {
+      console.warn('담론 임시저장 삭제 실패:', error);
+    }
+
+    if (date === selectedDate) {
+      setNarrative({
+        articles: [],
+        myNarrative: '',
+        risks: []
+      });
+    }
+  }, [getNarrativeDraftKey, selectedDate]);
+
   // 리스크 레이더 로드 (로컬 스토리지)
   useEffect(() => {
     try {
@@ -893,7 +914,12 @@ export default function IndicatorsPage() {
           </div>
 
           {/* 과거 담론 리뷰 섹션 */}
-          <NarrativeReview userId={userId} refreshKey={narrativeRefreshKey} />
+          <NarrativeReview
+            userId={userId}
+            refreshKey={narrativeRefreshKey}
+            onSelectDate={handleSelectNarrativeDate}
+            onDeleteDate={handleDeleteNarrativeDate}
+          />
         </div>
 
         {/* 리스크 레이더 섹션 */}

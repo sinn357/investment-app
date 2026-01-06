@@ -2597,6 +2597,36 @@ class PostgresDatabaseService:
                 "message": f"담론 히스토리 조회 중 오류: {str(e)}"
             }
 
+    def delete_economic_narrative(self, user_id: int, date: str) -> Dict:
+        """거시경제 담론 삭제"""
+        try:
+            with self.get_connection() as conn:
+                with conn.cursor() as cur:
+                    cur.execute("""
+                        DELETE FROM economic_narrative
+                        WHERE user_id = %s AND date = %s
+                    """, (user_id, date))
+                    conn.commit()
+
+                    if cur.rowcount == 0:
+                        return {
+                            "status": "error",
+                            "message": "삭제할 담론이 없습니다."
+                        }
+
+                    print(f"Economic narrative deleted for user: {user_id}, date: {date}")
+                    return {
+                        "status": "success",
+                        "message": "거시경제 담론이 삭제되었습니다."
+                    }
+
+        except Exception as e:
+            print(f"PostgreSQL delete_economic_narrative error: {e}")
+            return {
+                "status": "error",
+                "message": f"거시경제 담론 삭제 중 오류: {str(e)}"
+            }
+
     # ========== Page 3: Industries (섹터 & 종목 분석) ==========
 
     def get_sector_performance(self, user_id: int, date: str) -> Dict:

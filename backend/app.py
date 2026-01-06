@@ -2099,6 +2099,34 @@ def save_economic_narrative():
             "message": f"거시경제 담론 저장 실패: {str(e)}"
         }), 500
 
+@app.route('/api/economic-narrative', methods=['DELETE'])
+def delete_economic_narrative():
+    """거시경제 담론 삭제 API"""
+    try:
+        data = request.get_json(silent=True) or {}
+        user_id = data.get('user_id') or request.args.get('user_id', type=int)
+        date = data.get('date') or request.args.get('date', type=str)
+
+        if not user_id or not date:
+            return jsonify({
+                "status": "error",
+                "message": "user_id와 date가 필요합니다."
+            }), 400
+
+        result = db_service.delete_economic_narrative(user_id, date)
+
+        if result.get('status') == 'success':
+            return jsonify(result)
+        else:
+            return jsonify(result), 500
+
+    except Exception as e:
+        print(f"Error deleting economic narrative: {e}")
+        return jsonify({
+            "status": "error",
+            "message": f"거시경제 담론 삭제 실패: {str(e)}"
+        }), 500
+
 @app.route('/api/economic-narrative/history', methods=['GET'])
 def get_narrative_history():
     """과거 담론 히스토리 조회 API"""

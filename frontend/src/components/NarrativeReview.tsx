@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import type { MouseEvent } from 'react';
 
 interface Article {
   title: string;
@@ -19,12 +20,15 @@ interface PastNarrative {
 interface NarrativeReviewProps {
   userId: number;
   refreshKey?: number;
+  onSelectDate?: (date: string) => void;
+  onDeleteDate?: (date: string) => void;
 }
 
-export default function NarrativeReview({ userId, refreshKey }: NarrativeReviewProps) {
+export default function NarrativeReview({ userId, refreshKey, onSelectDate, onDeleteDate }: NarrativeReviewProps) {
   const [history, setHistory] = useState<PastNarrative[]>([]);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [deletingDate, setDeletingDate] = useState<string | null>(null);
 
   const fetchHistory = useCallback(async () => {
     setLoading(true);
@@ -48,6 +52,42 @@ export default function NarrativeReview({ userId, refreshKey }: NarrativeReviewP
       fetchHistory();
     }
   }, [userId, refreshKey, fetchHistory]);
+
+  const handleEdit = (event: MouseEvent<HTMLButtonElement>, date: string) => {
+    event.stopPropagation();
+    onSelectDate?.(date);
+  };
+
+  const handleDelete = async (event: MouseEvent<HTMLButtonElement>, date: string) => {
+    event.stopPropagation();
+
+    const confirmed = window.confirm('이 날짜의 담론을 삭제할까요? 삭제하면 복구할 수 없습니다.');
+    if (!confirmed) return;
+
+    setDeletingDate(date);
+    try {
+      const res = await fetch(
+        `https://investment-app-backend-x166.onrender.com/api/economic-narrative?user_id=${userId}&date=${date}`,
+        {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
+      const result = await res.json();
+      if (result.status === 'success') {
+        onDeleteDate?.(date);
+        setSelectedDate((prev) => (prev === date ? null : prev));
+        fetchHistory();
+      } else {
+        alert('삭제 실패: ' + result.message);
+      }
+    } catch (error) {
+      console.error('담론 삭제 실패:', error);
+      alert('담론 삭제 중 오류가 발생했습니다.');
+    } finally {
+      setDeletingDate(null);
+    }
+  };
 
   if (loading) {
     return (
@@ -97,6 +137,19 @@ export default function NarrativeReview({ userId, refreshKey }: NarrativeReviewP
                 <span className="text-xs text-muted-foreground">
                   기사 {item.articles_count}개
                 </span>
+                <button
+                  onClick={(event) => handleEdit(event, item.date)}
+                  className="text-xs text-primary hover:text-primary/80"
+                >
+                  불러오기
+                </button>
+                <button
+                  onClick={(event) => handleDelete(event, item.date)}
+                  disabled={deletingDate === item.date}
+                  className="text-xs text-red-500 hover:text-red-600 disabled:opacity-50"
+                >
+                  {deletingDate === item.date ? '삭제 중...' : '삭제'}
+                </button>
                 <span className="text-xs text-primary">
                   {selectedDate === item.date ? '▼ 접기' : '▶ 펼치기'}
                 </span>
