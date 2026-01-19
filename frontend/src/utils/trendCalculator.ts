@@ -188,3 +188,169 @@ export function calculateAllCycleTrends(
     sentiment: weightedTrendAverage(indicatorTrends, cycleTrendWeights.sentiment),
   };
 }
+
+// ======================
+// 히스토리 데이터 기반 Trend 계산
+// ======================
+
+export interface HistoryDataPoint {
+  release_date: string;
+  actual: number | string | null;
+}
+
+/**
+ * 숫자값 파싱 (%, K 단위 처리)
+ */
+function parseNumericValue(value: number | string | null): number | null {
+  if (value === null || value === undefined) return null;
+  if (typeof value === 'number') return value;
+
+  let str = value.toString().trim();
+
+  // % 제거
+  str = str.replace('%', '');
+
+  // K 단위 처리 (218K → 218)
+  if (str.endsWith('K')) {
+    const num = parseFloat(str.slice(0, -1));
+    return isNaN(num) ? null : num;
+  }
+
+  const num = parseFloat(str);
+  return isNaN(num) ? null : num;
+}
+
+/**
+ * 히스토리 데이터에서 특정 기간 전 값 찾기
+ *
+ * @param history - 히스토리 데이터 (최신순 정렬)
+ * @param monthsAgo - 몇 개월 전 (1 = 1개월, 3 = 3개월)
+ * @returns 해당 기간의 actual 값 또는 null
+ */
+export function getValueFromHistory(
+  history: HistoryDataPoint[],
+  monthsAgo: number
+): number | null {
+  if (!history || history.length === 0) return null;
+
+  const now = new Date();
+  const targetDate = new Date(now);
+  targetDate.setMonth(targetDate.getMonth() - monthsAgo);
+
+  // 가장 가까운 날짜 찾기
+  let closestEntry: HistoryDataPoint | null = null;
+  let closestDiff = Infinity;
+
+  for (const entry of history) {
+    const entryDate = new Date(entry.release_date);
+    const diff = Math.abs(entryDate.getTime() - targetDate.getTime());
+
+    // 허용 오차: 15일
+    if (diff < closestDiff && diff < 15 * 24 * 60 * 60 * 1000) {
+      closestDiff = diff;
+      closestEntry = entry;
+    }
+  }
+
+  if (!closestEntry) return null;
+  return parseNumericValue(closestEntry.actual);
+}
+
+/**
+ * 히스토리 데이터에서 Trend 점수 계산
+ *
+ * @param indicatorId - 지표 ID (indicatorScales의 키)
+ * @param history - 히스토리 데이터 배열
+ * @param currentValue - 현재 값 (latest actual)
+ * @returns Trend 점수 (0-100) 또는 null (데이터 부족 시)
+ */
+export function calculateTrendFromHistory(
+  indicatorId: string,
+  history: HistoryDataPoint[],
+  currentValue: number | string | null
+): number | null {
+  const scale = indicatorScales[indicatorId];
+  if (!scale) return null;
+
+  const current = parseNumericValue(currentValue);
+  if (current === null) return null;
+
+  const value1M = getValueFromHistory(history, 1);
+  const value3M = getValueFromHistory(history, 3);
+
+  // 최소 1개월 전 데이터는 필요
+  if (value1M === null) return null;
+
+  const delta1M = current - value1M;
+  const delta3M = value3M !== null ? current - value3M : delta1M * 2; // 3M 없으면 1M 2배로 추정
+
+  return calculateTrend(delta1M, delta3M, scale.scale1, scale.scale3, scale.inverse);
+}
+
+/**
+ * 지표 ID 매핑 (API ID → indicatorScales ID)
+ */
+export const indicatorIdMapping: Record<string, string> = {
+  // Macro
+  'ism-manufacturing': 'ism_manufacturing_pmi',
+  'ism-non-manufacturing': 'ism_services_pmi',
+  'unemployment-rate': 'unemployment_rate',
+  'core-cpi': 'core_cpi_yoy',
+  'federal-funds-rate': 'fed_funds_rate',
+  'yield-curve-10y-2y': 'yield_curve_spread',
+
+  // Credit
+  'hy-spread': 'hy_spread',
+  'ig-spread': 'ig_spread',
+  'fci': 'fci',
+  'm2-yoy': 'm2_yoy',
+  'vix': 'vix_credit', // Credit용
+
+  // Sentiment
+  'sp500-pe': 'sp500_per',
+  'shiller-pe': 'shiller_cape',
+  'put-call-ratio': 'put_call_ratio',
+  'michigan-consumer-sentiment': 'michigan_sentiment',
+  'cb-consumer-confidence': 'cb_consumer_confidence',
+};
+
+/**
+ * 여러 지표의 히스토리에서 사이클별 Trend 계산
+ *
+ * @param indicatorsData - { indicatorId: { data: { latest_release, history_table } } }
+ * @returns 사이클별 Trend 점수
+ */
+export function calculateCycleTrendsFromIndicators(
+  indicatorsData: Record<string, {
+    data?: {
+      latest_release?: { actual?: number | string | null };
+      history_table?: HistoryDataPoint[];
+    };
+  }>
+): CycleTrendScores {
+  const indicatorTrends: Record<string, number> = {};
+
+  // 각 지표의 Trend 계산
+  for (const [apiId, data] of Object.entries(indicatorsData)) {
+    const scaleId = indicatorIdMapping[apiId];
+    if (!scaleId) continue;
+
+    const latestRelease = data.data?.latest_release;
+    const historyTable = data.data?.history_table;
+
+    if (!latestRelease || !historyTable) continue;
+
+    const trend = calculateTrendFromHistory(
+      scaleId,
+      historyTable,
+      latestRelease.actual ?? null
+    );
+
+    if (trend !== null) {
+      indicatorTrends[scaleId] = trend;
+    }
+  }
+
+  // 사이클별 가중 평균
+  return calculateAllCycleTrends(indicatorTrends);
+}

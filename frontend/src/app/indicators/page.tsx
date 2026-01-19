@@ -17,6 +17,7 @@ import IndicatorGridSkeleton from '@/components/skeletons/IndicatorGridSkeleton'
 import ErrorBoundary from '@/components/ErrorBoundary';
 // import { calculateCycleScore, RawIndicators } from '@/utils/cycleCalculator'; // ✅ 제거: Master Cycle로 대체
 import { fetchJsonWithRetry } from '@/utils/fetchWithRetry';
+import { calculateCycleTrendsFromIndicators } from '@/utils/trendCalculator';
 import BigWaveSection, { BigWaveCard } from '@/components/BigWaveSection';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -436,7 +437,36 @@ export default function IndicatorsPage() {
           );
 
           if (masterResult.status === 'success' && masterResult.data) {
-            setMasterCycleData(masterResult.data);
+            // ✅ Phase 1.5: Trend 점수 계산 (히스토리 데이터 기반)
+            // result.indicators를 { indicatorId: { data: {...} } } 형태로 변환
+            const indicatorsMap: Record<string, { data?: { latest_release?: { actual?: number | string | null }; history_table?: Array<{ release_date: string; actual: number | string | null }> } }> = {};
+            if (result.indicators) {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              result.indicators.forEach((item: any) => {
+                indicatorsMap[item.id] = { data: item.data };
+              });
+            }
+
+            const cycleTrends = calculateCycleTrendsFromIndicators(indicatorsMap);
+
+            // masterResult.data에 trend 추가
+            const enrichedData = {
+              ...masterResult.data,
+              macro: {
+                ...masterResult.data.macro,
+                trend: cycleTrends.macro,
+              },
+              credit: {
+                ...masterResult.data.credit,
+                trend: cycleTrends.credit,
+              },
+              sentiment: {
+                ...masterResult.data.sentiment,
+                trend: cycleTrends.sentiment,
+              },
+            };
+
+            setMasterCycleData(enrichedData);
           }
         } catch (error) {
           console.warn('Master Cycle API 호출 실패 (Phase 1):', error);
