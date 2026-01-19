@@ -1450,13 +1450,22 @@ def reset_update_status():
 def get_all_crawl_info():
     """모든 지표의 크롤링 정보 조회"""
     try:
-        indicators = db_service.get_all_indicators()
+        # enabled 지표 기준으로 crawl_info 수집 (indicators 테이블 미시드 대비)
+        indicators = list(get_all_enabled_indicators().keys())
         crawl_info_list = []
 
         for indicator_id in indicators:
             crawl_info = db_service.get_crawl_info(indicator_id)
             if crawl_info:
                 crawl_info_list.append(crawl_info)
+            else:
+                crawl_info_list.append({
+                    "indicator_id": indicator_id,
+                    "last_crawl_time": None,
+                    "status": "missing",
+                    "error_message": None,
+                    "data_count": 0
+                })
 
         return jsonify({
             "status": "success",
