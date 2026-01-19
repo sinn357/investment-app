@@ -1,6 +1,12 @@
 "use client";
 
 import React from 'react';
+import {
+  analyzeRegime,
+  getClarityLabel,
+  getConflictDisplay,
+  type RegimeAnalysis,
+} from '@/utils/regimePatterns';
 
 interface MasterCycleData {
   mmc_score: number;
@@ -102,6 +108,36 @@ export default function MasterCycleCard({ data }: MasterCycleCardProps) {
 
   const [expanded, setExpanded] = React.useState(false);
 
+  // Regime Pattern 분석 (S=sentiment, C=credit, M=macro)
+  const regimeAnalysis: RegimeAnalysis = analyzeRegime(
+    data.sentiment.score,
+    data.credit.score,
+    data.macro.score
+  );
+
+  const clarityInfo = getClarityLabel(regimeAnalysis.clarity);
+  const conflictInfo = getConflictDisplay(regimeAnalysis.conflictLevel);
+
+  // Clarity 색상 매핑
+  const getClarityColorClass = (color: string): string => {
+    switch (color) {
+      case "green": return "text-emerald-600 dark:text-emerald-400";
+      case "yellow": return "text-amber-600 dark:text-amber-400";
+      case "red": return "text-red-600 dark:text-red-400";
+      default: return "text-gray-600 dark:text-gray-400";
+    }
+  };
+
+  // Conflict 색상 매핑
+  const getConflictColorClass = (color: string): string => {
+    switch (color) {
+      case "green": return "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200";
+      case "yellow": return "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200";
+      case "red": return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200";
+      default: return "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-200";
+    }
+  };
+
   return (
     <div className={`rounded-xl border-2 ${getBorderColor(data.mmc_score)} ${getBgColor(data.mmc_score)} p-6 shadow-lg`}>
       {/* 헤더 */}
@@ -128,10 +164,10 @@ export default function MasterCycleCard({ data }: MasterCycleCardProps) {
       </div>
 
       {/* MMC 종합 점수 */}
-      <div className="flex items-center justify-between mb-6 p-4 bg-white dark:bg-gray-800 rounded-lg">
+      <div className="flex items-center justify-between mb-4 p-4 bg-white dark:bg-gray-800 rounded-lg">
         <div>
           <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-            종합 점수
+            종합 점수 <span className="text-xs opacity-70">(요약 온도계)</span>
           </div>
           <div className={`text-5xl font-bold ${getMMCColor(data.mmc_score)}`}>
             {data.mmc_score}
@@ -145,6 +181,64 @@ export default function MasterCycleCard({ data }: MasterCycleCardProps) {
             {data.phase}
           </div>
         </div>
+      </div>
+
+      {/* Regime Pattern 분석 (NEW) */}
+      <div className="mb-6 p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+        {/* Regime Tag */}
+        <div className="mb-3">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+              Regime Tag
+            </span>
+            <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200 rounded-full">
+              {regimeAnalysis.pattern?.name || "Mixed"}
+            </span>
+          </div>
+          <div className="text-sm text-gray-900 dark:text-gray-100 font-medium">
+            {regimeAnalysis.pattern?.tag}
+          </div>
+        </div>
+
+        {/* Conflict Flag + Clarity */}
+        <div className="flex items-center gap-4 mb-3">
+          {/* Conflict Flag */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-500 dark:text-gray-400">축 충돌:</span>
+            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${getConflictColorClass(conflictInfo.color)}`}>
+              {conflictInfo.icon && <span className="mr-1">{conflictInfo.icon}</span>}
+              {conflictInfo.label}
+            </span>
+          </div>
+
+          {/* Clarity/Alignment */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-500 dark:text-gray-400">신호 명확도:</span>
+            <span className={`text-sm font-semibold ${getClarityColorClass(clarityInfo.color)}`}>
+              {regimeAnalysis.clarity}점
+            </span>
+            <span className={`text-xs ${getClarityColorClass(clarityInfo.color)}`}>
+              ({clarityInfo.label})
+            </span>
+          </div>
+        </div>
+
+        {/* 투자 시사점 */}
+        <div className="text-xs text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/50 rounded p-2">
+          <span className="font-semibold">투자 시사점:</span> {regimeAnalysis.pattern?.implication}
+        </div>
+
+        {/* Gating Trigger 경고 (Option B) */}
+        {regimeAnalysis.gatingTriggers.length > 0 && (
+          <div className="mt-2 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded">
+            <div className="text-xs font-semibold text-red-800 dark:text-red-200">
+              Gating Trigger 활성화
+            </div>
+            <div className="text-xs text-red-700 dark:text-red-300">
+              {regimeAnalysis.gatingTriggers.map(t => t.name).join(", ")}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* 3대 사이클 요약 (단일 카드 내 포함) */}
