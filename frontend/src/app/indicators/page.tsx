@@ -252,7 +252,7 @@ export default function IndicatorsPage() {
       // ✅ 수정 1: 업데이트 시작 시간을 localStorage에 저장 (새로고침 후에도 유지)
       localStorage.setItem('updateStartTime', Date.now().toString());
 
-      const response = await fetch('https://investment-app-backend-x166.onrender.com/api/v2/update-indicators', {
+      const response = await fetch(`${API_URL}/api/v2/update-indicators`, {
         method: 'POST',
       });
 
@@ -261,7 +261,7 @@ export default function IndicatorsPage() {
       if (result.status === 'success') {
         // 업데이트 시작 성공, 상태 폴링 시작
         const pollInterval = setInterval(async () => {
-          const statusResponse = await fetch('https://investment-app-backend-x166.onrender.com/api/v2/update-status');
+          const statusResponse = await fetch(`${API_URL}/api/v2/update-status`);
           const statusResult = await statusResponse.json();
 
           if (statusResult.status === 'success' && statusResult.update_status) {
@@ -314,7 +314,7 @@ export default function IndicatorsPage() {
 
         // v2 API: 모든 데이터 한 번에 가져오기 (47개 지표 + 3대 사이클)
         const result = await fetchJsonWithRetry(
-          'https://investment-app-backend-x166.onrender.com/api/v2/indicators',
+          `${API_URL}/api/v2/indicators`,
           {},
           3,
           1000
@@ -427,7 +427,7 @@ export default function IndicatorsPage() {
         // ✅ NEW: Master Market Cycle API 호출 (Phase 1)
         try {
           const masterResult = await fetchJsonWithRetry(
-            'https://investment-app-backend-x166.onrender.com/api/v3/cycles/master',
+            `${API_URL}/api/v3/cycles/master`,
             {},
             3,
             1000

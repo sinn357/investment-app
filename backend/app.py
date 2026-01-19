@@ -148,6 +148,31 @@ update_status = {
     "start_time": None
 }
 
+UPDATE_STATUS_REDIS_KEY = "indicators:update_status"
+
+def load_update_status():
+    """Redis에 저장된 업데이트 상태가 있으면 우선 사용 (멀티 인스턴스 대응)"""
+    if redis_client:
+        try:
+            cached = redis_client.get(UPDATE_STATUS_REDIS_KEY)
+            if cached:
+                return json.loads(cached)
+        except Exception as e:
+            print(f"⚠️ Redis get update_status error: {e}")
+    return update_status
+
+def save_update_status():
+    """업데이트 상태를 Redis에 저장 (TTL 1시간)"""
+    if redis_client:
+        try:
+            redis_client.setex(
+                UPDATE_STATUS_REDIS_KEY,
+                3600,
+                json.dumps(update_status)
+            )
+        except Exception as e:
+            print(f"⚠️ Redis set update_status error: {e}")
+
 # 인메모리 캐시 (지표 전체 조회용)
 INDICATORS_CACHE = {"data": None, "timestamp": 0}
 INDICATORS_CACHE_TTL = 300  # seconds
@@ -1252,28 +1277,29 @@ async def update_all_indicators_background_async():
         update_status["progress"] = 0
         update_status["completed_indicators"] = []
         update_status["failed_indicators"] = []
+        update_status["current_indicator"] = ""
+        update_status["total_indicators"] = 0
+        save_update_status()
 
         # indicators_config.py에서 활성화된 모든 지표 사용
         from crawlers.indicators_config import get_all_enabled_indicators
         indicators = list(get_all_enabled_indicators().keys())
         total_indicators = len(indicators)
         update_status["total_indicators"] = total_indicators  # 전체 개수 저장
+        save_update_status()
 
         # 비동기 크롤링 설정
-        timeout_per_indicator = 3
-
         # 모든 지표를 동시에 비동기 실행 (asyncio.to_thread로 동기 함수를 비동기로 실행)
-        tasks = []
-        for indicator_id in indicators:
-            task = asyncio.to_thread(CrawlerService.crawl_indicator, indicator_id)
-            tasks.append((indicator_id, task))
+        async def run_indicator(indicator_id: str):
+            result = await asyncio.to_thread(CrawlerService.crawl_indicator, indicator_id)
+            return indicator_id, result
 
-        # 모든 작업 동시 실행 (return_exceptions=True로 에러도 결과로 반환)
-        results = await asyncio.gather(*[task for _, task in tasks], return_exceptions=True)
+        tasks = [asyncio.create_task(run_indicator(indicator_id)) for indicator_id in indicators]
 
-        # 결과 처리
-        for i, (indicator_id, _) in enumerate(tasks):
-            result = results[i]
+        # 완료되는 순서대로 결과 처리 (진행률 실시간 반영)
+        completed_count = 0
+        for task in asyncio.as_completed(tasks):
+            indicator_id, result = await task
 
             if isinstance(result, Exception):
                 update_status["failed_indicators"].append({
@@ -1290,13 +1316,14 @@ async def update_all_indicators_background_async():
                 db_service.save_indicator_data(indicator_id, result)
                 update_status["completed_indicators"].append(indicator_id)
 
-            # 진행률 업데이트
-            completed_count = i + 1
+            completed_count += 1
             update_status["progress"] = int((completed_count / total_indicators) * 100)
             update_status["current_indicator"] = indicator_id
+            save_update_status()
 
         update_status["progress"] = 100
         update_status["current_indicator"] = ""
+        save_update_status()
 
     except Exception as e:
         import traceback
@@ -1304,6 +1331,7 @@ async def update_all_indicators_background_async():
             "indicator_id": "system",
             "error": f"Update process failed: {str(e)}\n{traceback.format_exc()}"
         })
+        save_update_status()
     finally:
         # ✅ 지표 업데이트 후 캐시 무효화 + 상태 리셋
         INDICATORS_CACHE["data"] = None
@@ -1320,6 +1348,7 @@ async def update_all_indicators_background_async():
                 print(f"⚠️ Redis cache invalidation error: {e}")
 
         update_status["is_updating"] = False
+        save_update_status()
 
 def update_all_indicators_background():
     """비동기 함수를 동기 컨텍스트에서 실행하는 래퍼"""
@@ -1338,6 +1367,10 @@ def trigger_update_indicators():
     """모든 지표 업데이트 트리거 (백그라운드 실행)"""
     global update_status
 
+    current_status = load_update_status()
+    if current_status:
+        update_status = current_status
+
     # 이전 업데이트가 비정상적으로 오래 걸리는 경우 스테일 처리 (10분 초과 시 리셋)
     if update_status["is_updating"]:
         now_ts = time.time()
@@ -1348,6 +1381,7 @@ def trigger_update_indicators():
             update_status["current_indicator"] = ""
             update_status["completed_indicators"] = []
             update_status["failed_indicators"] = []
+            save_update_status()
         else:
             return jsonify({
                 "status": "error",
@@ -1359,6 +1393,13 @@ def trigger_update_indicators():
     thread.daemon = True
     thread.start()
 
+    # 업데이트 시작 상태를 즉시 반영 (상태 폴링 레이스 방지)
+    update_status["is_updating"] = True
+    update_status["start_time"] = time.time()
+    update_status["progress"] = 0
+    update_status["current_indicator"] = ""
+    save_update_status()
+
     return jsonify({
         "status": "success",
         "message": "Update started in background",
@@ -1368,9 +1409,10 @@ def trigger_update_indicators():
 @app.route('/api/v2/update-status')
 def get_update_status():
     """업데이트 진행 상황 조회"""
+    current_status = load_update_status()
     return jsonify({
         "status": "success",
-        "update_status": update_status
+        "update_status": current_status
     })
 
 @app.route('/api/v2/reset-update-status', methods=['POST'])
@@ -1380,6 +1422,11 @@ def reset_update_status():
     update_status["is_updating"] = False
     update_status["current_indicator"] = ""
     update_status["progress"] = 100
+    update_status["completed_indicators"] = []
+    update_status["failed_indicators"] = []
+    update_status["start_time"] = None
+    update_status["total_indicators"] = 0
+    save_update_status()
 
     return jsonify({
         "status": "success",
