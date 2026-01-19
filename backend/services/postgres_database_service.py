@@ -221,11 +221,21 @@ class PostgresDatabaseService:
                         UNIQUE(user_id, category, subcategory, year, month)
                     );
 
+                    -- 경제지표 사용자 해석 테이블
+                    CREATE TABLE IF NOT EXISTS indicator_interpretations (
+                        id SERIAL PRIMARY KEY,
+                        indicator_id TEXT UNIQUE NOT NULL,
+                        user_interpretation TEXT,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    );
+
                     -- 인덱스 생성
                     CREATE INDEX IF NOT EXISTS idx_latest_releases_indicator_id ON latest_releases(indicator_id);
                     CREATE INDEX IF NOT EXISTS idx_next_releases_indicator_id ON next_releases(indicator_id);
                     CREATE INDEX IF NOT EXISTS idx_history_data_indicator_id ON history_data(indicator_id);
                     CREATE INDEX IF NOT EXISTS idx_crawl_info_indicator_id ON crawl_info(indicator_id);
+                    CREATE INDEX IF NOT EXISTS idx_indicator_interpretations_id ON indicator_interpretations(indicator_id);
 
                     -- 가계부 테이블 인덱스 (성능 최적화)
                     CREATE INDEX IF NOT EXISTS idx_expenses_user_date ON expenses(user_id, transaction_date DESC);
@@ -3066,3 +3076,67 @@ class PostgresDatabaseService:
         except Exception as e:
             print(f"PostgreSQL get_all_industries_by_major error: {e}")
             return []
+
+    # ========================================
+    # 경제지표 사용자 해석 관련 메서드
+    # ========================================
+
+    def get_indicator_interpretation(self, indicator_id: str) -> Optional[str]:
+        """
+        특정 지표의 사용자 해석 조회
+
+        Args:
+            indicator_id: 지표 ID (예: 'ism-manufacturing')
+
+        Returns:
+            user_interpretation 문자열 또는 None
+        """
+        try:
+            with self.get_connection() as conn:
+                with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                    cur.execute("""
+                        SELECT user_interpretation
+                        FROM indicator_interpretations
+                        WHERE indicator_id = %s
+                    """, (indicator_id,))
+
+                    result = cur.fetchone()
+                    if result:
+                        return result['user_interpretation']
+                    return None
+
+        except Exception as e:
+            print(f"PostgreSQL get_indicator_interpretation error: {e}")
+            return None
+
+    def save_indicator_interpretation(self, indicator_id: str, user_interpretation: str) -> bool:
+        """
+        경제지표 사용자 해석 저장 (UPSERT)
+
+        Args:
+            indicator_id: 지표 ID
+            user_interpretation: 사용자가 작성한 해석
+
+        Returns:
+            성공 여부 (bool)
+        """
+        try:
+            with self.get_connection() as conn:
+                with conn.cursor() as cur:
+                    cur.execute("""
+                        INSERT INTO indicator_interpretations (
+                            indicator_id,
+                            user_interpretation,
+                            updated_at
+                        ) VALUES (%s, %s, CURRENT_TIMESTAMP)
+                        ON CONFLICT (indicator_id)
+                        DO UPDATE SET
+                            user_interpretation = EXCLUDED.user_interpretation,
+                            updated_at = CURRENT_TIMESTAMP
+                    """, (indicator_id, user_interpretation))
+                    conn.commit()
+                    return True
+
+        except Exception as e:
+            print(f"PostgreSQL save_indicator_interpretation error: {e}")
+            return False

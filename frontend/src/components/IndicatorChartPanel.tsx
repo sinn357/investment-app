@@ -59,6 +59,8 @@ interface IndicatorChartPanelProps {
   onSelectIndicator: (id: string) => void;
 }
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://investment-app-backend-x166.onrender.com';
+
 const IndicatorChartPanel: React.FC<IndicatorChartPanelProps> = ({
   selectedIndicatorId,
   allIndicators,
@@ -68,6 +70,12 @@ const IndicatorChartPanel: React.FC<IndicatorChartPanelProps> = ({
   const [historyData, setHistoryData] = useState<HistoryData[]>([]);
   const [chartData, setChartData] = useState<{ date: string; actual: number; forecast?: number }[]>([]);
   const [loading, setLoading] = useState(false);
+
+  // 사용자 해석 관련 상태
+  const [userInterpretation, setUserInterpretation] = useState<string>('');
+  const [interpretationLoading, setInterpretationLoading] = useState(false);
+  const [interpretationSaving, setInterpretationSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const selectedIndicator = allIndicators.find(ind => ind.id === selectedIndicatorId);
   const selectedIndex = allIndicators.findIndex(ind => ind.id === selectedIndicatorId);
@@ -143,6 +151,61 @@ const IndicatorChartPanel: React.FC<IndicatorChartPanelProps> = ({
       setLoading(false);
     }
   }, [selectedIndicator]);
+
+  // 지표 변경 시 사용자 해석 불러오기
+  useEffect(() => {
+    const fetchUserInterpretation = async () => {
+      if (!selectedIndicatorId) return;
+
+      setInterpretationLoading(true);
+      setSaveMessage(null);
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/v2/indicator-interpretation/${selectedIndicatorId}`);
+        const data = await response.json();
+        if (data.status === 'success' && data.user_interpretation) {
+          setUserInterpretation(data.user_interpretation);
+        } else {
+          setUserInterpretation('');
+        }
+      } catch (error) {
+        console.error('Failed to fetch user interpretation:', error);
+        setUserInterpretation('');
+      } finally {
+        setInterpretationLoading(false);
+      }
+    };
+
+    fetchUserInterpretation();
+  }, [selectedIndicatorId]);
+
+  // 사용자 해석 저장 함수
+  const handleSaveInterpretation = async () => {
+    if (!selectedIndicatorId) return;
+
+    setInterpretationSaving(true);
+    setSaveMessage(null);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v2/indicator-interpretation/${selectedIndicatorId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ user_interpretation: userInterpretation }),
+      });
+      const data = await response.json();
+      if (data.status === 'success') {
+        setSaveMessage({ type: 'success', text: '저장되었습니다.' });
+        setTimeout(() => setSaveMessage(null), 3000);
+      } else {
+        setSaveMessage({ type: 'error', text: '저장에 실패했습니다.' });
+      }
+    } catch (error) {
+      console.error('Failed to save interpretation:', error);
+      setSaveMessage({ type: 'error', text: '저장에 실패했습니다.' });
+    } finally {
+      setInterpretationSaving(false);
+    }
+  };
 
   if (!selectedIndicator) return null;
 
@@ -343,7 +406,7 @@ const IndicatorChartPanel: React.FC<IndicatorChartPanelProps> = ({
                       </div>
                     </>
                   ) : (
-                    <div className="text-center py-12">
+                    <div className="text-center py-8">
                       <p className="text-gray-500 dark:text-gray-400 mb-2">
                         📝 이 지표의 해석 정보가 아직 작성되지 않았습니다.
                       </p>
@@ -352,6 +415,49 @@ const IndicatorChartPanel: React.FC<IndicatorChartPanelProps> = ({
                       </p>
                     </div>
                   )}
+
+                  {/* 내 해석 섹션 */}
+                  <div className="border-t border-gray-200 dark:border-gray-700 pt-6 mt-6">
+                    <div className="border-l-4 border-primary pl-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                          ✍️ 내 해석
+                        </h3>
+                        {saveMessage && (
+                          <span className={`text-sm ${saveMessage.type === 'success' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                            {saveMessage.text}
+                          </span>
+                        )}
+                      </div>
+                      {interpretationLoading ? (
+                        <div className="animate-pulse bg-gray-200 dark:bg-gray-700 h-32 rounded-lg"></div>
+                      ) : (
+                        <>
+                          <textarea
+                            value={userInterpretation}
+                            onChange={(e) => setUserInterpretation(e.target.value)}
+                            placeholder="이 지표에 대한 나만의 해석을 기록하세요..."
+                            className="w-full h-32 p-3 border border-gray-300 dark:border-gray-600 rounded-lg
+                                       bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
+                                       placeholder-gray-400 dark:placeholder-gray-500
+                                       focus:ring-2 focus:ring-primary focus:border-transparent
+                                       resize-none"
+                          />
+                          <div className="flex justify-end mt-3">
+                            <button
+                              onClick={handleSaveInterpretation}
+                              disabled={interpretationSaving}
+                              className="px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg
+                                         disabled:opacity-50 disabled:cursor-not-allowed
+                                         transition-colors duration-200 font-medium"
+                            >
+                              {interpretationSaving ? '저장 중...' : '저장'}
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
                 </div>
               )}
             </>

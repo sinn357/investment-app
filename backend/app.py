@@ -1295,6 +1295,61 @@ def get_indicator_from_db(indicator_id):
             "message": f"Database query failed: {str(e)}"
         }), 500
 
+
+# ========================================
+# 경제지표 사용자 해석 API
+# ========================================
+
+@app.route('/api/v2/indicator-interpretation/<indicator_id>', methods=['GET'])
+def get_indicator_interpretation(indicator_id):
+    """특정 지표의 사용자 해석 조회"""
+    try:
+        interpretation = db_service.get_indicator_interpretation(indicator_id)
+        return jsonify({
+            "status": "success",
+            "indicator_id": indicator_id,
+            "user_interpretation": interpretation
+        })
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": f"Failed to get interpretation: {str(e)}"
+        }), 500
+
+
+@app.route('/api/v2/indicator-interpretation/<indicator_id>', methods=['PUT'])
+def save_indicator_interpretation(indicator_id):
+    """경제지표 사용자 해석 저장"""
+    try:
+        data = request.get_json()
+        if not data or 'user_interpretation' not in data:
+            return jsonify({
+                "status": "error",
+                "message": "user_interpretation field is required"
+            }), 400
+
+        user_interpretation = data['user_interpretation']
+        success = db_service.save_indicator_interpretation(indicator_id, user_interpretation)
+
+        if success:
+            return jsonify({
+                "status": "success",
+                "indicator_id": indicator_id,
+                "message": "Interpretation saved successfully"
+            })
+        else:
+            return jsonify({
+                "status": "error",
+                "message": "Failed to save interpretation"
+            }), 500
+
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": f"Failed to save interpretation: {str(e)}"
+        }), 500
+
+
 @app.route('/api/v2/history/<indicator_id>')
 def get_history_from_db(indicator_id):
     """데이터베이스에서 히스토리 데이터 조회"""
