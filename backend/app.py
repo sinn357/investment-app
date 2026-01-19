@@ -1118,12 +1118,20 @@ def get_indicators_health_check():
             data = db_service.get_indicator_data(indicator_id)
 
             crawl_info = db_service.get_crawl_info(indicator_id)
+            if crawl_info and crawl_info.get("status") == "error":
+                error_message = crawl_info.get("error_message")
+                health_results.append({
+                    "indicator_id": indicator_id,
+                    "name": CrawlerService.get_indicator_name(indicator_id),
+                    "status": "error",
+                    "last_update": None,
+                    "days_old": None,
+                    "message": error_message or "크롤링 실패"
+                })
+                counts["error"] += 1
+                continue
 
             if "error" in data:
-                error_message = None
-                if crawl_info and crawl_info.get("status") == "error":
-                    error_message = crawl_info.get("error_message")
-
                 # 데이터 조회 오류
                 health_results.append({
                     "indicator_id": indicator_id,
@@ -1165,10 +1173,50 @@ def get_indicators_health_check():
                         except ValueError:
                             continue
                 release_date = release_dt
-                days_old = (now - release_date).days
 
-                # 상태 분류
-                if days_old <= 7:
+                last_crawl_time = crawl_info.get("last_crawl_time") if crawl_info else None
+                if not last_crawl_time:
+                    health_results.append({
+                        "indicator_id": indicator_id,
+                        "name": CrawlerService.get_indicator_name(indicator_id),
+                        "status": "error",
+                        "last_update": release_date_str,
+                        "days_old": None,
+                        "message": "크롤링 기록 없음"
+                    })
+                    counts["error"] += 1
+                    continue
+
+                try:
+                    if isinstance(last_crawl_time, str):
+                        try:
+                            parsed = datetime.strptime(last_crawl_time, "%Y-%m-%d %H:%M:%S")
+                        except ValueError:
+                            parsed = datetime.strptime(last_crawl_time, "%a, %d %b %Y %H:%M:%S GMT")
+                        last_crawl_dt = parsed
+                    else:
+                        last_crawl_dt = last_crawl_time
+                except Exception:
+                    health_results.append({
+                        "indicator_id": indicator_id,
+                        "name": CrawlerService.get_indicator_name(indicator_id),
+                        "status": "error",
+                        "last_update": release_date_str,
+                        "days_old": None,
+                        "message": "크롤링 시간 파싱 실패"
+                    })
+                    counts["error"] += 1
+                    continue
+
+                delta = abs(last_crawl_dt - release_date)
+                days_old = delta.days
+
+                if delta <= timedelta(hours=24):
+                    counts["updated_recent"] += 1
+                    status = "healthy"
+                    message = "최근 데이터"
+                    counts["healthy"] += 1
+                elif days_old <= 7:
                     status = "healthy"
                     message = "최신 데이터"
                     counts["healthy"] += 1
@@ -1189,28 +1237,6 @@ def get_indicators_health_check():
                     "days_old": days_old,
                     "message": message
                 })
-
-                # Updated 24h: release_date와 last_crawl_time 모두 24시간 이내 + 크롤 성공
-                if crawl_info and crawl_info.get("status") == "success":
-                    last_crawl_time = crawl_info.get("last_crawl_time")
-                    if last_crawl_time:
-                        try:
-                            if isinstance(last_crawl_time, str):
-                                try:
-                                    parsed = datetime.strptime(last_crawl_time, "%Y-%m-%d %H:%M:%S")
-                                except ValueError:
-                                    parsed = datetime.strptime(last_crawl_time, "%a, %d %b %Y %H:%M:%S GMT")
-                                last_crawl_dt = parsed
-                            else:
-                                last_crawl_dt = last_crawl_time
-                            recent_crawl = last_crawl_dt >= now - timedelta(hours=24)
-                        except Exception:
-                            recent_crawl = False
-                    else:
-                        recent_crawl = False
-                    recent_release = (now - release_date) <= timedelta(hours=24)
-                    if recent_crawl and recent_release:
-                        counts["updated_recent"] += 1
 
             except ValueError:
                 # 날짜 파싱 실패
