@@ -8,10 +8,37 @@
 // - Option A (3축 독립 표시) 기본
 // - Option B (극단 구간 동적 가중치) 제한적 적용
 // - MMC는 "요약 온도계"로 강등, Regime Tag + Conflict Flag + Clarity 추가
+//
+// Phase 2: Level×Trend 라벨 기반 soft match 추가 (2025-01-20)
+// - 기존 hard threshold condition 유지 (호환성)
+// - labelCondition 추가로 라벨 기반 매칭 지원
+
+import {
+  type LevelBand,
+  type TrendBand,
+  getLevelBand,
+  getTrendBand,
+} from './cycleLabels';
 
 // ============================================================================
 // Types
 // ============================================================================
+
+/**
+ * 라벨 기반 조건 (Phase 2)
+ * - levelBand/trendBand: 단일 값 또는 배열 (OR 조건)
+ * - 생략된 필드는 "아무거나" 의미
+ */
+export interface LabelCondition {
+  levelBand?: LevelBand | LevelBand[];
+  trendBand?: TrendBand | TrendBand[];
+}
+
+export interface LabelBasedCondition {
+  macro?: LabelCondition;
+  credit?: LabelCondition;
+  sentiment?: LabelCondition;
+}
 
 export type RegimePattern = {
   id: string;
@@ -21,6 +48,8 @@ export type RegimePattern = {
   implication: string;
   priority: number; // lower = earlier match
   isGatingTrigger?: boolean;
+  // Phase 2: 라벨 기반 조건 (선택적)
+  labelCondition?: LabelBasedCondition;
 };
 
 export type ConflictLevel = "none" | "mild" | "hard";
@@ -46,7 +75,12 @@ export const regimePatterns: RegimePattern[] = [
     implication:
       "리스크 최소화. 현금/단기채/방어 섹터 중심. (전략에 따라) 인플레 헤지 자산은 제한적으로. 레버리지/고베타 노출 회피.",
     priority: 10,
-    isGatingTrigger: true, // (M<=35 && C<=45) 계열 트리거
+    isGatingTrigger: true,
+    labelCondition: {
+      macro: { levelBand: "low", trendBand: "down" },
+      credit: { levelBand: ["low", "mid"], trendBand: "down" },
+      sentiment: { levelBand: ["low", "mid"] },
+    },
   },
   {
     id: "liquidity_crack",
@@ -56,7 +90,12 @@ export const regimePatterns: RegimePattern[] = [
     implication:
       "레버리지/고위험 익스포저 축소. 현금/단기채/퀄리티 방어. 변동성 확대 가능성 높아 헤지 검토.",
     priority: 20,
-    isGatingTrigger: true, // C<=30 트리거
+    isGatingTrigger: true,
+    labelCondition: {
+      macro: { levelBand: ["mid", "high"] },
+      credit: { levelBand: "low", trendBand: "down" },
+      sentiment: { levelBand: ["low", "mid"] },
+    },
   },
   {
     id: "crisis_bottom_candidate",
@@ -66,7 +105,12 @@ export const regimePatterns: RegimePattern[] = [
     implication:
       "분할 진입만. '신용 안정(ΔC 개선/스프레드 피크아웃)' 확인 전까지 과비중 금지. 반등은 크지만 변동성도 최대.",
     priority: 30,
-    isGatingTrigger: true, // (S>=75 && C<=35) 트리거
+    isGatingTrigger: true,
+    labelCondition: {
+      macro: { levelBand: ["low", "mid"] },
+      credit: { levelBand: "low" },
+      sentiment: { levelBand: "high", trendBand: ["flat", "up"] }, // 극단적 공포
+    },
   },
   {
     id: "false_dawn_bear_rally",
@@ -76,6 +120,11 @@ export const regimePatterns: RegimePattern[] = [
     implication:
       "급등 추격 금지. 반등은 트레이딩 범주로 제한. C가 50+로 회복(또는 스프레드 정상화) 전까지 방어 유지.",
     priority: 40,
+    labelCondition: {
+      macro: { levelBand: ["mid", "high"] },
+      credit: { levelBand: ["low", "mid"], trendBand: ["down", "flat"] },
+      sentiment: { levelBand: "high", trendBand: "up" }, // 심리 개선 중
+    },
   },
   {
     id: "macro_slowdown_markets_ok",
@@ -85,6 +134,11 @@ export const regimePatterns: RegimePattern[] = [
     implication:
       "퀄리티/현금흐름 중심으로 방어적 운용. 경기민감/고베타는 보수적으로. '침체'가 아니라 '감속' 대응.",
     priority: 50,
+    labelCondition: {
+      macro: { levelBand: "low", trendBand: ["down", "flat"] },
+      credit: { levelBand: ["mid", "high"] },
+      sentiment: { levelBand: ["mid", "low"] }, // 낙관 또는 중립
+    },
   },
   {
     id: "policy_pivot_window",
@@ -94,6 +148,11 @@ export const regimePatterns: RegimePattern[] = [
     implication:
       "금리 하락 수혜(듀레이션/성장) 재평가 구간 가능. 단, 재침체 리스크 상존 -> 포지션 사이즈/리스크 규율 필수.",
     priority: 60,
+    labelCondition: {
+      macro: { levelBand: ["low", "mid"], trendBand: "up" }, // 바닥/개선 또는 회복
+      credit: { levelBand: ["mid", "high"], trendBand: ["flat", "up"] },
+      sentiment: { levelBand: ["mid", "high"] },
+    },
   },
   {
     id: "recovery_kickstart",
@@ -103,6 +162,11 @@ export const regimePatterns: RegimePattern[] = [
     implication:
       "경기민감/중소형을 점진 확대. 아직 M이 약하므로 속도 조절. C 추세 개선이 이어지는지(ΔC) 모니터링.",
     priority: 70,
+    labelCondition: {
+      macro: { levelBand: ["low", "mid"], trendBand: "up" },
+      credit: { levelBand: "mid", trendBand: "up" },
+      sentiment: { levelBand: "high" },
+    },
   },
   {
     id: "goldilocks_risk_on",
@@ -112,6 +176,11 @@ export const regimePatterns: RegimePattern[] = [
     implication:
       "주식 비중 확대, 성장/퀄리티/베타 노출 OK. 방어자산 비중 축소. 리밸런스는 규율적으로만.",
     priority: 80,
+    labelCondition: {
+      macro: { levelBand: ["mid", "high"], trendBand: ["flat", "up"] },
+      credit: { levelBand: "high" },
+      sentiment: { levelBand: "high" },
+    },
   },
   {
     id: "melt_up_risk_on",
@@ -121,6 +190,11 @@ export const regimePatterns: RegimePattern[] = [
     implication:
       "추세추종은 가능하나 손절/트레일링/헤지 필수. 포지션 사이즈 규율 강화. 변동성 급전환에 대비.",
     priority: 90,
+    labelCondition: {
+      macro: { levelBand: ["mid", "high"] },
+      credit: { levelBand: ["mid", "high"] },
+      sentiment: { levelBand: "low", trendBand: "down" }, // 버블 위험 (탐욕 심화)
+    },
   },
   {
     id: "late_cycle_euphoria",
@@ -130,6 +204,11 @@ export const regimePatterns: RegimePattern[] = [
     implication:
       "신규 고베타 추격 자제. 리밸런스(이익실현/헤지) 강화. 품질/현금흐름 선호, 변동성 확대 가능성 대비.",
     priority: 100,
+    labelCondition: {
+      macro: { levelBand: "high", trendBand: ["flat", "down"] }, // 고점/감속
+      credit: { levelBand: ["mid", "high"] },
+      sentiment: { levelBand: "low" }, // 과도한 낙관
+    },
   },
 ];
 
@@ -285,4 +364,214 @@ export function getConflictDisplay(level: ConflictLevel): {
     default:
       return { label: "충돌 없음", color: "green", icon: "" };
   }
+}
+
+// ============================================================================
+// Phase 2: Label-Based Regime Matching
+// ============================================================================
+
+/**
+ * 단일 축의 라벨 조건 검사
+ */
+function matchesLabelCondition(
+  actualLevel: LevelBand,
+  actualTrend: TrendBand,
+  condition?: LabelCondition
+): boolean {
+  if (!condition) return true; // 조건 없으면 통과
+
+  // Level 검사
+  if (condition.levelBand) {
+    const allowedLevels = Array.isArray(condition.levelBand)
+      ? condition.levelBand
+      : [condition.levelBand];
+    if (!allowedLevels.includes(actualLevel)) return false;
+  }
+
+  // Trend 검사
+  if (condition.trendBand) {
+    const allowedTrends = Array.isArray(condition.trendBand)
+      ? condition.trendBand
+      : [condition.trendBand];
+    if (!allowedTrends.includes(actualTrend)) return false;
+  }
+
+  return true;
+}
+
+/**
+ * 라벨 기반 패턴 매칭 검사
+ *
+ * @param pattern - 검사할 패턴
+ * @param labels - 현재 3축의 Level×Trend 라벨
+ * @returns 매칭 여부
+ */
+export function matchesLabelBasedPattern(
+  pattern: RegimePattern,
+  labels: {
+    macro: { levelBand: LevelBand; trendBand: TrendBand };
+    credit: { levelBand: LevelBand; trendBand: TrendBand };
+    sentiment: { levelBand: LevelBand; trendBand: TrendBand };
+  }
+): boolean {
+  if (!pattern.labelCondition) return false;
+
+  const { macro, credit, sentiment } = pattern.labelCondition;
+
+  return (
+    matchesLabelCondition(labels.macro.levelBand, labels.macro.trendBand, macro) &&
+    matchesLabelCondition(labels.credit.levelBand, labels.credit.trendBand, credit) &&
+    matchesLabelCondition(labels.sentiment.levelBand, labels.sentiment.trendBand, sentiment)
+  );
+}
+
+/**
+ * 라벨 기반 패턴 선택 (Level×Trend 기반)
+ *
+ * @param macroLevel - 거시경제 Level 점수 (0-100)
+ * @param macroTrend - 거시경제 Trend 점수 (0-100)
+ * @param creditLevel - 신용 Level 점수 (0-100)
+ * @param creditTrend - 신용 Trend 점수 (0-100)
+ * @param sentimentLevel - 심리 Level 점수 (0-100)
+ * @param sentimentTrend - 심리 Trend 점수 (0-100)
+ * @returns 매칭된 패턴 또는 null
+ */
+export function selectRegimePatternByLabels(
+  macroLevel: number,
+  macroTrend: number,
+  creditLevel: number,
+  creditTrend: number,
+  sentimentLevel: number,
+  sentimentTrend: number,
+  patterns: RegimePattern[] = regimePatterns
+): RegimePattern | null {
+  const labels = {
+    macro: {
+      levelBand: getLevelBand(macroLevel),
+      trendBand: getTrendBand(macroTrend),
+    },
+    credit: {
+      levelBand: getLevelBand(creditLevel),
+      trendBand: getTrendBand(creditTrend),
+    },
+    sentiment: {
+      levelBand: getLevelBand(sentimentLevel),
+      trendBand: getTrendBand(sentimentTrend),
+    },
+  };
+
+  const sorted = [...patterns]
+    .filter((p) => p.labelCondition) // labelCondition이 있는 패턴만
+    .sort((a, b) => a.priority - b.priority);
+
+  return sorted.find((p) => matchesLabelBasedPattern(p, labels)) ?? null;
+}
+
+/**
+ * 하이브리드 패턴 선택 (라벨 우선, hard threshold 폴백)
+ *
+ * Phase 2 기본 전략:
+ * 1. 라벨 기반 매칭 시도
+ * 2. 실패 시 기존 hard threshold 폴백
+ */
+export function selectRegimePatternHybrid(
+  macroLevel: number,
+  macroTrend: number,
+  creditLevel: number,
+  creditTrend: number,
+  sentimentLevel: number,
+  sentimentTrend: number,
+  patterns: RegimePattern[] = regimePatterns
+): { pattern: RegimePattern; matchMethod: "label" | "threshold" | "fallback" } {
+  // 1. 라벨 기반 시도
+  const labelMatch = selectRegimePatternByLabels(
+    macroLevel,
+    macroTrend,
+    creditLevel,
+    creditTrend,
+    sentimentLevel,
+    sentimentTrend,
+    patterns
+  );
+
+  if (labelMatch) {
+    return { pattern: labelMatch, matchMethod: "label" };
+  }
+
+  // 2. 기존 threshold 기반 폴백
+  const thresholdMatch = selectRegimePattern(
+    sentimentLevel,
+    creditLevel,
+    macroLevel,
+    patterns
+  );
+
+  if (thresholdMatch) {
+    return { pattern: thresholdMatch, matchMethod: "threshold" };
+  }
+
+  // 3. 완전 폴백
+  return { pattern: fallbackPattern, matchMethod: "fallback" };
+}
+
+/**
+ * 확장된 Regime Analysis (Phase 2: Level×Trend 포함)
+ */
+export interface RegimeAnalysisV2 extends RegimeAnalysis {
+  matchMethod: "label" | "threshold" | "fallback";
+  labels: {
+    macro: { levelBand: LevelBand; trendBand: TrendBand };
+    credit: { levelBand: LevelBand; trendBand: TrendBand };
+    sentiment: { levelBand: LevelBand; trendBand: TrendBand };
+  };
+}
+
+/**
+ * Phase 2 통합 분석 함수
+ */
+export function analyzeRegimeV2(
+  macroLevel: number,
+  macroTrend: number,
+  creditLevel: number,
+  creditTrend: number,
+  sentimentLevel: number,
+  sentimentTrend: number
+): RegimeAnalysisV2 {
+  const { pattern, matchMethod } = selectRegimePatternHybrid(
+    macroLevel,
+    macroTrend,
+    creditLevel,
+    creditTrend,
+    sentimentLevel,
+    sentimentTrend
+  );
+
+  const conflictLevel = detectConflictLevel(sentimentLevel, creditLevel, macroLevel);
+  const clarity = calculateClarity(sentimentLevel, creditLevel, macroLevel);
+  const gatingTriggers = getGatingTriggers(sentimentLevel, creditLevel, macroLevel);
+
+  const labels = {
+    macro: {
+      levelBand: getLevelBand(macroLevel),
+      trendBand: getTrendBand(macroTrend),
+    },
+    credit: {
+      levelBand: getLevelBand(creditLevel),
+      trendBand: getTrendBand(creditTrend),
+    },
+    sentiment: {
+      levelBand: getLevelBand(sentimentLevel),
+      trendBand: getTrendBand(sentimentTrend),
+    },
+  };
+
+  return {
+    pattern,
+    conflictLevel,
+    hasConflict: conflictLevel !== "none",
+    clarity,
+    gatingTriggers,
+    matchMethod,
+    labels,
+  };
 }
