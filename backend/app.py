@@ -1302,11 +1302,23 @@ async def update_all_indicators_background_async():
             indicator_id, result = await task
 
             if isinstance(result, Exception):
+                db_service.update_crawl_info(
+                    indicator_id,
+                    "error",
+                    0,
+                    f"Exception: {str(result)}"
+                )
                 update_status["failed_indicators"].append({
                     "indicator_id": indicator_id,
                     "error": f"Exception: {str(result)}"
                 })
             elif isinstance(result, dict) and "error" in result:
+                db_service.update_crawl_info(
+                    indicator_id,
+                    "error",
+                    0,
+                    result["error"]
+                )
                 update_status["failed_indicators"].append({
                     "indicator_id": indicator_id,
                     "error": result["error"]

@@ -231,19 +231,20 @@ export default function IndicatorsPage() {
     }
   }, []);
 
+  const fetchHealthCheck = useCallback(async () => {
+    try {
+      const response = await fetchJsonWithRetry(`${API_URL}/api/v2/indicators/health-check`);
+      setHealthCheck(response);
+    } catch (error) {
+      console.error('헬스체크 데이터 로드 실패:', error);
+      setHealthCheck(null);
+    }
+  }, []);
+
   // ✅ Phase 2: 헬스체크 데이터 페칭
   useEffect(() => {
-    async function fetchHealthCheck() {
-      try {
-        const response = await fetchJsonWithRetry(`${API_URL}/api/v2/indicators/health-check`);
-        setHealthCheck(response);
-      } catch (error) {
-        console.error('헬스체크 데이터 로드 실패:', error);
-        setHealthCheck(null);
-      }
-    }
     fetchHealthCheck();
-  }, []); // 페이지 로드 시 한 번만 실행
+  }, [fetchHealthCheck]); // 페이지 로드 시 한 번만 실행
 
   // 수동 업데이트 함수
   const handleManualUpdate = async () => {
@@ -279,6 +280,7 @@ export default function IndicatorsPage() {
               clearInterval(pollInterval);
               setIsUpdating(false);
               setUpdateProgress(null);
+              fetchHealthCheck();
 
               // ✅ 수정: localStorage 저장은 새로고침 후 데이터 로딩 완료 시점에 처리
               // (updateStartTime은 localStorage에 저장되어 있으므로 여기서는 저장하지 않음)
