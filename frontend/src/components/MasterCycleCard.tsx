@@ -7,6 +7,12 @@ import {
   getConflictDisplay,
   type RegimeAnalysis,
 } from '@/utils/regimePatterns';
+import {
+  getCycleLabel,
+  getLabelColorClass,
+  getCycleHint,
+  type CycleType,
+} from '@/utils/cycleLabels';
 
 interface MasterCycleData {
   mmc_score: number;
@@ -15,16 +21,19 @@ interface MasterCycleData {
     score: number;
     phase: string;
     state?: string;
+    trend?: number; // 0-100 Trend 점수
   };
   credit: {
     score: number;
     state: string;
     phase?: string;
+    trend?: number;
   };
   sentiment: {
     score: number;
     state?: string;
     note?: string;
+    trend?: number;
   };
   recommendation: string;
   updated_at: string;
@@ -73,38 +82,21 @@ export default function MasterCycleCard({ data }: MasterCycleCardProps) {
     if (score >= 20) return "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-200";
     return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200";
   };
-  const macroActionMap: Record<string, string> = {
-    "강한 확장기": "주식 비중 확대, 성장주/하이베타 우선",
-    "확장기": "주식 코어 포지션 유지, ETF·퀄리티 비중",
-    "둔화 시작": "현금·채권 소폭 확대, 디펜시브 섹터로 이동",
-    "침체기": "방어주·우량채·현금 중심, 리스크 축소",
-    "심각한 침체": "현금+단기채 우선, 공격적 포지션 회피",
-    "데이터 부족": "데이터 재확인 후 판단",
-  };
+  // 기존 액션맵은 cycleLabels.ts의 getCycleHint로 대체됨
 
-  const creditActionMap: Record<string, string> = {
-    "유동성 풍부": "레버리지 축소, 고위험 익스포저 점검·헤지",
-    "중립": "기본 포지션 유지, 과도한 레버리지 자제",
-    "긴축 환경": "현금·채권 확대, 하이일드·고위험 노출 축소",
-    "신용 경색": "현금/우량채 중심, 주식·하이일드 비중 축소",
-    "데이터 부족": "데이터 재확인 후 판단",
-  };
+  // Level×Trend 기반 국면 라벨 계산
+  const macroTrend = data.macro.trend ?? 50; // 기본값 50 (중립)
+  const creditTrend = data.credit.trend ?? 50;
+  const sentimentTrend = data.sentiment.trend ?? 50;
 
-  const sentimentActionMap: Record<string, string> = {
-    "극심한 공포 (바닥 근접)": "분할 매수/리스크 온 준비, 과도한 공포 활용",
-    "약세 심리": "우량주·ETF 저점 분할 매수, 변동성 주의",
-    "과열 경계": "익절·리밸런싱, 부분 헤지 고려",
-    "극심한 탐욕 (고점 경계)": "현금 비중 확대, 보호적 헤지 강화",
-    "데이터 부족": "데이터 재확인 후 판단",
-  };
+  const macroLabel = getCycleLabel("macro", data.macro.score, macroTrend);
+  const creditLabel = getCycleLabel("credit", data.credit.score, creditTrend);
+  const sentimentLabel = getCycleLabel("sentiment", data.sentiment.score, sentimentTrend);
 
-  const macroPhase = data.macro.phase;
-  const creditPhase = data.credit.state || data.credit.phase || "중립";
-  const sentimentPhase = data.sentiment.state || data.sentiment.note || "데이터 부족";
-
-  const macroAction = macroActionMap[macroPhase] || "데이터 확인 필요";
-  const creditAction = creditActionMap[creditPhase] || "데이터 확인 필요";
-  const sentimentAction = sentimentActionMap[sentimentPhase] || "데이터 확인 필요";
+  // 국면별 투자 힌트 (새 시스템)
+  const macroHint = getCycleHint("macro", data.macro.score, macroTrend);
+  const creditHint = getCycleHint("credit", data.credit.score, creditTrend);
+  const sentimentHint = getCycleHint("sentiment", data.sentiment.score, sentimentTrend);
 
   const [expanded, setExpanded] = React.useState(false);
 
@@ -241,8 +233,9 @@ export default function MasterCycleCard({ data }: MasterCycleCardProps) {
         )}
       </div>
 
-      {/* 3대 사이클 요약 (단일 카드 내 포함) */}
+      {/* 3대 사이클 요약 (Level×Trend 국면 라벨 표시) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        {/* 거시경제 */}
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 shadow-sm">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
@@ -256,13 +249,27 @@ export default function MasterCycleCard({ data }: MasterCycleCardProps) {
             </div>
             <div className="text-right">
               <div className="text-xs text-gray-500 dark:text-gray-400">현재 국면</div>
-              <div className="text-sm font-bold text-gray-800 dark:text-gray-100">{macroPhase}</div>
+              <div className={`inline-flex px-2 py-0.5 rounded-full text-xs font-bold ${getLabelColorClass(macroLabel.color)}`}>
+                {macroLabel.label}
+              </div>
             </div>
           </div>
-          <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">투자 행동</div>
-          <div className="text-sm text-gray-800 dark:text-gray-100">{macroAction}</div>
+          {/* Trend 표시 */}
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-xs text-gray-500 dark:text-gray-400">Trend:</span>
+            <div className="flex-1 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+              <div
+                className={`h-full transition-all ${macroTrend >= 60 ? 'bg-emerald-500' : macroTrend <= 40 ? 'bg-red-500' : 'bg-amber-500'}`}
+                style={{ width: `${macroTrend}%` }}
+              />
+            </div>
+            <span className="text-xs font-medium text-gray-600 dark:text-gray-400">{Math.round(macroTrend)}</span>
+          </div>
+          <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">투자 힌트</div>
+          <div className="text-sm text-gray-800 dark:text-gray-100">{macroHint}</div>
         </div>
 
+        {/* 신용/유동성 */}
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 shadow-sm">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
@@ -276,13 +283,27 @@ export default function MasterCycleCard({ data }: MasterCycleCardProps) {
             </div>
             <div className="text-right">
               <div className="text-xs text-gray-500 dark:text-gray-400">현재 국면</div>
-              <div className="text-sm font-bold text-gray-800 dark:text-gray-100">{creditPhase}</div>
+              <div className={`inline-flex px-2 py-0.5 rounded-full text-xs font-bold ${getLabelColorClass(creditLabel.color)}`}>
+                {creditLabel.label}
+              </div>
             </div>
           </div>
-          <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">투자 행동</div>
-          <div className="text-sm text-gray-800 dark:text-gray-100">{creditAction}</div>
+          {/* Trend 표시 */}
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-xs text-gray-500 dark:text-gray-400">Trend:</span>
+            <div className="flex-1 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+              <div
+                className={`h-full transition-all ${creditTrend >= 60 ? 'bg-emerald-500' : creditTrend <= 40 ? 'bg-red-500' : 'bg-amber-500'}`}
+                style={{ width: `${creditTrend}%` }}
+              />
+            </div>
+            <span className="text-xs font-medium text-gray-600 dark:text-gray-400">{Math.round(creditTrend)}</span>
+          </div>
+          <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">투자 힌트</div>
+          <div className="text-sm text-gray-800 dark:text-gray-100">{creditHint}</div>
         </div>
 
+        {/* 심리/밸류 */}
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 shadow-sm">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
@@ -296,11 +317,24 @@ export default function MasterCycleCard({ data }: MasterCycleCardProps) {
             </div>
             <div className="text-right">
               <div className="text-xs text-gray-500 dark:text-gray-400">현재 국면</div>
-              <div className="text-sm font-bold text-gray-800 dark:text-gray-100">{sentimentPhase}</div>
+              <div className={`inline-flex px-2 py-0.5 rounded-full text-xs font-bold ${getLabelColorClass(sentimentLabel.color)}`}>
+                {sentimentLabel.label}
+              </div>
             </div>
           </div>
-          <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">투자 행동</div>
-          <div className="text-sm text-gray-800 dark:text-gray-100">{sentimentAction}</div>
+          {/* Trend 표시 */}
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-xs text-gray-500 dark:text-gray-400">Trend:</span>
+            <div className="flex-1 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+              <div
+                className={`h-full transition-all ${sentimentTrend >= 60 ? 'bg-emerald-500' : sentimentTrend <= 40 ? 'bg-red-500' : 'bg-amber-500'}`}
+                style={{ width: `${sentimentTrend}%` }}
+              />
+            </div>
+            <span className="text-xs font-medium text-gray-600 dark:text-gray-400">{Math.round(sentimentTrend)}</span>
+          </div>
+          <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">투자 힌트</div>
+          <div className="text-sm text-gray-800 dark:text-gray-100">{sentimentHint}</div>
         </div>
       </div>
 
