@@ -1118,18 +1118,8 @@ def get_indicators_health_check():
             data = db_service.get_indicator_data(indicator_id)
 
             crawl_info = db_service.get_crawl_info(indicator_id)
-            if crawl_info and crawl_info.get("status") == "error":
-                error_message = crawl_info.get("error_message")
-                health_results.append({
-                    "indicator_id": indicator_id,
-                    "name": CrawlerService.get_indicator_name(indicator_id),
-                    "status": "error",
-                    "last_update": None,
-                    "days_old": None,
-                    "message": error_message or "크롤링 실패"
-                })
-                counts["error"] += 1
-                continue
+            crawl_error = crawl_info and crawl_info.get("status") == "error"
+            error_message = crawl_info.get("error_message") if crawl_info else None
 
             if "error" in data:
                 # 데이터 조회 오류
@@ -1175,40 +1165,25 @@ def get_indicators_health_check():
                 release_date = release_dt
 
                 last_crawl_time = crawl_info.get("last_crawl_time") if crawl_info else None
-                if not last_crawl_time:
-                    health_results.append({
-                        "indicator_id": indicator_id,
-                        "name": CrawlerService.get_indicator_name(indicator_id),
-                        "status": "error",
-                        "last_update": release_date_str,
-                        "days_old": None,
-                        "message": "크롤링 기록 없음"
-                    })
-                    counts["error"] += 1
-                    continue
+                last_crawl_dt = None
+                if last_crawl_time:
+                    try:
+                        if isinstance(last_crawl_time, str):
+                            try:
+                                parsed = datetime.strptime(last_crawl_time, "%Y-%m-%d %H:%M:%S")
+                            except ValueError:
+                                parsed = datetime.strptime(last_crawl_time, "%a, %d %b %Y %H:%M:%S GMT")
+                            last_crawl_dt = parsed
+                        else:
+                            last_crawl_dt = last_crawl_time
+                    except Exception:
+                        last_crawl_dt = None
 
-                try:
-                    if isinstance(last_crawl_time, str):
-                        try:
-                            parsed = datetime.strptime(last_crawl_time, "%Y-%m-%d %H:%M:%S")
-                        except ValueError:
-                            parsed = datetime.strptime(last_crawl_time, "%a, %d %b %Y %H:%M:%S GMT")
-                        last_crawl_dt = parsed
-                    else:
-                        last_crawl_dt = last_crawl_time
-                except Exception:
-                    health_results.append({
-                        "indicator_id": indicator_id,
-                        "name": CrawlerService.get_indicator_name(indicator_id),
-                        "status": "error",
-                        "last_update": release_date_str,
-                        "days_old": None,
-                        "message": "크롤링 시간 파싱 실패"
-                    })
-                    counts["error"] += 1
-                    continue
-
-                delta = abs(last_crawl_dt - release_date)
+                # 크롤링 시간이 없으면 release_date 기준으로 경과일 계산
+                if last_crawl_dt:
+                    delta = abs(last_crawl_dt - release_date)
+                else:
+                    delta = abs(now - release_date)
                 days_old = delta.days
 
                 if delta <= timedelta(hours=24):
@@ -1228,6 +1203,9 @@ def get_indicators_health_check():
                     status = "outdated"
                     message = "매우 오래된 데이터"
                     counts["outdated"] += 1
+
+                if crawl_error:
+                    message = f"{message} (크롤링 실패 기록 있음)"
 
                 health_results.append({
                     "indicator_id": indicator_id,

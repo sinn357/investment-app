@@ -145,6 +145,8 @@ export default function IndicatorsPage() {
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
   // const [cycleScore, setCycleScore] = useState<ReturnType<typeof calculateCycleScore> | null>(null); // ✅ 제거: Master Cycle로 대체
   const [allIndicators, setAllIndicators] = useState<GridIndicator[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [indicatorsPayload, setIndicatorsPayload] = useState<any[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedIndicatorId, setSelectedIndicatorId] = useState<string | undefined>(undefined);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
@@ -233,12 +235,26 @@ export default function IndicatorsPage() {
   }, []);
 
   const fetchHealthCheck = useCallback(async () => {
+    const cacheKey = 'health_check_cache_v1';
+    try {
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        setHealthCheck(JSON.parse(cached));
+      }
+    } catch (error) {
+      console.warn('헬스체크 캐시 로드 실패:', error);
+    }
+
     try {
       const response = await fetchJsonWithRetry(`${API_URL}/api/v2/indicators/health-check`);
       setHealthCheck(response);
+      try {
+        localStorage.setItem(cacheKey, JSON.stringify(response));
+      } catch (error) {
+        console.warn('헬스체크 캐시 저장 실패:', error);
+      }
     } catch (error) {
       console.error('헬스체크 데이터 로드 실패:', error);
-      setHealthCheck(null);
     }
   }, []);
 
@@ -328,6 +344,7 @@ export default function IndicatorsPage() {
           if (result.last_updated) {
             setLastUpdated(result.last_updated);
           }
+          setIndicatorsPayload(result.indicators);
 
           // ✅ 제거: cycleCalculator 로직 - Master Cycle로 대체
 
@@ -427,55 +444,6 @@ export default function IndicatorsPage() {
           }
         }
 
-        // ✅ NEW: Master Market Cycle API 호출 (v4 Full Enhancements)
-        try {
-          const masterResult = await fetchJsonWithRetry(
-            `${API_URL}/api/v4/master-cycle`,
-            {},
-            3,
-            1000
-          );
-
-          if (masterResult.status === 'success' && masterResult.data) {
-            const needsTrendFallback =
-              masterResult.data.macro?.trend == null ||
-              masterResult.data.credit?.trend == null ||
-              masterResult.data.sentiment?.trend == null;
-
-            let trendFallback = null;
-            if (needsTrendFallback && result.indicators) {
-              // ✅ Fallback: 히스토리 기반 Trend 계산 (API 미제공 시)
-              const indicatorsMap: Record<string, { data?: { latest_release?: { actual?: number | string | null }; history_table?: Array<{ release_date: string; actual: number | string | null }> } }> = {};
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              result.indicators.forEach((item: any) => {
-                indicatorsMap[item.id] = { data: item.data };
-              });
-              trendFallback = calculateCycleTrendsFromIndicators(indicatorsMap);
-            }
-
-            // masterResult.data에 trend 보강 (API 우선, 없으면 fallback)
-            const enrichedData = {
-              ...masterResult.data,
-              macro: {
-                ...masterResult.data.macro,
-                trend: masterResult.data.macro?.trend ?? trendFallback?.macro,
-              },
-              credit: {
-                ...masterResult.data.credit,
-                trend: masterResult.data.credit?.trend ?? trendFallback?.credit,
-              },
-              sentiment: {
-                ...masterResult.data.sentiment,
-                trend: masterResult.data.sentiment?.trend ?? trendFallback?.sentiment,
-              },
-            };
-
-            setMasterCycleData(enrichedData);
-          }
-        } catch (error) {
-          console.warn('Master Cycle API 호출 실패 (v4):', error);
-        }
-
       } catch (error) {
         console.error('Failed to fetch cycle data:', error);
       } finally {
@@ -485,6 +453,71 @@ export default function IndicatorsPage() {
 
     fetchAndCalculateCycle();
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function fetchMasterCycle() {
+      try {
+        const masterResult = await fetchJsonWithRetry(
+          `${API_URL}/api/v4/master-cycle`,
+          {},
+          3,
+          1000
+        );
+
+        if (cancelled) return;
+
+        if (masterResult.status === 'success' && masterResult.data) {
+          const needsTrendFallback =
+            masterResult.data.macro?.trend == null ||
+            masterResult.data.credit?.trend == null ||
+            masterResult.data.sentiment?.trend == null;
+
+          let trendFallback = null;
+          if (needsTrendFallback && indicatorsPayload) {
+            // ✅ Fallback: 히스토리 기반 Trend 계산 (API 미제공 시)
+            const indicatorsMap: Record<string, { data?: { latest_release?: { actual?: number | string | null }; history_table?: Array<{ release_date: string; actual: number | string | null }> } }> = {};
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            indicatorsPayload.forEach((item: any) => {
+              if (item?.indicator_id) {
+                indicatorsMap[item.indicator_id] = { data: item.data };
+              }
+            });
+            trendFallback = calculateCycleTrendsFromIndicators(indicatorsMap);
+          }
+
+          // masterResult.data에 trend 보강 (API 우선, 없으면 fallback)
+          const enrichedData = {
+            ...masterResult.data,
+            macro: {
+              ...masterResult.data.macro,
+              trend: masterResult.data.macro?.trend ?? trendFallback?.macro,
+            },
+            credit: {
+              ...masterResult.data.credit,
+              trend: masterResult.data.credit?.trend ?? trendFallback?.credit,
+            },
+            sentiment: {
+              ...masterResult.data.sentiment,
+              trend: masterResult.data.sentiment?.trend ?? trendFallback?.sentiment,
+            },
+          };
+
+          setMasterCycleData(enrichedData);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          console.warn('Master Cycle API 호출 실패 (v4):', error);
+        }
+      }
+    }
+
+    fetchMasterCycle();
+    return () => {
+      cancelled = true;
+    };
+  }, [indicatorsPayload]);
 
   // ✅ Phase 2: 카운트다운 감소 로직
   useEffect(() => {
