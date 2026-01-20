@@ -1185,3 +1185,277 @@ def calculate_master_cycle_v2(db_service) -> Dict[str, Any]:
             "recommendation": "데이터 확인 필요",
             "data_warnings": []
         }
+
+
+# ========================================
+# 10. MACRO REGIME ENHANCEMENTS (Phase 5)
+# ========================================
+
+def calculate_real_interest_rate(db_service) -> Dict[str, Any]:
+    """
+    실질금리 계산: 명목금리 - 인플레이션
+
+    실질금리가 높으면 경기 억제적 (주식에 부정적)
+    실질금리가 낮거나 음수면 경기 부양적 (주식에 긍정적)
+
+    Args:
+        db_service: DB 서비스
+
+    Returns:
+        {
+            "real_rate": 1.5,        # 실질금리 (%)
+            "nominal_rate": 4.5,     # 명목금리
+            "inflation": 3.0,        # 인플레이션
+            "score": 35.0,           # 0-100 점수 (낮을수록 억제적)
+            "regime": "restrictive"  # restrictive/neutral/stimulative
+        }
+    """
+    try:
+        # 명목금리 (Federal Funds Rate)
+        fed_rate_data = db_service.get_latest_indicator('federal-funds-rate')
+        nominal_rate = parse_indicator_value(fed_rate_data.get('actual')) if fed_rate_data else None
+
+        # 인플레이션 (Core CPI)
+        cpi_data = db_service.get_latest_indicator('core-cpi')
+        inflation = parse_indicator_value(cpi_data.get('actual')) if cpi_data else None
+
+        if nominal_rate is None or inflation is None:
+            return {
+                "real_rate": None,
+                "nominal_rate": nominal_rate,
+                "inflation": inflation,
+                "score": 50.0,
+                "regime": "unknown"
+            }
+
+        # 실질금리 계산
+        real_rate = nominal_rate - inflation
+
+        # 점수 계산 (실질금리 -2% ~ +3% 범위를 100~0 점수로 매핑)
+        # -2% 이하: 100점 (매우 부양적)
+        # +3% 이상: 0점 (매우 억제적)
+        score = 100 - ((real_rate + 2) / 5) * 100
+        score = max(0.0, min(100.0, score))
+
+        # 레짐 판단
+        if real_rate < 0:
+            regime = "stimulative"  # 부양적 (실질금리 음수)
+        elif real_rate < 1.5:
+            regime = "neutral"       # 중립
+        else:
+            regime = "restrictive"   # 억제적
+
+        return {
+            "real_rate": round(real_rate, 2),
+            "nominal_rate": round(nominal_rate, 2),
+            "inflation": round(inflation, 2),
+            "score": round(score, 1),
+            "regime": regime
+        }
+
+    except Exception as e:
+        logger.error(f"Error calculating real interest rate: {e}")
+        return {
+            "real_rate": None,
+            "score": 50.0,
+            "regime": "error"
+        }
+
+
+def calculate_yield_curve_inversion_duration(db_service) -> Dict[str, Any]:
+    """
+    장단기 스프레드 역전 지속기간 계산
+
+    역전 지속기간이 길수록 침체 확률 증가
+    - 역전 없음: 정상 (100점)
+    - 역전 3개월 미만: 경계 (70점)
+    - 역전 3-6개월: 위험 (40점)
+    - 역전 6개월 이상: 높은 침체 확률 (10점)
+
+    Args:
+        db_service: DB 서비스
+
+    Returns:
+        {
+            "current_spread": 0.25,     # 현재 스프레드
+            "is_inverted": False,       # 현재 역전 여부
+            "inversion_months": 0,      # 역전 지속 개월 수
+            "score": 100.0,             # 0-100 점수
+            "signal": "normal"          # normal/warning/danger/recession_risk
+        }
+    """
+    try:
+        # 현재 스프레드
+        latest = db_service.get_latest_indicator('yield-curve-10y-2y')
+        current_spread = parse_indicator_value(latest.get('actual')) if latest else None
+
+        if current_spread is None:
+            return {
+                "current_spread": None,
+                "is_inverted": False,
+                "inversion_months": 0,
+                "score": 50.0,
+                "signal": "unknown"
+            }
+
+        # 히스토리에서 역전 지속기간 계산
+        history = db_service.get_history_data('yield-curve-10y-2y', limit=12)
+        inversion_months = 0
+
+        for record in history:
+            spread_value = parse_indicator_value(record.get('actual'))
+            if spread_value is not None and spread_value < 0:
+                inversion_months += 1
+            else:
+                break  # 역전이 끊기면 중단
+
+        is_inverted = current_spread < 0
+
+        # 점수 계산
+        if inversion_months == 0:
+            score = 100.0
+            signal = "normal"
+        elif inversion_months < 3:
+            score = 70.0
+            signal = "warning"
+        elif inversion_months < 6:
+            score = 40.0
+            signal = "danger"
+        else:
+            score = 10.0
+            signal = "recession_risk"
+
+        # 현재 역전 중이면 추가 감점
+        if is_inverted:
+            score = max(0.0, score - 10)
+
+        return {
+            "current_spread": round(current_spread, 3),
+            "is_inverted": is_inverted,
+            "inversion_months": inversion_months,
+            "score": round(score, 1),
+            "signal": signal
+        }
+
+    except Exception as e:
+        logger.error(f"Error calculating yield curve inversion: {e}")
+        return {
+            "current_spread": None,
+            "is_inverted": False,
+            "inversion_months": 0,
+            "score": 50.0,
+            "signal": "error"
+        }
+
+
+def calculate_macro_with_enhancements(db_service) -> Dict[str, Any]:
+    """
+    Phase 5: 강화된 Macro 사이클 계산
+
+    기존 Level+Trend에 실질금리와 역전 지속기간 반영
+
+    최종 점수 = 0.6×기본점수 + 0.25×실질금리점수 + 0.15×역전점수
+
+    Args:
+        db_service: DB 서비스
+
+    Returns:
+        기존 Macro 결과 + 강화 지표
+    """
+    try:
+        # 기존 Macro 계산 (Level + Trend)
+        base_macro = calculate_cycle_with_trend(MACRO_INDICATORS, db_service, "Macro")
+
+        # Phase 5 강화 지표
+        real_rate = calculate_real_interest_rate(db_service)
+        yield_curve = calculate_yield_curve_inversion_duration(db_service)
+
+        # 강화된 점수 계산
+        # 0.6×기본 + 0.25×실질금리 + 0.15×역전지속
+        enhanced_score = (
+            0.60 * base_macro['score'] +
+            0.25 * real_rate['score'] +
+            0.15 * yield_curve['score']
+        )
+
+        # 결과 반환
+        result = base_macro.copy()
+        result.update({
+            "score": round(enhanced_score, 1),
+            "base_score": base_macro['score'],
+            "real_interest_rate": real_rate,
+            "yield_curve_inversion": yield_curve,
+            "phase": get_macro_phase(enhanced_score),
+            "enhancements_applied": True
+        })
+
+        return result
+
+    except Exception as e:
+        logger.error(f"Error in macro with enhancements: {e}")
+        return calculate_cycle_with_trend(MACRO_INDICATORS, db_service, "Macro")
+
+
+# ========================================
+# 11. MASTER CYCLE V3 (WITH MACRO ENHANCEMENTS)
+# ========================================
+
+def calculate_master_cycle_v3(db_service) -> Dict[str, Any]:
+    """
+    Phase 5 완성: Master Market Cycle with Macro Enhancements
+
+    Macro에 실질금리 + 역전 지속기간 반영
+    MMC = 0.5*Sentiment + 0.3*Credit + 0.2*Macro(enhanced)
+
+    Args:
+        db_service: PostgreSQL 데이터베이스 서비스
+
+    Returns:
+        기존 v2와 동일한 구조 + Macro 강화 필드
+    """
+    try:
+        # 강화된 Macro 계산
+        macro = calculate_macro_with_enhancements(db_service)
+
+        # 기존 Credit, Sentiment 계산
+        credit = calculate_cycle_with_trend(CREDIT_INDICATORS, db_service, "Credit")
+        sentiment = calculate_cycle_with_trend(SENTIMENT_INDICATORS, db_service, "Sentiment")
+
+        # MMC 계산
+        mmc_score = (
+            0.50 * sentiment['score'] +
+            0.30 * credit['score'] +
+            0.20 * macro['score']
+        )
+
+        # 투자 국면 판단
+        phase = get_investment_phase(mmc_score)
+        recommendation = get_investment_recommendation(
+            mmc_score,
+            macro['score'],
+            credit['score'],
+            sentiment['score']
+        )
+
+        # 강화 경고 생성
+        warnings = []
+        if macro.get('real_interest_rate', {}).get('regime') == 'restrictive':
+            warnings.append("실질금리 억제적 수준 (주의)")
+        if macro.get('yield_curve_inversion', {}).get('signal') in ['danger', 'recession_risk']:
+            warnings.append(f"장단기 스프레드 역전 {macro.get('yield_curve_inversion', {}).get('inversion_months', 0)}개월 지속")
+
+        return {
+            "mmc_score": round(mmc_score, 1),
+            "phase": phase,
+            "macro": macro,
+            "credit": credit,
+            "sentiment": sentiment,
+            "recommendation": recommendation,
+            "updated_at": datetime.now().isoformat(),
+            "version": "v3.0-macro-enhanced",
+            "data_warnings": warnings
+        }
+
+    except Exception as e:
+        logger.error(f"Error calculating master cycle v3: {e}")
+        return calculate_master_cycle_v2(db_service)  # 폴백

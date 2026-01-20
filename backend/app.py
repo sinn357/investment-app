@@ -4446,9 +4446,9 @@ def get_master_market_cycle():
         }
     """
     try:
-        from services.cycle_engine import calculate_master_cycle_v2
+        from services.cycle_engine import calculate_master_cycle_v3
 
-        result = calculate_master_cycle_v2(db_service)
+        result = calculate_master_cycle_v3(db_service)
 
         if 'error' in result:
             return jsonify({
