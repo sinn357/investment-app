@@ -164,6 +164,9 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
   // 시계열 차트 탭 상태
   const [timeSeriesTab, setTimeSeriesTab] = useState<'일별' | '비율'>('일별');
 
+  // 카드대금 제외 토글 상태
+  const [excludeCardPayment, setExcludeCardPayment] = useState(false);
+
   // 게이지 섹션 상태
   const [budgetGoals, setBudgetGoals] = useState<{
     expense_goals: Record<string, Record<string, number>>;
@@ -805,17 +808,39 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
 
   // ✅ 성능 최적화: 이미 useMemo로 정의된 변수들 사용 (중복 계산 제거)
   const monthLabel = `${selectedYear}년 ${selectedMonth}월`;
-  const expenseSummary = expenseData ? {
-    income: expenseData.summary.total_income,
-    expense: expenseData.summary.total_expense,
-    net: expenseData.summary.net_amount,
-    transactions: expenseData.summary.total_transactions,
-  } : {
-    income: 0,
-    expense: 0,
-    net: 0,
-    transactions: 0,
-  };
+
+  // 카드대금 제외 시 직접 계산
+  const expenseSummary = useMemo(() => {
+    if (!expenseData) {
+      return { income: 0, expense: 0, net: 0, transactions: 0 };
+    }
+
+    if (!excludeCardPayment) {
+      // 카드대금 포함 (기존 로직)
+      return {
+        income: expenseData.summary.total_income,
+        expense: expenseData.summary.total_expense,
+        net: expenseData.summary.net_amount,
+        transactions: expenseData.summary.total_transactions,
+      };
+    }
+
+    // 카드대금 제외 계산
+    const cardPaymentTotal = expenseData.data
+      .filter(t => t.subcategory === '카드대금' && t.transaction_type === '지출')
+      .reduce((sum, t) => sum + Number(t.amount), 0);
+
+    const expenseExcluded = expenseData.summary.total_expense - cardPaymentTotal;
+    const cardPaymentCount = expenseData.data
+      .filter(t => t.subcategory === '카드대금' && t.transaction_type === '지출').length;
+
+    return {
+      income: expenseData.summary.total_income,
+      expense: expenseExcluded,
+      net: expenseData.summary.total_income - expenseExcluded,
+      transactions: expenseData.summary.total_transactions - cardPaymentCount,
+    };
+  }, [expenseData, excludeCardPayment]);
 
   if (loading) {
     return (
@@ -918,13 +943,32 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
             </div>
 
             {expenseData && (
+          <>
+          {/* 카드대금 제외 토글 */}
+          <div className="flex items-center justify-end mb-2">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <span className="text-xs text-slate-500">카드대금 제외</span>
+              <button
+                onClick={() => setExcludeCardPayment(!excludeCardPayment)}
+                className={`relative w-10 h-5 rounded-full transition-colors ${
+                  excludeCardPayment ? 'bg-primary' : 'bg-gray-300'
+                }`}
+              >
+                <span
+                  className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${
+                    excludeCardPayment ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </label>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
             <div className="bg-white border border-gray-200 rounded-lg p-2.5 shadow-sm">
               <p className="text-xs text-slate-500">총 수입</p>
               <p className="text-xl font-bold text-[var(--secondary)] mt-1">{expenseSummary.income.toLocaleString()}원</p>
             </div>
             <div className="bg-white border border-gray-200 rounded-lg p-2.5 shadow-sm">
-              <p className="text-xs text-slate-500">총 지출</p>
+              <p className="text-xs text-slate-500">총 지출{excludeCardPayment && <span className="text-[10px] ml-1">(카드대금 제외)</span>}</p>
               <p className="text-xl font-bold text-red-600 mt-1">{expenseSummary.expense.toLocaleString()}원</p>
             </div>
             <div className="bg-white border border-gray-200 rounded-lg p-2.5 shadow-sm">
@@ -938,6 +982,7 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
               <p className="text-xl font-bold text-slate-900 mt-1">{expenseSummary.transactions}건</p>
             </div>
           </div>
+          </>
             )}
           </div>
         </div>

@@ -180,8 +180,33 @@ export default function IndicatorsPage() {
   const [isSavingNarrative, setIsSavingNarrative] = useState(false);
   const [savingRisk, setSavingRisk] = useState(false);
   const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
-  const [isIndicatorsCollapsed, setIsIndicatorsCollapsed] = useState(false);
+  // 섹션별 접기 상태
+  const [collapsedSections, setCollapsedSections] = useState({
+    masterCycle: false,
+    healthCheck: false,
+    indicators: false,
+    newsNarrative: false,
+    riskRadar: false,
+    bigWave: false,
+  });
   const [narrativeRefreshKey, setNarrativeRefreshKey] = useState(0);
+
+  // 섹션 접기/펼치기 토글 함수
+  const toggleSection = useCallback((section: keyof typeof collapsedSections) => {
+    setCollapsedSections(prev => ({ ...prev, [section]: !prev[section] }));
+  }, []);
+
+  // 전체 접기/펼치기
+  const toggleAllSections = useCallback((collapsed: boolean) => {
+    setCollapsedSections({
+      masterCycle: collapsed,
+      healthCheck: collapsed,
+      indicators: collapsed,
+      newsNarrative: collapsed,
+      riskRadar: collapsed,
+      bigWave: collapsed,
+    });
+  }, []);
 
   const getNarrativeDraftKey = useCallback((date: string) => {
     return `${NARRATIVE_DRAFT_STORAGE_KEY}_${userId}_${date}`;
@@ -686,20 +711,50 @@ export default function IndicatorsPage() {
       /> */}
 
       <main className="overflow-x-hidden">
+        {/* 전체 접기/펼치기 버튼 */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-4">
+          <div className="flex justify-end gap-2">
+            <button
+              onClick={() => toggleAllSections(true)}
+              className="px-3 py-1.5 text-xs bg-muted hover:bg-muted/80 text-muted-foreground rounded-md"
+            >
+              모두 접기
+            </button>
+            <button
+              onClick={() => toggleAllSections(false)}
+              className="px-3 py-1.5 text-xs bg-muted hover:bg-muted/80 text-muted-foreground rounded-md"
+            >
+              모두 펼치기
+            </button>
+          </div>
+        </div>
+
         {/* ✅ NEW: Master Market Cycle (Phase 1) */}
         {!loading && masterCycleData && (
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
-            <MasterCycleCard data={masterCycleData} />
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-4">
+            <div
+              onClick={() => toggleSection('masterCycle')}
+              className="flex items-center justify-between p-3 bg-card rounded-t-lg border border-b-0 border-primary/20 cursor-pointer hover:bg-muted/50"
+            >
+              <h3 className="text-lg font-semibold text-foreground">🎯 Master Market Cycle</h3>
+              <span className="text-sm text-muted-foreground">{collapsedSections.masterCycle ? '펼치기 ▼' : '접기 ▲'}</span>
+            </div>
+            {!collapsedSections.masterCycle && <MasterCycleCard data={masterCycleData} />}
           </div>
         )}
 
         {/* ✅ NEW: Health Check Summary (Phase 2) */}
         {!loading && healthCheck && healthCheck.summary && (
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-6">
-            <GlassCard className="p-4" animate animationDelay={50}>
-              <h3 className="text-lg font-semibold text-foreground mb-3">
-                📊 지표 상태 요약
-              </h3>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-4">
+            <div
+              onClick={() => toggleSection('healthCheck')}
+              className="flex items-center justify-between p-3 bg-card rounded-t-lg border border-b-0 border-primary/20 cursor-pointer hover:bg-muted/50"
+            >
+              <h3 className="text-lg font-semibold text-foreground">📊 지표 상태 요약</h3>
+              <span className="text-sm text-muted-foreground">{collapsedSections.healthCheck ? '펼치기 ▼' : '접기 ▲'}</span>
+            </div>
+            {!collapsedSections.healthCheck && (
+            <GlassCard className="p-4 rounded-t-none" animate animationDelay={50}>
               <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
                 <div className="flex items-center gap-2">
                   <span className="text-2xl">✅</span>
@@ -763,27 +818,27 @@ export default function IndicatorsPage() {
                 </div>
               </div>
             </GlassCard>
+            )}
           </div>
         )}
 
+        {/* 경제지표 한눈에 보기 */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-4">
-          <div className="flex items-center justify-between p-4 bg-card rounded-lg border border-primary/20">
+          <div
+            onClick={() => toggleSection('indicators')}
+            className="flex items-center justify-between p-3 bg-card rounded-lg border border-primary/20 cursor-pointer hover:bg-muted/50"
+          >
             <div>
-              <h3 className="text-lg font-semibold text-foreground">경제지표 한눈에 보기</h3>
+              <h3 className="text-lg font-semibold text-foreground">📈 경제지표 한눈에 보기</h3>
               <p className="text-xs text-muted-foreground">
-                필요할 때만 펼쳐서 확인할 수 있습니다.
+                클릭하여 펼치거나 접을 수 있습니다.
               </p>
             </div>
-            <button
-              onClick={() => setIsIndicatorsCollapsed((prev) => !prev)}
-              className="px-4 py-2 bg-muted hover:bg-muted/80 text-muted-foreground rounded-md text-sm font-medium"
-            >
-              {isIndicatorsCollapsed ? '펼치기' : '접기'}
-            </button>
+            <span className="text-sm text-muted-foreground">{collapsedSections.indicators ? '펼치기 ▼' : '접기 ▲'}</span>
           </div>
         </div>
 
-        {!isIndicatorsCollapsed && (
+        {!collapsedSections.indicators && (
           <>
             {/* 경제지표 그리드 (Phase 8 - 한눈에 보기) */}
             {loading ? (
@@ -987,75 +1042,104 @@ export default function IndicatorsPage() {
         {/* <DataSection /> */}
 
         {/* 뉴스 & 담론 섹션 */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <NewsNarrative
-            articles={narrative.articles}
-            myNarrative={narrative.myNarrative}
-            onChange={(data) => setNarrative({ ...narrative, ...data })}
-            mmcScore={masterCycleData?.mmc_score}
-            phase={masterCycleData?.phase}
-            selectedDate={selectedDate}
-            onDateChange={setSelectedDate}
-          />
-
-          {/* 담론 저장 버튼 */}
-          <div className="mt-4 flex justify-end">
-            <button
-              onClick={handleSaveNarrative}
-              disabled={isSavingNarrative}
-              className="px-6 py-2 bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-white font-semibold rounded-lg shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isSavingNarrative ? '저장 중...' : '💾 담론 저장'}
-            </button>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div
+            onClick={() => toggleSection('newsNarrative')}
+            className="flex items-center justify-between p-3 bg-card rounded-lg border border-primary/20 cursor-pointer hover:bg-muted/50 mb-4"
+          >
+            <div>
+              <h3 className="text-lg font-semibold text-foreground">📰 뉴스 & 담론</h3>
+              <p className="text-xs text-muted-foreground">뉴스 기반 시장 담론 기록</p>
+            </div>
+            <span className="text-sm text-muted-foreground">{collapsedSections.newsNarrative ? '펼치기 ▼' : '접기 ▲'}</span>
           </div>
 
-          {/* 과거 담론 리뷰 섹션 */}
-          <NarrativeReview
-            userId={userId}
-            refreshKey={narrativeRefreshKey}
-            onSelectDate={handleSelectNarrativeDate}
-            onDeleteDate={handleDeleteNarrativeDate}
-          />
+          {!collapsedSections.newsNarrative && (
+            <>
+              <NewsNarrative
+                articles={narrative.articles}
+                myNarrative={narrative.myNarrative}
+                onChange={(data) => setNarrative({ ...narrative, ...data })}
+                mmcScore={masterCycleData?.mmc_score}
+                phase={masterCycleData?.phase}
+                selectedDate={selectedDate}
+                onDateChange={setSelectedDate}
+              />
+
+              {/* 담론 저장 버튼 */}
+              <div className="mt-4 flex justify-end">
+                <button
+                  onClick={handleSaveNarrative}
+                  disabled={isSavingNarrative}
+                  className="px-6 py-2 bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-white font-semibold rounded-lg shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSavingNarrative ? '저장 중...' : '💾 담론 저장'}
+                </button>
+              </div>
+
+              {/* 과거 담론 리뷰 섹션 */}
+              <NarrativeReview
+                userId={userId}
+                refreshKey={narrativeRefreshKey}
+                onSelectDate={handleSelectNarrativeDate}
+                onDeleteDate={handleDeleteNarrativeDate}
+              />
+            </>
+          )}
         </div>
 
         {/* 리스크 레이더 섹션 */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-6">
-          <div className="flex items-center justify-between mb-3">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-4">
+          <div
+            onClick={() => toggleSection('riskRadar')}
+            className="flex items-center justify-between p-3 bg-card rounded-lg border border-primary/20 cursor-pointer hover:bg-muted/50 mb-4"
+          >
             <div>
-              <h3 className="text-xl font-semibold">리스크 레이더</h3>
-              <p className="text-sm text-muted-foreground">구조·정책 / 사이클 / 포트폴리오 + 실행 리스크 태그</p>
+              <h3 className="text-lg font-semibold text-foreground">🎯 리스크 레이더</h3>
+              <p className="text-xs text-muted-foreground">구조·정책 / 사이클 / 포트폴리오 + 실행 리스크 태그</p>
             </div>
-            <button
-              onClick={handleSaveRisk}
-              disabled={savingRisk}
-              className="px-4 py-2 bg-primary text-white rounded-md shadow-sm disabled:opacity-50"
-            >
-              {savingRisk ? '저장 중...' : '저장'}
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={(e) => { e.stopPropagation(); handleSaveRisk(); }}
+                disabled={savingRisk}
+                className="px-3 py-1.5 text-xs bg-primary text-white rounded-md shadow-sm disabled:opacity-50"
+              >
+                {savingRisk ? '저장 중...' : '저장'}
+              </button>
+              <span className="text-sm text-muted-foreground">{collapsedSections.riskRadar ? '펼치기 ▼' : '접기 ▲'}</span>
+            </div>
           </div>
-          <RiskRadar value={riskRadar} onChange={setRiskRadar} />
+          {!collapsedSections.riskRadar && <RiskRadar value={riskRadar} onChange={setRiskRadar} />}
         </div>
 
         {/* 빅웨이브 섹션 */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-10">
-          <div className="flex items-center justify-between mb-3">
+          <div
+            onClick={() => toggleSection('bigWave')}
+            className="flex items-center justify-between p-3 bg-card rounded-lg border border-primary/20 cursor-pointer hover:bg-muted/50 mb-4"
+          >
             <div>
-              <h3 className="text-xl font-semibold">빅웨이브 트래커</h3>
-              <p className="text-sm text-muted-foreground">
+              <h3 className="text-lg font-semibold text-foreground">🌊 빅웨이브 트래커</h3>
+              <p className="text-xs text-muted-foreground">
                 구조적 파동(빅웨이브)을 카테고리·단계·이벤트·포지션으로 관리하세요.
               </p>
             </div>
-            <button
-              onClick={handleSaveBigWave}
-              className="px-4 py-2 bg-primary text-white rounded-md shadow-sm"
-            >
-              저장
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={(e) => { e.stopPropagation(); handleSaveBigWave(); }}
+                className="px-3 py-1.5 text-xs bg-primary text-white rounded-md shadow-sm"
+              >
+                저장
+              </button>
+              <span className="text-sm text-muted-foreground">{collapsedSections.bigWave ? '펼치기 ▼' : '접기 ▲'}</span>
+            </div>
           </div>
-          <BigWaveSection
-            cards={bigWave.cards}
-            onChange={(cards) => setBigWave({ cards })}
-          />
+          {!collapsedSections.bigWave && (
+            <BigWaveSection
+              cards={bigWave.cards}
+              onChange={(cards) => setBigWave({ cards })}
+            />
+          )}
         </div>
       </main>
       </div>

@@ -8,8 +8,43 @@
  */
 
 import React from 'react';
-import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer, PieLabelRenderProps } from 'recharts';
 import { CHART_THEME, ORACLE_COLORS } from '@/styles/theme';
+
+const RADIAN = Math.PI / 180;
+
+// 커스텀 라벨 렌더러 - 작은 섹터(5% 미만) 숨김 + 바깥쪽 배치
+const renderCustomLabel = (props: PieLabelRenderProps): React.ReactElement | null => {
+  const { cx, cy, midAngle, outerRadius, percent, name } = props;
+
+  // 타입 가드
+  if (typeof cx !== 'number' || typeof cy !== 'number' ||
+      typeof midAngle !== 'number' || typeof outerRadius !== 'number' ||
+      typeof percent !== 'number') {
+    return null;
+  }
+
+  // 5% 미만 섹터는 라벨 숨김
+  if (percent < 0.05) return null;
+
+  // 라벨 위치를 바깥쪽으로 (outerRadius * 1.15)
+  const radius = outerRadius * 1.15;
+  const x = cx + radius * Math.cos(-midAngle * RADIAN);
+  const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
+  return (
+    <text
+      x={x}
+      y={y}
+      fill="currentColor"
+      textAnchor={x > cx ? 'start' : 'end'}
+      dominantBaseline="central"
+      className="text-xs fill-muted-foreground"
+    >
+      {`${name} ${(percent * 100).toFixed(0)}%`}
+    </text>
+  );
+};
 
 interface OraclePieChartProps {
   data: Array<{ name: string; value: number }>;
@@ -64,7 +99,7 @@ export default function OraclePieChart({
           outerRadius={outerRadius}
           fill="#8884d8"
           dataKey="value"
-          label={showLabel}
+          label={showLabel ? renderCustomLabel : false}
           animationDuration={CHART_THEME.animation.duration}
         >
           {data.map((entry, index) => (
