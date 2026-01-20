@@ -42,7 +42,7 @@ class CrawlerService:
                 series_id = url.split('/')[-1]  # URL에서 시리즈 ID 추출 (예: DFII10, RBUSBIS 등)
                 # 월별 데이터는 더 긴 기간 필요 (6개월 = 180일)
                 is_monthly = "_PC1" in series_id or indicator_id in ["ppi", "pce", "core-pce"]
-                days = 180 if is_monthly else 14
+                days = 180 if is_monthly else 60
                 result = crawl_fred_indicator(series_id, calculate_yoy=False, days=days)
 
                 if "error" in result:
@@ -157,7 +157,9 @@ class CrawlerService:
         """모든 지표 크롤링 (배치 처리용)"""
         results = {}
 
-        for indicator_id in get_all_enabled_indicators().keys():
+        for indicator_id, config in get_all_enabled_indicators().items():
+            if config.manual_check:
+                continue
             print(f"Crawling {indicator_id}...")
             results[indicator_id] = cls.crawl_indicator(indicator_id)
 

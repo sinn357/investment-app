@@ -6,10 +6,12 @@ Investing.com Rates-Bonds Historical Data 크롤러
 
 from bs4 import BeautifulSoup
 import requests
+import time
+import random
 from typing import List, Dict, Any
 from datetime import datetime
 
-def fetch_historical_data(url: str) -> str:
+def fetch_historical_data(url: str, retries: int = 3, base_delay: float = 1.0) -> str:
     """Historical Data 페이지 HTML 가져오기"""
     # rates-bonds, commodities, indices, currencies 페이지를 Historical Data 페이지로 변환
     patterns = ["/rates-bonds/", "/commodities/", "/indices/", "/currencies/"]
@@ -20,9 +22,24 @@ def fetch_historical_data(url: str) -> str:
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
     }
 
-    response = requests.get(url, headers=headers, timeout=10)
-    response.raise_for_status()
-    return response.text
+    last_error = None
+    for attempt in range(retries + 1):
+        try:
+            response = requests.get(url, headers=headers, timeout=10)
+            if response.status_code == 429 and attempt < retries:
+                backoff = base_delay * (2 ** attempt) + random.uniform(0.0, 0.5)
+                time.sleep(backoff)
+                continue
+            response.raise_for_status()
+            return response.text
+        except requests.RequestException as e:
+            last_error = e
+            if attempt >= retries:
+                break
+            backoff = base_delay * (2 ** attempt) + random.uniform(0.0, 0.5)
+            time.sleep(backoff)
+
+    raise last_error
 
 def parse_historical_table(html: str) -> List[Dict[str, Any]]:
     """Historical Data 테이블 파싱

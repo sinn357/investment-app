@@ -1368,18 +1368,27 @@ async def update_all_indicators_background_async():
         update_status["total_indicators"] = 0
         save_update_status()
 
-        # indicators_config.py에서 활성화된 모든 지표 사용
+        # indicators_config.py에서 활성화된 모든 지표 사용 (manual_check 제외)
         from crawlers.indicators_config import get_all_enabled_indicators
-        indicators = list(get_all_enabled_indicators().keys())
+        indicators = [
+            indicator_id
+            for indicator_id, config in get_all_enabled_indicators().items()
+            if not config.manual_check
+        ]
         total_indicators = len(indicators)
         update_status["total_indicators"] = total_indicators  # 전체 개수 저장
         save_update_status()
 
         # 비동기 크롤링 설정
-        # 모든 지표를 동시에 비동기 실행 (asyncio.to_thread로 동기 함수를 비동기로 실행)
+        # 동시 요청 제한 + 지터로 429 완화
+        max_concurrency = int(os.getenv("CRAWL_MAX_CONCURRENCY", "4"))
+        semaphore = asyncio.Semaphore(max_concurrency)
+
         async def run_indicator(indicator_id: str):
-            result = await asyncio.to_thread(CrawlerService.crawl_indicator, indicator_id)
-            return indicator_id, result
+            async with semaphore:
+                await asyncio.sleep(0.2 + (hash(indicator_id) % 5) * 0.1)
+                result = await asyncio.to_thread(CrawlerService.crawl_indicator, indicator_id)
+                return indicator_id, result
 
         tasks = [asyncio.create_task(run_indicator(indicator_id)) for indicator_id in indicators]
 

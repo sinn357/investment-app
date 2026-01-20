@@ -1,20 +1,37 @@
 import requests
+import time
+import random
 from bs4 import BeautifulSoup
 import re
 from datetime import datetime
 from typing import Dict, Optional, Any, List
 
-def fetch_html(url: str) -> str:
+def fetch_html(url: str, retries: int = 3, base_delay: float = 1.0) -> str:
     """
-    Fetch HTML content from the given URL
+    Fetch HTML content from the given URL with retry/backoff.
     """
     headers = {
         'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
     }
 
-    response = requests.get(url, headers=headers)
-    response.raise_for_status()
-    return response.text
+    last_error = None
+    for attempt in range(retries + 1):
+        try:
+            response = requests.get(url, headers=headers, timeout=10)
+            if response.status_code == 429 and attempt < retries:
+                backoff = base_delay * (2 ** attempt) + random.uniform(0.0, 0.5)
+                time.sleep(backoff)
+                continue
+            response.raise_for_status()
+            return response.text
+        except requests.RequestException as e:
+            last_error = e
+            if attempt >= retries:
+                break
+            backoff = base_delay * (2 ** attempt) + random.uniform(0.0, 0.5)
+            time.sleep(backoff)
+
+    raise last_error
 
 def parse_history_table(html: str) -> List[Dict[str, Any]]:
     """
@@ -120,13 +137,16 @@ def extract_raw_data(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
         if latest_release and next_release:
             break
 
+    if latest_release is None:
+        return {"error": "No release data found"}
+
     # If no next release found, set it to "미정"
     if next_release is None:
         next_release = {
             "release_date": "미정",
             "time": "미정",
             "forecast": None,
-            "previous": latest_release.get("actual") if latest_release else None
+            "previous": latest_release.get("actual")
         }
 
     # 히스토리 데이터 추가 (최근 12개 레코드, actual 값이 있는 것만)
