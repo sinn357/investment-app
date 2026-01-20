@@ -5,7 +5,7 @@
 ### Changes
 - core-pce 제거 및 문서/탭 정리 (거시경제 사이클에서 제외)
 - 크롤링 레이트리밋 완화: 동시성 제한, 지터/백오프 적용
-- 크롤링 이슈 문서화: `docs/2026-01-20_Crawling_Known_Issues.md`
+- 크롤링 이슈 문서화: `docs/CRAWLING_KNOWN_ISSUES.md`
 
 ### Commits
 - `4048e5e`: chore: remove core-pce from system
