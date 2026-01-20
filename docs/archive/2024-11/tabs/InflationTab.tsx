@@ -37,7 +37,6 @@ export default function InflationTab() {
   const [cpiData, setCpiData] = useState<IndicatorData | null>(null);
   const [ppiData, setPpiData] = useState<IndicatorData | null>(null);
   const [pceData, setPceData] = useState<IndicatorData | null>(null);
-  const [corePceData, setCorePceData] = useState<IndicatorData | null>(null);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<string>('');
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -78,25 +77,12 @@ export default function InflationTab() {
     }
   };
 
-  const fetchCorePceData = async () => {
-    try {
-      const response = await fetch(`${BACKEND_URL}/api/rawdata/core-pce`);
-      const result = await response.json();
-      if (result.status === 'success') {
-        setCorePceData(result.data);
-      }
-    } catch (error) {
-      console.error('핵심 PCE 데이터 로드 실패:', error);
-    }
-  };
-
   const loadAllData = useCallback(async () => {
     setLoading(true);
     await Promise.all([
       fetchCpiData(),
       fetchPpiData(),
-      fetchPceData(),
-      fetchCorePceData()
+      fetchPceData()
     ]);
     setLoading(false);
     setLastUpdated(new Date().toLocaleString('ko-KR'));
@@ -212,26 +198,6 @@ export default function InflationTab() {
           />
         )}
 
-        {/* 핵심 PCE */}
-        {corePceData && (
-          <EconomicIndicatorCard
-            indicator={{
-              name: "핵심 PCE",
-              latestDate: corePceData.latest_release.release_date,
-              nextDate: typeof corePceData.next_release === 'string'
-                ? corePceData.next_release
-                : corePceData.next_release?.release_date || "미정",
-              actual: safeParseNumber(corePceData.latest_release.actual, '%'),
-              forecast: safeParseNumber(corePceData.latest_release.forecast, '%'),
-              previous: safeParseNumber(corePceData.latest_release.previous, '%'),
-              surprise: (() => {
-                const actualNum = safeParseNumber(corePceData.latest_release.actual, '%');
-                const forecastNum = safeParseNumber(corePceData.latest_release.forecast, '%');
-                return actualNum && forecastNum ? Math.round((actualNum - forecastNum) * 100) / 100 : null;
-              })()
-            }}
-          />
-        )}
       </div>
 
       {/* 데이터 섹션 */}

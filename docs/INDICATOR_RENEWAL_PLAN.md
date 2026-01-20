@@ -214,7 +214,6 @@ interface IndicatorData {
 - cb_consumer_confidence.py
 - consumer_confidence.py
 - core_cpi.py
-- core_pce.py
 - cpi.py
 - current_account.py
 - exports.py

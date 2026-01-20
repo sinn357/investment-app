@@ -50,7 +50,6 @@ timeout_per_indicator = 3  # 70% 단축
 - ❌ leading-indicators (Investing.com 파싱 실패)
 - ❌ exports (Investing.com 404)
 - ❌ imports (Investing.com 404)
-- ❌ core-pce (Investing.com 파싱 실패)
 - ❌ current-account-balance (BEA API 키 문제)
 - ❌ usd-index (Historical Data 크롤러 문제)
 - ❌ usd-krw (Historical Data 크롤러 문제)
@@ -143,7 +142,6 @@ for t in tables:
 - leading-indicators (파싱 실패)
 - exports (404 Error)
 - imports (404 Error)
-- core-pce (파싱 실패)
 
 **API/URL 문제** (2개):
 - current-account-balance (BEA API 키 문제)

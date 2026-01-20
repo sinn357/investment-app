@@ -67,9 +67,9 @@ const CATEGORY_NAMES: Record<string, string> = {
 **현황 분석**:
 - 전체 지표: 56개
 - 활성 크롤링: 45개
-- 비활성화: 11개
+- 비활성화: 10개
 
-**비활성화 지표 11개**:
+**비활성화 지표 10개**:
 1. ~~`industrial-production`~~ → ✅ URL 수정 후 재활성화
 2. ~~`average-hourly-earnings`~~ → ✅ URL 수정 후 재활성화
 3. `business-inventories` → ⚠️ 직접 확인 필요
@@ -77,10 +77,9 @@ const CATEGORY_NAMES: Record<string, string> = {
 5. `exports` → ⚠️ 직접 확인 필요
 6. `imports` → ⚠️ 직접 확인 필요
 7. `current-account-balance` → ⚠️ 직접 확인 필요 (BEA API 키)
-8. ~~`core-pce`~~ → ❌ 삭제
-9. `sp-gsci` → ⚠️ 직접 확인 필요
-10. `fci` → ⚠️ 직접 확인 필요 (Credit Cycle 가중치 25%, 중요!)
-11. `aaii-bull` → ⚠️ 직접 확인 필요
+8. `sp-gsci` → ⚠️ 직접 확인 필요
+9. `fci` → ⚠️ 직접 확인 필요 (Credit Cycle 가중치 25%, 중요!)
+10. `aaii-bull` → ⚠️ 직접 확인 필요
 
 **조치**:
 ```python
@@ -96,10 +95,7 @@ const CATEGORY_NAMES: Record<string, string> = {
     enabled=True,  # ✅ 재활성화
 ),
 
-# 2. core-pce 완전 삭제
-# "core-pce": IndicatorConfig(...),  # 삭제됨
-
-# 3. 직접 확인 지표 시스템
+# 2. 직접 확인 지표 시스템
 class IndicatorConfig:
     def __init__(
         self,
@@ -250,7 +246,7 @@ curl http://localhost:5000/api/v2/indicators/industrial-production
 ## 📊 최종 현황
 
 **경제지표**:
-- 전체: 56개 → 55개 (core-pce 삭제)
+- 전체: 56개 → 55개
 - 활성: 45개 → 47개 (산업생산, 평균시간당임금 재활성화)
 - 크롤링: 40개 (자동)
 - 직접 확인: 7개 (manual_check=true)

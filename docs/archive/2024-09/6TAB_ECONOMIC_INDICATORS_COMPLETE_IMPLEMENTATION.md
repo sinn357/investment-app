@@ -53,10 +53,6 @@ def get_pce():
     """개인소비지출 크롤링"""
     url = "https://www.investing.com/economic-calendar/pce-price-index-905"
 
-# /backend/crawlers/core_pce.py
-def get_core_pce():
-    """핵심 PCE 크롤링"""
-    url = "https://www.investing.com/economic-calendar/core-pce-price-index-904"
 ```
 
 #### 정책지표 크롤러 (4개)

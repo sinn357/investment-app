@@ -107,7 +107,7 @@ for item in results:
 def calculate_cycle_from_data(self, indicators_dict: Dict) -> Dict:
     """✅ 외부 데이터로 계산 (DB 재조회 없음)"""
     indicator_ids = ['ism-manufacturing', 'ism-non-manufacturing',
-                     'core-cpi', 'core-pce', 'federal-funds-rate', 'yield-curve-10y-2y']
+                     'core-cpi', 'federal-funds-rate', 'yield-curve-10y-2y']
 
     indicators_data = {}
     for ind_id in indicator_ids:
@@ -203,7 +203,6 @@ setLoadingTime(Number((endTime - startTime) / 1000).toFixed(2));
 | core-cpi | 근원 소비자물가지수 | Core CPI | ✅ DB |
 | ppi | 생산자물가지수 | Producer Price Index (PPI) | ✅ DB |
 | pce | 개인소비지출 | Personal Consumption Expenditures (PCE) | ✅ DB |
-| core-pce | 근원 개인소비지출 | Core PCE | ⏳ 구현 필요 |
 | michigan-1y-inflation | 미시간 1년 기대 인플레 | Michigan 1-Year Inflation Expectations | ✅ DB |
 | michigan-5y-inflation | 미시간 5년 기대 인플레 | Michigan 5-Year Inflation Expectations | ✅ DB |
 | brent-oil | 브렌트유 | Brent Crude Oil | ⏳ 구현 필요 |
@@ -264,23 +263,22 @@ setLoadingTime(Number((endTime - startTime) / 1000).toFixed(2));
 
 ### 1. 거시경제 사이클 (Macro Cycle)
 
-**사용 지표 (6개)**:
+**사용 지표 (5개)**:
 1. **ISM 제조업 PMI** (30%) - `ism-manufacturing`
 2. **ISM 비제조업 PMI** (20%) - `ism-non-manufacturing`
 3. **근원 CPI** (20%) - `core-cpi`
-4. **근원 PCE** (10%) - `core-pce` ⚠️ DB 없음
-5. **연준 기준금리** (10%) - `federal-funds-rate`
-6. **장단기금리차** (10%) - `yield-curve-10y-2y`
+4. **연준 기준금리** (15%) - `federal-funds-rate`
+5. **장단기금리차** (15%) - `yield-curve-10y-2y`
 
 **점수 계산 공식**:
 ```
 총점 = (ISM제조업 × 0.3) + (ISM비제조업 × 0.2) + (근원CPI × 0.2)
-     + (근원PCE × 0.1) + (연준금리 × 0.1) + (장단기차 × 0.1)
+     + (연준금리 × 0.15) + (장단기차 × 0.15)
 ```
 
 **개별 지표 점수화**:
 - **ISM PMI**: 0~100점 (실제값 그대로 사용)
-- **CPI/PCE**: 역방향 (낮을수록 높은 점수)
+- **CPI**: 역방향 (낮을수록 높은 점수)
   - ≤2% = 100점
   - 2-4% = 100-50점 (선형)
   - 4-6% = 50-0점 (선형)
@@ -379,26 +377,21 @@ setLoadingTime(Number((endTime - startTime) / 1000).toFixed(2));
 
 ---
 
-## 🔍 구현 필요한 지표 (11개)
-
-### 우선순위 HIGH (사이클 계산에 필요)
-1. **core-pce** (근원 PCE) - 거시경제 사이클 10%
-   - 현재 폴백값 사용 중
-   - FRED API로 크롤링 가능
+## 🔍 구현 필요한 지표 (10개)
 
 ### 우선순위 MEDIUM (경제지표 완성도)
-2. **business-inventories** (기업재고)
-3. **leading-indicators** (경기선행지수)
-4. **current-account-balance** (경상수지)
-5. **exports** (수출)
-6. **imports** (수입)
+1. **business-inventories** (기업재고)
+2. **leading-indicators** (경기선행지수)
+3. **current-account-balance** (경상수지)
+4. **exports** (수출)
+5. **imports** (수입)
 
 ### 우선순위 LOW (보조 지표)
-7. **brent-oil** (브렌트유)
-8. **wti-oil** (WTI 원유)
-9. **sp-gsci** (S&P GSCI 원자재지수)
-10. **usd-index** (달러 인덱스)
-11. **usd-krw** (원/달러 환율)
+6. **brent-oil** (브렌트유)
+7. **wti-oil** (WTI 원유)
+8. **sp-gsci** (S&P GSCI 원자재지수)
+9. **usd-index** (달러 인덱스)
+10. **usd-krw** (원/달러 환율)
 
 ---
 

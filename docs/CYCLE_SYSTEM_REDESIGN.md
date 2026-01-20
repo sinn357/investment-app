@@ -269,7 +269,7 @@
 ### 3.3 최종 지표 요약
 
 **총 17개 지표**:
-- 현재 보유: 6개 (거시경제 사이클)
+- 현재 보유: 5개 (거시경제 사이클)
 - 신규 필요: 11개 (신용 5개 + 심리 6개)
 
 **제외 지표**: 30개
@@ -286,14 +286,13 @@
 pmi_mfg: float        # ISM 제조업 PMI (45~60)
 pmi_svc: float        # ISM 비제조업 PMI (45~60)
 core_cpi: float       # 근원 CPI YoY% (0~6)
-core_pce: float       # 근원 PCE YoY% (0~6)
 fed_rate: float       # 연준 기준금리% (0~8)
 yield_curve: float    # 장단기금리차% (-2~+3)
 ```
 
 #### 계산 수식
 ```python
-def calc_macro_cycle(pmi_mfg, pmi_svc, core_cpi, core_pce, fed_rate, yield_curve):
+def calc_macro_cycle(pmi_mfg, pmi_svc, core_cpi, fed_rate, yield_curve):
     """
     거시경제 사이클 점수 계산 (0~100)
 
@@ -312,10 +311,7 @@ def calc_macro_cycle(pmi_mfg, pmi_svc, core_cpi, core_pce, fed_rate, yield_curve
 
     # 2. 인플레 압박 점수 (0~100, 높을수록 압박 낮음)
     # 2% 인플레 = 100점, 4% = 60점, 0% = 100점
-    inflation_score = 100 - (
-        max(0, core_cpi - 2.0) * 20 * 0.7 +
-        max(0, core_pce - 2.0) * 20 * 0.3
-    )
+    inflation_score = 100 - (max(0, core_cpi - 2.0) * 20)
     inflation_score = max(0, min(100, inflation_score))
 
     # 3. 금리 긴축도 점수 (0~100, 높을수록 완화적)
@@ -369,7 +365,6 @@ def calc_macro_cycle(pmi_mfg, pmi_svc, core_cpi, core_pce, fed_rate, yield_curve
 pmi_mfg = 52.3        # 확장
 pmi_svc = 54.1        # 확장
 core_cpi = 2.8        # 목표 근처
-core_pce = 2.5        # 목표 근처
 fed_rate = 4.5        # 긴축
 yield_curve = 0.55    # 정상화
 
