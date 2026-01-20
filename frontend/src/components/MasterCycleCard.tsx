@@ -2,10 +2,10 @@
 
 import React from 'react';
 import {
-  analyzeRegime,
+  analyzeRegimeV2,
   getClarityLabel,
   getConflictDisplay,
-  type RegimeAnalysis,
+  type RegimeAnalysisV2,
 } from '@/utils/regimePatterns';
 import {
   getCycleLabel,
@@ -13,6 +13,12 @@ import {
   getCycleHint,
   type CycleType,
 } from '@/utils/cycleLabels';
+import {
+  calculateCreditWithDynamicWeight,
+  formatWeightDisplay,
+  getAdjustmentReasonLabel,
+  getAdjustmentReasonColor,
+} from '@/utils/creditDynamicWeight';
 
 interface MasterCycleData {
   mmc_score: number;
@@ -100,12 +106,18 @@ export default function MasterCycleCard({ data }: MasterCycleCardProps) {
 
   const [expanded, setExpanded] = React.useState(false);
 
-  // Regime Pattern 분석 (S=sentiment, C=credit, M=macro)
-  const regimeAnalysis: RegimeAnalysis = analyzeRegime(
-    data.sentiment.score,
+  // Regime Pattern 분석 (Phase 2: 라벨 기반 + threshold 폴백)
+  const regimeAnalysis: RegimeAnalysisV2 = analyzeRegimeV2(
+    data.macro.score,
+    macroTrend,
     data.credit.score,
-    data.macro.score
+    creditTrend,
+    data.sentiment.score,
+    sentimentTrend
   );
+
+  // Credit 동적 가중치 계산
+  const creditDynamic = calculateCreditWithDynamicWeight(data.credit.score, creditTrend);
 
   const clarityInfo = getClarityLabel(regimeAnalysis.clarity);
   const conflictInfo = getConflictDisplay(regimeAnalysis.conflictLevel);
@@ -175,7 +187,7 @@ export default function MasterCycleCard({ data }: MasterCycleCardProps) {
         </div>
       </div>
 
-      {/* Regime Pattern 분석 (NEW) */}
+      {/* Regime Pattern 분석 (Phase 2: 라벨 기반 매칭) */}
       <div className="mb-6 p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
         {/* Regime Tag */}
         <div className="mb-3">
@@ -185,6 +197,17 @@ export default function MasterCycleCard({ data }: MasterCycleCardProps) {
             </span>
             <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200 rounded-full">
               {regimeAnalysis.pattern?.name || "Mixed"}
+            </span>
+            {/* 매칭 방식 표시 */}
+            <span className={`text-xs px-2 py-0.5 rounded-full ${
+              regimeAnalysis.matchMethod === 'label'
+                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200'
+                : regimeAnalysis.matchMethod === 'threshold'
+                ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200'
+                : 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-200'
+            }`}>
+              {regimeAnalysis.matchMethod === 'label' ? '🏷️ Label' :
+               regimeAnalysis.matchMethod === 'threshold' ? '📊 Threshold' : '⚪ Fallback'}
             </span>
           </div>
           <div className="text-sm text-gray-900 dark:text-gray-100 font-medium">
@@ -298,6 +321,16 @@ export default function MasterCycleCard({ data }: MasterCycleCardProps) {
               />
             </div>
             <span className="text-xs font-medium text-gray-600 dark:text-gray-400">{Math.round(creditTrend)}</span>
+          </div>
+          {/* 동적 가중치 표시 */}
+          <div className="flex items-center gap-2 mb-2 text-xs">
+            <span className="text-gray-500 dark:text-gray-400">가중치:</span>
+            <span className={getAdjustmentReasonColor(creditDynamic.adjustmentReason)}>
+              {getAdjustmentReasonLabel(creditDynamic.adjustmentReason)}
+            </span>
+            <span className="text-gray-400 dark:text-gray-500">
+              ({formatWeightDisplay(creditDynamic)})
+            </span>
           </div>
           <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">투자 힌트</div>
           <div className="text-sm text-gray-800 dark:text-gray-100">{creditHint}</div>
