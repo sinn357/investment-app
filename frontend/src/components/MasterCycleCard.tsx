@@ -38,6 +38,22 @@ interface YieldCurveInversionData {
   signal: string; // 'normal' | 'warning' | 'danger' | 'recession_risk' | 'unknown' | 'error'
 }
 
+// Phase 4: 스프레드 변화 속도 정보
+interface SpreadVelocityData {
+  current: number | null;
+  delta_1m: number | null;
+  delta_3m: number | null;
+  velocity_score: number;
+  alert_level: string; // 'normal' | 'warning' | 'danger' | 'unknown' | 'error'
+}
+
+// Phase 4: 급변 탐지 정보
+interface RapidChangeData {
+  has_rapid_change: boolean;
+  rapid_indicators: string[];
+  severity: string; // 'normal' | 'warning' | 'critical' | 'error'
+}
+
 interface MasterCycleData {
   mmc_score: number;
   phase: string;
@@ -57,6 +73,12 @@ interface MasterCycleData {
     state: string;
     phase?: string;
     trend?: number;
+    // Phase 4 강화 필드
+    base_score?: number;
+    hy_velocity?: SpreadVelocityData;
+    ig_velocity?: SpreadVelocityData;
+    rapid_change?: RapidChangeData;
+    enhancements_applied?: boolean;
   };
   sentiment: {
     score: number;
@@ -401,7 +423,58 @@ export default function MasterCycleCard({ data }: MasterCycleCardProps) {
               ({formatWeightDisplay(creditDynamic)})
             </span>
           </div>
-          <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">투자 힌트</div>
+          {/* Phase 4: 스프레드 변화 속도 & 급변 탐지 */}
+          {data.credit.enhancements_applied && (
+            <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700 space-y-1">
+              {/* HY 스프레드 변화 */}
+              {data.credit.hy_velocity && data.credit.hy_velocity.delta_1m !== null && (
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-gray-500 dark:text-gray-400">HY Δ1M:</span>
+                  <span className={`font-medium ${
+                    data.credit.hy_velocity.alert_level === 'normal'
+                      ? 'text-emerald-600 dark:text-emerald-400'
+                      : data.credit.hy_velocity.alert_level === 'warning'
+                      ? 'text-amber-600 dark:text-amber-400'
+                      : 'text-red-600 dark:text-red-400'
+                  }`}>
+                    {data.credit.hy_velocity.delta_1m > 0 ? '+' : ''}{data.credit.hy_velocity.delta_1m}bp
+                    {data.credit.hy_velocity.alert_level !== 'normal' && (
+                      <span className="ml-1">⚠️</span>
+                    )}
+                  </span>
+                </div>
+              )}
+              {/* IG 스프레드 변화 */}
+              {data.credit.ig_velocity && data.credit.ig_velocity.delta_1m !== null && (
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-gray-500 dark:text-gray-400">IG Δ1M:</span>
+                  <span className={`font-medium ${
+                    data.credit.ig_velocity.alert_level === 'normal'
+                      ? 'text-emerald-600 dark:text-emerald-400'
+                      : data.credit.ig_velocity.alert_level === 'warning'
+                      ? 'text-amber-600 dark:text-amber-400'
+                      : 'text-red-600 dark:text-red-400'
+                  }`}>
+                    {data.credit.ig_velocity.delta_1m > 0 ? '+' : ''}{data.credit.ig_velocity.delta_1m}bp
+                    {data.credit.ig_velocity.alert_level !== 'normal' && (
+                      <span className="ml-1">⚠️</span>
+                    )}
+                  </span>
+                </div>
+              )}
+              {/* 급변 경고 배지 */}
+              {data.credit.rapid_change?.has_rapid_change && (
+                <div className={`mt-1 px-2 py-1 rounded text-xs ${
+                  data.credit.rapid_change.severity === 'critical'
+                    ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200'
+                    : 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200'
+                }`}>
+                  ⚡ {data.credit.rapid_change.rapid_indicators.slice(0, 2).join(', ')}
+                </div>
+              )}
+            </div>
+          )}
+          <div className="text-xs text-gray-500 dark:text-gray-400 mb-1 mt-2">투자 힌트</div>
           <div className="text-sm text-gray-800 dark:text-gray-100">{creditHint}</div>
         </div>
 

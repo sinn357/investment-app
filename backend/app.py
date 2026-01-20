@@ -4470,6 +4470,43 @@ def get_master_market_cycle():
         }), 500
 
 
+@app.route('/api/v4/master-cycle', methods=['GET'])
+def get_master_market_cycle_v4():
+    """
+    v4: Master Market Cycle with Full Enhancements
+
+    Phase 4+5 완성:
+    - Macro: 실질금리 + 역전 지속기간
+    - Credit: 스프레드 변화 속도 + 급변 탐지
+
+    Returns:
+        v3 구조 + Credit 강화 필드 (hy_velocity, ig_velocity, rapid_change)
+    """
+    try:
+        from services.cycle_engine import calculate_master_cycle_v4
+
+        result = calculate_master_cycle_v4(db_service)
+
+        if 'error' in result:
+            return jsonify({
+                "status": "error",
+                "message": result['error']
+            }), 500
+
+        return jsonify({
+            "status": "success",
+            "data": result
+        })
+
+    except Exception as e:
+        import traceback
+        print(f"Error in get_master_market_cycle_v4: {traceback.format_exc()}")
+        return jsonify({
+            "status": "error",
+            "message": f"Master cycle v4 계산 실패: {str(e)}"
+        }), 500
+
+
 @app.route('/api/v3/cycles/macro', methods=['GET'])
 def get_macro_cycle_v3():
     """

@@ -1459,3 +1459,281 @@ def calculate_master_cycle_v3(db_service) -> Dict[str, Any]:
     except Exception as e:
         logger.error(f"Error calculating master cycle v3: {e}")
         return calculate_master_cycle_v2(db_service)  # 폴백
+
+
+# ========================================
+# 12. CREDIT SPREAD VELOCITY (Phase 4 Enhancement)
+# ========================================
+
+def calculate_spread_velocity(db_service, indicator_id: str) -> Dict[str, Any]:
+    """
+    Credit 스프레드 변화 속도 계산 (Δ1M, Δ3M)
+
+    급격한 스프레드 확대는 신용 경색의 조기 신호
+    - Δ1M > 50bp: 경계
+    - Δ1M > 100bp: 위험
+    - Δ3M > 100bp: 추세적 악화
+
+    Args:
+        db_service: DB 서비스
+        indicator_id: 'hy-spread' 또는 'ig-spread'
+
+    Returns:
+        {
+            "current": 350,          # 현재 스프레드 (bp)
+            "delta_1m": 25,          # 1개월 변화 (bp)
+            "delta_3m": 45,          # 3개월 변화 (bp)
+            "velocity_score": 75.0,  # 속도 점수 (0-100, 낮을수록 급변)
+            "alert_level": "normal"  # normal/warning/danger
+        }
+    """
+    try:
+        # 현재값 조회
+        latest = db_service.get_latest_indicator(indicator_id)
+        current_value = parse_indicator_value(latest.get('actual')) if latest else None
+
+        if current_value is None:
+            return {
+                "current": None,
+                "delta_1m": None,
+                "delta_3m": None,
+                "velocity_score": 50.0,
+                "alert_level": "unknown"
+            }
+
+        # 히스토리에서 1개월, 3개월 전 값 조회
+        history = db_service.get_history_data(indicator_id, limit=12)
+        value_1m = get_value_n_months_ago(history, months=1)
+        value_3m = get_value_n_months_ago(history, months=3)
+
+        # 변화량 계산 (bp 단위)
+        delta_1m = (current_value - value_1m) if value_1m else 0
+        delta_3m = (current_value - value_3m) if value_3m else 0
+
+        # 속도 점수 계산 (급변할수록 낮은 점수)
+        # Δ1M 기준: 0bp → 100점, 100bp → 0점
+        velocity_score = max(0.0, min(100.0, 100 - abs(delta_1m)))
+
+        # 알림 레벨 결정
+        if abs(delta_1m) > 100:
+            alert_level = "danger"
+        elif abs(delta_1m) > 50:
+            alert_level = "warning"
+        else:
+            alert_level = "normal"
+
+        return {
+            "current": round(current_value, 1),
+            "delta_1m": round(delta_1m, 1) if delta_1m else 0,
+            "delta_3m": round(delta_3m, 1) if delta_3m else 0,
+            "velocity_score": round(velocity_score, 1),
+            "alert_level": alert_level
+        }
+
+    except Exception as e:
+        logger.error(f"Error calculating spread velocity for {indicator_id}: {e}")
+        return {
+            "current": None,
+            "delta_1m": None,
+            "delta_3m": None,
+            "velocity_score": 50.0,
+            "alert_level": "error"
+        }
+
+
+def detect_rapid_change(db_service) -> Dict[str, Any]:
+    """
+    Credit 지표 급변 탐지 (상위 10% 변화 감지)
+
+    역사적 변화율 대비 현재 변화율이 상위 10%에 해당하면 경고
+
+    Args:
+        db_service: DB 서비스
+
+    Returns:
+        {
+            "has_rapid_change": True,
+            "rapid_indicators": ["HY 스프레드 급등 (+85bp)"],
+            "severity": "warning"  # normal/warning/critical
+        }
+    """
+    try:
+        rapid_indicators = []
+        max_severity = "normal"
+
+        # HY 스프레드 급변 체크
+        hy_velocity = calculate_spread_velocity(db_service, 'hy-spread')
+        if hy_velocity.get('alert_level') == 'danger':
+            rapid_indicators.append(f"HY 스프레드 급변 ({'+' if hy_velocity['delta_1m'] > 0 else ''}{hy_velocity['delta_1m']}bp)")
+            max_severity = "critical"
+        elif hy_velocity.get('alert_level') == 'warning':
+            rapid_indicators.append(f"HY 스프레드 상승 ({'+' if hy_velocity['delta_1m'] > 0 else ''}{hy_velocity['delta_1m']}bp)")
+            if max_severity != "critical":
+                max_severity = "warning"
+
+        # IG 스프레드 급변 체크
+        ig_velocity = calculate_spread_velocity(db_service, 'ig-spread')
+        if ig_velocity.get('alert_level') == 'danger':
+            rapid_indicators.append(f"IG 스프레드 급변 ({'+' if ig_velocity['delta_1m'] > 0 else ''}{ig_velocity['delta_1m']}bp)")
+            max_severity = "critical"
+        elif ig_velocity.get('alert_level') == 'warning':
+            rapid_indicators.append(f"IG 스프레드 상승 ({'+' if ig_velocity['delta_1m'] > 0 else ''}{ig_velocity['delta_1m']}bp)")
+            if max_severity != "critical":
+                max_severity = "warning"
+
+        # VIX 급변 체크 (별도 기준: 5포인트 이상 변화)
+        vix_latest = db_service.get_latest_indicator('vix')
+        vix_history = db_service.get_history_data('vix', limit=6)
+        if vix_latest and vix_history:
+            vix_current = parse_indicator_value(vix_latest.get('actual'))
+            vix_1m = get_value_n_months_ago(vix_history, months=1)
+            if vix_current and vix_1m:
+                vix_delta = vix_current - vix_1m
+                if abs(vix_delta) > 10:
+                    rapid_indicators.append(f"VIX 급변 ({'+' if vix_delta > 0 else ''}{round(vix_delta, 1)})")
+                    max_severity = "critical"
+                elif abs(vix_delta) > 5:
+                    rapid_indicators.append(f"VIX 상승 ({'+' if vix_delta > 0 else ''}{round(vix_delta, 1)})")
+                    if max_severity != "critical":
+                        max_severity = "warning"
+
+        return {
+            "has_rapid_change": len(rapid_indicators) > 0,
+            "rapid_indicators": rapid_indicators,
+            "severity": max_severity
+        }
+
+    except Exception as e:
+        logger.error(f"Error detecting rapid change: {e}")
+        return {
+            "has_rapid_change": False,
+            "rapid_indicators": [],
+            "severity": "error"
+        }
+
+
+def calculate_credit_with_enhancements(db_service) -> Dict[str, Any]:
+    """
+    Phase 4: 강화된 Credit 사이클 계산
+
+    기존 Level+Trend에 스프레드 변화 속도 반영
+
+    최종 점수 = 0.7×기본점수 + 0.3×속도점수
+
+    Args:
+        db_service: DB 서비스
+
+    Returns:
+        기존 Credit 결과 + 강화 지표
+    """
+    try:
+        # 기존 Credit 계산 (Level + Trend)
+        base_credit = calculate_cycle_with_trend(CREDIT_INDICATORS, db_service, "Credit")
+
+        # Phase 4 강화 지표
+        hy_velocity = calculate_spread_velocity(db_service, 'hy-spread')
+        ig_velocity = calculate_spread_velocity(db_service, 'ig-spread')
+        rapid_change = detect_rapid_change(db_service)
+
+        # 속도 점수 평균 (HY 60% + IG 40%)
+        velocity_score = (
+            0.6 * hy_velocity.get('velocity_score', 50) +
+            0.4 * ig_velocity.get('velocity_score', 50)
+        )
+
+        # 강화된 점수 계산
+        # 0.7×기본 + 0.3×속도 (급변 시 감점)
+        enhanced_score = 0.7 * base_credit['score'] + 0.3 * velocity_score
+
+        # 결과 반환
+        result = base_credit.copy()
+        result.update({
+            "score": round(enhanced_score, 1),
+            "base_score": base_credit['score'],
+            "hy_velocity": hy_velocity,
+            "ig_velocity": ig_velocity,
+            "rapid_change": rapid_change,
+            "state": get_credit_state(enhanced_score),
+            "enhancements_applied": True
+        })
+
+        return result
+
+    except Exception as e:
+        logger.error(f"Error in credit with enhancements: {e}")
+        return calculate_cycle_with_trend(CREDIT_INDICATORS, db_service, "Credit")
+
+
+# ========================================
+# 13. MASTER CYCLE V4 (FULL ENHANCEMENTS)
+# ========================================
+
+def calculate_master_cycle_v4(db_service) -> Dict[str, Any]:
+    """
+    Phase 4+5 완성: Master Market Cycle with Full Enhancements
+
+    Macro: 실질금리 + 역전 지속기간
+    Credit: 스프레드 변화 속도 + 급변 탐지
+
+    MMC = 0.5*Sentiment + 0.3*Credit(enhanced) + 0.2*Macro(enhanced)
+
+    Args:
+        db_service: PostgreSQL 데이터베이스 서비스
+
+    Returns:
+        v3 구조 + Credit 강화 필드
+    """
+    try:
+        # 강화된 Macro 계산
+        macro = calculate_macro_with_enhancements(db_service)
+
+        # 강화된 Credit 계산
+        credit = calculate_credit_with_enhancements(db_service)
+
+        # 기존 Sentiment 계산
+        sentiment = calculate_cycle_with_trend(SENTIMENT_INDICATORS, db_service, "Sentiment")
+
+        # MMC 계산
+        mmc_score = (
+            0.50 * sentiment['score'] +
+            0.30 * credit['score'] +
+            0.20 * macro['score']
+        )
+
+        # 투자 국면 판단
+        phase = get_investment_phase(mmc_score)
+        recommendation = get_investment_recommendation(
+            mmc_score,
+            macro['score'],
+            credit['score'],
+            sentiment['score']
+        )
+
+        # 종합 경고 생성
+        warnings = []
+
+        # Macro 경고
+        if macro.get('real_interest_rate', {}).get('regime') == 'restrictive':
+            warnings.append("실질금리 억제적 수준")
+        if macro.get('yield_curve_inversion', {}).get('signal') in ['danger', 'recession_risk']:
+            warnings.append(f"스프레드 역전 {macro.get('yield_curve_inversion', {}).get('inversion_months', 0)}개월")
+
+        # Credit 경고 (급변 탐지)
+        if credit.get('rapid_change', {}).get('has_rapid_change'):
+            warnings.extend(credit.get('rapid_change', {}).get('rapid_indicators', []))
+
+        return {
+            "mmc_score": round(mmc_score, 1),
+            "phase": phase,
+            "macro": macro,
+            "credit": credit,
+            "sentiment": sentiment,
+            "recommendation": recommendation,
+            "updated_at": datetime.now().isoformat(),
+            "version": "v4.0-full-enhanced",
+            "data_warnings": warnings
+        }
+
+    except Exception as e:
+        logger.error(f"Error calculating master cycle v4: {e}")
+        return calculate_master_cycle_v3(db_service)  # 폴백
