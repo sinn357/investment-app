@@ -41,7 +41,7 @@ class CrawlerService:
                 # FRED CSV API 크롤러
                 series_id = url.split('/')[-1]  # URL에서 시리즈 ID 추출 (예: DFII10, RBUSBIS 등)
                 # 월별 데이터는 더 긴 기간 필요 (6개월 = 180일)
-                is_monthly = "_PC1" in series_id or indicator_id in ["ppi", "pce", "core-pce"]
+                is_monthly = "_PC1" in series_id or indicator_id in ["ppi", "pce"]
                 days = 180 if is_monthly else 60
                 result = crawl_fred_indicator(series_id, calculate_yoy=False, days=days)
 

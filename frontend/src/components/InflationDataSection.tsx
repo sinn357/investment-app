@@ -24,8 +24,7 @@ export default function InflationDataSection({ refreshTrigger }: { refreshTrigge
   const [tabData, setTabData] = useState<TabData>({
     'cpi': { title: '소비자물가지수', data: [], loading: true },
     'ppi': { title: '생산자물가지수', data: [], loading: true },
-    'pce': { title: '개인소비지출', data: [], loading: true },
-    'core-pce': { title: '핵심 PCE', data: [], loading: true }
+    'pce': { title: '개인소비지출', data: [], loading: true }
   });
 
   const fetchTabData = async (tabKey: string) => {
@@ -62,8 +61,7 @@ export default function InflationDataSection({ refreshTrigger }: { refreshTrigge
     await Promise.all([
       fetchTabData('cpi'),
       fetchTabData('ppi'),
-      fetchTabData('pce'),
-      fetchTabData('core-pce')
+      fetchTabData('pce')
     ]);
   };
 
@@ -80,8 +78,7 @@ export default function InflationDataSection({ refreshTrigger }: { refreshTrigge
   const tabs = [
     { key: 'cpi', label: '소비자물가지수', shortLabel: 'CPI' },
     { key: 'ppi', label: '생산자물가지수', shortLabel: 'PPI' },
-    { key: 'pce', label: '개인소비지출', shortLabel: 'PCE' },
-    { key: 'core-pce', label: '핵심 PCE', shortLabel: '핵심PCE' }
+    { key: 'pce', label: '개인소비지출', shortLabel: 'PCE' }
   ];
 
   const currentTabData = tabData[activeTab];

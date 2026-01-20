@@ -14,7 +14,6 @@ interface MacroCycleData {
     ism_manufacturing: number;
     ism_non_manufacturing: number;
     core_cpi: number;
-    core_pce: number;
     fed_funds_rate: number;
     yield_curve: number;
   };
@@ -154,15 +153,7 @@ export default function MacroCycleCard({ data }: MacroCycleCardProps) {
             </div>
             <div className="bg-gray-100 dark:bg-gray-700 rounded p-2">
               <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">
-                근원 PCE (10%)
-              </div>
-              <div className="text-lg font-bold text-gray-800 dark:text-white">
-                {data.indicators.core_pce.toFixed(1)}
-              </div>
-            </div>
-            <div className="bg-gray-100 dark:bg-gray-700 rounded p-2">
-              <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">
-                연준 금리 (10%)
+                연준 금리 (15%)
               </div>
               <div className="text-lg font-bold text-gray-800 dark:text-white">
                 {data.indicators.fed_funds_rate.toFixed(1)}
@@ -170,7 +161,7 @@ export default function MacroCycleCard({ data }: MacroCycleCardProps) {
             </div>
             <div className="bg-gray-100 dark:bg-gray-700 rounded p-2">
               <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">
-                장단기차 (10%)
+                장단기차 (15%)
               </div>
               <div className="text-lg font-bold text-gray-800 dark:text-white">
                 {data.indicators.yield_curve.toFixed(1)}
@@ -214,7 +205,7 @@ export default function MacroCycleCard({ data }: MacroCycleCardProps) {
                     💡 총점 계산
                   </h4>
                   <p className="font-mono text-xs">
-                    총점 = ISM제조업×30% + ISM비제조업×20% + 근원CPI×20% + 근원PCE×10% + 연준금리×10% + 장단기차×10%
+                    총점 = ISM제조업×30% + ISM비제조업×20% + 근원CPI×20% + 연준금리×15% + 장단기차×15%
                   </p>
                 </div>
 

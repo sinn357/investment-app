@@ -3919,30 +3919,6 @@ def get_pce_history():
     except Exception as e:
         return jsonify({"status": "error", "message": f"Internal server error: {str(e)}"}), 500
 
-@app.route('/api/rawdata/core-pce')
-def get_core_pce_rawdata():
-    """Get Core PCE raw data"""
-    try:
-        data = get_core_pce()
-        if "error" in data:
-            return jsonify({"status": "error", "message": data["error"]}), 500
-        return jsonify({"status": "success", "data": data, "source": "investing.com", "indicator": "Core PCE"})
-    except Exception as e:
-        return jsonify({"status": "error", "message": f"Internal server error: {str(e)}"}), 500
-
-@app.route('/api/history-table/core-pce')
-def get_core_pce_history():
-    try:
-        url = "https://www.investing.com/economic-calendar/core-pce-price-index-904"
-        html_content = fetch_html(url)
-        if html_content:
-            history_data = parse_history_table(html_content)
-            return jsonify({"status": "success", "data": history_data, "source": "investing.com"})
-        else:
-            return jsonify({"status": "error", "message": "Failed to fetch history data"}), 500
-    except Exception as e:
-        return jsonify({"status": "error", "message": f"Internal server error: {str(e)}"}), 500
-
 # 정책지표 API 엔드포인트들
 @app.route('/api/rawdata/fomc-minutes')
 def get_fomc_minutes_rawdata():

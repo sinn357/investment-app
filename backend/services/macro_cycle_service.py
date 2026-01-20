@@ -1,13 +1,12 @@
 """
 거시경제 사이클 계산 서비스
 
-6개 핵심 지표로 경제 사이클 국면 판별:
+5개 핵심 지표로 경제 사이클 국면 판별:
 - ISM 제조업 PMI (30%)
 - ISM 비제조업 PMI (20%)
 - 근원 CPI (20%)
-- 근원 PCE (10%)
-- 연준 기준금리 (10%)
-- 장단기금리차 (10%)
+- 연준 기준금리 (15%)
+- 장단기금리차 (15%)
 
 총점: 0~100점
 국면: 침체(0-25), 회복(25-50), 확장(50-75), 둔화(75-100)
@@ -25,9 +24,8 @@ class MacroCycleService:
         'ism_manufacturing': 0.30,
         'ism_non_manufacturing': 0.20,
         'core_cpi': 0.20,
-        'core_pce': 0.10,
-        'fed_funds_rate': 0.10,
-        'yield_curve': 0.10,
+        'fed_funds_rate': 0.15,
+        'yield_curve': 0.15,
     }
 
     # 국면 정의
@@ -65,7 +63,6 @@ class MacroCycleService:
             'ism-manufacturing',
             'ism-non-manufacturing',
             'core-cpi',
-            'core-pce',
             'federal-funds-rate',
             'yield-curve-10y-2y'
         ]
@@ -153,7 +150,6 @@ class MacroCycleService:
             'ism-manufacturing',
             'ism-non-manufacturing',
             'core-cpi',
-            'core-pce',
             'federal-funds-rate',
             'yield-curve-10y-2y'
         ]
@@ -194,21 +190,14 @@ class MacroCycleService:
         else:
             scores['core_cpi'] = 50.0
 
-        # 근원 PCE (10점 만점)
-        if 'core-pce' in data:
-            pce = self._parse_value(data['core-pce'].get('actual'))
-            scores['core_pce'] = self._score_inflation(pce)
-        else:
-            scores['core_pce'] = 50.0
-
-        # 연준 기준금리 (10점 만점)
+        # 연준 기준금리 (15점 만점)
         if 'federal-funds-rate' in data:
             rate = self._parse_value(data['federal-funds-rate'].get('actual'))
             scores['fed_funds_rate'] = self._score_interest_rate(rate)
         else:
             scores['fed_funds_rate'] = 50.0
 
-        # 장단기금리차 (10점 만점)
+        # 장단기금리차 (15점 만점)
         if 'yield-curve-10y-2y' in data:
             curve = self._parse_value(data['yield-curve-10y-2y'].get('actual'))
             scores['yield_curve'] = self._score_yield_curve(curve)
