@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState, useMemo } from 'react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import GlassCard from './GlassCard';
 
 type WaveStage = '초기' | '성장' | '성숙';
 type Position = '관망' | '리서치' | '소액' | '핵심';
@@ -27,17 +27,29 @@ interface BigWaveSectionProps {
   onChange: (cards: BigWaveCard[]) => void;
 }
 
+// 추천 카테고리 목록
+const SUGGESTED_CATEGORIES = [
+  { label: 'AI', icon: '🤖', color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300' },
+  { label: '에너지전환', icon: '⚡', color: 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300' },
+  { label: '바이오', icon: '🧬', color: 'bg-pink-100 text-pink-700 dark:bg-pink-900/50 dark:text-pink-300' },
+  { label: '우주', icon: '🚀', color: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300' },
+  { label: '로보틱스', icon: '🦾', color: 'bg-slate-100 text-slate-700 dark:bg-slate-800/50 dark:text-slate-300' },
+  { label: '반도체', icon: '💾', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300' },
+  { label: '퀀텀', icon: '⚛️', color: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/50 dark:text-cyan-300' },
+  { label: '핀테크', icon: '💳', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300' },
+];
+
 const STAGE_COLOR: Record<WaveStage, string> = {
-  초기: 'bg-amber-50 text-amber-700 border border-amber-200',
-  성장: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
-  성숙: 'bg-slate-50 text-slate-700 border border-slate-200'
+  초기: 'bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700',
+  성장: 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-700',
+  성숙: 'bg-slate-50 text-slate-700 border border-slate-200 dark:bg-slate-800/30 dark:text-slate-300 dark:border-slate-600'
 };
 
 const POSITION_COLOR: Record<Position, string> = {
-  관망: 'bg-slate-100 text-slate-700 border border-slate-200',
-  리서치: 'bg-amber-100 text-amber-800 border border-amber-200',
-  소액: 'bg-blue-100 text-blue-800 border border-blue-200',
-  핵심: 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+  관망: 'bg-slate-100 text-slate-700 border border-slate-200 dark:bg-slate-800/50 dark:text-slate-300 dark:border-slate-600',
+  리서치: 'bg-amber-100 text-amber-800 border border-amber-200 dark:bg-amber-900/50 dark:text-amber-300 dark:border-amber-700',
+  소액: 'bg-blue-100 text-blue-800 border border-blue-200 dark:bg-blue-900/50 dark:text-blue-300 dark:border-blue-700',
+  핵심: 'bg-emerald-100 text-emerald-800 border border-emerald-200 dark:bg-emerald-900/50 dark:text-emerald-300 dark:border-emerald-700'
 };
 
 export default function BigWaveSection({ cards, onChange }: BigWaveSectionProps) {
