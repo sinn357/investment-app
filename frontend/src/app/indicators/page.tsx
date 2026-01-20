@@ -427,49 +427,53 @@ export default function IndicatorsPage() {
           }
         }
 
-        // ✅ NEW: Master Market Cycle API 호출 (Phase 1)
+        // ✅ NEW: Master Market Cycle API 호출 (v4 Full Enhancements)
         try {
           const masterResult = await fetchJsonWithRetry(
-            `${API_URL}/api/v3/cycles/master`,
+            `${API_URL}/api/v4/master-cycle`,
             {},
             3,
             1000
           );
 
           if (masterResult.status === 'success' && masterResult.data) {
-            // ✅ Phase 1.5: Trend 점수 계산 (히스토리 데이터 기반)
-            // result.indicators를 { indicatorId: { data: {...} } } 형태로 변환
-            const indicatorsMap: Record<string, { data?: { latest_release?: { actual?: number | string | null }; history_table?: Array<{ release_date: string; actual: number | string | null }> } }> = {};
-            if (result.indicators) {
+            const needsTrendFallback =
+              masterResult.data.macro?.trend == null ||
+              masterResult.data.credit?.trend == null ||
+              masterResult.data.sentiment?.trend == null;
+
+            let trendFallback = null;
+            if (needsTrendFallback && result.indicators) {
+              // ✅ Fallback: 히스토리 기반 Trend 계산 (API 미제공 시)
+              const indicatorsMap: Record<string, { data?: { latest_release?: { actual?: number | string | null }; history_table?: Array<{ release_date: string; actual: number | string | null }> } }> = {};
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               result.indicators.forEach((item: any) => {
                 indicatorsMap[item.id] = { data: item.data };
               });
+              trendFallback = calculateCycleTrendsFromIndicators(indicatorsMap);
             }
 
-            const cycleTrends = calculateCycleTrendsFromIndicators(indicatorsMap);
-
-            // masterResult.data에 trend 추가
+            // masterResult.data에 trend 보강 (API 우선, 없으면 fallback)
             const enrichedData = {
               ...masterResult.data,
               macro: {
                 ...masterResult.data.macro,
-                trend: cycleTrends.macro,
+                trend: masterResult.data.macro?.trend ?? trendFallback?.macro,
               },
               credit: {
                 ...masterResult.data.credit,
-                trend: cycleTrends.credit,
+                trend: masterResult.data.credit?.trend ?? trendFallback?.credit,
               },
               sentiment: {
                 ...masterResult.data.sentiment,
-                trend: cycleTrends.sentiment,
+                trend: masterResult.data.sentiment?.trend ?? trendFallback?.sentiment,
               },
             };
 
             setMasterCycleData(enrichedData);
           }
         } catch (error) {
-          console.warn('Master Cycle API 호출 실패 (Phase 1):', error);
+          console.warn('Master Cycle API 호출 실패 (v4):', error);
         }
 
       } catch (error) {
