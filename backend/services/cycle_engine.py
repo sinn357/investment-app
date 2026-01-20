@@ -901,3 +901,287 @@ def get_investment_recommendation(
         return "경기 둔화 예상, 채권 비중 확대"
     else:
         return "중립 포지션, 시장 관망"
+
+
+# ========================================
+# 8. TREND CALCULATION (Phase 1 Addition)
+# ========================================
+
+def calculate_trend_score(
+    current_value: float,
+    past_value: float,
+    reverse: bool = False
+) -> float:
+    """
+    Trend 점수 계산 (0-100)
+
+    3개월 변화율을 기반으로 Trend 방향과 강도를 점수화
+
+    Args:
+        current_value: 현재 값
+        past_value: 과거 값 (3개월 전)
+        reverse: True면 하락이 좋은 지표 (실업률, 인플레이션 등)
+
+    Returns:
+        0-100 Trend 점수
+        - 100: 강한 개선 추세
+        - 50: 변화 없음 (중립)
+        - 0: 강한 악화 추세
+    """
+    if past_value == 0:
+        return 50.0  # 분모가 0이면 중립
+
+    # 변화율 계산 (%)
+    change_rate = ((current_value - past_value) / abs(past_value)) * 100
+
+    # 역방향 지표는 부호 반전 (하락이 좋은 지표)
+    if reverse:
+        change_rate = -change_rate
+
+    # 변화율을 0-100 점수로 변환
+    # ±10% 변화를 0-100 범위로 매핑
+    # +10% 이상 → 100점, -10% 이하 → 0점
+    score = 50 + (change_rate / 10) * 50
+
+    # 0-100 범위로 클램핑
+    return max(0.0, min(100.0, score))
+
+
+def get_value_n_months_ago(
+    history: List[Dict[str, Any]],
+    months: int = 3
+) -> Optional[float]:
+    """
+    N개월 전 값 추출
+
+    Args:
+        history: 히스토리 데이터 리스트 (최신순 정렬)
+        months: 몇 개월 전 값을 가져올지
+
+    Returns:
+        N개월 전 값 또는 None
+    """
+    from datetime import datetime, timedelta
+
+    if not history:
+        return None
+
+    # 현재 날짜 기준으로 N개월 전 날짜 계산
+    target_date = datetime.now() - timedelta(days=months * 30)
+
+    # 히스토리에서 target_date에 가장 가까운 데이터 찾기
+    for record in history:
+        release_date_str = record.get('release_date')
+        if not release_date_str:
+            continue
+
+        try:
+            release_date = datetime.strptime(str(release_date_str), '%Y-%m-%d')
+            # target_date 이전이거나 같은 날짜의 첫 번째 데이터
+            if release_date <= target_date:
+                actual = record.get('actual')
+                if actual is not None:
+                    return parse_indicator_value(actual)
+        except (ValueError, TypeError):
+            continue
+
+    # 못 찾으면 가장 오래된 데이터 반환 (히스토리 마지막)
+    if history:
+        last_record = history[-1]
+        actual = last_record.get('actual')
+        if actual is not None:
+            return parse_indicator_value(actual)
+
+    return None
+
+
+def calculate_cycle_with_trend(
+    indicators_config: Dict[str, Dict],
+    db_service,
+    cycle_name: str
+) -> Dict[str, Any]:
+    """
+    Level + Trend 통합 사이클 점수 계산
+
+    공식: Final Score = 0.7 × Level + 0.3 × Trend
+
+    Args:
+        indicators_config: 지표 설정 딕셔너리 (MACRO_INDICATORS 등)
+        db_service: DB 서비스
+        cycle_name: 사이클 이름 ("Macro", "Credit", "Sentiment")
+
+    Returns:
+        {
+            "score": 72.5,        # 최종 점수 (Level + Trend)
+            "level_score": 70.0,  # Level 점수만
+            "trend_score": 78.3,  # Trend 점수만
+            "trend": 78.3,        # 프론트엔드용 (0-100)
+            "phase": "확장기",
+            "signals": [...],
+            "indicators": {...}
+        }
+    """
+    level_scores = {}
+    trend_scores = {}
+    signals = []
+    indicator_details = {}
+
+    for indicator_id, config in indicators_config.items():
+        try:
+            # 최신값 조회
+            latest = db_service.get_latest_indicator(indicator_id)
+            if not latest or 'actual' not in latest:
+                continue
+
+            current_value = parse_indicator_value(latest['actual'])
+            if current_value is None:
+                continue
+
+            # Level 점수 계산
+            level_score = calculate_threshold_score(
+                current_value,
+                config['thresholds'],
+                config['reverse']
+            )
+            level_scores[indicator_id] = level_score
+
+            # Trend 점수 계산 (3개월 전 데이터와 비교)
+            history = db_service.get_history_data(indicator_id, limit=12)
+            past_value = get_value_n_months_ago(history, months=3)
+
+            if past_value is not None:
+                trend_score = calculate_trend_score(
+                    current_value,
+                    past_value,
+                    config['reverse']
+                )
+                trend_scores[indicator_id] = trend_score
+
+            indicator_details[indicator_id] = {
+                'value': current_value,
+                'level_score': level_score,
+                'trend_score': trend_scores.get(indicator_id, 50.0),
+                'name': config['name'],
+                'weight': config['weight']
+            }
+
+            if len(signals) < 3:
+                trend_arrow = '↑' if trend_scores.get(indicator_id, 50) > 55 else ('↓' if trend_scores.get(indicator_id, 50) < 45 else '→')
+                signals.append(f"{config['name']} {current_value} {trend_arrow}")
+
+        except Exception as e:
+            logger.error(f"Error in {cycle_name} cycle for {indicator_id}: {e}")
+            continue
+
+    if not level_scores:
+        return {
+            "score": 50.0,
+            "level_score": 50.0,
+            "trend_score": 50.0,
+            "trend": 50.0,
+            "phase": "데이터 부족",
+            "signals": ["데이터 수집 중"],
+            "indicators": {}
+        }
+
+    # 가중 평균 계산
+    total_weight = sum(indicators_config[k]['weight'] for k in level_scores.keys())
+
+    weighted_level = sum(
+        level_scores[k] * indicators_config[k]['weight']
+        for k in level_scores.keys()
+    ) / total_weight
+
+    # Trend 가중 평균 (Trend 데이터가 있는 지표만)
+    if trend_scores:
+        trend_weight = sum(indicators_config[k]['weight'] for k in trend_scores.keys())
+        weighted_trend = sum(
+            trend_scores[k] * indicators_config[k]['weight']
+            for k in trend_scores.keys()
+        ) / trend_weight
+    else:
+        weighted_trend = 50.0  # Trend 데이터 없으면 중립
+
+    # 최종 점수: 0.7 × Level + 0.3 × Trend
+    final_score = 0.7 * weighted_level + 0.3 * weighted_trend
+
+    # 국면 판단
+    if cycle_name == "Macro":
+        phase = get_macro_phase(final_score)
+    elif cycle_name == "Credit":
+        phase = get_credit_state(final_score)
+    else:
+        phase = get_sentiment_state(final_score)
+
+    return {
+        "score": round(final_score, 1),
+        "level_score": round(weighted_level, 1),
+        "trend_score": round(weighted_trend, 1),
+        "trend": round(weighted_trend, 1),  # 프론트엔드 호환용
+        "phase": phase,
+        "signals": signals[:3],
+        "indicators": indicator_details
+    }
+
+
+# ========================================
+# 9. MASTER CYCLE V2 (WITH TREND)
+# ========================================
+
+def calculate_master_cycle_v2(db_service) -> Dict[str, Any]:
+    """
+    Phase 1 완성: Master Market Cycle with Trend
+
+    Level + Trend 통합 버전
+    MMC = 0.5*Sentiment + 0.3*Credit + 0.2*Macro
+    각 사이클 = 0.7*Level + 0.3*Trend
+
+    Args:
+        db_service: PostgreSQL 데이터베이스 서비스
+
+    Returns:
+        기존 v1과 동일한 구조 + trend 필드 추가
+    """
+    try:
+        # 각 사이클 계산 (Level + Trend)
+        macro = calculate_cycle_with_trend(MACRO_INDICATORS, db_service, "Macro")
+        credit = calculate_cycle_with_trend(CREDIT_INDICATORS, db_service, "Credit")
+        sentiment = calculate_cycle_with_trend(SENTIMENT_INDICATORS, db_service, "Sentiment")
+
+        # MMC 계산
+        mmc_score = (
+            0.50 * sentiment['score'] +
+            0.30 * credit['score'] +
+            0.20 * macro['score']
+        )
+
+        # 투자 국면 판단
+        phase = get_investment_phase(mmc_score)
+        recommendation = get_investment_recommendation(
+            mmc_score,
+            macro['score'],
+            credit['score'],
+            sentiment['score']
+        )
+
+        return {
+            "mmc_score": round(mmc_score, 1),
+            "phase": phase,
+            "macro": macro,
+            "credit": credit,
+            "sentiment": sentiment,
+            "recommendation": recommendation,
+            "updated_at": datetime.now().isoformat(),
+            "version": "v2.1-with-trend",  # Trend 포함 버전
+            "data_warnings": []
+        }
+
+    except Exception as e:
+        logger.error(f"Error calculating master cycle v2: {e}")
+        return {
+            "error": str(e),
+            "mmc_score": 50.0,
+            "phase": "계산 오류",
+            "recommendation": "데이터 확인 필요",
+            "data_warnings": []
+        }
