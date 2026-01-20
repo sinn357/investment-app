@@ -131,7 +131,10 @@ investment-app/
 ### Active (in this session)
 - 없음
 
-### Recent Done (Current Session - 2025-12-30)
+### Recent Done (Current Session - 2026-01-20)
+- **T-106:** 3대 사이클 정교화 Phase 4+5 완전 구현 ✅ (2026-01-20) - **Phase 5 검토 및 UI 반영**: cycle_engine.py 8개 함수 검토 완료 (calculate_trend_score, get_value_n_months_ago, calculate_cycle_with_trend, calculate_master_cycle_v2, calculate_real_interest_rate, calculate_yield_curve_inversion_duration, calculate_macro_with_enhancements, calculate_master_cycle_v3) + MasterCycleCard 인터페이스 확장 (RealInterestRateData, YieldCurveInversionData) + Macro 카드에 실질금리/역전 정보 UI 추가 | **Phase 4 Credit 강화 구현**: calculate_spread_velocity() HY/IG Δ1M, Δ3M 계산 + detect_rapid_change() 급변 탐지 (50bp 경계, 100bp 위험) + calculate_credit_with_enhancements() 강화된 Credit 사이클 + calculate_master_cycle_v4() 전체 강화 MMC + /api/v4/master-cycle 엔드포인트 추가 + MasterCycleCard Credit 강화 UI (SpreadVelocityData, RapidChangeData 인터페이스, HY/IG Δ1M 표시, 급변 경고 배지) | **커밋 2개**: 0c52e19 (Phase 5 Macro UI), b7dca55 (Phase 4 Credit 강화) | **결과**: cycle_engine.py +278줄, app.py +37줄, MasterCycleCard.tsx +145줄, v4 API 완성
+
+### Recent Done (Previous Session - 2025-12-30)
 - **T-105:** CLAUDE.md 아카이브 정리 + 모바일 반응형 최적화 Phase 1-2 완료 ✅ (2025-12-30) - **Phase 1 문서 정리**: docs/ARCHIVE.md 생성 (66개 작업 T-000~T-060 이동, 2025-09-23 이전 작업 아카이브화) + CLAUDE.md 파일 크기 12% 감소 (성능 개선) + 토큰 효율성 향상 | **Phase 2 포트폴리오 모바일 반응형**: 네비게이션 헤더 (모바일 햄버거 메뉴, 2열 그리드) + 요약카드 (모바일 2열 → 데스크톱 4열) + 자산 흐름 차트 (모바일 세로 스택 → 데스크톱 가로 배치) + 반응형 그리드 시스템 (sm/md/lg/xl/2xl 브레이크포인트) | **Phase 3 가계부 모바일 반응형**: 네비게이션 헤더 완료 (나머지는 이미 반응형) | **문서화**: docs/NEXT_SESSION_CONTINUE.md 작성 (다음 세션 가이드, 경제지표/섹터/종목 페이지 계획) | **커밋**: 0283816 "feat: 모바일 반응형 최적화 Phase 1-2 완료 + CLAUDE.md 아카이브 정리" | **진행률**: 40% 완료 (5개 중 2개), 예상 남은 시간 1.5-2시간 | **다음 작업**: 경제지표 페이지부터 시작
 
 ### Recent Done (Previous Session - 2025-12-03)
