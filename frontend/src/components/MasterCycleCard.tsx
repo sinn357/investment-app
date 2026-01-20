@@ -20,6 +20,24 @@ import {
   getAdjustmentReasonColor,
 } from '@/utils/creditDynamicWeight';
 
+// Phase 5: 실질금리 정보
+interface RealInterestRateData {
+  real_rate: number | null;
+  nominal_rate: number | null;
+  inflation: number | null;
+  score: number;
+  regime: string; // 'stimulative' | 'neutral' | 'restrictive' | 'unknown' | 'error'
+}
+
+// Phase 5: 장단기 역전 정보
+interface YieldCurveInversionData {
+  current_spread: number | null;
+  is_inverted: boolean;
+  inversion_months: number;
+  score: number;
+  signal: string; // 'normal' | 'warning' | 'danger' | 'recession_risk' | 'unknown' | 'error'
+}
+
 interface MasterCycleData {
   mmc_score: number;
   phase: string;
@@ -28,6 +46,11 @@ interface MasterCycleData {
     phase: string;
     state?: string;
     trend?: number; // 0-100 Trend 점수
+    // Phase 5 강화 필드
+    base_score?: number;
+    real_interest_rate?: RealInterestRateData;
+    yield_curve_inversion?: YieldCurveInversionData;
+    enhancements_applied?: boolean;
   };
   credit: {
     score: number;
@@ -288,7 +311,53 @@ export default function MasterCycleCard({ data }: MasterCycleCardProps) {
             </div>
             <span className="text-xs font-medium text-gray-600 dark:text-gray-400">{Math.round(macroTrend)}</span>
           </div>
-          <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">투자 힌트</div>
+          {/* Phase 5: 실질금리 & 역전 정보 */}
+          {data.macro.enhancements_applied && (
+            <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700 space-y-1">
+              {/* 실질금리 */}
+              {data.macro.real_interest_rate && data.macro.real_interest_rate.real_rate !== null && (
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-gray-500 dark:text-gray-400">실질금리:</span>
+                  <span className={`font-medium ${
+                    data.macro.real_interest_rate.regime === 'stimulative'
+                      ? 'text-emerald-600 dark:text-emerald-400'
+                      : data.macro.real_interest_rate.regime === 'restrictive'
+                      ? 'text-red-600 dark:text-red-400'
+                      : 'text-amber-600 dark:text-amber-400'
+                  }`}>
+                    {data.macro.real_interest_rate.real_rate > 0 ? '+' : ''}{data.macro.real_interest_rate.real_rate.toFixed(2)}%
+                    <span className="ml-1 text-[10px] opacity-75">
+                      ({data.macro.real_interest_rate.regime === 'stimulative' ? '부양적'
+                        : data.macro.real_interest_rate.regime === 'restrictive' ? '억제적' : '중립'})
+                    </span>
+                  </span>
+                </div>
+              )}
+              {/* 장단기 역전 */}
+              {data.macro.yield_curve_inversion && (
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-gray-500 dark:text-gray-400">스프레드 역전:</span>
+                  <span className={`font-medium ${
+                    data.macro.yield_curve_inversion.signal === 'normal'
+                      ? 'text-emerald-600 dark:text-emerald-400'
+                      : data.macro.yield_curve_inversion.signal === 'warning'
+                      ? 'text-amber-600 dark:text-amber-400'
+                      : 'text-red-600 dark:text-red-400'
+                  }`}>
+                    {data.macro.yield_curve_inversion.is_inverted
+                      ? `역전 ${data.macro.yield_curve_inversion.inversion_months}개월`
+                      : '정상'}
+                    {data.macro.yield_curve_inversion.current_spread !== null && (
+                      <span className="ml-1 text-[10px] opacity-75">
+                        ({data.macro.yield_curve_inversion.current_spread > 0 ? '+' : ''}{data.macro.yield_curve_inversion.current_spread.toFixed(2)}%)
+                      </span>
+                    )}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+          <div className="text-xs text-gray-500 dark:text-gray-400 mb-1 mt-2">투자 힌트</div>
           <div className="text-sm text-gray-800 dark:text-gray-100">{macroHint}</div>
         </div>
 
