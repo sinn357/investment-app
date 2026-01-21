@@ -1216,7 +1216,7 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
   const categories = ['전체', ...Object.keys(portfolioData.by_category)];
 
   // 사이드 정보 렌더링 (입력 폼 오른편)
-  if (showSideInfo) {
+  const sideInfoSection = showSideInfo ? (() => {
     const currentAmount = portfolioData?.summary.total_assets || 0;
     const progressRate = Math.min((currentAmount / goalSettings.totalGoal) * 100, 100);
     const progressColor = progressRate >= 100 ? 'bg-green-500' : progressRate >= 75 ? 'bg-blue-500' : progressRate >= 50 ? 'bg-yellow-500' : 'bg-red-500';
@@ -1476,10 +1476,11 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
 
       </div>
     );
-  }
+  })() : null;
 
   return (
     <div className="space-y-6">
+      {sideInfoSection}
 
       {/* 차트 영역 - 2개 그래프 배치 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

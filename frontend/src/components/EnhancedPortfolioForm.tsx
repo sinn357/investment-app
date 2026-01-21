@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { portfolioFormSchema, type PortfolioFormInput } from '../lib/validations/portfolio';
@@ -25,19 +25,11 @@ interface User {
 
 interface EnhancedPortfolioFormProps {
   user: User;
-  onExpandedChange?: (expanded: boolean) => void;
 }
 
-export default function EnhancedPortfolioForm({ user, onExpandedChange }: EnhancedPortfolioFormProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
-
+export default function EnhancedPortfolioForm({ user }: EnhancedPortfolioFormProps) {
   // TanStack Query mutation
   const createAssetMutation = useCreateAsset(user.id);
-
-  // 접기/펼치기 상태 변경을 상위 컴포넌트에 알림
-  useEffect(() => {
-    onExpandedChange?.(isExpanded);
-  }, [isExpanded, onExpandedChange]);
 
   // React Hook Form으로 전환
   const form = useForm<PortfolioFormInput>({
@@ -359,29 +351,8 @@ export default function EnhancedPortfolioForm({ user, onExpandedChange }: Enhanc
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-      {/* 접기/펼치기 헤더 */}
-      <button
-        type="button"
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex justify-between items-center text-xl font-semibold text-gray-900 dark:text-white mb-6 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-      >
-        <span>새 자산 추가</span>
-        <svg
-          className={`w-5 h-5 transform transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-        </svg>
-      </button>
-
-      {/* 폼 내용 - 애니메이션과 함께 조건부 렌더링 */}
-      <div className={`transition-all duration-300 ease-in-out overflow-hidden ${
-        isExpanded ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'
-      }`}>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-2">
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-2">
         {/* 자산군 선택 */}
         <FormField
           control={form.control}
@@ -701,9 +672,8 @@ export default function EnhancedPortfolioForm({ user, onExpandedChange }: Enhanc
         >
           포트폴리오에 추가
         </button>
-          </form>
-        </Form>
-      </div>
+        </form>
+      </Form>
     </div>
   );
 }

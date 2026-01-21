@@ -210,10 +210,6 @@ export default function PortfolioPage() {
     note: ''
   });
 
-  const handleFormExpandedChange = (expanded: boolean) => {
-    setIsFormExpanded(expanded);
-  };
-
   const resolveSymbol = (assetId?: number, fallback?: string) => {
     if (assetId) {
       const asset = assetsForPlans.find(a => a.id === assetId);
@@ -350,16 +346,13 @@ export default function PortfolioPage() {
             </button>
             {isFormExpanded && (
               <div className="border-t border-primary/10 p-6">
-                <EnhancedPortfolioForm
-                  user={user}
-                  onExpandedChange={handleFormExpandedChange}
-                />
+                <EnhancedPortfolioForm user={user} />
               </div>
             )}
           </GlassCard>
 
           {/* 메인 대시보드 (요약 → 차트 → 목록) */}
-          <PortfolioDashboard key={`${refreshKey}-${user.id}`} user={user} showSideInfo={true} />
+          <PortfolioDashboard key={`${refreshKey}-${user.id}`} user={user} showSideInfo />
 
           {/* 추가 섹션: 매수/매도 계획 */}
           <GlassCard className="p-6" animate animationDelay={0}>
