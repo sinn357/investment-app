@@ -1,12 +1,11 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import GlassCard from './GlassCard';
 
 type WaveStage = '초기' | '성장' | '성숙';
@@ -90,19 +89,35 @@ export default function BigWaveSection({ cards, onChange }: BigWaveSectionProps)
   };
 
   return (
-    <Card className="border border-primary/20 bg-card">
-      <CardHeader>
-        <CardTitle className="text-xl">빅웨이브 트래커</CardTitle>
-        <p className="text-sm text-muted-foreground">
+    <GlassCard className="p-0">
+      <div className="p-6 border-b border-primary/10">
+        <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
+          🌊 빅웨이브 트래커
+        </h2>
+        <p className="text-sm text-muted-foreground mt-1">
           카테고리·단계·핵심 플레이어·최근 이벤트·포지션을 기록하여 구조적 파동을 추적하세요.
         </p>
-      </CardHeader>
-      <CardContent className="space-y-4">
+      </div>
+      <div className="p-6 space-y-4">
+        {/* 추천 카테고리 버튼 */}
+        <div className="flex flex-wrap gap-2">
+          {SUGGESTED_CATEGORIES.map(cat => (
+            <button
+              key={cat.label}
+              type="button"
+              onClick={() => setDraft(prev => ({ ...prev, category: cat.label }))}
+              className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all hover:scale-105 ${cat.color} ${draft.category === cat.label ? 'ring-2 ring-offset-2 ring-primary' : ''}`}
+            >
+              {cat.icon} {cat.label}
+            </button>
+          ))}
+        </div>
+
         <div className="grid gap-3 md:grid-cols-4">
           <div className="space-y-1">
             <p className="text-xs text-muted-foreground">카테고리</p>
             <Input
-              placeholder="예: AI/에너지전환/바이오/우주/로보틱스"
+              placeholder="직접 입력 또는 위에서 선택"
               value={draft.category}
               onChange={e => setDraft(prev => ({ ...prev, category: e.target.value }))}
             />
@@ -180,30 +195,50 @@ export default function BigWaveSection({ cards, onChange }: BigWaveSectionProps)
         </div>
 
         <div className="flex justify-end">
-          <Button onClick={handleAdd}>웨이브 추가</Button>
+          <Button onClick={handleAdd} className="bg-primary hover:bg-primary/90">
+            🌊 웨이브 추가
+          </Button>
         </div>
 
+        {/* 카드 목록 */}
         <div className="grid gap-4 md:grid-cols-2">
           {cards.length === 0 && (
-            <p className="text-sm text-muted-foreground">등록된 빅웨이브가 없습니다. 추가해 주세요.</p>
+            <div className="col-span-2 text-center py-8 text-muted-foreground">
+              <p className="text-4xl mb-2">🌊</p>
+              <p>등록된 빅웨이브가 없습니다.</p>
+              <p className="text-sm">위에서 카테고리를 선택하고 추가해 주세요.</p>
+            </div>
           )}
-          {cards.map(card => (
-            <Card key={card.id} className="border border-border bg-muted/20">
-              <CardHeader className="flex flex-row items-center justify-between">
+          {cards.map(card => {
+            const categoryInfo = SUGGESTED_CATEGORIES.find(c => c.label === card.category);
+            return (
+            <GlassCard key={card.id} className="p-0 overflow-hidden">
+              {/* 카드 헤더 */}
+              <div className="p-4 border-b border-primary/10 flex items-start justify-between">
                 <div className="space-y-1">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-lg">{categoryInfo?.icon || '📊'}</span>
                     <h3 className="text-lg font-semibold">{card.category}</h3>
                     <Badge className={STAGE_COLOR[card.stage]}>{card.stage}</Badge>
                     <Badge className={POSITION_COLOR[card.position]}>{card.position}</Badge>
                   </div>
-                  <p className="text-xs text-muted-foreground">플레이어: {card.keyPlayers || '-'}</p>
-                  <p className="text-xs text-muted-foreground">최근 이벤트: {card.recentEvent || '-'}</p>
+                  <p className="text-xs text-muted-foreground">🎯 플레이어: {card.keyPlayers || '-'}</p>
+                  <p className="text-xs text-muted-foreground">⚡ 최근 이벤트: {card.recentEvent || '-'}</p>
+                  {card.riskNote && (
+                    <p className="text-xs text-red-500 dark:text-red-400">⚠️ 리스크: {card.riskNote}</p>
+                  )}
                 </div>
-                <Button variant="ghost" size="sm" onClick={() => handleDelete(card.id)}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleDelete(card.id)}
+                  className="text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
+                >
                   삭제
                 </Button>
-              </CardHeader>
-              <CardContent className="space-y-2">
+              </div>
+              {/* 카드 본문 */}
+              <div className="p-4 space-y-3">
                 <div>
                   <p className="text-xs text-muted-foreground mb-1">논지</p>
                   <Textarea
@@ -263,11 +298,12 @@ export default function BigWaveSection({ cards, onChange }: BigWaveSectionProps)
                     </Select>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          ))}
+              </div>
+            </GlassCard>
+          );
+          })}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </GlassCard>
   );
 }

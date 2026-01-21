@@ -2940,6 +2940,83 @@ def get_expenses():
             "message": f"거래내역 조회 중 오류가 발생했습니다: {str(e)}"
         }), 500
 
+
+@app.route('/api/expenses/yearly', methods=['GET'])
+def get_expenses_yearly():
+    """연간 월별 지출/수입 합계 조회 API"""
+    try:
+        user_id = request.args.get('user_id')
+        year = request.args.get('year')
+
+        if user_id:
+            user_id = int(user_id)
+        else:
+            user_id = 1
+
+        if not year:
+            from datetime import datetime
+            year = datetime.now().year
+        else:
+            year = int(year)
+
+        # 해당 연도의 전체 데이터 조회
+        filters = {
+            'start_date': f'{year}-01-01',
+            'end_date': f'{year}-12-31'
+        }
+
+        result = db_service.get_all_expenses(user_id, filters)
+
+        if result.get('status') != 'success':
+            return jsonify(result), 500
+
+        # 월별로 집계
+        monthly_data = {}
+        for month in range(1, 13):
+            monthly_data[month] = {'expense': 0, 'income': 0, 'transfer': 0}
+
+        for expense in result.get('expenses', []):
+            date_str = expense.get('date', '')
+            if date_str:
+                try:
+                    month = int(date_str.split('-')[1])
+                    amount = float(expense.get('amount', 0))
+                    tx_type = expense.get('transaction_type', '지출')
+
+                    if tx_type == '지출':
+                        monthly_data[month]['expense'] += amount
+                    elif tx_type == '수입':
+                        monthly_data[month]['income'] += amount
+                    elif tx_type == '이체':
+                        monthly_data[month]['transfer'] += amount
+                except (IndexError, ValueError):
+                    continue
+
+        # 응답 형식으로 변환
+        chart_data = []
+        for month in range(1, 13):
+            chart_data.append({
+                'month': f'{month}월',
+                'expense': monthly_data[month]['expense'],
+                'income': monthly_data[month]['income'],
+                'transfer': monthly_data[month]['transfer'],
+                'net': monthly_data[month]['income'] - monthly_data[month]['expense']
+            })
+
+        return jsonify({
+            'status': 'success',
+            'year': year,
+            'data': chart_data
+        })
+
+    except Exception as e:
+        print(f"Error in get_expenses_yearly: {e}")
+        return jsonify({
+            "status": "error",
+            "message": f"연간 데이터 조회 중 오류가 발생했습니다: {str(e)}"
+        }), 500
+
+
 @app.route('/api/expenses/export/excel', methods=['GET'])
 def export_expenses_excel():
     """가계부 데이터를 Excel 파일로 다운로드"""

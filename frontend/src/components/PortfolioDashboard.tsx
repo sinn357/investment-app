@@ -19,6 +19,40 @@ const OracleBarChart = dynamic(() => import('./charts/OracleBarChart'), {
   loading: () => <div className="flex items-center justify-center h-64"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div></div>
 });
 
+// 소분류별 색상 매핑
+const SUB_CATEGORY_COLORS: Record<string, string> = {
+  // 즉시현금 (청록계열)
+  '현금': '#0D9488',
+  '입출금통장': '#14B8A6',
+  '증권예수금': '#2DD4BF',
+  // 예치자산 (파란계열)
+  '예금': '#3B82F6',
+  '적금': '#60A5FA',
+  'MMF': '#93C5FD',
+  'CMA': '#BFDBFE',
+  // 투자자산 - 주식 (보라계열)
+  '국내주식': '#8B5CF6',
+  '해외주식': '#A78BFA',
+  // 투자자산 - 펀드/ETF (분홍계열)
+  '펀드': '#EC4899',
+  'ETF': '#F472B6',
+  // 투자자산 - 채권 (회색계열)
+  '채권': '#6B7280',
+  // 대체투자 (주황/금계열)
+  '암호화폐': '#F59E0B',
+  '부동산': '#D97706',
+  '원자재': '#B45309',
+  '금': '#EAB308',
+  // 기타
+  '기타': '#9CA3AF',
+};
+
+// 소분류에 맞는 색상 가져오기
+const getSubCategoryColor = (subCategory: string | null): string => {
+  if (!subCategory) return SUB_CATEGORY_COLORS['기타'];
+  return SUB_CATEGORY_COLORS[subCategory] || SUB_CATEGORY_COLORS['기타'];
+};
+
 interface Asset {
   id: number;
   asset_type: string;
@@ -773,6 +807,7 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
         name: category,
         value: data.total_principal || data.total_amount,
         percentage: data.principal_percentage || data.percentage,
+        color: getSubCategoryColor(category),
       }));
     } else if (subViewType) {
       // 특정 소분류의 개별 자산별 데이터
@@ -788,7 +823,8 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
         return {
           name: asset.name,
           value: principal,
-          percentage: percentage
+          percentage: percentage,
+          color: getSubCategoryColor(asset.sub_category),
         };
       });
     } else {
@@ -807,6 +843,7 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
           name: subCategory,
           value: totalAmount,
           percentage: percentage,
+          color: getSubCategoryColor(subCategory),
           assets: assets // 개별 자산 정보도 포함
         };
       });
@@ -1644,6 +1681,7 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
               <h4 className="text-sm font-medium text-muted-foreground mb-2 text-center">구성 비중</h4>
               <OraclePieChart
                 data={pieChartData.map(item => ({ name: item.name, value: item.value }))}
+                colors={pieChartData.map(item => item.color)}
                 donut
                 height={200}
               />

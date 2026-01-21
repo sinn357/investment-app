@@ -162,7 +162,15 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
   const [goalMode, setGoalMode] = useState<'지출' | '수입'>('지출');
 
   // 시계열 차트 탭 상태
-  const [timeSeriesTab, setTimeSeriesTab] = useState<'일별' | '비율'>('일별');
+  const [timeSeriesTab, setTimeSeriesTab] = useState<'일별' | '월별' | '비율'>('일별');
+
+  // 월별 (연간) 차트 데이터
+  const [yearlyData, setYearlyData] = useState<Array<{
+    month: string;
+    expense: number;
+    income: number;
+    net: number;
+  }>>([]);
 
   // 카드대금 제외 토글 상태
   const [excludeCardPayment, setExcludeCardPayment] = useState(false);
@@ -413,6 +421,26 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
     }
   }, [API_BASE_URL, user.id]);
 
+  // 연간 월별 데이터 조회
+  const fetchYearlyData = useCallback(async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/expenses/yearly?user_id=${user.id}&year=${selectedYear}`, {
+        headers: getHeaders()
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch yearly data');
+      }
+
+      const result = await response.json();
+      if (result.status === 'success') {
+        setYearlyData(result.data);
+      }
+    } catch (error) {
+      console.error('Error fetching yearly data:', error);
+    }
+  }, [API_BASE_URL, user.id, selectedYear]);
+
   // 예산 목표 저장하기
   const saveBudgetGoals = async (newGoals: typeof budgetGoals) => {
     try {
@@ -443,7 +471,8 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
   useEffect(() => {
     fetchExpenses();
     fetchBudgetGoals();
-  }, [fetchExpenses, fetchBudgetGoals, refreshKey]);
+    fetchYearlyData();
+  }, [fetchExpenses, fetchBudgetGoals, fetchYearlyData, refreshKey]);
 
   // 폼 제출
   const handleSubmit = async (e: React.FormEvent) => {
@@ -1203,8 +1232,8 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
 
         {/* 차트 섹션 */}
         {expenseData && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
-            <div className="bg-white border border-gray-200 rounded-lg p-2.5 shadow-sm">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+            <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border border-primary/10 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between mb-2">
                 <div>
                   <p className="text-xs text-slate-500">구성</p>
@@ -1291,17 +1320,17 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
               )}
             </div>
 
-            <div className="bg-white border border-gray-200 rounded-xl p-3 shadow-sm min-h-[240px] flex flex-col gap-2">
+            <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border border-primary/10 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow min-h-[240px] flex flex-col gap-2">
               <div className="flex items-center justify-between mb-2">
                 <div>
                   <p className="text-xs text-slate-500">지출/수입 흐름</p>
                   <h3 className="text-base font-semibold text-slate-900">{monthLabel}</h3>
                 </div>
                 <div className="flex bg-gray-100 rounded-xl p-1 gap-1">
-                  {['일별', '비율'].map((tab) => (
+                  {['일별', '월별', '비율'].map((tab) => (
                     <button
                       key={tab}
-                      onClick={() => setTimeSeriesTab(tab as '일별' | '비율')}
+                      onClick={() => setTimeSeriesTab(tab as '일별' | '월별' | '비율')}
                       className={`px-2.5 py-1.5 text-xs rounded-lg transition-colors ${
                         timeSeriesTab === tab
                           ? 'bg-[var(--primary)] text-[var(--primary-foreground)] font-semibold'
@@ -1327,7 +1356,33 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
                       height={180}
                     />
                   ) : (
-                    <div className="h-[180px] flex items-center justify-center text-slate-400">데이터가 없습니다</div>
+                    <div className="h-[180px] flex flex-col items-center justify-center text-muted-foreground">
+                      <span className="text-3xl mb-2">📊</span>
+                      <span className="text-sm">데이터가 없습니다</span>
+                    </div>
+                  )
+                )}
+
+                {timeSeriesTab === '월별' && (
+                  yearlyData.length > 0 ? (
+                    <OracleBarChart
+                      data={yearlyData.map(d => ({
+                        월: d.month,
+                        지출: d.expense,
+                        수입: d.income
+                      }))}
+                      xKey="월"
+                      yKeys={[
+                        { key: '지출', name: '지출', color: '#EF4444' },
+                        { key: '수입', name: '수입', color: '#50C878' }
+                      ]}
+                      height={180}
+                    />
+                  ) : (
+                    <div className="h-[180px] flex flex-col items-center justify-center text-muted-foreground">
+                      <span className="text-3xl mb-2">📅</span>
+                      <span className="text-sm">{selectedYear}년 데이터가 없습니다</span>
+                    </div>
                   )
                 )}
 
@@ -1340,7 +1395,10 @@ export default function ExpenseManagementDashboard({ user }: ExpenseManagementDa
                       colors={['#EF4444', '#50C878']}
                     />
                   ) : (
-                    <div className="h-[180px] flex items-center justify-center text-slate-400">데이터가 없습니다</div>
+                    <div className="h-[180px] flex flex-col items-center justify-center text-muted-foreground">
+                      <span className="text-3xl mb-2">📊</span>
+                      <span className="text-sm">데이터가 없습니다</span>
+                    </div>
                   )
                 )}
               </div>

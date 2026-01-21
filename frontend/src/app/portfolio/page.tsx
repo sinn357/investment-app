@@ -331,29 +331,35 @@ export default function PortfolioPage() {
       <Navigation />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 overflow-x-hidden">
-        <div className="space-y-8">
-          {/* 상단 섹션: 입력 폼 + 우측 정보 영역 */}
-          <div className={`grid grid-cols-1 gap-6 ${
-            isFormExpanded ? 'lg:grid-cols-3' : 'lg:grid-cols-4'
-          }`}>
-            {/* 입력 폼 섹션 */}
-            <div className={isFormExpanded ? 'lg:col-span-1' : 'lg:col-span-1'}>
-              <EnhancedPortfolioForm
-                user={user}
-                onExpandedChange={handleFormExpandedChange}
-              />
-            </div>
+        <div className="space-y-6">
+          {/* 새 자산 추가 버튼 + 접이식 폼 */}
+          <GlassCard className="p-0 overflow-hidden">
+            <button
+              onClick={() => setIsFormExpanded(!isFormExpanded)}
+              className="w-full px-6 py-4 flex items-center justify-between hover:bg-primary/5 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">{isFormExpanded ? '📝' : '➕'}</span>
+                <span className="text-lg font-semibold text-foreground">
+                  {isFormExpanded ? '자산 추가 중...' : '새 자산 추가'}
+                </span>
+              </div>
+              <span className={`text-muted-foreground transition-transform ${isFormExpanded ? 'rotate-180' : ''}`}>
+                ▼
+              </span>
+            </button>
+            {isFormExpanded && (
+              <div className="border-t border-primary/10 p-6">
+                <EnhancedPortfolioForm
+                  user={user}
+                  onExpandedChange={handleFormExpandedChange}
+                />
+              </div>
+            )}
+          </GlassCard>
 
-            {/* 우측 정보 영역 */}
-            <div className={isFormExpanded ? 'lg:col-span-2' : 'lg:col-span-3'}>
-              <PortfolioDashboard key={`${refreshKey}-${user.id}`} user={user} showSideInfo={true} />
-            </div>
-          </div>
-
-          {/* 하단 섹션: 전체 대시보드 */}
-          <div>
-            <PortfolioDashboard key={`${refreshKey}-${user.id}`} user={user} showSideInfo={false} />
-          </div>
+          {/* 메인 대시보드 (요약 → 차트 → 목록) */}
+          <PortfolioDashboard key={`${refreshKey}-${user.id}`} user={user} showSideInfo={true} />
 
           {/* 추가 섹션: 매수/매도 계획 */}
           <GlassCard className="p-6" animate animationDelay={0}>
@@ -475,8 +481,12 @@ export default function PortfolioPage() {
                   <tbody>
                     {tradePlans.length === 0 && (
                       <tr>
-                        <td className="px-2 py-3 text-muted-foreground" colSpan={7}>
-                          계획이 없습니다. 계획을 추가하세요.
+                        <td className="px-2 py-8 text-center" colSpan={7}>
+                          <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                            <span className="text-4xl">📋</span>
+                            <p className="font-medium">매수/매도 계획이 없습니다</p>
+                            <p className="text-sm">위에서 자산을 선택하고 목표가와 조건을 입력해 보세요</p>
+                          </div>
                         </td>
                       </tr>
                     )}
@@ -521,8 +531,12 @@ export default function PortfolioPage() {
               {/* 모바일: 카드 */}
               <div className="block md:hidden space-y-3">
                 {tradePlans.length === 0 && (
-                  <div className="px-4 py-3 text-muted-foreground text-center">
-                    계획이 없습니다. 계획을 추가하세요.
+                  <div className="px-4 py-8 text-center">
+                    <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                      <span className="text-4xl">📋</span>
+                      <p className="font-medium">매수/매도 계획이 없습니다</p>
+                      <p className="text-sm">위에서 계획을 추가해 보세요</p>
+                    </div>
                   </div>
                 )}
                 {tradePlans.map(plan => (
@@ -639,7 +653,15 @@ export default function PortfolioPage() {
 
               <div className="space-y-2">
                 <p className="text-sm font-semibold">오늘({today}) 체크리스트</p>
-                {todayTasks.length === 0 && <p className="text-muted-foreground text-sm">오늘 항목이 없습니다.</p>}
+                {todayTasks.length === 0 && (
+                  <div className="py-6 text-center">
+                    <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                      <span className="text-3xl">✅</span>
+                      <p className="text-sm">오늘 체크할 항목이 없습니다</p>
+                      <p className="text-xs">위에서 체크리스트를 추가해 보세요</p>
+                    </div>
+                  </div>
+                )}
                 <div className="space-y-2">
                   {todayTasks.map(task => (
                     <div
@@ -695,9 +717,13 @@ export default function PortfolioPage() {
             <div className="space-y-4">
               <div className="grid gap-3 md:grid-cols-3">
                 {Object.keys(currentWeights).length === 0 && (
-                  <p className="text-muted-foreground text-sm md:col-span-3">
-                    포트폴리오 자산이 없거나 금액이 0입니다. 자산을 추가하면 자동으로 계산됩니다.
-                  </p>
+                  <div className="md:col-span-3 py-8 text-center">
+                    <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                      <span className="text-4xl">⚖️</span>
+                      <p className="font-medium">포트폴리오 자산이 없습니다</p>
+                      <p className="text-sm">자산을 추가하면 자동으로 비중이 계산됩니다</p>
+                    </div>
+                  </div>
                 )}
                 {Object.entries(currentWeights).map(([category, current]) => (
                   <div key={category} className="rounded-md border border-border bg-muted/30 p-3 space-y-2">

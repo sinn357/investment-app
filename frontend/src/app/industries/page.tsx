@@ -18,7 +18,7 @@ const MAJOR_CATEGORIES = [
   {
     id: 'tech',
     name: '기술·데이터·인프라',
-    icon: '💻',
+    
     color: 'from-blue-500/10 to-indigo-500/10 border-blue-500/30',
     subIndustries: [
       '반도체 & 반도체 장비',
@@ -34,7 +34,7 @@ const MAJOR_CATEGORIES = [
   {
     id: 'industrial',
     name: '산업·제조·공공 인프라',
-    icon: '🏗️',
+    
     color: 'from-slate-500/10 to-gray-500/10 border-slate-500/30',
     subIndustries: [
       '중장비 & 건설기계',
@@ -51,7 +51,7 @@ const MAJOR_CATEGORIES = [
   {
     id: 'consumer',
     name: '소비·문화·라이프스타일',
-    icon: '🛍️',
+    
     color: 'from-pink-500/10 to-rose-500/10 border-pink-500/30',
     subIndustries: [
       '리테일 & 쇼핑',
@@ -68,7 +68,7 @@ const MAJOR_CATEGORIES = [
   {
     id: 'healthcare',
     name: '건강·생명과학·바이오',
-    icon: '🏥',
+    
     color: 'from-green-500/10 to-emerald-500/10 border-green-500/30',
     subIndustries: [
       '제약 & 바이오테크',
@@ -81,7 +81,7 @@ const MAJOR_CATEGORIES = [
   {
     id: 'energy',
     name: '에너지·자원·환경',
-    icon: '⚡',
+    
     color: 'from-amber-500/10 to-yellow-500/10 border-amber-500/30',
     subIndustries: [
       '석유 & 가스',
@@ -97,7 +97,7 @@ const MAJOR_CATEGORIES = [
   {
     id: 'finance',
     name: '금융·자산·부동산',
-    icon: '💰',
+    
     color: 'from-emerald-500/10 to-teal-500/10 border-emerald-500/30',
     subIndustries: [
       '상업은행 & 투자은행',
@@ -259,19 +259,27 @@ export default function IndustriesPage() {
     }
   };
 
-  const updateAnalysis = <K extends keyof AnalysisData>(
-    section: K,
-    field: keyof AnalysisData[K],
+  const updateAnalysis = (
+    section: keyof AnalysisData,
+    field: string,
     value: string
   ) => {
     if (!analysisData) return;
-    setAnalysisData({
-      ...analysisData,
-      [section]: {
-        ...analysisData[section],
-        [field]: value
-      }
-    });
+    const currentSection = analysisData[section];
+    if (typeof currentSection === 'string' || currentSection === undefined) {
+      setAnalysisData({
+        ...analysisData,
+        [section]: value
+      });
+    } else {
+      setAnalysisData({
+        ...analysisData,
+        [section]: {
+          ...(currentSection as object),
+          [field]: value
+        }
+      });
+    }
   };
 
   const addLeadingStock = () => {
@@ -300,28 +308,22 @@ export default function IndustriesPage() {
     <div className="min-h-screen bg-background">
       <Navigation />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-4">
         {/* 상단: 6대 산업군 탭 */}
-        <div className="pb-6 border-b border-border">
-          <div className="grid grid-cols-2 md:flex md:flex-wrap gap-3 md:gap-4">
-            {MAJOR_CATEGORIES.map((category, i) => (
-              <GlassCard
+        <div className="pb-4 border-b border-border/50">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
+            {MAJOR_CATEGORIES.map((category) => (
+              <button
                 key={category.id}
-                className={`relative px-3 py-2 md:px-6 md:py-4 cursor-pointer transition-all hover:scale-105 ${
-                  expandedMajor === category.name ? 'ring-2 ring-primary shadow-2xl' : ''
+                className={`px-3 py-2 rounded-lg text-xs md:text-sm font-medium transition-all ${
+                  expandedMajor === category.name
+                    ? 'bg-primary text-primary-foreground shadow-md'
+                    : 'bg-muted/50 hover:bg-muted text-foreground'
                 }`}
-                animationDelay={i * 100}
-                glow={expandedMajor === category.name}
                 onClick={() => handleMajorClick(category.name)}
               >
-                <div className="flex items-center gap-2 md:gap-3 justify-center md:justify-start">
-                  <span className="text-lg md:text-2xl">{category.icon}</span>
-                  <span className="font-semibold text-foreground text-xs md:text-base">{category.name}</span>
-                </div>
-                {expandedMajor === category.name && (
-                  <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-secondary/5 rounded-2xl pointer-events-none animate-pulse" />
-                )}
-              </GlassCard>
+                {category.name}
+              </button>
             ))}
           </div>
         </div>
@@ -349,28 +351,19 @@ export default function IndustriesPage() {
             </div>
 
             {/* 데스크톱: 소분류 사이드바 */}
-            <aside className="hidden md:block w-64 shrink-0 space-y-3">
+            <aside className="hidden md:block w-52 shrink-0 space-y-1">
               {MAJOR_CATEGORIES.find(c => c.name === expandedMajor)?.subIndustries.map((subIndustry, index) => (
-                <GlassCard
+                <button
                   key={index}
-                  className={`p-4 cursor-pointer transition-all hover:scale-[1.02] ${
+                  className={`w-full text-left px-3 py-2 rounded-md text-sm transition-all ${
                     selectedSubIndustry?.major === expandedMajor && selectedSubIndustry?.sub === subIndustry
-                      ? 'ring-2 ring-primary shadow-lg'
-                      : ''
+                      ? 'bg-primary/10 text-primary font-medium border-l-2 border-primary'
+                      : 'hover:bg-muted text-muted-foreground'
                   }`}
-                  animationDelay={index * 50}
-                  glow={selectedSubIndustry?.major === expandedMajor && selectedSubIndustry?.sub === subIndustry}
                   onClick={() => handleSubIndustryClick(expandedMajor, subIndustry)}
                 >
-                  <div className="flex items-center gap-3">
-                    <div className={`w-2 h-2 rounded-full ${
-                      selectedSubIndustry?.major === expandedMajor && selectedSubIndustry?.sub === subIndustry
-                        ? 'bg-primary animate-pulse'
-                        : 'bg-muted-foreground/30'
-                    }`} />
-                    <span className="font-medium text-sm text-foreground">{subIndustry}</span>
-                  </div>
-                </GlassCard>
+                  {subIndustry}
+                </button>
               ))}
             </aside>
 
@@ -387,14 +380,14 @@ export default function IndustriesPage() {
                                 loading={isSaving}
                                 shimmer
                               >
-                                {isSaving ? '저장 중...' : '💾 저장'}
+                                {isSaving ? '저장 중...' : '저장'}
                               </EnhancedButton>
                             </div>
 
                             {/* 🔬 핵심기술 */}
                             <GlassCard className="p-6 border-l-4 border-blue-500" animationDelay={0}>
                               <h3 className="text-lg font-bold bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent mb-4 flex items-center gap-2">
-                                <span className="text-2xl">🔬</span> 핵심기술
+                                핵심기술
                               </h3>
                               <div className="space-y-3">
                                 <div>
@@ -439,7 +432,7 @@ export default function IndustriesPage() {
                             {/* 💰 거시경제 영향 */}
                             <GlassCard className="p-6 border-l-4 border-green-500" animationDelay={100}>
                               <h3 className="text-lg font-bold bg-gradient-to-r from-green-600 to-emerald-400 bg-clip-text text-transparent mb-4 flex items-center gap-2">
-                                <span className="text-2xl">💰</span> 거시경제 영향
+                                거시경제 영향
                               </h3>
                               <div className="space-y-3">
                                 <div>
@@ -485,10 +478,10 @@ export default function IndustriesPage() {
                               </div>
                             </GlassCard>
 
-                            {/* 📈 성장동력/KPI */}
+                            {/* 성장동력/KPI */}
                             <GlassCard className="p-6 border-l-4 border-purple-500" animationDelay={200}>
                               <h3 className="text-lg font-bold bg-gradient-to-r from-purple-600 to-violet-400 bg-clip-text text-transparent mb-4 flex items-center gap-2">
-                                <span className="text-2xl">📈</span> 성장동력/KPI
+                                성장동력/KPI
                               </h3>
                               <div className="space-y-3">
                                 <div>
@@ -566,7 +559,7 @@ export default function IndustriesPage() {
                             {/* 📊 공급/수요 요인 */}
                             <GlassCard className="p-6 border-l-4 border-red-500" animationDelay={400}>
                               <h3 className="text-lg font-bold bg-gradient-to-r from-red-600 to-rose-400 bg-clip-text text-transparent mb-4 flex items-center gap-2">
-                                <span className="text-2xl">📊</span> 공급/수요 요인
+                                공급/수요 요인
                               </h3>
                               <div className="space-y-4">
                                 <div className="space-y-3">
@@ -701,7 +694,7 @@ export default function IndustriesPage() {
                             {/* 🗺️ 시장 지도 */}
                             <GlassCard className="p-6 border-l-4 border-teal-500" animationDelay={500}>
                               <h3 className="text-lg font-bold bg-gradient-to-r from-teal-600 to-cyan-400 bg-clip-text text-transparent mb-4 flex items-center gap-2">
-                                <span className="text-2xl">🗺️</span> 시장 지도
+                                시장 지도
                               </h3>
                               <div className="space-y-3">
                                 <div>
@@ -750,7 +743,7 @@ export default function IndustriesPage() {
                             {/* 🏢 대표 대형주 */}
                             <GlassCard className="p-6 border-l-4 border-indigo-500" animationDelay={600}>
                               <h3 className="text-lg font-bold bg-gradient-to-r from-indigo-600 to-blue-400 bg-clip-text text-transparent mb-4 flex items-center gap-2">
-                                <span className="text-2xl">🏢</span> 대표 대형주
+                                대표 대형주
                               </h3>
                               <div className="space-y-3">
                                 <div className="flex gap-2">
@@ -818,7 +811,7 @@ export default function IndustriesPage() {
                                 disabled={isSaving}
                                 className="bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90"
                               >
-                                {isSaving ? '저장 중...' : '💾 저장'}
+                                {isSaving ? '저장 중...' : '저장'}
                               </Button>
                             </div>
               </div>
