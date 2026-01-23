@@ -1203,12 +1203,25 @@ class PostgresDatabaseService:
                         update_fields.append("management_fee = %s")
                         values.append(data['management_fee'] if data['management_fee'] else None)
 
+                    # amount 업데이트 (즉시현금/예치자산 등)
+                    has_quantity_avg = (
+                        'quantity' in data
+                        and 'avg_price' in data
+                        and data['quantity']
+                        and data['avg_price']
+                    )
+                    has_eval_amount = 'eval_amount' in data and data['eval_amount']
+
+                    if 'amount' in data and data['amount'] is not None and not has_quantity_avg and not has_eval_amount:
+                        update_fields.append("amount = %s")
+                        values.append(data['amount'])
+
                     # amount 계산 (수량 * 평균가 또는 eval_amount)
-                    if 'quantity' in data and 'avg_price' in data and data['quantity'] and data['avg_price']:
+                    if has_quantity_avg:
                         amount = float(data['quantity']) * float(data['avg_price'])
                         update_fields.append("amount = %s")
                         values.append(amount)
-                    elif 'eval_amount' in data and data['eval_amount']:
+                    elif has_eval_amount:
                         update_fields.append("amount = %s")
                         values.append(data['eval_amount'])
 

@@ -351,7 +351,7 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
         quantity: editForm.quantity ? parseFloat(editForm.quantity as string) : undefined,
         avg_price: editForm.avg_price ? parseFloat(editForm.avg_price as string) : undefined,
         principal: editForm.principal ? parseFloat(editForm.principal as string) : undefined,
-        evaluation_amount: editForm.eval_amount ? parseFloat(editForm.eval_amount as string) : undefined,
+        eval_amount: editForm.eval_amount ? parseFloat(editForm.eval_amount as string) : undefined,
         date: editForm.date,
         note: editForm.note || '',
         // 소분류별 전용 필드

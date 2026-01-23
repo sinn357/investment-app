@@ -13,6 +13,7 @@ interface Asset {
   avg_price?: number
   principal?: number
   evaluation_amount?: number
+  eval_amount?: number
   profit_loss?: number
   profit_rate?: number
   date: string
@@ -72,7 +73,10 @@ export function useAssets(userId: number) {
       }
 
       console.log('[useAssets] Success - fetched', assets.length, 'assets');
-      return assets;
+      return assets.map((asset) => ({
+        ...asset,
+        evaluation_amount: asset.eval_amount ?? asset.evaluation_amount,
+      }));
     },
     enabled: !!userId, // userId가 있을 때만 실행
   })
@@ -119,10 +123,11 @@ export function useUpdateAsset(userId: number) {
 
   return useMutation({
     mutationFn: async ({ id, ...input }: Partial<Asset> & { id: number }) => {
+      const payload = { ...input, user_id: userId }
       const response = await fetch(`${API_BASE_URL}/api/update-asset/${id}?user_id=${userId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(input),
+        body: JSON.stringify(payload),
       })
 
       const data: PortfolioResponse = await response.json()
