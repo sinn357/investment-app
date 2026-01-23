@@ -1132,15 +1132,6 @@ class PostgresDatabaseService:
                         update_fields.append("avg_price = %s")
                         values.append(data['avg_price'] if data['avg_price'] else None)
 
-                    # 원금과 평가액
-                    if 'principal' in data:
-                        update_fields.append("principal = %s")
-                        values.append(data['principal'] if data['principal'] else None)
-
-                    if 'eval_amount' in data:
-                        update_fields.append("eval_amount = %s")
-                        values.append(data['eval_amount'] if data['eval_amount'] else None)
-
                     # 소분류별 전용 필드들
                     # 부동산 필드
                     if 'area_pyeong' in data:
@@ -1215,6 +1206,21 @@ class PostgresDatabaseService:
                         data['eval_amount'] = data['amount']
                         data['principal'] = data['amount']
                     has_eval_amount = 'eval_amount' in data and data['eval_amount']
+
+                    # 원금과 평가액 (cash assets are synced to amount)
+                    if is_cash_asset and 'amount' in data and data['amount'] is not None:
+                        update_fields.append("principal = %s")
+                        values.append(data['amount'])
+                        update_fields.append("eval_amount = %s")
+                        values.append(data['amount'])
+                    else:
+                        if 'principal' in data:
+                            update_fields.append("principal = %s")
+                            values.append(data['principal'] if data['principal'] else None)
+
+                        if 'eval_amount' in data:
+                            update_fields.append("eval_amount = %s")
+                            values.append(data['eval_amount'] if data['eval_amount'] else None)
 
                     if 'amount' in data and data['amount'] is not None and not has_quantity_avg and not has_eval_amount:
                         update_fields.append("amount = %s")
