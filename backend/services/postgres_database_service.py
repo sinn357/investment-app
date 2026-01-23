@@ -1251,10 +1251,70 @@ class PostgresDatabaseService:
                     if cur.rowcount > 0:
                         conn.commit()
                         print(f"Asset {asset_id} updated successfully")
+                        # Return updated row for verification
+                        if user_id:
+                            cur.execute("""
+                                SELECT id, asset_type, sub_category, name, amount, quantity, avg_price, eval_amount, principal,
+                                       profit_loss, profit_rate, date, note, created_at,
+                                       area_pyeong, acquisition_tax, rent_type, rental_income, jeonse_deposit, lawyer_fee, brokerage_fee,
+                                       maturity_date, interest_rate, early_withdrawal_fee, current_yield, annual_yield, minimum_balance,
+                                       withdrawal_fee, dividend_rate, nav, management_fee
+                                FROM assets
+                                WHERE id = %s AND user_id = %s
+                            """, (asset_id, user_id))
+                        else:
+                            cur.execute("""
+                                SELECT id, asset_type, sub_category, name, amount, quantity, avg_price, eval_amount, principal,
+                                       profit_loss, profit_rate, date, note, created_at,
+                                       area_pyeong, acquisition_tax, rent_type, rental_income, jeonse_deposit, lawyer_fee, brokerage_fee,
+                                       maturity_date, interest_rate, early_withdrawal_fee, current_yield, annual_yield, minimum_balance,
+                                       withdrawal_fee, dividend_rate, nav, management_fee
+                                FROM assets
+                                WHERE id = %s
+                            """, (asset_id,))
+
+                        updated_row = cur.fetchone()
+                        updated_asset = None
+                        if updated_row:
+                            updated_asset = {
+                                "id": updated_row['id'],
+                                "asset_type": updated_row['asset_type'],
+                                "sub_category": updated_row['sub_category'],
+                                "name": updated_row['name'],
+                                "amount": float(updated_row['amount']) if updated_row['amount'] else 0,
+                                "quantity": float(updated_row['quantity']) if updated_row['quantity'] else None,
+                                "avg_price": float(updated_row['avg_price']) if updated_row['avg_price'] else None,
+                                "eval_amount": float(updated_row['eval_amount']) if updated_row['eval_amount'] else None,
+                                "principal": float(updated_row['principal']) if updated_row['principal'] else None,
+                                "profit_loss": float(updated_row['profit_loss']) if updated_row['profit_loss'] else None,
+                                "profit_rate": float(updated_row['profit_rate']) if updated_row['profit_rate'] else None,
+                                "date": updated_row['date'].isoformat() if updated_row['date'] else None,
+                                "note": updated_row['note'],
+                                "created_at": updated_row['created_at'].isoformat() if updated_row['created_at'] else None,
+                                "area_pyeong": float(updated_row['area_pyeong']) if updated_row['area_pyeong'] else None,
+                                "acquisition_tax": float(updated_row['acquisition_tax']) if updated_row['acquisition_tax'] else None,
+                                "rent_type": updated_row['rent_type'],
+                                "rental_income": float(updated_row['rental_income']) if updated_row['rental_income'] else None,
+                                "jeonse_deposit": float(updated_row['jeonse_deposit']) if updated_row['jeonse_deposit'] else None,
+                                "lawyer_fee": float(updated_row['lawyer_fee']) if updated_row['lawyer_fee'] else None,
+                                "brokerage_fee": float(updated_row['brokerage_fee']) if updated_row['brokerage_fee'] else None,
+                                "maturity_date": updated_row['maturity_date'].isoformat() if updated_row['maturity_date'] else None,
+                                "interest_rate": float(updated_row['interest_rate']) if updated_row['interest_rate'] else None,
+                                "early_withdrawal_fee": float(updated_row['early_withdrawal_fee']) if updated_row['early_withdrawal_fee'] else None,
+                                "current_yield": float(updated_row['current_yield']) if updated_row['current_yield'] else None,
+                                "annual_yield": float(updated_row['annual_yield']) if updated_row['annual_yield'] else None,
+                                "minimum_balance": float(updated_row['minimum_balance']) if updated_row['minimum_balance'] else None,
+                                "withdrawal_fee": float(updated_row['withdrawal_fee']) if updated_row['withdrawal_fee'] else None,
+                                "dividend_rate": float(updated_row['dividend_rate']) if updated_row['dividend_rate'] else None,
+                                "nav": float(updated_row['nav']) if updated_row['nav'] else None,
+                                "management_fee": float(updated_row['management_fee']) if updated_row['management_fee'] else None,
+                            }
+
                         return {
                             "status": "success",
                             "message": f"'{asset['name']}' 자산이 성공적으로 수정되었습니다.",
-                            "updated_asset_id": asset_id
+                            "updated_asset_id": asset_id,
+                            "asset": updated_asset
                         }
                     else:
                         return {
