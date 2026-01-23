@@ -1923,6 +1923,13 @@ def update_asset(asset_id):
         print(f"Attempting to update asset with ID: {asset_id}")
         print(f"Update data: {data}")
 
+        if data:
+            if 'eval_amount' not in data:
+                if 'evaluation_amount' in data:
+                    data['eval_amount'] = data.get('evaluation_amount')
+                elif 'evaluationAmount' in data:
+                    data['eval_amount'] = data.get('evaluationAmount')
+
         # 필수 필드 검증
         required_fields = ['asset_type', 'name', 'date']
         for field in required_fields:

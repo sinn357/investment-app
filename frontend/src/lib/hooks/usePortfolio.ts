@@ -58,7 +58,7 @@ export function useAssets(userId: number) {
       const url = `${API_BASE_URL}/api/portfolio?user_id=${userId}`;
       console.log('[useAssets] API URL:', url);
 
-      const response = await fetch(url);
+      const response = await fetch(url, { cache: 'no-store' });
       const data: PortfolioResponse = await response.json();
 
       console.log('[useAssets] API Response:', { status: data.status, hasData: !!data.data, hasAssets: !!data.assets, message: data.message });
