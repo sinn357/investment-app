@@ -1215,6 +1215,8 @@ class PostgresDatabaseService:
                     if 'amount' in data and data['amount'] is not None and not has_quantity_avg and not has_eval_amount:
                         update_fields.append("amount = %s")
                         values.append(data['amount'])
+                        update_fields.append("eval_amount = %s")
+                        values.append(data['amount'])
 
                     # amount 계산 (수량 * 평균가 또는 eval_amount)
                     if has_quantity_avg:
