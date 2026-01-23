@@ -1210,6 +1210,9 @@ class PostgresDatabaseService:
                         and data['quantity']
                         and data['avg_price']
                     )
+                    is_cash_asset = data.get('asset_type') in ['즉시현금', '예치자산']
+                    if is_cash_asset and 'amount' in data and data['amount'] is not None:
+                        data['eval_amount'] = data['amount']
                     has_eval_amount = 'eval_amount' in data and data['eval_amount']
 
                     if 'amount' in data and data['amount'] is not None and not has_quantity_avg and not has_eval_amount:

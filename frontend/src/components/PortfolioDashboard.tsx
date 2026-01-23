@@ -342,7 +342,8 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
     }
 
     try {
-      await updateAssetMutation.mutateAsync({
+      const isCashAsset = editForm.asset_type === '즉시현금' || editForm.asset_type === '예치자산'
+      const payload: Partial<Asset> & { id: number } = {
         id: editingAsset.id,
         asset_type: editForm.asset_type,
         sub_category: editForm.sub_category || undefined,
@@ -350,8 +351,6 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
         amount: editForm.amount ? parseFloat(editForm.amount as string) : undefined,
         quantity: editForm.quantity ? parseFloat(editForm.quantity as string) : undefined,
         avg_price: editForm.avg_price ? parseFloat(editForm.avg_price as string) : undefined,
-        principal: editForm.principal ? parseFloat(editForm.principal as string) : undefined,
-        eval_amount: editForm.eval_amount ? parseFloat(editForm.eval_amount as string) : undefined,
         date: editForm.date,
         note: editForm.note || '',
         // 소분류별 전용 필드
@@ -372,7 +371,14 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
         dividend_rate: editForm.dividend_rate ? parseFloat(editForm.dividend_rate as string) : undefined,
         nav: editForm.nav ? parseFloat(editForm.nav as string) : undefined,
         management_fee: editForm.management_fee ? parseFloat(editForm.management_fee as string) : undefined
-      });
+      }
+
+      if (!isCashAsset) {
+        payload.principal = editForm.principal ? parseFloat(editForm.principal as string) : undefined
+        payload.eval_amount = editForm.eval_amount ? parseFloat(editForm.eval_amount as string) : undefined
+      }
+
+      await updateAssetMutation.mutateAsync(payload);
 
       // 성공 시 hooks에서 toast 자동 표시
       setEditingAsset(null);
