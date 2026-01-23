@@ -21,6 +21,11 @@ const OracleBarChart = dynamic(() => import('./charts/OracleBarChart'), {
 
 // 소분류별 색상 매핑
 const SUB_CATEGORY_COLORS: Record<string, string> = {
+  // 대분류 (자산군)
+  '즉시현금': '#2ECC71',   // 에메랄드
+  '예치자산': '#50C878',   // 밝은 에메랄드
+  '투자자산': '#D4AF37',   // 골드
+  '대체투자': '#B8860B',   // 다크 골드
   // 즉시현금 (청록계열)
   '현금': '#0D9488',
   '입출금통장': '#14B8A6',
@@ -46,6 +51,36 @@ const SUB_CATEGORY_COLORS: Record<string, string> = {
   // 기타
   '기타': '#9CA3AF',
 };
+
+const CATEGORY_HEADER_STYLES: Record<string, { header: string; stat: string; tone: string }> = {
+  '즉시현금': {
+    header: 'from-emerald-600 to-teal-600',
+    stat: 'bg-emerald-600/30',
+    tone: 'text-emerald-100',
+  },
+  '예치자산': {
+    header: 'from-teal-500 to-emerald-600',
+    stat: 'bg-teal-600/30',
+    tone: 'text-emerald-100',
+  },
+  '투자자산': {
+    header: 'from-amber-500 to-amber-700',
+    stat: 'bg-amber-600/30',
+    tone: 'text-amber-100',
+  },
+  '대체투자': {
+    header: 'from-orange-500 to-amber-600',
+    stat: 'bg-orange-600/30',
+    tone: 'text-amber-100',
+  },
+};
+
+const getCategoryHeaderStyle = (category: string) =>
+  CATEGORY_HEADER_STYLES[category] || {
+    header: 'from-slate-500 to-slate-600',
+    stat: 'bg-slate-600/30',
+    tone: 'text-slate-100',
+  };
 
 // 소분류에 맞는 색상 가져오기
 const getSubCategoryColor = (subCategory: string | null): string => {
@@ -1777,16 +1812,17 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
           const totalProfitLoss = totalEvalAmount - totalPrincipal;
           const profitRate = totalPrincipal > 0 ? (totalProfitLoss / totalPrincipal) * 100 : 0;
 
+          const categoryStyle = getCategoryHeaderStyle(category);
           return (
             <div key={category} className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
               {/* 자산군 헤더 */}
-              <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4">
+              <div className={`bg-gradient-to-r ${categoryStyle.header} px-6 py-4`}>
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                   <div className="flex items-center space-x-3">
                     <h3 className="text-lg font-semibold text-white">{category}</h3>
                     <button
                       onClick={() => toggleCategory(category)}
-                      className="text-white hover:text-blue-200 transition-colors p-1"
+                      className="text-white hover:text-white/80 transition-colors p-1"
                     >
                       <svg
                         className={`w-5 h-5 transform transition-transform ${expandedCategories[category] ? 'rotate-180' : ''}`}
@@ -1798,19 +1834,19 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
                   </div>
                   <div className="text-white text-sm">
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                      <div className="bg-blue-600 bg-opacity-30 px-3 py-2 rounded">
+                      <div className={`${categoryStyle.stat} px-3 py-2 rounded`}>
                         <div className="text-xs opacity-80">자산 수</div>
                         <div className="font-medium">{allAssets.length}개</div>
                       </div>
-                      <div className="bg-blue-600 bg-opacity-30 px-3 py-2 rounded">
+                      <div className={`${categoryStyle.stat} px-3 py-2 rounded`}>
                         <div className="text-xs opacity-80">현재가치</div>
                         <div className="font-medium">{formatCurrency(totalEvalAmount)}</div>
                       </div>
-                      <div className="bg-blue-600 bg-opacity-30 px-3 py-2 rounded">
+                      <div className={`${categoryStyle.stat} px-3 py-2 rounded`}>
                         <div className="text-xs opacity-80">원금</div>
                         <div className="font-medium">{formatCurrency(totalPrincipal)}</div>
                       </div>
-                      <div className="bg-blue-600 bg-opacity-30 px-3 py-2 rounded">
+                      <div className={`${categoryStyle.stat} px-3 py-2 rounded`}>
                         <div className="text-xs opacity-80">손익</div>
                         <div className={`font-medium ${totalProfitLoss >= 0 ? 'text-green-200' : 'text-red-200'}`}>
                           {formatCurrency(totalProfitLoss)} ({profitRate.toFixed(2)}%)
