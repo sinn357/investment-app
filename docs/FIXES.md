@@ -2,6 +2,37 @@
 
 ## Recent Fixes
 
+### Portfolio Edit Not Reflected (Cash Assets)
+**Status**: Resolved
+**Symptoms**:
+- Editing cash assets (즉시현금/예치자산) showed success, but UI still displayed old value.
+- Even after refresh, amount remained unchanged (e.g., 5,071,958).
+
+**Root Causes**:
+1. **Payload vs DB overwrite**: update request carried `amount`, but backend overwrote `amount` using `eval_amount` when present.
+2. **Display precedence**: UI uses `principal` and `eval_amount` before `amount`, so unchanged `principal` kept old value visible.
+3. **Deployment gate**: Vercel build failed due to TypeScript mismatch, so frontend changes were not deployed.
+
+**Failure Investigation**:
+- Captured update payload and Render SQL logs.
+- SQL `Values` showed `amount` being overwritten by `eval_amount`.
+- Added update response payload to verify persisted values.
+- Confirmed UI reads `principal` for cash asset totals and rows.
+
+**Fixes**:
+- Frontend: For cash assets, stop sending `principal`/`eval_amount` in update payload.
+- Backend: When `asset_type` is cash, force `principal` and `eval_amount` to equal `amount` and ensure these fields are included in SQL updates.
+- Frontend build: Align payload type to resolve TS compile error.
+
+**Verification**:
+- Update request response returns `amount`, `principal`, `eval_amount` aligned.
+- `GET /api/portfolio` shows updated values.
+- UI reflects new amount without logout.
+
+**Notes**:
+- Backend redeploy required.
+- Previous logout/login masked cache effects by forcing a fresh fetch.
+
 ### CORS Header Issues
 **Resolved**: backend/app.py CORS 설정 확인
 **Pattern**: ERROR_PATTERNS.md 참조
