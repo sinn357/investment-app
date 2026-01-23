@@ -343,7 +343,8 @@ export default function PortfolioDashboard({ showSideInfo = false, user }: Portf
 
     try {
       const isCashAsset = editForm.asset_type === '즉시현금' || editForm.asset_type === '예치자산'
-      const payload: Partial<Asset> & { id: number } = {
+      type UpdatePayload = Parameters<typeof updateAssetMutation.mutateAsync>[0]
+      const payload: UpdatePayload = {
         id: editingAsset.id,
         asset_type: editForm.asset_type,
         sub_category: editForm.sub_category || undefined,
