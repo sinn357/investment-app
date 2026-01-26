@@ -4785,6 +4785,19 @@ def get_finnhub_key():
     return os.getenv("FINNHUB_API_KEY")
 
 
+def fetch_finnhub(endpoint, params):
+    try:
+        response = requests.get(endpoint, params=params, timeout=10)
+        status = response.status_code
+        try:
+            payload = response.json()
+        except ValueError:
+            payload = {"raw": response.text[:500]}
+        return status, payload
+    except Exception as e:
+        return 0, {"error": str(e)}
+
+
 @app.route('/api/market/quote', methods=['GET'])
 def get_market_quote():
     try:
@@ -4796,13 +4809,13 @@ def get_market_quote():
         if not api_key:
             return jsonify({"status": "error", "message": "FINNHUB_API_KEY가 설정되지 않았습니다"}), 500
 
-        response = requests.get(
+        status, data = fetch_finnhub(
             "https://finnhub.io/api/v1/quote",
-            params={"symbol": symbol, "token": api_key},
-            timeout=10
+            {"symbol": symbol, "token": api_key}
         )
-        response.raise_for_status()
-        data = response.json()
+        if status != 200:
+            print(f"Finnhub quote error ({status}): {data}")
+            return jsonify({"status": "error", "message": "시세 조회 실패", "detail": data}), 500
 
         return jsonify({"status": "success", "data": data})
     except Exception as e:
@@ -4832,19 +4845,19 @@ def get_market_candles():
         if not from_ts or not to_ts:
             return jsonify({"status": "error", "message": "from/to 파라미터가 필요합니다"}), 400
 
-        response = requests.get(
+        status, data = fetch_finnhub(
             "https://finnhub.io/api/v1/stock/candle",
-            params={
+            {
                 "symbol": symbol,
                 "resolution": resolution,
                 "from": from_ts,
                 "to": to_ts,
                 "token": api_key,
-            },
-            timeout=10
+            }
         )
-        response.raise_for_status()
-        data = response.json()
+        if status != 200:
+            print(f"Finnhub candles error ({status}): {data}")
+            return jsonify({"status": "error", "message": "차트 데이터 조회 실패", "detail": data}), 500
 
         return jsonify({"status": "success", "data": data})
     except Exception as e:
