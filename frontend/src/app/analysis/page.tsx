@@ -411,6 +411,9 @@ export default function AnalysisPage() {
           setMarketQuote(quoteJson.data);
         } else {
           setMarketQuote(null);
+          if (quoteJson?.message) {
+            setMarketError(quoteJson.message);
+          }
         }
 
         const to = Math.floor(Date.now() / 1000);
@@ -428,6 +431,9 @@ export default function AnalysisPage() {
           setMarketSeries(series);
         } else {
           setMarketSeries([]);
+          if (candleJson?.message) {
+            setMarketError(candleJson.message);
+          }
         }
       } catch (error) {
         console.error('Market data fetch error:', error);

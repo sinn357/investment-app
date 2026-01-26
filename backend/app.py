@@ -8,6 +8,7 @@ import io
 from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment, PatternFill
 import requests
+import time
 
 # 통합 크롤러
 from crawlers.unified_crawler import crawl_indicator, crawl_category
@@ -4785,6 +4786,25 @@ def get_finnhub_key():
     return os.getenv("FINNHUB_API_KEY")
 
 
+MARKET_CACHE = {
+    "quote": {},
+    "candles": {}
+}
+
+
+def get_cached(cache_key, ttl):
+    entry = MARKET_CACHE.get(cache_key, {})
+    now = time.time()
+    for key, value in list(entry.items()):
+        if now - value["ts"] > ttl:
+            del entry[key]
+    return entry
+
+
+def set_cached(cache_key, key, data):
+    MARKET_CACHE.setdefault(cache_key, {})[key] = {"ts": time.time(), "data": data}
+
+
 def fetch_finnhub(endpoint, params):
     try:
         response = requests.get(endpoint, params=params, timeout=10)
@@ -4809,14 +4829,19 @@ def get_market_quote():
         if not api_key:
             return jsonify({"status": "error", "message": "FINNHUB_API_KEY가 설정되지 않았습니다"}), 500
 
+        cache = get_cached("quote", 30)
+        if symbol in cache:
+            return jsonify({"status": "success", "data": cache[symbol]["data"], "cached": True})
+
         status, data = fetch_finnhub(
             "https://finnhub.io/api/v1/quote",
             {"symbol": symbol, "token": api_key}
         )
         if status != 200:
             print(f"Finnhub quote error ({status}): {data}")
-            return jsonify({"status": "error", "message": "시세 조회 실패", "detail": data}), 500
+            return jsonify({"status": "error", "message": "시세 조회 실패", "detail": data}), status
 
+        set_cached("quote", symbol, data)
         return jsonify({"status": "success", "data": data})
     except Exception as e:
         import traceback
@@ -4845,6 +4870,11 @@ def get_market_candles():
         if not from_ts or not to_ts:
             return jsonify({"status": "error", "message": "from/to 파라미터가 필요합니다"}), 400
 
+        cache_key = f"{symbol}:{resolution}:{from_ts}:{to_ts}"
+        cache = get_cached("candles", 600)
+        if cache_key in cache:
+            return jsonify({"status": "success", "data": cache[cache_key]["data"], "cached": True})
+
         status, data = fetch_finnhub(
             "https://finnhub.io/api/v1/stock/candle",
             {
@@ -4857,8 +4887,12 @@ def get_market_candles():
         )
         if status != 200:
             print(f"Finnhub candles error ({status}): {data}")
-            return jsonify({"status": "error", "message": "차트 데이터 조회 실패", "detail": data}), 500
+            return jsonify({"status": "error", "message": "차트 데이터 조회 실패", "detail": data}), status
 
+        if isinstance(data, dict) and data.get("s") != "ok":
+            return jsonify({"status": "success", "data": data})
+
+        set_cached("candles", cache_key, data)
         return jsonify({"status": "success", "data": data})
     except Exception as e:
         import traceback
