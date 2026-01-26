@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Line, LineChart, ResponsiveContainer, Tooltip } from 'recharts';
+import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis } from 'recharts';
 import {
   Select,
   SelectContent,
@@ -1577,10 +1577,11 @@ export default function AnalysisPage() {
                               {marketSeries.length > 0 ? (
                                 <ResponsiveContainer width="100%" height="100%">
                                   <LineChart data={marketSeries}>
+                                    <XAxis dataKey="time" hide />
                                     <Tooltip
                                       formatter={(value: number) => [`$${value.toFixed(2)}`, '종가']}
                                       labelFormatter={(label) =>
-                                        new Date(label * 1000).toLocaleDateString()
+                                        new Date(Number(label) * 1000).toLocaleDateString()
                                       }
                                     />
                                     <Line
