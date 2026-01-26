@@ -4887,6 +4887,54 @@ def fetch_stooq_candles(symbol, from_ts, to_ts):
         return {"s": "error", "error": str(e)}
 
 
+def fetch_yahoo_candles(symbol, from_ts, to_ts):
+    try:
+        normalized = symbol.upper()
+        url = f"https://query2.finance.yahoo.com/v8/finance/chart/{normalized}"
+        headers = {
+            "User-Agent": "Mozilla/5.0 (compatible; investment-app/1.0)"
+        }
+        response = requests.get(
+            url,
+            params={
+                "interval": "1d",
+                "period1": from_ts,
+                "period2": to_ts,
+                "events": "div,splits"
+            },
+            headers=headers,
+            timeout=10
+        )
+        response.raise_for_status()
+        payload = response.json()
+        result = (payload.get("chart") or {}).get("result") or []
+        if not result:
+            return {"s": "no_data", "error": "yahoo_no_result"}
+
+        series = result[0]
+        timestamps = series.get("timestamp") or []
+        closes = (series.get("indicators") or {}).get("quote") or []
+        close_values = closes[0].get("close") if closes else []
+
+        if not timestamps or not close_values:
+            return {"s": "no_data", "error": "yahoo_no_prices"}
+
+        filtered_t = []
+        filtered_c = []
+        for ts, close in zip(timestamps, close_values):
+            if close is None:
+                continue
+            filtered_t.append(ts)
+            filtered_c.append(float(close))
+
+        if not filtered_t:
+            return {"s": "no_data", "error": "yahoo_no_filtered"}
+
+        return {"s": "ok", "t": filtered_t, "c": filtered_c}
+    except Exception as e:
+        return {"s": "error", "error": str(e)}
+
+
 @app.route('/api/market/quote', methods=['GET'])
 def get_market_quote():
     try:
@@ -4945,10 +4993,10 @@ def get_market_candles():
         if cache_key in cache:
             return jsonify({"status": "success", "data": cache[cache_key]["data"], "cached": True})
 
-        if source == "stooq":
-            fallback = fetch_stooq_candles(symbol, from_ts, to_ts)
-            set_cached("candles", cache_key, fallback)
-            return jsonify({"status": "success", "data": fallback, "source": "stooq"})
+        if source == "yahoo":
+            yahoo = fetch_yahoo_candles(symbol, from_ts, to_ts)
+            set_cached("candles", cache_key, yahoo)
+            return jsonify({"status": "success", "data": yahoo, "source": "yahoo"})
 
         status, data = fetch_finnhub(
             "https://finnhub.io/api/v1/stock/candle",
@@ -4963,14 +5011,14 @@ def get_market_candles():
         if status != 200:
             print(f"Finnhub candles error ({status}): {data}")
             if status == 403:
-                fallback = fetch_stooq_candles(symbol, from_ts, to_ts)
-                return jsonify({"status": "success", "data": fallback, "source": "stooq"})
+                fallback = fetch_yahoo_candles(symbol, from_ts, to_ts)
+                return jsonify({"status": "success", "data": fallback, "source": "yahoo"})
             return jsonify({"status": "error", "message": "차트 데이터 조회 실패", "detail": data}), status
 
         if isinstance(data, dict) and data.get("s") != "ok":
             if data.get("s") == "no_data":
-                fallback = fetch_stooq_candles(symbol, from_ts, to_ts)
-                return jsonify({"status": "success", "data": fallback, "source": "stooq"})
+                fallback = fetch_yahoo_candles(symbol, from_ts, to_ts)
+                return jsonify({"status": "success", "data": fallback, "source": "yahoo"})
             return jsonify({"status": "success", "data": data})
 
         set_cached("candles", cache_key, data)
