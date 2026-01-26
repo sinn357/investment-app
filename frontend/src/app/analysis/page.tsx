@@ -475,7 +475,14 @@ export default function AnalysisPage() {
     }
   };
 
-  const hasVolumeData = marketSeries.some((item) => (item.volume ?? 0) > 0);
+  const volumeSeries = marketSeries
+    .filter((item) => (item.volume ?? 0) > 0)
+    .map((item) => ({ time: item.time, volume: item.volume }));
+  if (volumeSeries.length === 0 && marketExtra?.regularMarketVolume) {
+    const fallbackTime = marketSeries[marketSeries.length - 1]?.time ?? Math.floor(Date.now() / 1000);
+    volumeSeries.push({ time: fallbackTime, volume: marketExtra.regularMarketVolume });
+  }
+  const hasVolumeData = volumeSeries.length > 0;
 
   useEffect(() => {
     try {
@@ -1673,7 +1680,7 @@ export default function AnalysisPage() {
                                 <div>
                                   <p className="text-muted-foreground">최근 거래량</p>
                                   <p className="text-lg font-semibold">
-                                    {formatCompact(marketSeries[marketSeries.length - 1]?.volume ?? null)}
+                                    {formatCompact(volumeSeries[volumeSeries.length - 1]?.volume ?? null)}
                                   </p>
                                 </div>
                                 <div>
@@ -1681,8 +1688,8 @@ export default function AnalysisPage() {
                                   <p className="text-lg font-semibold">
                                     {formatCompact(
                                       Math.round(
-                                        marketSeries.reduce((sum, item) => sum + (item.volume || 0), 0) /
-                                          Math.max(marketSeries.length, 1)
+                                        volumeSeries.reduce((sum, item) => sum + (item.volume || 0), 0) /
+                                          Math.max(volumeSeries.length, 1)
                                       )
                                     )}
                                   </p>
@@ -1718,7 +1725,7 @@ export default function AnalysisPage() {
                             <div className="h-32">
                               {marketSeries.length > 0 && hasVolumeData ? (
                                 <ResponsiveContainer width="100%" height="100%">
-                                  <BarChart data={marketSeries}>
+                                  <BarChart data={volumeSeries}>
                                     <XAxis dataKey="time" hide />
                                     <YAxis hide />
                                     <Tooltip
