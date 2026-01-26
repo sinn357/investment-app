@@ -381,7 +381,8 @@ export default function AnalysisPage() {
   const [saveState, setSaveState] = useState<'idle' | 'saved'>('idle');
   const [saveMessage, setSaveMessage] = useState<string>('');
   const [marketQuote, setMarketQuote] = useState<any | null>(null);
-  const [marketSeries, setMarketSeries] = useState<{ time: number; close: number }[]>([]);
+  const [marketExtra, setMarketExtra] = useState<any | null>(null);
+  const [marketSeries, setMarketSeries] = useState<{ time: number; close: number; volume?: number | null }[]>([]);
   const [marketRange, setMarketRange] = useState<'1M' | '3M' | '6M' | '1Y' | '3Y' | '5Y' | 'MAX'>('1Y');
   const [marketLoading, setMarketLoading] = useState(false);
   const [marketError, setMarketError] = useState('');
@@ -398,6 +399,7 @@ export default function AnalysisPage() {
     const symbol = detail?.symbol?.trim().toUpperCase();
     if (!symbol) {
       setMarketQuote(null);
+      setMarketExtra(null);
       setMarketSeries([]);
       return;
     }
@@ -410,8 +412,10 @@ export default function AnalysisPage() {
         const quoteJson = await quoteRes.json();
         if (quoteRes.ok && quoteJson.status === 'success') {
           setMarketQuote(quoteJson.data);
+          setMarketExtra(quoteJson.extra || null);
         } else {
           setMarketQuote(null);
+          setMarketExtra(null);
           if (quoteJson?.message) {
             setMarketError(quoteJson.message);
           }
@@ -433,10 +437,11 @@ export default function AnalysisPage() {
         );
         const candleJson = await candleRes.json();
         if (candleRes.ok && candleJson.status === 'success' && candleJson.data?.s === 'ok') {
-          const { t = [], c = [] } = candleJson.data;
+          const { t = [], c = [], v = [] } = candleJson.data;
           const series = t.map((time: number, index: number) => ({
             time,
             close: c[index],
+            volume: v[index],
           }));
           setMarketSeries(series);
         } else {
@@ -460,6 +465,15 @@ export default function AnalysisPage() {
 
     fetchMarketData();
   }, [detail?.symbol, marketRange]);
+
+  const formatCompact = (value?: number | null) => {
+    if (value === null || value === undefined || Number.isNaN(value)) return '-';
+    try {
+      return new Intl.NumberFormat('en', { notation: 'compact' }).format(value);
+    } catch {
+      return value.toLocaleString();
+    }
+  };
 
   useEffect(() => {
     try {
@@ -1577,9 +1591,14 @@ export default function AnalysisPage() {
                                 </div>
                                 <div>
                                   <p className="text-muted-foreground">변동</p>
-                                  <p className={`text-lg font-semibold ${marketQuote.d >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                                    {marketQuote.d?.toFixed(2) ?? '-'} ({marketQuote.dp?.toFixed(2) ?? '-'}%)
-                                  </p>
+                                  <div className="flex items-center gap-2">
+                                    <p className={`text-lg font-semibold ${marketQuote.d >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                      {marketQuote.d?.toFixed(2) ?? '-'} ({marketQuote.dp?.toFixed(2) ?? '-'}%)
+                                    </p>
+                                    <Badge variant="outline" className={`${marketQuote.d >= 0 ? 'text-emerald-600 border-emerald-200' : 'text-rose-600 border-rose-200'}`}>
+                                      {marketQuote.d >= 0 ? '상승' : '하락'}
+                                    </Badge>
+                                  </div>
                                 </div>
                                 <div>
                                   <p className="text-muted-foreground">고가</p>
@@ -1591,6 +1610,34 @@ export default function AnalysisPage() {
                                   <p className="text-muted-foreground">저가</p>
                                   <p className="text-lg font-semibold">
                                     ${marketQuote.l?.toLocaleString() ?? '-'}
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+                            {marketExtra && (
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                                <div>
+                                  <p className="text-muted-foreground">시가총액</p>
+                                  <p className="text-lg font-semibold">
+                                    {formatCompact(marketExtra.marketCap)}
+                                  </p>
+                                </div>
+                                <div>
+                                  <p className="text-muted-foreground">52주 최고</p>
+                                  <p className="text-lg font-semibold">
+                                    {marketExtra.fiftyTwoWeekHigh ? `$${Number(marketExtra.fiftyTwoWeekHigh).toLocaleString()}` : '-'}
+                                  </p>
+                                </div>
+                                <div>
+                                  <p className="text-muted-foreground">52주 최저</p>
+                                  <p className="text-lg font-semibold">
+                                    {marketExtra.fiftyTwoWeekLow ? `$${Number(marketExtra.fiftyTwoWeekLow).toLocaleString()}` : '-'}
+                                  </p>
+                                </div>
+                                <div>
+                                  <p className="text-muted-foreground">거래량</p>
+                                  <p className="text-lg font-semibold">
+                                    {formatCompact(marketExtra.regularMarketVolume)}
                                   </p>
                                 </div>
                               </div>
@@ -1619,6 +1666,23 @@ export default function AnalysisPage() {
                                   <p className="text-muted-foreground">최근 날짜</p>
                                   <p className="text-lg font-semibold">
                                     {new Date(marketSeries[marketSeries.length - 1]?.time * 1000).toLocaleDateString()}
+                                  </p>
+                                </div>
+                                <div>
+                                  <p className="text-muted-foreground">최근 거래량</p>
+                                  <p className="text-lg font-semibold">
+                                    {formatCompact(marketSeries[marketSeries.length - 1]?.volume ?? null)}
+                                  </p>
+                                </div>
+                                <div>
+                                  <p className="text-muted-foreground">평균 거래량</p>
+                                  <p className="text-lg font-semibold">
+                                    {formatCompact(
+                                      Math.round(
+                                        marketSeries.reduce((sum, item) => sum + (item.volume || 0), 0) /
+                                          Math.max(marketSeries.length, 1)
+                                      )
+                                    )}
                                   </p>
                                 </div>
                               </div>
