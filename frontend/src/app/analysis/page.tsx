@@ -382,6 +382,7 @@ export default function AnalysisPage() {
   const [saveMessage, setSaveMessage] = useState<string>('');
   const [marketQuote, setMarketQuote] = useState<any | null>(null);
   const [marketSeries, setMarketSeries] = useState<{ time: number; close: number }[]>([]);
+  const [marketRange, setMarketRange] = useState<'1M' | '3M' | '6M' | '1Y' | '3Y' | '5Y' | 'MAX'>('1Y');
   const [marketLoading, setMarketLoading] = useState(false);
   const [marketError, setMarketError] = useState('');
 
@@ -417,7 +418,16 @@ export default function AnalysisPage() {
         }
 
         const to = Math.floor(Date.now() / 1000);
-        const from = to - 60 * 60 * 24 * 180;
+        const rangeDaysMap: Record<typeof marketRange, number> = {
+          '1M': 30,
+          '3M': 90,
+          '6M': 180,
+          '1Y': 365,
+          '3Y': 365 * 3,
+          '5Y': 365 * 5,
+          'MAX': 365 * 20,
+        };
+        const from = to - 60 * 60 * 24 * rangeDaysMap[marketRange];
         const candleRes = await fetch(
           `${API_URL}/api/market/candles?symbol=${encodeURIComponent(symbol)}&resolution=D&from=${from}&to=${to}&source=yahoo`
         );
@@ -449,7 +459,7 @@ export default function AnalysisPage() {
     };
 
     fetchMarketData();
-  }, [detail?.symbol]);
+  }, [detail?.symbol, marketRange]);
 
   useEffect(() => {
     try {
@@ -1539,6 +1549,18 @@ export default function AnalysisPage() {
                             <CardTitle>📌 실시간 시세 요약</CardTitle>
                           </CardHeader>
                           <CardContent className="space-y-4">
+                            <div className="flex flex-wrap items-center gap-2">
+                              {(['1M', '3M', '6M', '1Y', '3Y', '5Y', 'MAX'] as const).map((range) => (
+                                <Button
+                                  key={range}
+                                  size="sm"
+                                  variant={marketRange === range ? 'default' : 'outline'}
+                                  onClick={() => setMarketRange(range)}
+                                >
+                                  {range}
+                                </Button>
+                              ))}
+                            </div>
                             {marketLoading && (
                               <div className="text-sm text-muted-foreground">시세 데이터 불러오는 중...</div>
                             )}
@@ -1569,6 +1591,34 @@ export default function AnalysisPage() {
                                   <p className="text-muted-foreground">저가</p>
                                   <p className="text-lg font-semibold">
                                     ${marketQuote.l?.toLocaleString() ?? '-'}
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+                            {marketSeries.length > 0 && (
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                                <div>
+                                  <p className="text-muted-foreground">범위 최고</p>
+                                  <p className="text-lg font-semibold">
+                                    ${Math.max(...marketSeries.map((item) => item.close)).toLocaleString()}
+                                  </p>
+                                </div>
+                                <div>
+                                  <p className="text-muted-foreground">범위 최저</p>
+                                  <p className="text-lg font-semibold">
+                                    ${Math.min(...marketSeries.map((item) => item.close)).toLocaleString()}
+                                  </p>
+                                </div>
+                                <div>
+                                  <p className="text-muted-foreground">최근 종가</p>
+                                  <p className="text-lg font-semibold">
+                                    ${marketSeries[marketSeries.length - 1]?.close.toLocaleString() ?? '-'}
+                                  </p>
+                                </div>
+                                <div>
+                                  <p className="text-muted-foreground">최근 날짜</p>
+                                  <p className="text-lg font-semibold">
+                                    {new Date(marketSeries[marketSeries.length - 1]?.time * 1000).toLocaleDateString()}
                                   </p>
                                 </div>
                               </div>
