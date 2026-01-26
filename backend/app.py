@@ -4829,11 +4829,10 @@ def fetch_stooq_candles(symbol, from_ts, to_ts):
         response.raise_for_status()
         lines = response.text.strip().splitlines()
         if len(lines) <= 1:
-            return {"s": "no_data"}
+            return {"s": "no_data", "error": "stooq_empty"}
 
         reader = csv.DictReader(lines)
-        timestamps = []
-        closes = []
+        all_rows = []
         for row in reader:
             date_str = row.get("Date")
             close_str = row.get("Close")
@@ -4842,15 +4841,23 @@ def fetch_stooq_candles(symbol, from_ts, to_ts):
             try:
                 dt = datetime.strptime(date_str, "%Y-%m-%d")
                 ts = int(dt.replace(tzinfo=None).timestamp())
-                if ts < int(from_ts) or ts > int(to_ts):
-                    continue
-                timestamps.append(ts)
-                closes.append(float(close_str))
+                all_rows.append((ts, float(close_str)))
             except Exception:
                 continue
 
-        if not timestamps:
-            return {"s": "no_data"}
+        if not all_rows:
+            return {"s": "no_data", "error": "stooq_no_rows"}
+
+        filtered = [
+            (ts, close)
+            for ts, close in all_rows
+            if ts >= int(from_ts) and ts <= int(to_ts)
+        ]
+        if not filtered:
+            filtered = all_rows[-180:]
+
+        timestamps = [ts for ts, _ in filtered]
+        closes = [close for _, close in filtered]
 
         return {"s": "ok", "t": timestamps, "c": closes}
     except Exception as e:

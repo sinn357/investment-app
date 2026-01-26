@@ -431,7 +431,10 @@ export default function AnalysisPage() {
           setMarketSeries(series);
         } else {
           setMarketSeries([]);
-          if (candleJson?.message) {
+          const detailMessage = candleJson?.data?.error;
+          if (detailMessage) {
+            setMarketError(`차트 데이터 조회 실패: ${detailMessage}`);
+          } else if (candleJson?.message) {
             setMarketError(candleJson.message);
           }
         }
