@@ -8,6 +8,7 @@ import io
 from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment, PatternFill
 import requests
+import csv
 import time
 
 # 통합 크롤러
@@ -4818,6 +4819,44 @@ def fetch_finnhub(endpoint, params):
         return 0, {"error": str(e)}
 
 
+def fetch_stooq_candles(symbol, from_ts, to_ts):
+    try:
+        normalized = symbol.lower()
+        if '.' not in normalized:
+            normalized = f"{normalized}.us"
+        url = "https://stooq.com/q/d/l/"
+        response = requests.get(url, params={"s": normalized, "i": "d"}, timeout=10)
+        response.raise_for_status()
+        lines = response.text.strip().splitlines()
+        if len(lines) <= 1:
+            return {"s": "no_data"}
+
+        reader = csv.DictReader(lines)
+        timestamps = []
+        closes = []
+        for row in reader:
+            date_str = row.get("Date")
+            close_str = row.get("Close")
+            if not date_str or not close_str:
+                continue
+            try:
+                dt = datetime.strptime(date_str, "%Y-%m-%d")
+                ts = int(dt.replace(tzinfo=None).timestamp())
+                if ts < int(from_ts) or ts > int(to_ts):
+                    continue
+                timestamps.append(ts)
+                closes.append(float(close_str))
+            except Exception:
+                continue
+
+        if not timestamps:
+            return {"s": "no_data"}
+
+        return {"s": "ok", "t": timestamps, "c": closes}
+    except Exception as e:
+        return {"s": "error", "error": str(e)}
+
+
 @app.route('/api/market/quote', methods=['GET'])
 def get_market_quote():
     try:
@@ -4887,9 +4926,15 @@ def get_market_candles():
         )
         if status != 200:
             print(f"Finnhub candles error ({status}): {data}")
+            if status == 403:
+                fallback = fetch_stooq_candles(symbol, from_ts, to_ts)
+                return jsonify({"status": "success", "data": fallback, "source": "stooq"})
             return jsonify({"status": "error", "message": "차트 데이터 조회 실패", "detail": data}), status
 
         if isinstance(data, dict) and data.get("s") != "ok":
+            if data.get("s") == "no_data":
+                fallback = fetch_stooq_candles(symbol, from_ts, to_ts)
+                return jsonify({"status": "success", "data": fallback, "source": "stooq"})
             return jsonify({"status": "success", "data": data})
 
         set_cached("candles", cache_key, data)
