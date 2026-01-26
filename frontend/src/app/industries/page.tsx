@@ -13,6 +13,21 @@ import EnhancedButton from '@/components/EnhancedButton';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://investment-app-backend-x166.onrender.com';
 
+const handleTextareaTab = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  if (event.key !== 'Tab') return;
+  event.preventDefault();
+  const target = event.currentTarget;
+  const start = target.selectionStart ?? 0;
+  const end = target.selectionEnd ?? 0;
+  const value = target.value ?? '';
+  const updated = `${value.slice(0, start)}\t${value.slice(end)}`;
+  target.value = updated;
+  const nextPosition = start + 1;
+  target.selectionStart = nextPosition;
+  target.selectionEnd = nextPosition;
+  target.dispatchEvent(new Event('input', { bubbles: true }));
+};
+
 // 6대 산업군 정의
 const MAJOR_CATEGORIES = [
   {
@@ -392,7 +407,7 @@ export default function IndustriesPage() {
                               <div className="space-y-3">
                                 <div>
                                   <Label className="text-sm">정의</Label>
-                                  <Textarea
+                                  <Textarea onKeyDown={handleTextareaTab}
                                     value={analysisData.core_technology.definition}
                                     onChange={(e) => updateAnalysis('core_technology', 'definition', e.target.value)}
                                     rows={4}
@@ -418,7 +433,7 @@ export default function IndustriesPage() {
                                 </div>
                                 <div>
                                   <Label className="text-sm">혁신 경로</Label>
-                                  <Textarea
+                                  <Textarea onKeyDown={handleTextareaTab}
                                     value={analysisData.core_technology.innovation_path}
                                     onChange={(e) => updateAnalysis('core_technology', 'innovation_path', e.target.value)}
                                     rows={4}
@@ -437,7 +452,7 @@ export default function IndustriesPage() {
                               <div className="space-y-3">
                                 <div>
                                   <Label className="text-sm">금리/유동성</Label>
-                                  <Textarea
+                                  <Textarea onKeyDown={handleTextareaTab}
                                     value={analysisData.macro_impact.interest_rate}
                                     onChange={(e) => updateAnalysis('macro_impact', 'interest_rate', e.target.value)}
                                     rows={4}
@@ -447,7 +462,7 @@ export default function IndustriesPage() {
                                 </div>
                                 <div>
                                   <Label className="text-sm">환율</Label>
-                                  <Textarea
+                                  <Textarea onKeyDown={handleTextareaTab}
                                     value={analysisData.macro_impact.exchange_rate}
                                     onChange={(e) => updateAnalysis('macro_impact', 'exchange_rate', e.target.value)}
                                     rows={4}
@@ -457,7 +472,7 @@ export default function IndustriesPage() {
                                 </div>
                                 <div>
                                   <Label className="text-sm">원자재</Label>
-                                  <Textarea
+                                  <Textarea onKeyDown={handleTextareaTab}
                                     value={analysisData.macro_impact.commodities}
                                     onChange={(e) => updateAnalysis('macro_impact', 'commodities', e.target.value)}
                                     rows={4}
@@ -467,7 +482,7 @@ export default function IndustriesPage() {
                                 </div>
                                 <div>
                                   <Label className="text-sm">정책/규제</Label>
-                                  <Textarea
+                                  <Textarea onKeyDown={handleTextareaTab}
                                     value={analysisData.macro_impact.policy}
                                     onChange={(e) => updateAnalysis('macro_impact', 'policy', e.target.value)}
                                     rows={4}
@@ -486,7 +501,7 @@ export default function IndustriesPage() {
                               <div className="space-y-3">
                                 <div>
                                   <Label className="text-sm">내부 요인</Label>
-                                  <Textarea
+                                  <Textarea onKeyDown={handleTextareaTab}
                                     value={analysisData.growth_drivers.internal}
                                     onChange={(e) => updateAnalysis('growth_drivers', 'internal', e.target.value)}
                                     rows={4}
@@ -496,7 +511,7 @@ export default function IndustriesPage() {
                                 </div>
                                 <div>
                                   <Label className="text-sm">외부 요인</Label>
-                                  <Textarea
+                                  <Textarea onKeyDown={handleTextareaTab}
                                     value={analysisData.growth_drivers.external}
                                     onChange={(e) => updateAnalysis('growth_drivers', 'external', e.target.value)}
                                     rows={4}
@@ -506,7 +521,7 @@ export default function IndustriesPage() {
                                 </div>
                                 <div>
                                   <Label className="text-sm">핵심 KPI</Label>
-                                  <Textarea
+                                  <Textarea onKeyDown={handleTextareaTab}
                                     value={analysisData.growth_drivers.kpi}
                                     onChange={(e) => updateAnalysis('growth_drivers', 'kpi', e.target.value)}
                                     rows={4}
@@ -525,7 +540,7 @@ export default function IndustriesPage() {
                               <div className="space-y-3">
                                 <div>
                                   <Label className="text-sm">단계별 흐름</Label>
-                                  <Textarea
+                                  <Textarea onKeyDown={handleTextareaTab}
                                     value={analysisData.value_chain.flow}
                                     onChange={(e) => updateAnalysis('value_chain', 'flow', e.target.value)}
                                     rows={4}
@@ -535,7 +550,7 @@ export default function IndustriesPage() {
                                 </div>
                                 <div>
                                   <Label className="text-sm">이익풀 분석</Label>
-                                  <Textarea
+                                  <Textarea onKeyDown={handleTextareaTab}
                                     value={analysisData.value_chain.profit_pool}
                                     onChange={(e) => updateAnalysis('value_chain', 'profit_pool', e.target.value)}
                                     rows={4}
@@ -545,7 +560,7 @@ export default function IndustriesPage() {
                                 </div>
                                 <div>
                                   <Label className="text-sm">병목 파악</Label>
-                                  <Textarea
+                                  <Textarea onKeyDown={handleTextareaTab}
                                     value={analysisData.value_chain.bottleneck}
                                     onChange={(e) => updateAnalysis('value_chain', 'bottleneck', e.target.value)}
                                     rows={4}
@@ -566,7 +581,7 @@ export default function IndustriesPage() {
                                   <h3 className="font-semibold">수요</h3>
                                   <div>
                                     <Label className="text-sm">최종 수요처</Label>
-                                    <Textarea
+                                    <Textarea onKeyDown={handleTextareaTab}
                                       value={analysisData.supply_demand.demand.end_user}
                                       onChange={(e) => {
                                         setAnalysisData({
@@ -584,7 +599,7 @@ export default function IndustriesPage() {
                                   </div>
                                   <div>
                                     <Label className="text-sm">장기 성장 동력</Label>
-                                    <Textarea
+                                    <Textarea onKeyDown={handleTextareaTab}
                                       value={analysisData.supply_demand.demand.long_term}
                                       onChange={(e) => {
                                         setAnalysisData({
@@ -602,7 +617,7 @@ export default function IndustriesPage() {
                                   </div>
                                   <div>
                                     <Label className="text-sm">수요 민감도</Label>
-                                    <Textarea
+                                    <Textarea onKeyDown={handleTextareaTab}
                                       value={analysisData.supply_demand.demand.sensitivity}
                                       onChange={(e) => {
                                         setAnalysisData({
@@ -624,7 +639,7 @@ export default function IndustriesPage() {
                                   <h3 className="font-semibold">공급</h3>
                                   <div>
                                     <Label className="text-sm">주요 플레이어</Label>
-                                    <Textarea
+                                    <Textarea onKeyDown={handleTextareaTab}
                                       value={analysisData.supply_demand.supply.players}
                                       onChange={(e) => {
                                         setAnalysisData({
@@ -642,7 +657,7 @@ export default function IndustriesPage() {
                                   </div>
                                   <div>
                                     <Label className="text-sm">생산능력</Label>
-                                    <Textarea
+                                    <Textarea onKeyDown={handleTextareaTab}
                                       value={analysisData.supply_demand.supply.capacity}
                                       onChange={(e) => {
                                         setAnalysisData({
@@ -660,7 +675,7 @@ export default function IndustriesPage() {
                                   </div>
                                   <div>
                                     <Label className="text-sm">진입장벽</Label>
-                                    <Textarea
+                                    <Textarea onKeyDown={handleTextareaTab}
                                       value={analysisData.supply_demand.supply.barriers}
                                       onChange={(e) => {
                                         setAnalysisData({
@@ -680,7 +695,7 @@ export default function IndustriesPage() {
 
                                 <div>
                                   <Label className="text-sm">투자 촉발 요인</Label>
-                                  <Textarea
+                                  <Textarea onKeyDown={handleTextareaTab}
                                     value={analysisData.supply_demand.catalysts}
                                     onChange={(e) => updateAnalysis('supply_demand', 'catalysts', e.target.value)}
                                     rows={4}
@@ -699,7 +714,7 @@ export default function IndustriesPage() {
                               <div className="space-y-3">
                                 <div>
                                   <Label className="text-sm">시장 구조</Label>
-                                  <Textarea
+                                  <Textarea onKeyDown={handleTextareaTab}
                                     value={analysisData.market_map.structure}
                                     onChange={(e) => updateAnalysis('market_map', 'structure', e.target.value)}
                                     rows={4}
@@ -709,7 +724,7 @@ export default function IndustriesPage() {
                                 </div>
                                 <div>
                                   <Label className="text-sm">경쟁 방식</Label>
-                                  <Textarea
+                                  <Textarea onKeyDown={handleTextareaTab}
                                     value={analysisData.market_map.competition}
                                     onChange={(e) => updateAnalysis('market_map', 'competition', e.target.value)}
                                     rows={4}
@@ -719,7 +734,7 @@ export default function IndustriesPage() {
                                 </div>
                                 <div>
                                   <Label className="text-sm">경제적 해자</Label>
-                                  <Textarea
+                                  <Textarea onKeyDown={handleTextareaTab}
                                     value={analysisData.market_map.moat}
                                     onChange={(e) => updateAnalysis('market_map', 'moat', e.target.value)}
                                     rows={4}
@@ -729,7 +744,7 @@ export default function IndustriesPage() {
                                 </div>
                                 <div>
                                   <Label className="text-sm">산업 생애주기</Label>
-                                  <Textarea
+                                  <Textarea onKeyDown={handleTextareaTab}
                                     value={analysisData.market_map.lifecycle}
                                     onChange={(e) => updateAnalysis('market_map', 'lifecycle', e.target.value)}
                                     rows={4}

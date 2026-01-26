@@ -350,6 +350,21 @@ const actionBadgeStyle: Record<'BUY' | 'WAIT' | 'PASS', string> = {
   PASS: 'bg-rose-100 text-rose-800 border border-rose-200'
 };
 
+const handleTextareaTab = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  if (event.key !== 'Tab') return;
+  event.preventDefault();
+  const target = event.currentTarget;
+  const start = target.selectionStart ?? 0;
+  const end = target.selectionEnd ?? 0;
+  const value = target.value ?? '';
+  const updated = `${value.slice(0, start)}\t${value.slice(end)}`;
+  target.value = updated;
+  const nextPosition = start + 1;
+  target.selectionStart = nextPosition;
+  target.selectionEnd = nextPosition;
+  target.dispatchEvent(new Event('input', { bubbles: true }));
+};
+
 export default function AnalysisPage() {
   const STORAGE_KEY = 'analysis_reports_v1';
   const [analyses, setAnalyses] = useState<AssetAnalysis[]>(sampleAnalyses.map(item => ({ ...item, deepDive: item.deepDive ?? createEmptyDeepDive() })));
@@ -357,6 +372,7 @@ export default function AnalysisPage() {
   const [activeTab, setActiveTab] = useState<'thesis' | 'validation' | 'pricing' | 'timing' | 'decision'>('thesis');
   const [draft, setDraft] = useState<AssetAnalysis | null>(null);
   const [saveState, setSaveState] = useState<'idle' | 'saved'>('idle');
+  const [saveMessage, setSaveMessage] = useState<string>('');
 
   const updateDeepDive = useCallback((updater: (prev: DeepDiveData) => DeepDiveData) => {
     setDraft(prev => (prev ? { ...prev, deepDive: updater(prev.deepDive ?? createEmptyDeepDive()) } : prev));
@@ -433,7 +449,11 @@ export default function AnalysisPage() {
     }
     setSelectedId(draft.id);
     setSaveState('saved');
-    setTimeout(() => setSaveState('idle'), 1500);
+    setSaveMessage('저장되었습니다');
+    setTimeout(() => {
+      setSaveState('idle');
+      setSaveMessage('');
+    }, 1500);
   };
 
   const handleDelete = () => {
@@ -762,6 +782,11 @@ export default function AnalysisPage() {
                       <span>· 총평</span>
                     </div>
                     <div className="flex items-center gap-2">
+                      {saveMessage && (
+                        <span className="text-xs font-medium text-primary">
+                          {saveMessage}
+                        </span>
+                      )}
                       <Button variant="ghost" size="sm" onClick={() => setDraft(selected ?? null)}>
                         되돌리기
                       </Button>
@@ -805,7 +830,7 @@ export default function AnalysisPage() {
 
                       <section>
                         <Label className="text-lg font-semibold mb-3 block">💡 가장 큰 투자이유</Label>
-                        <Textarea
+                        <Textarea onKeyDown={handleTextareaTab}
                           value={deepDive.thesis.main_reason}
                           onChange={e =>
                             updateDeepDive(prev => ({
@@ -821,7 +846,7 @@ export default function AnalysisPage() {
 
                       <section>
                         <Label className="text-lg font-semibold mb-3 block">🏢 기업 선택사유 (연구기술, 내부문화, 직원/인재)</Label>
-                        <Textarea
+                        <Textarea onKeyDown={handleTextareaTab}
                           value={deepDive.thesis.company_selection}
                           onChange={e =>
                             updateDeepDive(prev => ({
@@ -837,7 +862,7 @@ export default function AnalysisPage() {
 
                       <section>
                         <Label className="text-lg font-semibold mb-3 block">📈 산업 생애주기 (S-Curve)</Label>
-                        <Textarea
+                        <Textarea onKeyDown={handleTextareaTab}
                           value={deepDive.thesis.industry_lifecycle}
                           onChange={e =>
                             updateDeepDive(prev => ({
@@ -853,7 +878,7 @@ export default function AnalysisPage() {
 
                       <section>
                         <Label className="text-lg font-semibold mb-3 block">🌍 시장 규모 및 수요 (TAM/SAM)</Label>
-                        <Textarea
+                        <Textarea onKeyDown={handleTextareaTab}
                           value={deepDive.thesis.market_size}
                           onChange={e =>
                             updateDeepDive(prev => ({
@@ -869,7 +894,7 @@ export default function AnalysisPage() {
 
                       <section>
                         <Label className="text-lg font-semibold mb-3 block">👥 고객군</Label>
-                        <Textarea
+                        <Textarea onKeyDown={handleTextareaTab}
                           value={deepDive.thesis.customer_base}
                           onChange={e =>
                             updateDeepDive(prev => ({
@@ -885,7 +910,7 @@ export default function AnalysisPage() {
 
                       <section>
                         <Label className="text-lg font-semibold mb-3 block">🎯 주요 제품/서비스 (요약)</Label>
-                        <Textarea
+                        <Textarea onKeyDown={handleTextareaTab}
                           value={deepDive.thesis.main_products}
                           onChange={e =>
                             updateDeepDive(prev => ({
@@ -964,7 +989,7 @@ export default function AnalysisPage() {
                         <CardContent className="space-y-4">
                           <div>
                             <Label className="text-sm font-medium mb-2 block">기업 개요</Label>
-                            <Textarea
+                            <Textarea onKeyDown={handleTextareaTab}
                               value={deepDive.validation.basic.company_overview}
                               onChange={e =>
                                 updateDeepDive(prev => ({
@@ -982,7 +1007,7 @@ export default function AnalysisPage() {
                           </div>
                           <div>
                             <Label className="text-sm font-medium mb-2 block">사업 종류 및 구조</Label>
-                            <Textarea
+                            <Textarea onKeyDown={handleTextareaTab}
                               value={deepDive.validation.basic.business_type}
                               onChange={e =>
                                 updateDeepDive(prev => ({
@@ -1000,7 +1025,7 @@ export default function AnalysisPage() {
                           </div>
                           <div>
                             <Label className="text-sm font-medium mb-2 block">연혁 & 이정표</Label>
-                            <Textarea
+                            <Textarea onKeyDown={handleTextareaTab}
                               value={deepDive.validation.basic.history}
                               onChange={e =>
                                 updateDeepDive(prev => ({
@@ -1018,7 +1043,7 @@ export default function AnalysisPage() {
                           </div>
                           <div>
                             <Label className="text-sm font-medium mb-2 block">비즈니스 모델</Label>
-                            <Textarea
+                            <Textarea onKeyDown={handleTextareaTab}
                               value={deepDive.validation.basic.business_model}
                               onChange={e =>
                                 updateDeepDive(prev => ({
@@ -1036,7 +1061,7 @@ export default function AnalysisPage() {
                           </div>
                           <div>
                             <Label className="text-sm font-medium mb-2 block">매출 구조</Label>
-                            <Textarea
+                            <Textarea onKeyDown={handleTextareaTab}
                               value={deepDive.validation.basic.revenue_structure}
                               onChange={e =>
                                 updateDeepDive(prev => ({
@@ -1054,7 +1079,7 @@ export default function AnalysisPage() {
                           </div>
                           <div>
                             <Label className="text-sm font-medium mb-2 block">밸류체인 & 원가구성</Label>
-                            <Textarea
+                            <Textarea onKeyDown={handleTextareaTab}
                               value={deepDive.validation.basic.value_chain}
                               onChange={e =>
                                 updateDeepDive(prev => ({
@@ -1072,7 +1097,7 @@ export default function AnalysisPage() {
                           </div>
                           <div>
                             <Label className="text-sm font-medium mb-2 block">수요 KPI & 수요탄력성</Label>
-                            <Textarea
+                            <Textarea onKeyDown={handleTextareaTab}
                               value={deepDive.validation.basic.demand_kpi}
                               onChange={e =>
                                 updateDeepDive(prev => ({
@@ -1090,7 +1115,7 @@ export default function AnalysisPage() {
                           </div>
                           <div>
                             <Label className="text-sm font-medium mb-2 block">고객 집중도</Label>
-                            <Textarea
+                            <Textarea onKeyDown={handleTextareaTab}
                               value={deepDive.validation.basic.customer_concentration}
                               onChange={e =>
                                 updateDeepDive(prev => ({
@@ -1117,7 +1142,7 @@ export default function AnalysisPage() {
                         <CardContent className="space-y-4">
                           <div>
                             <Label className="text-sm font-medium mb-2 block">경쟁사 비교</Label>
-                            <Textarea
+                            <Textarea onKeyDown={handleTextareaTab}
                               value={deepDive.validation.competition.competitor_comparison}
                               onChange={e =>
                                 updateDeepDive(prev => ({
@@ -1135,7 +1160,7 @@ export default function AnalysisPage() {
                           </div>
                           <div>
                             <Label className="text-sm font-medium mb-2 block">경쟁 포지셔닝</Label>
-                            <Textarea
+                            <Textarea onKeyDown={handleTextareaTab}
                               value={deepDive.validation.competition.competitive_positioning}
                               onChange={e =>
                                 updateDeepDive(prev => ({
@@ -1153,7 +1178,7 @@ export default function AnalysisPage() {
                           </div>
                           <div>
                             <Label className="text-sm font-medium mb-2 block">지적재산 (IP) & 특허</Label>
-                            <Textarea
+                            <Textarea onKeyDown={handleTextareaTab}
                               value={deepDive.validation.competition.ip_patents}
                               onChange={e =>
                                 updateDeepDive(prev => ({
@@ -1171,7 +1196,7 @@ export default function AnalysisPage() {
                           </div>
                           <div>
                             <Label className="text-sm font-medium mb-2 block">미래 잠재력</Label>
-                            <Textarea
+                            <Textarea onKeyDown={handleTextareaTab}
                               value={deepDive.validation.competition.future_potential}
                               onChange={e =>
                                 updateDeepDive(prev => ({
@@ -1189,7 +1214,7 @@ export default function AnalysisPage() {
                           </div>
                           <div>
                             <Label className="text-sm font-medium mb-2 block">가격 결정력 (Pricing Power)</Label>
-                            <Textarea
+                            <Textarea onKeyDown={handleTextareaTab}
                               value={deepDive.validation.competition.pricing_power}
                               onChange={e =>
                                 updateDeepDive(prev => ({
@@ -1207,7 +1232,7 @@ export default function AnalysisPage() {
                           </div>
                           <div>
                             <Label className="text-sm font-medium mb-2 block">CAPEX & R&D 투자</Label>
-                            <Textarea
+                            <Textarea onKeyDown={handleTextareaTab}
                               value={deepDive.validation.competition.capex_rnd}
                               onChange={e =>
                                 updateDeepDive(prev => ({
@@ -1234,7 +1259,7 @@ export default function AnalysisPage() {
                         <CardContent className="space-y-4">
                           <div>
                             <Label className="text-sm font-medium mb-2 block">유통 방식</Label>
-                            <Textarea
+                            <Textarea onKeyDown={handleTextareaTab}
                               value={deepDive.validation.distribution.distribution_method}
                               onChange={e =>
                                 updateDeepDive(prev => ({
@@ -1252,7 +1277,7 @@ export default function AnalysisPage() {
                           </div>
                           <div>
                             <Label className="text-sm font-medium mb-2 block">채널 구조</Label>
-                            <Textarea
+                            <Textarea onKeyDown={handleTextareaTab}
                               value={deepDive.validation.distribution.channel_structure}
                               onChange={e =>
                                 updateDeepDive(prev => ({
@@ -1270,7 +1295,7 @@ export default function AnalysisPage() {
                           </div>
                           <div>
                             <Label className="text-sm font-medium mb-2 block">채널 변화 & 트렌드</Label>
-                            <Textarea
+                            <Textarea onKeyDown={handleTextareaTab}
                               value={deepDive.validation.distribution.channel_changes}
                               onChange={e =>
                                 updateDeepDive(prev => ({
@@ -1297,7 +1322,7 @@ export default function AnalysisPage() {
                         <CardContent className="space-y-4">
                           <div>
                             <Label className="text-sm font-medium mb-2 block">최근 실적</Label>
-                            <Textarea
+                            <Textarea onKeyDown={handleTextareaTab}
                               value={deepDive.validation.financials.recent_performance}
                               onChange={e =>
                                 updateDeepDive(prev => ({
@@ -1315,7 +1340,7 @@ export default function AnalysisPage() {
                           </div>
                           <div>
                             <Label className="text-sm font-medium mb-2 block">사업 수익성</Label>
-                            <Textarea
+                            <Textarea onKeyDown={handleTextareaTab}
                               value={deepDive.validation.financials.business_profitability}
                               onChange={e =>
                                 updateDeepDive(prev => ({
@@ -1333,7 +1358,7 @@ export default function AnalysisPage() {
                           </div>
                           <div>
                             <Label className="text-sm font-medium mb-2 block">운전자본</Label>
-                            <Textarea
+                            <Textarea onKeyDown={handleTextareaTab}
                               value={deepDive.validation.financials.working_capital}
                               onChange={e =>
                                 updateDeepDive(prev => ({
@@ -1351,7 +1376,7 @@ export default function AnalysisPage() {
                           </div>
                           <div>
                             <Label className="text-sm font-medium mb-2 block">손익계산서 (P&L)</Label>
-                            <Textarea
+                            <Textarea onKeyDown={handleTextareaTab}
                               value={deepDive.validation.financials.income_statement}
                               onChange={e =>
                                 updateDeepDive(prev => ({
@@ -1369,7 +1394,7 @@ export default function AnalysisPage() {
                           </div>
                           <div>
                             <Label className="text-sm font-medium mb-2 block">현금흐름 (Cash Flow)</Label>
-                            <Textarea
+                            <Textarea onKeyDown={handleTextareaTab}
                               value={deepDive.validation.financials.cash_flow}
                               onChange={e =>
                                 updateDeepDive(prev => ({
@@ -1387,7 +1412,7 @@ export default function AnalysisPage() {
                           </div>
                           <div>
                             <Label className="text-sm font-medium mb-2 block">재무상태표 (Balance Sheet)</Label>
-                            <Textarea
+                            <Textarea onKeyDown={handleTextareaTab}
                               value={deepDive.validation.financials.balance_sheet}
                               onChange={e =>
                                 updateDeepDive(prev => ({
@@ -1409,7 +1434,7 @@ export default function AnalysisPage() {
                       {/* 가설이 깨지는 조건 */}
                       <section>
                         <Label className="text-lg font-semibold mb-3 block text-rose-600">⚠️ 가설이 깨지는 조건 3가지</Label>
-                        <Textarea
+                        <Textarea onKeyDown={handleTextareaTab}
                           value={deepDive.validation.hypothesis_breakpoints}
                           onChange={e =>
                             updateDeepDive(prev => ({
@@ -1647,7 +1672,7 @@ export default function AnalysisPage() {
                         <CardContent className="space-y-4">
                           <div>
                             <Label className="text-sm font-medium mb-2 block">시장 기대 해석</Label>
-                            <Textarea
+                            <Textarea onKeyDown={handleTextareaTab}
                               value={deepDive.pricing.market_expectation}
                               onChange={e =>
                                 updateDeepDive(prev => ({
@@ -1662,7 +1687,7 @@ export default function AnalysisPage() {
                           </div>
                           <div>
                             <Label className="text-sm font-medium mb-2 block">내재가치 관점 평가</Label>
-                            <Textarea
+                            <Textarea onKeyDown={handleTextareaTab}
                               value={deepDive.pricing.intrinsic_value}
                               onChange={e =>
                                 updateDeepDive(prev => ({
@@ -1677,7 +1702,7 @@ export default function AnalysisPage() {
                           </div>
                           <div>
                             <Label className="text-sm font-medium mb-2 block">배당 정책</Label>
-                            <Textarea
+                            <Textarea onKeyDown={handleTextareaTab}
                               value={deepDive.pricing.dividend_policy}
                               onChange={e =>
                                 updateDeepDive(prev => ({
@@ -1701,7 +1726,7 @@ export default function AnalysisPage() {
                         <CardContent className="space-y-4">
                           <div>
                             <Label className="text-sm font-medium mb-2 block">베이스 시나리오 (Base Case)</Label>
-                            <Textarea
+                            <Textarea onKeyDown={handleTextareaTab}
                               value={deepDive.pricing.scenarios.base}
                               onChange={e =>
                                 updateDeepDive(prev => ({
@@ -1719,7 +1744,7 @@ export default function AnalysisPage() {
                           </div>
                           <div>
                             <Label className="text-sm font-medium mb-2 block">강세 시나리오 (Bull Case)</Label>
-                            <Textarea
+                            <Textarea onKeyDown={handleTextareaTab}
                               value={deepDive.pricing.scenarios.bull}
                               onChange={e =>
                                 updateDeepDive(prev => ({
@@ -1737,7 +1762,7 @@ export default function AnalysisPage() {
                           </div>
                           <div>
                             <Label className="text-sm font-medium mb-2 block">약세 시나리오 (Bear Case)</Label>
-                            <Textarea
+                            <Textarea onKeyDown={handleTextareaTab}
                               value={deepDive.pricing.scenarios.bear}
                               onChange={e =>
                                 updateDeepDive(prev => ({
@@ -1759,7 +1784,7 @@ export default function AnalysisPage() {
                       {/* 시장 기대 vs 내 가설의 차이 */}
                       <section>
                         <Label className="text-lg font-semibold mb-3 block text-primary">⚡ 시장 기대 vs 내 가설의 차이</Label>
-                        <Textarea
+                        <Textarea onKeyDown={handleTextareaTab}
                           value={deepDive.pricing.expectation_gap}
                           onChange={e =>
                             updateDeepDive(prev => ({
@@ -1794,7 +1819,7 @@ export default function AnalysisPage() {
                         <CardContent className="space-y-4">
                           <div>
                             <Label className="text-sm font-medium mb-2 block">차트 분석</Label>
-                            <Textarea
+                            <Textarea onKeyDown={handleTextareaTab}
                               value={deepDive.timing.technical.chart_analysis}
                               onChange={e =>
                                 updateDeepDive(prev => ({
@@ -1812,7 +1837,7 @@ export default function AnalysisPage() {
                           </div>
                           <div>
                             <Label className="text-sm font-medium mb-2 block">볼린저밴드</Label>
-                            <Textarea
+                            <Textarea onKeyDown={handleTextareaTab}
                               value={deepDive.timing.technical.bollinger_bands}
                               onChange={e =>
                                 updateDeepDive(prev => ({
@@ -1830,7 +1855,7 @@ export default function AnalysisPage() {
                           </div>
                           <div>
                             <Label className="text-sm font-medium mb-2 block">캔들 패턴</Label>
-                            <Textarea
+                            <Textarea onKeyDown={handleTextareaTab}
                               value={deepDive.timing.technical.candle_patterns}
                               onChange={e =>
                                 updateDeepDive(prev => ({
@@ -1848,7 +1873,7 @@ export default function AnalysisPage() {
                           </div>
                           <div>
                             <Label className="text-sm font-medium mb-2 block">예상 가격 움직임</Label>
-                            <Textarea
+                            <Textarea onKeyDown={handleTextareaTab}
                               value={deepDive.timing.technical.expected_price_action}
                               onChange={e =>
                                 updateDeepDive(prev => ({
@@ -1875,7 +1900,7 @@ export default function AnalysisPage() {
                         <CardContent className="space-y-4">
                           <div>
                             <Label className="text-sm font-medium mb-2 block">팩터 필터링</Label>
-                            <Textarea
+                            <Textarea onKeyDown={handleTextareaTab}
                               value={deepDive.timing.quant.factor_filtering}
                               onChange={e =>
                                 updateDeepDive(prev => ({
@@ -1893,7 +1918,7 @@ export default function AnalysisPage() {
                           </div>
                           <div>
                             <Label className="text-sm font-medium mb-2 block">백테스트</Label>
-                            <Textarea
+                            <Textarea onKeyDown={handleTextareaTab}
                               value={deepDive.timing.quant.backtest}
                               onChange={e =>
                                 updateDeepDive(prev => ({
@@ -1920,7 +1945,7 @@ export default function AnalysisPage() {
                         <CardContent className="space-y-4">
                           <div>
                             <Label className="text-sm font-medium mb-2 block">공매도 비율</Label>
-                            <Textarea
+                            <Textarea onKeyDown={handleTextareaTab}
                               value={deepDive.timing.sentiment.short_interest}
                               onChange={e =>
                                 updateDeepDive(prev => ({
@@ -1938,7 +1963,7 @@ export default function AnalysisPage() {
                           </div>
                           <div>
                             <Label className="text-sm font-medium mb-2 block">ETF 자금 흐름</Label>
-                            <Textarea
+                            <Textarea onKeyDown={handleTextareaTab}
                               value={deepDive.timing.sentiment.etf_flow}
                               onChange={e =>
                                 updateDeepDive(prev => ({
@@ -1956,7 +1981,7 @@ export default function AnalysisPage() {
                           </div>
                           <div>
                             <Label className="text-sm font-medium mb-2 block">옵션 흐름</Label>
-                            <Textarea
+                            <Textarea onKeyDown={handleTextareaTab}
                               value={deepDive.timing.sentiment.options_flow}
                               onChange={e =>
                                 updateDeepDive(prev => ({
@@ -1974,7 +1999,7 @@ export default function AnalysisPage() {
                           </div>
                           <div>
                             <Label className="text-sm font-medium mb-2 block">뉴스 센티먼트</Label>
-                            <Textarea
+                            <Textarea onKeyDown={handleTextareaTab}
                               value={deepDive.timing.sentiment.news_sentiment}
                               onChange={e =>
                                 updateDeepDive(prev => ({
@@ -2001,7 +2026,7 @@ export default function AnalysisPage() {
                         <CardContent className="space-y-4">
                           <div>
                             <Label className="text-sm font-medium mb-2 block">거시 변수</Label>
-                            <Textarea
+                            <Textarea onKeyDown={handleTextareaTab}
                               value={deepDive.timing.external.macro_variables}
                               onChange={e =>
                                 updateDeepDive(prev => ({
@@ -2019,7 +2044,7 @@ export default function AnalysisPage() {
                           </div>
                           <div>
                             <Label className="text-sm font-medium mb-2 block">뉴스 분석</Label>
-                            <Textarea
+                            <Textarea onKeyDown={handleTextareaTab}
                               value={deepDive.timing.external.news_analysis}
                               onChange={e =>
                                 updateDeepDive(prev => ({
@@ -2037,7 +2062,7 @@ export default function AnalysisPage() {
                           </div>
                           <div>
                             <Label className="text-sm font-medium mb-2 block">최근 이슈</Label>
-                            <Textarea
+                            <Textarea onKeyDown={handleTextareaTab}
                               value={deepDive.timing.external.recent_issues}
                               onChange={e =>
                                 updateDeepDive(prev => ({
@@ -2055,7 +2080,7 @@ export default function AnalysisPage() {
                           </div>
                           <div>
                             <Label className="text-sm font-medium mb-2 block">이벤트 캘린더</Label>
-                            <Textarea
+                            <Textarea onKeyDown={handleTextareaTab}
                               value={deepDive.timing.external.event_calendar}
                               onChange={e =>
                                 updateDeepDive(prev => ({
@@ -2077,7 +2102,7 @@ export default function AnalysisPage() {
                       {/* 진입 조건 */}
                       <section>
                         <Label className="text-lg font-semibold mb-3 block text-emerald-600">✅ 진입 조건</Label>
-                        <Textarea
+                        <Textarea onKeyDown={handleTextareaTab}
                           value={deepDive.timing.entry_conditions}
                           onChange={e =>
                             updateDeepDive(prev => ({
@@ -2094,7 +2119,7 @@ export default function AnalysisPage() {
                       {/* 무효화 신호 */}
                       <section>
                         <Label className="text-lg font-semibold mb-3 block text-rose-600">⚠️ 무효화 신호 (가설 붕괴 신호)</Label>
-                        <Textarea
+                        <Textarea onKeyDown={handleTextareaTab}
                           value={deepDive.timing.invalidation_signals}
                           onChange={e =>
                             updateDeepDive(prev => ({
@@ -2124,7 +2149,7 @@ export default function AnalysisPage() {
                       {/* 총평 */}
                       <section>
                         <Label className="text-lg font-semibold mb-3 block">📝 총평</Label>
-                        <Textarea
+                        <Textarea onKeyDown={handleTextareaTab}
                           value={deepDive.decision.summary}
                           onChange={e =>
                             updateDeepDive(prev => ({
@@ -2146,7 +2171,7 @@ export default function AnalysisPage() {
                         <CardContent className="space-y-4">
                           <div>
                             <Label className="text-sm font-medium mb-2 block">우호 요인</Label>
-                            <Textarea
+                            <Textarea onKeyDown={handleTextareaTab}
                               value={deepDive.decision.considerations.positive_factors}
                               onChange={e =>
                                 updateDeepDive(prev => ({
@@ -2164,7 +2189,7 @@ export default function AnalysisPage() {
                           </div>
                           <div>
                             <Label className="text-sm font-medium mb-2 block">경계 요인 (리스크)</Label>
-                            <Textarea
+                            <Textarea onKeyDown={handleTextareaTab}
                               value={deepDive.decision.considerations.negative_factors}
                               onChange={e =>
                                 updateDeepDive(prev => ({
@@ -2191,7 +2216,7 @@ export default function AnalysisPage() {
                         <CardContent className="space-y-4">
                           <div>
                             <Label className="text-sm font-medium mb-2 block">거시 리스크</Label>
-                            <Textarea
+                            <Textarea onKeyDown={handleTextareaTab}
                               value={deepDive.decision.risks.macro_risk}
                               onChange={e =>
                                 updateDeepDive(prev => ({
@@ -2209,7 +2234,7 @@ export default function AnalysisPage() {
                           </div>
                           <div>
                             <Label className="text-sm font-medium mb-2 block">산업 리스크</Label>
-                            <Textarea
+                            <Textarea onKeyDown={handleTextareaTab}
                               value={deepDive.decision.risks.industry_risk}
                               onChange={e =>
                                 updateDeepDive(prev => ({
@@ -2227,7 +2252,7 @@ export default function AnalysisPage() {
                           </div>
                           <div>
                             <Label className="text-sm font-medium mb-2 block">기업 리스크</Label>
-                            <Textarea
+                            <Textarea onKeyDown={handleTextareaTab}
                               value={deepDive.decision.risks.company_risk}
                               onChange={e =>
                                 updateDeepDive(prev => ({
@@ -2254,7 +2279,7 @@ export default function AnalysisPage() {
                         <CardContent className="space-y-4">
                           <div>
                             <Label className="text-sm font-medium mb-2 block">시나리오 요약</Label>
-                            <Textarea
+                            <Textarea onKeyDown={handleTextareaTab}
                               value={deepDive.decision.scenarios.summary}
                               onChange={e =>
                                 updateDeepDive(prev => ({
@@ -2272,7 +2297,7 @@ export default function AnalysisPage() {
                           </div>
                           <div>
                             <Label className="text-sm font-medium mb-2 block">민감도 분석</Label>
-                            <Textarea
+                            <Textarea onKeyDown={handleTextareaTab}
                               value={deepDive.decision.scenarios.sensitivity}
                               onChange={e =>
                                 updateDeepDive(prev => ({
@@ -2299,7 +2324,7 @@ export default function AnalysisPage() {
                         <CardContent className="space-y-4">
                           <div>
                             <Label className="text-sm font-medium mb-2 block">매수 조건 체크리스트</Label>
-                            <Textarea
+                            <Textarea onKeyDown={handleTextareaTab}
                               value={deepDive.decision.checklist.buy}
                               onChange={e =>
                                 updateDeepDive(prev => ({
@@ -2317,7 +2342,7 @@ export default function AnalysisPage() {
                           </div>
                           <div>
                             <Label className="text-sm font-medium mb-2 block">대기 조건 체크리스트</Label>
-                            <Textarea
+                            <Textarea onKeyDown={handleTextareaTab}
                               value={deepDive.decision.checklist.wait}
                               onChange={e =>
                                 updateDeepDive(prev => ({
@@ -2339,7 +2364,7 @@ export default function AnalysisPage() {
                       {/* 대응 전략 */}
                       <section>
                         <Label className="text-lg font-semibold mb-3 block">🛡️ 대응 전략</Label>
-                        <Textarea
+                        <Textarea onKeyDown={handleTextareaTab}
                           value={deepDive.decision.mitigation}
                           onChange={e =>
                             updateDeepDive(prev => ({
@@ -2391,7 +2416,7 @@ export default function AnalysisPage() {
                           </div>
                           <div>
                             <Label className="text-sm font-medium mb-2 block">투자포인트 (2분 요약)</Label>
-                            <Textarea
+                            <Textarea onKeyDown={handleTextareaTab}
                               value={deepDive.decision.investment_point}
                               onChange={e =>
                                 updateDeepDive(prev => ({
@@ -2431,7 +2456,7 @@ export default function AnalysisPage() {
                       {/* 나의 현재 생각 */}
                       <section>
                         <Label className="text-lg font-semibold mb-3 block">💭 나의 현재 생각 정리</Label>
-                        <Textarea
+                        <Textarea onKeyDown={handleTextareaTab}
                           value={deepDive.decision.my_thoughts}
                           onChange={e =>
                             updateDeepDive(prev => ({
@@ -2448,7 +2473,7 @@ export default function AnalysisPage() {
                       {/* 무효화 조건 */}
                       <section>
                         <Label className="text-lg font-semibold mb-3 block text-rose-600">⚠️ 내가 틀렸다고 인정하는 조건</Label>
-                        <Textarea
+                        <Textarea onKeyDown={handleTextareaTab}
                           value={deepDive.decision.invalidation_condition}
                           onChange={e =>
                             updateDeepDive(prev => ({
@@ -2465,7 +2490,7 @@ export default function AnalysisPage() {
                       {/* 재검토 조건 */}
                       <section>
                         <Label className="text-lg font-semibold mb-3 block">🔄 재검토 조건</Label>
-                        <Textarea
+                        <Textarea onKeyDown={handleTextareaTab}
                           value={deepDive.decision.review_conditions}
                           onChange={e =>
                             updateDeepDive(prev => ({
