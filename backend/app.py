@@ -181,15 +181,38 @@ INDICATORS_CACHE = {"data": None, "timestamp": 0}
 INDICATORS_CACHE_TTL = 300  # seconds
 MAX_UPDATE_DURATION = 600  # seconds, 오래 걸리면 스테일 처리
 
-# Import test
+def _missing_retail_sales(*_args, **_kwargs):
+    return {"error": "Retail sales crawler not available"}
+
+
+def _missing_retail_sales_yoy(*_args, **_kwargs):
+    return {"error": "Retail sales YoY crawler not available"}
+
+
 try:
     print("Testing retail sales import...")
     from crawlers.retail_sales import get_retail_sales_data
     print("Retail sales import successful")
 except Exception as e:
     print(f"Retail sales import failed: {e}")
-    import traceback
-    traceback.print_exc()
+    try:
+        from crawlers.archive_old_crawlers.retail_sales import get_retail_sales_data
+        print("Retail sales import fallback successful")
+    except Exception as fallback_error:
+        print(f"Retail sales import fallback failed: {fallback_error}")
+        get_retail_sales_data = _missing_retail_sales
+
+try:
+    from crawlers.retail_sales_yoy import get_retail_sales_yoy_data
+    print("Retail sales YoY import successful")
+except Exception as e:
+    print(f"Retail sales YoY import failed: {e}")
+    try:
+        from crawlers.archive_old_crawlers.retail_sales_yoy import get_retail_sales_yoy_data
+        print("Retail sales YoY import fallback successful")
+    except Exception as fallback_error:
+        print(f"Retail sales YoY import fallback failed: {fallback_error}")
+        get_retail_sales_yoy_data = _missing_retail_sales_yoy
 
 @app.route('/')
 def health_check():
