@@ -88,6 +88,7 @@ interface DeepDiveData {
   pricing: {
     stock_price: number;
     market_cap: string;
+    price_notes: string;
     valuation_metrics: {
       per?: number;
       pbr?: number;
@@ -98,6 +99,7 @@ interface DeepDiveData {
       eps_per_share?: number;
       fcf_per_share?: number;
     };
+    valuation_notes: string;
     market_expectation: string;     // 시장 기대 해석
     intrinsic_value: string;        // 내재가치 관점 평가
     dividend_policy: string;
@@ -239,7 +241,9 @@ const createEmptyDeepDive = (): DeepDiveData => ({
   pricing: {
     stock_price: 0,
     market_cap: '',
+    price_notes: '',
     valuation_metrics: {},
+    valuation_notes: '',
     market_expectation: '',
     intrinsic_value: '',
     dividend_policy: '',
@@ -1500,6 +1504,21 @@ export default function AnalysisPage() {
                               />
                             </div>
                           </div>
+                          <div>
+                            <Label className="text-sm font-medium mb-2 block">가격 정보 메모</Label>
+                            <Textarea onKeyDown={handleTextareaTab}
+                              value={deepDive.pricing.price_notes}
+                              onChange={e =>
+                                updateDeepDive(prev => ({
+                                  ...prev,
+                                  pricing: { ...prev.pricing, price_notes: e.target.value }
+                                }))
+                              }
+                              rows={4}
+                              className="w-full resize-y min-h-[90px]"
+                              placeholder="주가 변동 배경, 시총 산정 기준, 참고한 데이터 등..."
+                            />
+                          </div>
                         </CardContent>
                       </Card>
 
@@ -1660,6 +1679,21 @@ export default function AnalysisPage() {
                                 placeholder="0.00"
                               />
                             </div>
+                          </div>
+                          <div>
+                            <Label className="text-sm font-medium mb-2 block">밸류에이션 메모</Label>
+                            <Textarea onKeyDown={handleTextareaTab}
+                              value={deepDive.pricing.valuation_notes}
+                              onChange={e =>
+                                updateDeepDive(prev => ({
+                                  ...prev,
+                                  pricing: { ...prev.pricing, valuation_notes: e.target.value }
+                                }))
+                              }
+                              rows={4}
+                              className="w-full resize-y min-h-[90px]"
+                              placeholder="동종업계 평균 대비 위치, 과거 밴드, 이 지표가 유의한 이유 등..."
+                            />
                           </div>
                         </CardContent>
                       </Card>
