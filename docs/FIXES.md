@@ -2,6 +2,38 @@
 
 ## Recent Fixes
 
+### Render Deploy Timeout (Missing retail_sales crawler)
+**Status**: Resolved
+**Symptoms**:
+- Render deploy timed out with `ModuleNotFoundError: crawlers.retail_sales`.
+- Service restarted repeatedly during boot.
+
+**Root Cause**:
+- `crawlers.retail_sales` module was missing in the runtime image.
+
+**Fixes**:
+- Added safe import fallback to archived crawler or stub response.
+- Prevented startup crash when crawler is unavailable.
+
+**Verification**:
+- Render deploy completes and service stays up.
+- Retail sales endpoints return explicit error if crawler missing.
+
+### Market Snapshot Volume Chart Empty
+**Status**: Resolved
+**Symptoms**:
+- 거래량 차트가 "거래량 데이터가 없습니다."로 표시됨.
+
+**Root Cause**:
+- Yahoo 캔들 응답에 volume이 비어있는 경우가 발생.
+
+**Fixes**:
+- 캔들 volume이 비어있을 때 Yahoo quote 평균 거래량으로 보정.
+- 프론트에서 fallback volume을 차트 전 구간에 적용.
+
+**Verification**:
+- 거래량 차트가 비어있지 않음.
+
 ### Portfolio Edit Not Reflected (Cash Assets)
 **Status**: Resolved
 **Symptoms**:
@@ -52,4 +84,4 @@
 
 ---
 
-**Last Updated**: 2025-12-03
+**Last Updated**: 2026-01-26

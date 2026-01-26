@@ -1,5 +1,36 @@
 # Investment App Changelog
 
+## 2026-01-26
+
+### Added
+- **Market Snapshot 카드 + 차트/거래량 시각화** (개별분석: 가격과 기대치)
+  - 시세/변동률/52주 고저/시가총액/거래량 표시
+  - 가격 차트 + 거래량 차트 (Range: 1M/3M/6M/1Y/3Y/5Y/MAX)
+  - Yahoo Finance 캔들 데이터로 전환, 실패 시 보정 로직 추가
+
+### Changed
+- **개별분석 저장 UX 개선**
+  - 저장 메시지 출력 및 수정 중 상태 리셋
+- **텍스트 에디터 탭 들여쓰기 지원**
+  - 개별분석/섹터/종목 페이지 동일 적용
+- **가격/밸류 섹션 상세 메모 입력 필드 추가**
+
+### Fixed
+- **거래량 데이터 공란 대응**
+  - 캔들 볼륨 누락 시 Yahoo quote 평균 거래량으로 보정
+- **Render 배포 실패 방지**
+  - retail_sales 크롤러 import 실패 시 fallback 및 안전 처리
+
+### Commits
+- `4261c2d`: feat: market snapshot endpoints and UI
+- `24d4f53`: fix: switch candle data to yahoo source
+- `3d537ff`: feat: chart range controls + stats
+- `083730e`: feat: add volume chart
+- `e355204`: fix: backfill volume series with yahoo averages
+- `82b99d3`: fix: guard retail sales imports on startup
+
+---
+
 ## 2026-01-20
 
 ### Changes
@@ -447,4 +478,4 @@
 
 ---
 
-**Last Updated**: 2025-12-03
+**Last Updated**: 2026-01-26
