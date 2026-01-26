@@ -4913,26 +4913,76 @@ def fetch_yahoo_candles(symbol, from_ts, to_ts):
 
         series = result[0]
         timestamps = series.get("timestamp") or []
-        closes = (series.get("indicators") or {}).get("quote") or []
-        close_values = closes[0].get("close") if closes else []
+        quotes = (series.get("indicators") or {}).get("quote") or []
+        close_values = quotes[0].get("close") if quotes else []
+        volume_values = quotes[0].get("volume") if quotes else []
 
         if not timestamps or not close_values:
             return {"s": "no_data", "error": "yahoo_no_prices"}
 
         filtered_t = []
         filtered_c = []
-        for ts, close in zip(timestamps, close_values):
+        filtered_v = []
+        for idx, (ts, close) in enumerate(zip(timestamps, close_values)):
             if close is None:
                 continue
+            volume = None
+            if volume_values and idx < len(volume_values):
+                volume = volume_values[idx]
             filtered_t.append(ts)
             filtered_c.append(float(close))
+            filtered_v.append(volume)
 
         if not filtered_t:
             return {"s": "no_data", "error": "yahoo_no_filtered"}
 
-        return {"s": "ok", "t": filtered_t, "c": filtered_c}
+        if not any((volume or 0) > 0 for volume in filtered_v):
+            quote = fetch_yahoo_quote(symbol)
+            fallback_volume = (
+                quote.get("regularMarketVolume")
+                or quote.get("averageDailyVolume10Day")
+                or quote.get("averageDailyVolume3Month")
+            )
+            if isinstance(fallback_volume, (int, float)) and fallback_volume > 0:
+                padded_v = [0] * len(filtered_t)
+                padded_v[-1] = fallback_volume
+                filtered_v = padded_v
+
+        return {"s": "ok", "t": filtered_t, "c": filtered_c, "v": filtered_v}
     except Exception as e:
         return {"s": "error", "error": str(e)}
+
+
+def fetch_yahoo_quote(symbol):
+    try:
+        normalized = symbol.upper()
+        url = "https://query2.finance.yahoo.com/v7/finance/quote"
+        headers = {
+            "User-Agent": "Mozilla/5.0 (compatible; investment-app/1.0)"
+        }
+        response = requests.get(
+            url,
+            params={"symbols": normalized},
+            headers=headers,
+            timeout=10
+        )
+        response.raise_for_status()
+        payload = response.json()
+        result = (payload.get("quoteResponse") or {}).get("result") or []
+        if not result:
+            return {}
+        quote = result[0]
+        return {
+            "marketCap": quote.get("marketCap"),
+            "fiftyTwoWeekHigh": quote.get("fiftyTwoWeekHigh"),
+            "fiftyTwoWeekLow": quote.get("fiftyTwoWeekLow"),
+            "regularMarketVolume": quote.get("regularMarketVolume"),
+            "averageDailyVolume10Day": quote.get("averageDailyVolume10Day"),
+            "averageDailyVolume3Month": quote.get("averageDailyVolume3Month"),
+            "currency": quote.get("currency"),
+        }
+    except Exception:
+        return {}
 
 
 @app.route('/api/market/quote', methods=['GET'])
@@ -4948,7 +4998,15 @@ def get_market_quote():
 
         cache = get_cached("quote", 30)
         if symbol in cache:
-            return jsonify({"status": "success", "data": cache[symbol]["data"], "cached": True})
+            cached = cache[symbol]["data"]
+            if isinstance(cached, dict) and "quote" in cached:
+                return jsonify({
+                    "status": "success",
+                    "data": cached.get("quote"),
+                    "extra": cached.get("extra", {}),
+                    "cached": True
+                })
+            return jsonify({"status": "success", "data": cached, "cached": True})
 
         status, data = fetch_finnhub(
             "https://finnhub.io/api/v1/quote",
@@ -4958,8 +5016,9 @@ def get_market_quote():
             print(f"Finnhub quote error ({status}): {data}")
             return jsonify({"status": "error", "message": "시세 조회 실패", "detail": data}), status
 
-        set_cached("quote", symbol, data)
-        return jsonify({"status": "success", "data": data})
+        extra = fetch_yahoo_quote(symbol)
+        set_cached("quote", symbol, {"quote": data, "extra": extra})
+        return jsonify({"status": "success", "data": data, "extra": extra})
     except Exception as e:
         import traceback
         print(f"Error in get_market_quote: {traceback.format_exc()}")

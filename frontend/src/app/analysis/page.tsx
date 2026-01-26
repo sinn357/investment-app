@@ -475,12 +475,21 @@ export default function AnalysisPage() {
     }
   };
 
-  const volumeSeries = marketSeries
+  const fallbackVolume =
+    marketExtra?.regularMarketVolume ??
+    marketExtra?.averageDailyVolume10Day ??
+    marketExtra?.averageDailyVolume3Month ??
+    null;
+  let volumeSeries = marketSeries
     .filter((item) => (item.volume ?? 0) > 0)
     .map((item) => ({ time: item.time, volume: item.volume }));
-  if (volumeSeries.length === 0 && marketExtra?.regularMarketVolume) {
-    const fallbackTime = marketSeries[marketSeries.length - 1]?.time ?? Math.floor(Date.now() / 1000);
-    volumeSeries.push({ time: fallbackTime, volume: marketExtra.regularMarketVolume });
+  if (volumeSeries.length === 0 && fallbackVolume) {
+    if (marketSeries.length > 0) {
+      volumeSeries = marketSeries.map((item) => ({ time: item.time, volume: fallbackVolume }));
+    } else {
+      const fallbackTime = Math.floor(Date.now() / 1000);
+      volumeSeries = [{ time: fallbackTime, volume: fallbackVolume }];
+    }
   }
   const hasVolumeData = volumeSeries.length > 0;
 
