@@ -419,7 +419,7 @@ export default function AnalysisPage() {
         const to = Math.floor(Date.now() / 1000);
         const from = to - 60 * 60 * 24 * 180;
         const candleRes = await fetch(
-          `${API_URL}/api/market/candles?symbol=${encodeURIComponent(symbol)}&resolution=D&from=${from}&to=${to}`
+          `${API_URL}/api/market/candles?symbol=${encodeURIComponent(symbol)}&resolution=D&from=${from}&to=${to}&source=stooq`
         );
         const candleJson = await candleRes.json();
         if (candleRes.ok && candleJson.status === 'success' && candleJson.data?.s === 'ok') {

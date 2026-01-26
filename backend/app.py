@@ -4898,6 +4898,7 @@ def get_market_candles():
         resolution = request.args.get('resolution', 'D')
         from_ts = request.args.get('from')
         to_ts = request.args.get('to')
+        source = request.args.get('source')
 
         if not symbol:
             return jsonify({"status": "error", "message": "symbol이 필요합니다"}), 400
@@ -4909,10 +4910,15 @@ def get_market_candles():
         if not from_ts or not to_ts:
             return jsonify({"status": "error", "message": "from/to 파라미터가 필요합니다"}), 400
 
-        cache_key = f"{symbol}:{resolution}:{from_ts}:{to_ts}"
+        cache_key = f"{symbol}:{resolution}:{from_ts}:{to_ts}:{source or 'auto'}"
         cache = get_cached("candles", 600)
         if cache_key in cache:
             return jsonify({"status": "success", "data": cache[cache_key]["data"], "cached": True})
+
+        if source == "stooq":
+            fallback = fetch_stooq_candles(symbol, from_ts, to_ts)
+            set_cached("candles", cache_key, fallback)
+            return jsonify({"status": "success", "data": fallback, "source": "stooq"})
 
         status, data = fetch_finnhub(
             "https://finnhub.io/api/v1/stock/candle",
