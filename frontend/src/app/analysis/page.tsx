@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import Navigation from '@/components/Navigation';
 import GlassCard from '@/components/GlassCard';
 import { Badge } from '@/components/ui/badge';
@@ -411,17 +412,25 @@ export default function AnalysisPage() {
   const persistAnalyses = (updated: AssetAnalysis[]) => {
     const normalized = updated.map(item => ({ ...item, deepDive: item.deepDive ?? createEmptyDeepDive() }));
     setAnalyses(normalized);
+    let persisted = false;
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
+      persisted = true;
     } catch (error) {
       console.warn('로컬 저장소 저장 실패:', error);
+      toast.error('저장 공간이 부족해 저장에 실패했습니다.');
     }
+    return persisted;
   };
 
   const handleSave = () => {
     if (!draft) return;
     const updated = analyses.map(item => (item.id === draft.id ? draft : item));
-    persistAnalyses(updated);
+    const persisted = persistAnalyses(updated);
+    if (!persisted) {
+      setSaveState('idle');
+      return;
+    }
     setSelectedId(draft.id);
     setSaveState('saved');
     setTimeout(() => setSaveState('idle'), 1500);
@@ -455,10 +464,19 @@ export default function AnalysisPage() {
       tags: []
     };
     const updated = [...analyses, newAsset];
-    persistAnalyses(updated);
+    const persisted = persistAnalyses(updated);
+    if (!persisted) {
+      return;
+    }
     setSelectedId(newId);
     setActiveTab('thesis');
   };
+
+  useEffect(() => {
+    if (draft) {
+      setSaveState('idle');
+    }
+  }, [draft]);
 
   return (
     <div className="min-h-screen bg-background">
