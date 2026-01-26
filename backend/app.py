@@ -7,6 +7,7 @@ from datetime import datetime
 import io
 from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment, PatternFill
+import requests
 
 # 통합 크롤러
 from crawlers.unified_crawler import crawl_indicator, crawl_category
@@ -4773,6 +4774,85 @@ def save_asset_analysis():
         return jsonify({
             "status": "error",
             "message": f"분석 데이터 저장 실패: {str(e)}"
+        }), 500
+
+
+# ===========================
+# Market Snapshot API (Finnhub)
+# ===========================
+
+def get_finnhub_key():
+    return os.getenv("FINNHUB_API_KEY")
+
+
+@app.route('/api/market/quote', methods=['GET'])
+def get_market_quote():
+    try:
+        symbol = request.args.get('symbol')
+        if not symbol:
+            return jsonify({"status": "error", "message": "symbol이 필요합니다"}), 400
+
+        api_key = get_finnhub_key()
+        if not api_key:
+            return jsonify({"status": "error", "message": "FINNHUB_API_KEY가 설정되지 않았습니다"}), 500
+
+        response = requests.get(
+            "https://finnhub.io/api/v1/quote",
+            params={"symbol": symbol, "token": api_key},
+            timeout=10
+        )
+        response.raise_for_status()
+        data = response.json()
+
+        return jsonify({"status": "success", "data": data})
+    except Exception as e:
+        import traceback
+        print(f"Error in get_market_quote: {traceback.format_exc()}")
+        return jsonify({
+            "status": "error",
+            "message": f"시세 조회 실패: {str(e)}"
+        }), 500
+
+
+@app.route('/api/market/candles', methods=['GET'])
+def get_market_candles():
+    try:
+        symbol = request.args.get('symbol')
+        resolution = request.args.get('resolution', 'D')
+        from_ts = request.args.get('from')
+        to_ts = request.args.get('to')
+
+        if not symbol:
+            return jsonify({"status": "error", "message": "symbol이 필요합니다"}), 400
+
+        api_key = get_finnhub_key()
+        if not api_key:
+            return jsonify({"status": "error", "message": "FINNHUB_API_KEY가 설정되지 않았습니다"}), 500
+
+        if not from_ts or not to_ts:
+            return jsonify({"status": "error", "message": "from/to 파라미터가 필요합니다"}), 400
+
+        response = requests.get(
+            "https://finnhub.io/api/v1/stock/candle",
+            params={
+                "symbol": symbol,
+                "resolution": resolution,
+                "from": from_ts,
+                "to": to_ts,
+                "token": api_key,
+            },
+            timeout=10
+        )
+        response.raise_for_status()
+        data = response.json()
+
+        return jsonify({"status": "success", "data": data})
+    except Exception as e:
+        import traceback
+        print(f"Error in get_market_candles: {traceback.format_exc()}")
+        return jsonify({
+            "status": "error",
+            "message": f"차트 데이터 조회 실패: {str(e)}"
         }), 500
 
 

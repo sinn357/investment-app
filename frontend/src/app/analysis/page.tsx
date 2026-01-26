@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Line, LineChart, ResponsiveContainer, Tooltip } from 'recharts';
 import {
   Select,
   SelectContent,
@@ -354,6 +355,8 @@ const actionBadgeStyle: Record<'BUY' | 'WAIT' | 'PASS', string> = {
   PASS: 'bg-rose-100 text-rose-800 border border-rose-200'
 };
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://investment-app-backend-x166.onrender.com';
+
 const handleTextareaTab = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
   if (event.key !== 'Tab') return;
   event.preventDefault();
@@ -377,6 +380,10 @@ export default function AnalysisPage() {
   const [draft, setDraft] = useState<AssetAnalysis | null>(null);
   const [saveState, setSaveState] = useState<'idle' | 'saved'>('idle');
   const [saveMessage, setSaveMessage] = useState<string>('');
+  const [marketQuote, setMarketQuote] = useState<any | null>(null);
+  const [marketSeries, setMarketSeries] = useState<{ time: number; close: number }[]>([]);
+  const [marketLoading, setMarketLoading] = useState(false);
+  const [marketError, setMarketError] = useState('');
 
   const updateDeepDive = useCallback((updater: (prev: DeepDiveData) => DeepDiveData) => {
     setDraft(prev => (prev ? { ...prev, deepDive: updater(prev.deepDive ?? createEmptyDeepDive()) } : prev));
@@ -385,6 +392,55 @@ export default function AnalysisPage() {
   const selected = analyses.find(a => a.id === selectedId) ?? analyses[0];
   const detail = draft ?? selected;
   const deepDive = detail?.deepDive ?? createEmptyDeepDive();
+
+  useEffect(() => {
+    const symbol = detail?.symbol?.trim().toUpperCase();
+    if (!symbol) {
+      setMarketQuote(null);
+      setMarketSeries([]);
+      return;
+    }
+
+    const fetchMarketData = async () => {
+      setMarketLoading(true);
+      setMarketError('');
+      try {
+        const quoteRes = await fetch(`${API_URL}/api/market/quote?symbol=${encodeURIComponent(symbol)}`);
+        const quoteJson = await quoteRes.json();
+        if (quoteRes.ok && quoteJson.status === 'success') {
+          setMarketQuote(quoteJson.data);
+        } else {
+          setMarketQuote(null);
+        }
+
+        const to = Math.floor(Date.now() / 1000);
+        const from = to - 60 * 60 * 24 * 180;
+        const candleRes = await fetch(
+          `${API_URL}/api/market/candles?symbol=${encodeURIComponent(symbol)}&resolution=D&from=${from}&to=${to}`
+        );
+        const candleJson = await candleRes.json();
+        if (candleRes.ok && candleJson.status === 'success' && candleJson.data?.s === 'ok') {
+          const { t = [], c = [] } = candleJson.data;
+          const series = t.map((time: number, index: number) => ({
+            time,
+            close: c[index],
+          }));
+          setMarketSeries(series);
+        } else {
+          setMarketSeries([]);
+        }
+      } catch (error) {
+        console.error('Market data fetch error:', error);
+        setMarketError('시세 데이터를 불러오지 못했습니다.');
+        setMarketQuote(null);
+        setMarketSeries([]);
+      } finally {
+        setMarketLoading(false);
+      }
+    };
+
+    fetchMarketData();
+  }, [detail?.symbol]);
 
   useEffect(() => {
     try {
@@ -1467,6 +1523,75 @@ export default function AnalysisPage() {
                           <strong>👉 원칙:</strong> 시장은 이미 무엇을 믿고 있나? 내 가설과의 차이는?
                         </AlertDescription>
                       </Alert>
+
+                      {detail?.symbol && (
+                        <Card className="border-primary/20">
+                          <CardHeader>
+                            <CardTitle>📌 실시간 시세 요약</CardTitle>
+                          </CardHeader>
+                          <CardContent className="space-y-4">
+                            {marketLoading && (
+                              <div className="text-sm text-muted-foreground">시세 데이터 불러오는 중...</div>
+                            )}
+                            {marketError && (
+                              <div className="text-sm text-rose-500">{marketError}</div>
+                            )}
+                            {marketQuote && (
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                                <div>
+                                  <p className="text-muted-foreground">현재가</p>
+                                  <p className="text-lg font-semibold">
+                                    ${marketQuote.c?.toLocaleString() ?? '-'}
+                                  </p>
+                                </div>
+                                <div>
+                                  <p className="text-muted-foreground">변동</p>
+                                  <p className={`text-lg font-semibold ${marketQuote.d >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                    {marketQuote.d?.toFixed(2) ?? '-'} ({marketQuote.dp?.toFixed(2) ?? '-'}%)
+                                  </p>
+                                </div>
+                                <div>
+                                  <p className="text-muted-foreground">고가</p>
+                                  <p className="text-lg font-semibold">
+                                    ${marketQuote.h?.toLocaleString() ?? '-'}
+                                  </p>
+                                </div>
+                                <div>
+                                  <p className="text-muted-foreground">저가</p>
+                                  <p className="text-lg font-semibold">
+                                    ${marketQuote.l?.toLocaleString() ?? '-'}
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+                            <div className="h-44">
+                              {marketSeries.length > 0 ? (
+                                <ResponsiveContainer width="100%" height="100%">
+                                  <LineChart data={marketSeries}>
+                                    <Tooltip
+                                      formatter={(value: number) => [`$${value.toFixed(2)}`, '종가']}
+                                      labelFormatter={(label) =>
+                                        new Date(label * 1000).toLocaleDateString()
+                                      }
+                                    />
+                                    <Line
+                                      type="monotone"
+                                      dataKey="close"
+                                      stroke="#6366F1"
+                                      strokeWidth={2}
+                                      dot={false}
+                                    />
+                                  </LineChart>
+                                </ResponsiveContainer>
+                              ) : (
+                                <div className="text-sm text-muted-foreground flex items-center justify-center h-full">
+                                  차트 데이터가 없습니다.
+                                </div>
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )}
 
                       {/* 기본 가격 정보 */}
                       <Card className="border-primary/20">
