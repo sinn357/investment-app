@@ -4824,10 +4824,33 @@ def fetch_stooq_candles(symbol, from_ts, to_ts):
         normalized = symbol.lower()
         if '.' not in normalized:
             normalized = f"{normalized}.us"
-        url = "https://stooq.com/q/d/l/"
-        response = requests.get(url, params={"s": normalized, "i": "d"}, timeout=10)
-        response.raise_for_status()
-        lines = response.text.strip().splitlines()
+        urls = [
+            "https://stooq.com/q/d/l/",
+            "https://stooq.pl/q/d/l/",
+        ]
+        lines = []
+        headers = {
+            "User-Agent": "Mozilla/5.0 (compatible; investment-app/1.0)"
+        }
+        last_error = None
+        for url in urls:
+            try:
+                response = requests.get(
+                    url,
+                    params={"s": normalized, "i": "d"},
+                    headers=headers,
+                    timeout=10
+                )
+                response.raise_for_status()
+                lines = response.text.strip().splitlines()
+                if lines:
+                    break
+            except Exception as e:
+                last_error = str(e)
+                continue
+
+        if not lines:
+            return {"s": "error", "error": last_error or "stooq_unreachable"}
         if len(lines) <= 1:
             return {"s": "no_data", "error": "stooq_empty"}
 
