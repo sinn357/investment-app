@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis } from 'recharts';
+import { Bar, BarChart, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import {
   Select,
   SelectContent,
@@ -474,6 +474,8 @@ export default function AnalysisPage() {
       return value.toLocaleString();
     }
   };
+
+  const hasVolumeData = marketSeries.some((item) => (item.volume ?? 0) > 0);
 
   useEffect(() => {
     try {
@@ -1710,6 +1712,27 @@ export default function AnalysisPage() {
                               ) : (
                                 <div className="text-sm text-muted-foreground flex items-center justify-center h-full">
                                   차트 데이터가 없습니다.
+                                </div>
+                              )}
+                            </div>
+                            <div className="h-32">
+                              {marketSeries.length > 0 && hasVolumeData ? (
+                                <ResponsiveContainer width="100%" height="100%">
+                                  <BarChart data={marketSeries}>
+                                    <XAxis dataKey="time" hide />
+                                    <YAxis hide />
+                                    <Tooltip
+                                      formatter={(value: number) => [`${formatCompact(value)}`, '거래량']}
+                                      labelFormatter={(label) =>
+                                        new Date(Number(label) * 1000).toLocaleDateString()
+                                      }
+                                    />
+                                    <Bar dataKey="volume" fill="#94A3B8" />
+                                  </BarChart>
+                                </ResponsiveContainer>
+                              ) : (
+                                <div className="text-sm text-muted-foreground flex items-center justify-center h-full">
+                                  거래량 데이터가 없습니다.
                                 </div>
                               )}
                             </div>
