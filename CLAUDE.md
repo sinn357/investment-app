@@ -8,15 +8,15 @@
 - **Project:** Investment App - Economic Indicators Dashboard
 - **Repo Root:** /home/user/investment-app
 - **Owner:** Partner
-- **Last Updated:** 2025-12-30
-- **Session Goal (2025-12-30 최종):** ✅ 추가 성능 최적화 + Confetti 효과 완료
-  - **Phase 3**: webpack-bundle-analyzer 설치, Dynamic imports (OraclePieChart/OracleBarChart), 코드 스플리팅
-  - **Phase 4**: TanStack Query staleTime 5분/gcTime 10분 최적화
-  - **Confetti**: react-confetti 추가, 비밀번호 변경 성공 시 축하 효과 (골드/에메랄드 색상)
-  - 커밋 2개: 865ec90 (성능 최적화), 052a9c6 (Confetti)
-  - 푸시 완료: origin/main
-  - docs/SESSION_2025-12-30_FINAL_COMPLETE.md 작성
-  - **다음 세션**: docs/NEXT_SESSION_TASKS.md 참조 (6개 작업, 우선순위: 투자철학 로딩 성능)
+- **Last Updated:** 2026-02-03
+- **Session Goal (2026-02-03):** ✅ 크롤러 문제 해결 + FRED API 전환 완료
+  - **문제 1**: Federal Funds Rate Investing.com 페이지 구조 문제 → FRED FEDFUNDS로 전환
+  - **문제 2**: Brotli 압축 인코딩 문제 → Accept-Encoding에서 'br' 제거
+  - **문제 3**: Render 플랫폼 Investing.com 차단 (403) → 8개 지표 FRED API 전환
+  - **커밋 3개**: 17fcd0f (403 해결), 2b9939d (Brotli 해결), fc8ebf1 (FRED 전환)
+  - **정상 작동**: 19개 지표, **실패**: 28개 지표 (Investing.com 차단)
+  - **문서화**: docs/CRAWLER_FIX_2026-02-03.md 작성
+  - **다음 세션**: 추가 FRED 전환 5개 또는 프록시/호스팅 이전 검토
 - **Previous Session (2025-12-30):** ✅ 모바일 반응형 Phase 3-5, React 성능 최적화, Oracle 2025 디자인 완성
 - **Previous Session (2025-12-03):** ✅ BEA 크롤러, 경제 사이클 시스템 재설계 계획
 - **Previous Session (2025-12-02):** ✅ 무역지표 5개 추가, TradingEconomics 크롤러
@@ -131,8 +131,11 @@ investment-app/
 ### Active (in this session)
 - 없음
 
-### Recent Done (Current Session - 2026-01-20)
-- **T-106:** 3대 사이클 정교화 Phase 4+5 완전 구현 ✅ (2026-01-20) - **Phase 5 검토 및 UI 반영**: cycle_engine.py 8개 함수 검토 완료 (calculate_trend_score, get_value_n_months_ago, calculate_cycle_with_trend, calculate_master_cycle_v2, calculate_real_interest_rate, calculate_yield_curve_inversion_duration, calculate_macro_with_enhancements, calculate_master_cycle_v3) + MasterCycleCard 인터페이스 확장 (RealInterestRateData, YieldCurveInversionData) + Macro 카드에 실질금리/역전 정보 UI 추가 | **Phase 4 Credit 강화 구현**: calculate_spread_velocity() HY/IG Δ1M, Δ3M 계산 + detect_rapid_change() 급변 탐지 (50bp 경계, 100bp 위험) + calculate_credit_with_enhancements() 강화된 Credit 사이클 + calculate_master_cycle_v4() 전체 강화 MMC + /api/v4/master-cycle 엔드포인트 추가 + MasterCycleCard Credit 강화 UI (SpreadVelocityData, RapidChangeData 인터페이스, HY/IG Δ1M 표시, 급변 경고 배지) | **커밋 2개**: 0c52e19 (Phase 5 Macro UI), b7dca55 (Phase 4 Credit 강화) | **결과**: cycle_engine.py +278줄, app.py +37줄, MasterCycleCard.tsx +145줄, v4 API 완성
+### Recent Done (Current Session - 2026-02-03)
+- **T-107:** 크롤러 문제 해결 + FRED API 전환 ✅ (2026-02-03) - **문제 1 해결**: Federal Funds Rate Investing.com 페이지가 과거 데이터 없이 FOMC 일정만 표시 → FRED FEDFUNDS로 전환 | **문제 2 해결**: Brotli 압축 인코딩 문제 (Accept-Encoding: br) → 'br' 제거하여 gzip, deflate만 사용 | **문제 3 분석**: Render 플랫폼 IP가 Investing.com에 의해 403 차단 (클라우드 서비스 IP 범위 기본 차단 정책) - 로컬에서는 정상 작동 확인 | **FRED 전환 (8개 지표)**: CPI→CPIAUCSL(YoY), Core CPI→CPILFESL(YoY), PPI→PPIACO(YoY), Unemployment Rate→UNRATE, Participation Rate→CIVPART, Michigan Sentiment→UMCSENT, Industrial Production YoY→INDPRO(YoY), Retail Sales YoY→RSAFS(YoY) | **코드 수정**: IndicatorConfig에 calculate_yoy 옵션 추가 + CrawlerService에서 config.calculate_yoy 자동 처리 + 크롤러 헤더 개선 (다양한 User-Agent, Sec-Fetch 헤더) | **커밋 3개**: 17fcd0f (403 해결 시도), 2b9939d (Brotli 해결), fc8ebf1 (FRED 전환) | **결과**: 정상 19개, 실패 28개 (Investing.com 차단) | **문서화**: docs/CRAWLER_FIX_2026-02-03.md 작성 | **다음 옵션**: 추가 FRED 전환 5개 가능 (nonfarm-payrolls, initial-jobless-claims, avg-hourly-earnings, trade-balance, consumer-confidence) 또는 프록시/호스팅 이전
+
+### Recent Done (Previous Session - 2026-01-20)
+- **T-106:** 3대 사이클 정교화 Phase 4+5 완전 구현 ✅ (2026-01-20) - **Phase 5 검토 및 UI 반영**: cycle_engine.py 8개 함수 검토 완료 + MasterCycleCard 인터페이스 확장 + Macro 카드에 실질금리/역전 정보 UI 추가 | **Phase 4 Credit 강화 구현**: calculate_spread_velocity() + detect_rapid_change() + calculate_credit_with_enhancements() + /api/v4/master-cycle 엔드포인트 추가 | **커밋 2개**: 0c52e19, b7dca55 | **결과**: v4 API 완성
 
 ### Recent Done (Previous Session - 2025-12-30)
 - **T-105:** CLAUDE.md 아카이브 정리 + 모바일 반응형 최적화 Phase 1-2 완료 ✅ (2025-12-30) - **Phase 1 문서 정리**: docs/ARCHIVE.md 생성 (66개 작업 T-000~T-060 이동, 2025-09-23 이전 작업 아카이브화) + CLAUDE.md 파일 크기 12% 감소 (성능 개선) + 토큰 효율성 향상 | **Phase 2 포트폴리오 모바일 반응형**: 네비게이션 헤더 (모바일 햄버거 메뉴, 2열 그리드) + 요약카드 (모바일 2열 → 데스크톱 4열) + 자산 흐름 차트 (모바일 세로 스택 → 데스크톱 가로 배치) + 반응형 그리드 시스템 (sm/md/lg/xl/2xl 브레이크포인트) | **Phase 3 가계부 모바일 반응형**: 네비게이션 헤더 완료 (나머지는 이미 반응형) | **문서화**: docs/NEXT_SESSION_CONTINUE.md 작성 (다음 세션 가이드, 경제지표/섹터/종목 페이지 계획) | **커밋**: 0283816 "feat: 모바일 반응형 최적화 Phase 1-2 완료 + CLAUDE.md 아카이브 정리" | **진행률**: 40% 완료 (5개 중 2개), 예상 남은 시간 1.5-2시간 | **다음 작업**: 경제지표 페이지부터 시작
