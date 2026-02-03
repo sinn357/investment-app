@@ -20,6 +20,7 @@ class IndicatorConfig:
         threshold: Optional[Dict[str, float]] = None,
         reverse_color: bool = False,  # True면 낮을수록 좋은 지표 (실업률 등)
         manual_check: bool = False,  # True면 크롤링 불가, 직접 확인 필요
+        calculate_yoy: bool = False,  # True면 FRED 데이터를 YoY% 변화율로 변환
     ):
         self.id = id
         self.name = name
@@ -30,6 +31,7 @@ class IndicatorConfig:
         self.threshold = threshold or {}
         self.reverse_color = reverse_color
         self.manual_check = manual_check
+        self.calculate_yoy = calculate_yoy
 
 # 전체 지표 설정 (정책지표 제외, 활성 지표만)
 INDICATORS: Dict[str, IndicatorConfig] = {
@@ -70,8 +72,9 @@ INDICATORS: Dict[str, IndicatorConfig] = {
         id="industrial-production-1755",
         name="Industrial Production YoY",
         name_ko="산업생산 (YoY)",
-        url="https://www.investing.com/economic-calendar/industrial-production-1755",
+        url="https://fred.stlouisfed.org/series/INDPRO",
         category="business",
+        calculate_yoy=True,
     ),
     "retail-sales": IndicatorConfig(
         id="retail-sales",
@@ -84,8 +87,9 @@ INDICATORS: Dict[str, IndicatorConfig] = {
         id="retail-sales-yoy",
         name="Retail Sales YoY",
         name_ko="소매판매 (YoY)",
-        url="https://www.investing.com/economic-calendar/retail-sales-1777",
+        url="https://fred.stlouisfed.org/series/RSAFS",
         category="business",
+        calculate_yoy=True,
     ),
     "cb-consumer-confidence": IndicatorConfig(
         id="cb-consumer-confidence",
@@ -106,7 +110,7 @@ INDICATORS: Dict[str, IndicatorConfig] = {
         id="michigan-consumer-sentiment",
         name="Michigan Consumer Sentiment",
         name_ko="미시간 소비자심리",
-        url="https://www.investing.com/economic-calendar/michigan-consumer-sentiment-320",
+        url="https://fred.stlouisfed.org/series/UMCSENT",
         category="business",
         threshold={"strong": 100, "weak": 80},
     ),
@@ -125,7 +129,7 @@ INDICATORS: Dict[str, IndicatorConfig] = {
         id="unemployment-rate",
         name="Unemployment Rate",
         name_ko="실업률",
-        url="https://www.investing.com/economic-calendar/unemployment-rate-300",
+        url="https://fred.stlouisfed.org/series/UNRATE",
         category="employment",
         reverse_color=True,  # 낮을수록 좋음
         threshold={"low": 4.0, "high": 6.0},
@@ -164,7 +168,7 @@ INDICATORS: Dict[str, IndicatorConfig] = {
         id="participation-rate",
         name="Participation Rate",
         name_ko="경제활동참가율",
-        url="https://www.investing.com/economic-calendar/participation-rate-1581",
+        url="https://fred.stlouisfed.org/series/CIVPART",
         category="employment",
     ),
 
@@ -327,23 +331,26 @@ INDICATORS: Dict[str, IndicatorConfig] = {
         id="cpi",
         name="Consumer Price Index (CPI) YoY",
         name_ko="소비자물가지수 (YoY)",
-        url="https://www.investing.com/economic-calendar/cpi-733",
+        url="https://fred.stlouisfed.org/series/CPIAUCSL",
         category="inflation",
         threshold={"target": 2.0, "high": 3.0},
+        calculate_yoy=True,
     ),
     "core-cpi": IndicatorConfig(
         id="core-cpi",
         name="Core CPI YoY",
         name_ko="근원 소비자물가지수 (YoY)",
-        url="https://www.investing.com/economic-calendar/core-cpi-736",
+        url="https://fred.stlouisfed.org/series/CPILFESL",
         category="inflation",
+        calculate_yoy=True,
     ),
     "ppi": IndicatorConfig(
         id="ppi",
-        name="Producer Price Index (PPI)",
-        name_ko="생산자물가지수",
-        url="https://www.investing.com/economic-calendar/ppi-238",
+        name="Producer Price Index (PPI) YoY",
+        name_ko="생산자물가지수 (YoY)",
+        url="https://fred.stlouisfed.org/series/PPIACO",
         category="inflation",
+        calculate_yoy=True,
     ),
     "pce": IndicatorConfig(
         id="pce",

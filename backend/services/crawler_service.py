@@ -40,10 +40,11 @@ class CrawlerService:
             if "fred.stlouisfed.org" in url:
                 # FRED CSV API 크롤러
                 series_id = url.split('/')[-1]  # URL에서 시리즈 ID 추출 (예: DFII10, RBUSBIS 등)
-                # 월별 데이터는 더 긴 기간 필요 (6개월 = 180일)
-                is_monthly = "_PC1" in series_id or indicator_id in ["ppi", "pce"]
-                days = 180 if is_monthly else 60
-                result = crawl_fred_indicator(series_id, calculate_yoy=False, days=days)
+                # YoY 계산 여부는 config에서 결정
+                calculate_yoy = getattr(config, 'calculate_yoy', False)
+                # YoY 계산 시 500일, 월별 데이터는 180일, 일별은 60일
+                days = 500 if calculate_yoy else (180 if "_PC1" in series_id or indicator_id in ["ppi", "pce"] else 60)
+                result = crawl_fred_indicator(series_id, calculate_yoy=calculate_yoy, days=days)
 
                 if "error" in result:
                     return result
