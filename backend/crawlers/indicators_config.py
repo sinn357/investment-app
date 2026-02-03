@@ -173,7 +173,7 @@ INDICATORS: Dict[str, IndicatorConfig] = {
         id="federal-funds-rate",
         name="Federal Funds Rate",
         name_ko="연준 기준금리",
-        url="https://www.investing.com/economic-calendar/interest-rate-decision-168",
+        url="https://fred.stlouisfed.org/series/FEDFUNDS",
         category="interest",
     ),
     "two-year-treasury": IndicatorConfig(

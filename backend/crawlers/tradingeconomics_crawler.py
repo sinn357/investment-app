@@ -6,20 +6,51 @@ TradingEconomics 크롤러
 
 from bs4 import BeautifulSoup
 import requests
+import random
+import time
 from typing import Dict, Any, List
 from datetime import datetime
 
-def fetch_tradingeconomics_page(url: str) -> str:
+USER_AGENTS = [
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:122.0) Gecko/20100101 Firefox/122.0',
+]
+
+def fetch_tradingeconomics_page(url: str, retries: int = 3) -> str:
     """TradingEconomics 페이지 HTML 가져오기"""
     headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.5',
+        'User-Agent': random.choice(USER_AGENTS),
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Referer': 'https://www.google.com/',
     }
 
-    response = requests.get(url, headers=headers, timeout=10)
-    response.raise_for_status()
-    return response.text
+    last_error = None
+    for attempt in range(retries + 1):
+        try:
+            if attempt > 0:
+                time.sleep(random.uniform(1.0, 3.0))
+                headers['User-Agent'] = random.choice(USER_AGENTS)
+
+            response = requests.get(url, headers=headers, timeout=15)
+            if response.status_code in [429, 403] and attempt < retries:
+                time.sleep(random.uniform(2.0, 5.0))
+                continue
+            response.raise_for_status()
+            return response.text
+        except requests.RequestException as e:
+            last_error = e
+            if attempt >= retries:
+                break
+            time.sleep(random.uniform(1.0, 3.0))
+
+    raise last_error
 
 def parse_main_table(html: str) -> Dict[str, Any]:
     """메인 통계 테이블 파싱

@@ -6,20 +6,49 @@ import re
 from datetime import datetime
 from typing import Dict, Optional, Any, List
 
-def fetch_html(url: str, retries: int = 3, base_delay: float = 1.0) -> str:
+USER_AGENTS = [
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:122.0) Gecko/20100101 Firefox/122.0',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36 Edg/121.0.0.0',
+]
+
+def fetch_html(url: str, retries: int = 3, base_delay: float = 2.0) -> str:
     """
-    Fetch HTML content from the given URL with retry/backoff.
+    Fetch HTML content from the given URL with retry/backoff and realistic browser headers.
     """
     headers = {
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        'User-Agent': random.choice(USER_AGENTS),
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'none',
+        'Sec-Fetch-User': '?1',
+        'Cache-Control': 'max-age=0',
+        'Referer': 'https://www.google.com/',
     }
 
     last_error = None
     for attempt in range(retries + 1):
         try:
-            response = requests.get(url, headers=headers, timeout=10)
+            # Add random delay between requests to avoid rate limiting
+            if attempt > 0:
+                time.sleep(random.uniform(1.0, 3.0))
+
+            response = requests.get(url, headers=headers, timeout=15)
             if response.status_code == 429 and attempt < retries:
-                backoff = base_delay * (2 ** attempt) + random.uniform(0.0, 0.5)
+                backoff = base_delay * (2 ** attempt) + random.uniform(1.0, 3.0)
+                time.sleep(backoff)
+                continue
+            if response.status_code == 403 and attempt < retries:
+                # Try with different User-Agent on 403
+                headers['User-Agent'] = random.choice(USER_AGENTS)
+                backoff = base_delay * (2 ** attempt) + random.uniform(2.0, 5.0)
                 time.sleep(backoff)
                 continue
             response.raise_for_status()
@@ -28,7 +57,7 @@ def fetch_html(url: str, retries: int = 3, base_delay: float = 1.0) -> str:
             last_error = e
             if attempt >= retries:
                 break
-            backoff = base_delay * (2 ** attempt) + random.uniform(0.0, 0.5)
+            backoff = base_delay * (2 ** attempt) + random.uniform(1.0, 3.0)
             time.sleep(backoff)
 
     raise last_error
