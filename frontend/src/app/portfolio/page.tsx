@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
 import Navigation from '@/components/Navigation';
 import EnhancedPortfolioForm from '@/components/EnhancedPortfolioForm';
 import PortfolioDashboard from '@/components/PortfolioDashboard';
@@ -14,81 +13,185 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 
-export interface PortfolioItem {
-  id: string;
-  assetType: string;
-  name: string;
-  amount: number;
-  quantity?: number;
-  avgPrice?: number;
-  principal?: number;
-  evaluationAmount?: number;
-  date: string;
-  note?: string;
-  createdAt: string;
-}
-
 interface User {
   id: number;
   username: string;
   token?: string;
 }
 
-type PlanStatus = '대기' | '부분체결' | '완료' | '취소';
-type PlanType = '매수' | '매도';
 type AssetSelectValue = number | 'custom' | 'none';
+type TradeSide = '매수' | '매도';
+type EmotionState = '없음' | '개입';
+type OXQStatus = 'O' | 'X' | '?';
+type CatalystStatus = '진행' | '지연' | '무산';
+type InvalidationStatus = '미발생' | '발생';
+type RuleViolation = '미위반' | '위반';
+type ActionStatus = '대기' | '실행완료';
+type CheckStatus = '양호' | '주의' | '이탈';
+type CheckType = '정기(분기)' | '이벤트';
+type ComplianceStatus = '준수' | '위반' | '미점검';
+type ReviewStatus = '작동' | '부분작동' | '미작동' | '미점검';
+type StrategyDecision = '존속' | '수정' | '중단' | '미결정';
 
-interface TradePlan {
+interface ExecutionLogEntry {
   id: string;
+  date: string;
   assetId?: number;
   symbol: string;
-  type: PlanType;
-  targetPrice?: number;
+  side: TradeSide;
+  plannedPrice?: number;
+  executedPrice: number;
   quantity?: number;
-  condition?: string;
-  status: PlanStatus;
-  note?: string;
-  createdAt: string;
+  splitPlanned?: number;
+  splitExecuted?: number;
+  emotion: EmotionState;
+  factualNote?: string;
 }
 
-interface DailyTask {
+interface HypothesisBoard {
   id: string;
-  assetId?: number;
-  text: string;
-  done: boolean;
-  date: string;
-  note?: string;
+  company: string;
+  updatedAt: string;
+  kpis: [OXQStatus, OXQStatus, OXQStatus, OXQStatus, OXQStatus];
+  catalysts: [CatalystStatus, CatalystStatus, CatalystStatus];
+  invalidations: [InvalidationStatus, InvalidationStatus, InvalidationStatus];
 }
 
-interface MonthlyReview {
-  performance?: number;
-  winRate?: number;
-  wins?: string;
-  mistakes?: string;
-  improvements?: string;
+interface RiskRuleRow {
+  id: string;
+  name: string;
+  limitValue: string;
+  currentValue: string;
+  violation: RuleViolation;
+  actionStatus: ActionStatus;
+  updatedAt: string;
 }
+
+interface PortfolioCheckRow {
+  id: string;
+  date: string;
+  checkType: CheckType;
+  assetClassBalance: CheckStatus;
+  concentration: CheckStatus;
+  cashLevel: CheckStatus;
+  volatilityDrawdown: CheckStatus;
+  factualNote?: string;
+}
+
+interface StrategyReviewRow {
+  periodType: 'month' | 'quarter' | 'year';
+  periodKey: string;
+  monthlyRuleCompliance?: ComplianceStatus;
+  monthlyExecutionLogAudit?: ComplianceStatus;
+  quarterHypothesisEngine?: ReviewStatus;
+  quarterInvalidationTiming?: ReviewStatus;
+  yearStrategyDecision?: StrategyDecision;
+  yearFrameworkNeed?: StrategyDecision;
+  factualNote?: string;
+  updatedAt: string;
+}
+
+const DEFAULT_RISK_RULES: RiskRuleRow[] = [
+  {
+    id: 'risk-loss-limit',
+    name: '손실 한도 초과 여부',
+    limitValue: '',
+    currentValue: '',
+    violation: '미위반',
+    actionStatus: '대기',
+    updatedAt: '',
+  },
+  {
+    id: 'risk-weight-limit',
+    name: '비중 상한 초과 여부',
+    limitValue: '',
+    currentValue: '',
+    violation: '미위반',
+    actionStatus: '대기',
+    updatedAt: '',
+  },
+  {
+    id: 'risk-leverage',
+    name: '레버리지 규칙 위반 여부',
+    limitValue: '',
+    currentValue: '',
+    violation: '미위반',
+    actionStatus: '대기',
+    updatedAt: '',
+  },
+  {
+    id: 'risk-correlation',
+    name: '상관관계 급변 여부',
+    limitValue: '',
+    currentValue: '',
+    violation: '미위반',
+    actionStatus: '대기',
+    updatedAt: '',
+  },
+];
 
 export default function PortfolioPage() {
-  const [refreshKey, setRefreshKey] = useState(0);
   const [user, setUser] = useState<User | null>(null);
   const [isFormExpanded, setIsFormExpanded] = useState(false);
-  const router = useRouter();
   const { data: assetsForPlans = [] } = useAssets(user?.id ?? 0);
 
   const today = useMemo(() => new Date().toISOString().split('T')[0], []);
-  const [tradePlans, setTradePlans] = useState<TradePlan[]>([]);
-  const [dailyTasks, setDailyTasks] = useState<DailyTask[]>([]);
-  const [dailyNote, setDailyNote] = useState('');
-  const [targetWeights, setTargetWeights] = useState<Record<string, number>>({});
-  const [monthlyReviews, setMonthlyReviews] = useState<Record<string, MonthlyReview>>({});
+  const nowIso = () => new Date().toISOString();
+
+  const [executionLogs, setExecutionLogs] = useState<ExecutionLogEntry[]>([]);
+  const [hypothesisBoards, setHypothesisBoards] = useState<HypothesisBoard[]>([]);
+  const [riskRules, setRiskRules] = useState<RiskRuleRow[]>(DEFAULT_RISK_RULES);
+  const [portfolioChecks, setPortfolioChecks] = useState<PortfolioCheckRow[]>([]);
+  const [strategyReviews, setStrategyReviews] = useState<StrategyReviewRow[]>([]);
+
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
   });
+  const [selectedQuarter, setSelectedQuarter] = useState(() => {
+    const d = new Date();
+    const quarter = Math.floor(d.getMonth() / 3) + 1;
+    return `${d.getFullYear()}-Q${quarter}`;
+  });
+  const [selectedYear, setSelectedYear] = useState(() => String(new Date().getFullYear()));
 
-  const storageKey = (name: string) => (user ? `portfolio_${name}_v1_${user.id}` : '');
+  const [executionForm, setExecutionForm] = useState({
+    date: today,
+    assetId: 'none' as AssetSelectValue,
+    symbol: '',
+    side: '매수' as TradeSide,
+    plannedPrice: '',
+    executedPrice: '',
+    quantity: '',
+    splitPlanned: '',
+    splitExecuted: '',
+    emotion: '없음' as EmotionState,
+    factualNote: '',
+  });
 
-  // 로컬 스토리지에서 사용자 정보 로드 (토큰 포함)
+  const [newCompany, setNewCompany] = useState('');
+
+  const [portfolioCheckForm, setPortfolioCheckForm] = useState({
+    date: today,
+    checkType: '정기(분기)' as CheckType,
+    assetClassBalance: '양호' as CheckStatus,
+    concentration: '양호' as CheckStatus,
+    cashLevel: '양호' as CheckStatus,
+    volatilityDrawdown: '양호' as CheckStatus,
+    factualNote: '',
+  });
+
+  const storageKeys = useMemo(
+    () => ({
+      executionLogs: user ? `portfolio_execution_logs_v2_${user.id}` : '',
+      hypothesisBoards: user ? `portfolio_hypothesis_boards_v2_${user.id}` : '',
+      riskRules: user ? `portfolio_risk_rules_v2_${user.id}` : '',
+      portfolioChecks: user ? `portfolio_portfolio_checks_v2_${user.id}` : '',
+      strategyReviews: user ? `portfolio_strategy_reviews_v2_${user.id}` : '',
+    }),
+    [user]
+  );
+
   useEffect(() => {
     const savedUser = localStorage.getItem('portfolio_user');
     const savedToken = localStorage.getItem('auth_token');
@@ -96,21 +199,17 @@ export default function PortfolioPage() {
     if (savedUser) {
       try {
         const userData = JSON.parse(savedUser);
-        // 저장된 토큰이 있으면 추가
-        if (savedToken) {
-          userData.token = savedToken;
-        }
-        // user.id가 없으면 잘못된 데이터로 간주하고 재로그인 요구
+        if (savedToken) userData.token = savedToken;
+
         if (!userData.id) {
-          console.warn('Invalid user data (missing id), clearing localStorage');
           localStorage.removeItem('portfolio_user');
           localStorage.removeItem('auth_token');
-          localStorage.removeItem('userId'); // 레거시 키도 제거
+          localStorage.removeItem('userId');
           return;
         }
+
         setUser(userData);
-      } catch (error) {
-        console.error('Error parsing saved user data:', error);
+      } catch {
         localStorage.removeItem('portfolio_user');
         localStorage.removeItem('auth_token');
         localStorage.removeItem('userId');
@@ -118,97 +217,56 @@ export default function PortfolioPage() {
     }
   }, []);
 
-  // 보조 데이터 로드
   useEffect(() => {
     if (!user) return;
+
     try {
-      const savedPlans = localStorage.getItem(storageKey('plans'));
-      const savedTasks = localStorage.getItem(storageKey('daily'));
-      const savedNote = localStorage.getItem(storageKey('daily_note'));
-      const savedWeights = localStorage.getItem(storageKey('targets'));
-      const savedReviews = localStorage.getItem(storageKey('reviews'));
+      const savedExecutionLogs = localStorage.getItem(storageKeys.executionLogs);
+      const savedHypothesis = localStorage.getItem(storageKeys.hypothesisBoards);
+      const savedRiskRules = localStorage.getItem(storageKeys.riskRules);
+      const savedPortfolioChecks = localStorage.getItem(storageKeys.portfolioChecks);
+      const savedStrategyReviews = localStorage.getItem(storageKeys.strategyReviews);
 
-      if (savedPlans) setTradePlans(JSON.parse(savedPlans));
-      if (savedTasks) setDailyTasks(JSON.parse(savedTasks));
-      if (savedNote) setDailyNote(savedNote);
-      if (savedWeights) setTargetWeights(JSON.parse(savedWeights));
-      if (savedReviews) setMonthlyReviews(JSON.parse(savedReviews));
-    } catch (error) {
-      console.warn('보조 데이터 로드 실패:', error);
+      if (savedExecutionLogs) setExecutionLogs(JSON.parse(savedExecutionLogs));
+      if (savedHypothesis) setHypothesisBoards(JSON.parse(savedHypothesis));
+      if (savedRiskRules) setRiskRules(JSON.parse(savedRiskRules));
+      if (savedPortfolioChecks) setPortfolioChecks(JSON.parse(savedPortfolioChecks));
+      if (savedStrategyReviews) setStrategyReviews(JSON.parse(savedStrategyReviews));
+    } catch {
+      setRiskRules(DEFAULT_RISK_RULES);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]);
+  }, [storageKeys, user]);
 
-  // 자산이 로드됐는데 목표 비중이 없으면 현재 비중을 기본값으로 설정
   useEffect(() => {
-    if (!user || assetsForPlans.length === 0 || Object.keys(targetWeights).length > 0) return;
-    const totals = assetsForPlans.reduce((acc, a) => acc + (a.evaluation_amount || a.principal || a.amount || 0), 0);
-    if (totals <= 0) return;
-    const defaults: Record<string, number> = {};
-    assetsForPlans.forEach(a => {
-      const key = a.asset_type || '기타';
-      defaults[key] = (defaults[key] || 0) + ((a.evaluation_amount || a.principal || a.amount || 0) / totals) * 100;
-    });
-    setTargetWeights(defaults);
-  }, [assetsForPlans, targetWeights, user]);
+    if (!user) return;
+    localStorage.setItem(storageKeys.executionLogs, JSON.stringify(executionLogs));
+  }, [executionLogs, storageKeys.executionLogs, user]);
+
+  useEffect(() => {
+    if (!user) return;
+    localStorage.setItem(storageKeys.hypothesisBoards, JSON.stringify(hypothesisBoards));
+  }, [hypothesisBoards, storageKeys.hypothesisBoards, user]);
+
+  useEffect(() => {
+    if (!user) return;
+    localStorage.setItem(storageKeys.riskRules, JSON.stringify(riskRules));
+  }, [riskRules, storageKeys.riskRules, user]);
+
+  useEffect(() => {
+    if (!user) return;
+    localStorage.setItem(storageKeys.portfolioChecks, JSON.stringify(portfolioChecks));
+  }, [portfolioChecks, storageKeys.portfolioChecks, user]);
+
+  useEffect(() => {
+    if (!user) return;
+    localStorage.setItem(storageKeys.strategyReviews, JSON.stringify(strategyReviews));
+  }, [storageKeys.strategyReviews, strategyReviews, user]);
 
   const handleLogin = (userData: User) => {
     setUser(userData);
-    // 로컬 스토리지에 사용자 정보 저장
     localStorage.setItem('portfolio_user', JSON.stringify(userData));
-    // 토큰이 있으면 별도 저장
-    if (userData.token) {
-      localStorage.setItem('auth_token', userData.token);
-    }
+    if (userData.token) localStorage.setItem('auth_token', userData.token);
   };
-
-  const handleLogout = () => {
-    setUser(null);
-    // 모든 인증 관련 데이터 삭제
-    localStorage.removeItem('portfolio_user');
-    localStorage.removeItem('auth_token');
-    setRefreshKey(prev => prev + 1); // 대시보드 초기화
-  };
-
-  const persistTradePlans = (plans: TradePlan[]) => {
-    setTradePlans(plans);
-    if (user) localStorage.setItem(storageKey('plans'), JSON.stringify(plans));
-  };
-
-  const persistDailyTasks = (tasks: DailyTask[], note = dailyNote) => {
-    setDailyTasks(tasks);
-    if (user) {
-      localStorage.setItem(storageKey('daily'), JSON.stringify(tasks));
-      localStorage.setItem(storageKey('daily_note'), note);
-    }
-  };
-
-  const persistTargetWeights = (weights: Record<string, number>) => {
-    setTargetWeights(weights);
-    if (user) localStorage.setItem(storageKey('targets'), JSON.stringify(weights));
-  };
-
-  const persistMonthlyReviews = (reviews: Record<string, MonthlyReview>) => {
-    setMonthlyReviews(reviews);
-    if (user) localStorage.setItem(storageKey('reviews'), JSON.stringify(reviews));
-  };
-
-  // 입력 폼 상태
-  const [planForm, setPlanForm] = useState({
-    assetId: 'none' as AssetSelectValue,
-    symbol: '',
-    type: '매수' as PlanType,
-    targetPrice: '',
-    quantity: '',
-    condition: '',
-    note: ''
-  });
-
-  const [taskForm, setTaskForm] = useState({
-    assetId: 'none' as AssetSelectValue,
-    text: '',
-    note: ''
-  });
 
   const resolveSymbol = (assetId?: number, fallback?: string) => {
     if (assetId) {
@@ -218,106 +276,173 @@ export default function PortfolioPage() {
     return fallback || 'CUSTOM';
   };
 
-  const handleAddPlanEntry = () => {
-    const assetId = planForm.assetId === 'none' || planForm.assetId === 'custom' ? undefined : Number(planForm.assetId);
-    const symbol = planForm.symbol.trim() || resolveSymbol(assetId, '');
-    if (!symbol) return;
-    const newPlan: TradePlan = {
-      id: `plan-${Date.now()}`,
+  const handleAddExecutionLog = () => {
+    const assetId =
+      executionForm.assetId === 'none' || executionForm.assetId === 'custom'
+        ? undefined
+        : Number(executionForm.assetId);
+    const symbol = executionForm.symbol.trim() || resolveSymbol(assetId, '');
+    const executedPrice = Number(executionForm.executedPrice);
+
+    if (!symbol || !Number.isFinite(executedPrice) || executedPrice <= 0) return;
+
+    const entry: ExecutionLogEntry = {
+      id: `exec-${Date.now()}`,
+      date: executionForm.date || today,
       assetId,
       symbol,
-      type: planForm.type,
-      targetPrice: planForm.targetPrice ? Number(planForm.targetPrice) : undefined,
-      quantity: planForm.quantity ? Number(planForm.quantity) : undefined,
-      condition: planForm.condition.trim() || undefined,
-      note: planForm.note.trim() || undefined,
-      status: '대기',
-      createdAt: today
+      side: executionForm.side,
+      plannedPrice: executionForm.plannedPrice ? Number(executionForm.plannedPrice) : undefined,
+      executedPrice,
+      quantity: executionForm.quantity ? Number(executionForm.quantity) : undefined,
+      splitPlanned: executionForm.splitPlanned ? Number(executionForm.splitPlanned) : undefined,
+      splitExecuted: executionForm.splitExecuted ? Number(executionForm.splitExecuted) : undefined,
+      emotion: executionForm.emotion,
+      factualNote: executionForm.factualNote.trim() || undefined,
     };
-    const updated = [newPlan, ...tradePlans];
-    persistTradePlans(updated);
-    setPlanForm({ assetId: 'none', symbol: '', type: '매수', targetPrice: '', quantity: '', condition: '', note: '' });
+
+    setExecutionLogs(prev => [entry, ...prev]);
+    setExecutionForm({
+      date: today,
+      assetId: 'none',
+      symbol: '',
+      side: '매수',
+      plannedPrice: '',
+      executedPrice: '',
+      quantity: '',
+      splitPlanned: '',
+      splitExecuted: '',
+      emotion: '없음',
+      factualNote: '',
+    });
   };
 
-  const handleUpdatePlanStatus = (id: string, status: PlanStatus) => {
-    const updated = tradePlans.map(p => (p.id === id ? { ...p, status } : p));
-    persistTradePlans(updated);
+  const handleDeleteExecutionLog = (id: string) => {
+    setExecutionLogs(prev => prev.filter(entry => entry.id !== id));
   };
 
-  const handleDeletePlan = (id: string) => {
-    const updated = tradePlans.filter(p => p.id !== id);
-    persistTradePlans(updated);
-  };
+  const handleAddHypothesisBoard = () => {
+    const company = newCompany.trim();
+    if (!company) return;
 
-  const handleAddTask = () => {
-    if (!taskForm.text.trim()) return;
-    const assetId = taskForm.assetId === 'none' || taskForm.assetId === 'custom' ? undefined : Number(taskForm.assetId);
-    const newTask: DailyTask = {
-      id: `task-${Date.now()}`,
-      assetId,
-      text: taskForm.text.trim(),
-      note: taskForm.note.trim() || undefined,
-      done: false,
-      date: today
+    const board: HypothesisBoard = {
+      id: `hypo-${Date.now()}`,
+      company,
+      updatedAt: nowIso(),
+      kpis: ['?', '?', '?', '?', '?'],
+      catalysts: ['진행', '진행', '진행'],
+      invalidations: ['미발생', '미발생', '미발생'],
     };
-    const updated = [newTask, ...dailyTasks];
-    persistDailyTasks(updated);
-    setTaskForm({ assetId: 'none', text: '', note: '' });
+
+    setHypothesisBoards(prev => [board, ...prev]);
+    setNewCompany('');
   };
 
-  const handleToggleTask = (id: string) => {
-    const updated = dailyTasks.map(t => (t.id === id ? { ...t, done: !t.done } : t));
-    persistDailyTasks(updated);
+  const updateHypothesisBoard = (id: string, updater: (board: HypothesisBoard) => HypothesisBoard) => {
+    setHypothesisBoards(prev => prev.map(board => (board.id === id ? { ...updater(board), updatedAt: nowIso() } : board)));
   };
 
-  const handleDeleteTask = (id: string) => {
-    const updated = dailyTasks.filter(t => t.id !== id);
-    persistDailyTasks(updated);
+  const handleDeleteHypothesisBoard = (id: string) => {
+    setHypothesisBoards(prev => prev.filter(board => board.id !== id));
   };
 
-  const handleUpdateDailyNote = (val: string) => {
-    setDailyNote(val);
-    if (user) localStorage.setItem(storageKey('daily_note'), val);
+  const updateRiskRule = (id: string, patch: Partial<RiskRuleRow>) => {
+    setRiskRules(prev => prev.map(rule => (rule.id === id ? { ...rule, ...patch, updatedAt: nowIso() } : rule)));
   };
 
-  const handleUpdateTargetWeight = (category: string, value: number) => {
-    const updated = { ...targetWeights, [category]: value };
-    persistTargetWeights(updated);
+  const handleAddPortfolioCheck = () => {
+    const row: PortfolioCheckRow = {
+      id: `check-${Date.now()}`,
+      date: portfolioCheckForm.date || today,
+      checkType: portfolioCheckForm.checkType,
+      assetClassBalance: portfolioCheckForm.assetClassBalance,
+      concentration: portfolioCheckForm.concentration,
+      cashLevel: portfolioCheckForm.cashLevel,
+      volatilityDrawdown: portfolioCheckForm.volatilityDrawdown,
+      factualNote: portfolioCheckForm.factualNote.trim() || undefined,
+    };
+
+    setPortfolioChecks(prev => [row, ...prev]);
+    setPortfolioCheckForm({
+      date: today,
+      checkType: '정기(분기)',
+      assetClassBalance: '양호',
+      concentration: '양호',
+      cashLevel: '양호',
+      volatilityDrawdown: '양호',
+      factualNote: '',
+    });
   };
 
-  const handleUpdateReview = (field: keyof MonthlyReview, value: string) => {
-    const next = { ...monthlyReviews };
-    const current = next[selectedMonth] || {};
-    const parsedValue =
-      field === 'performance' || field === 'winRate' ? (value === '' ? undefined : Number(value)) : value;
-    next[selectedMonth] = { ...current, [field]: parsedValue };
-    persistMonthlyReviews(next);
+  const handleDeletePortfolioCheck = (id: string) => {
+    setPortfolioChecks(prev => prev.filter(row => row.id !== id));
   };
+
+  const upsertStrategyReview = (periodType: 'month' | 'quarter' | 'year', periodKey: string, patch: Partial<StrategyReviewRow>) => {
+    setStrategyReviews(prev => {
+      const index = prev.findIndex(item => item.periodType === periodType && item.periodKey === periodKey);
+      const updatedAt = nowIso();
+      if (index >= 0) {
+        const cloned = [...prev];
+        cloned[index] = { ...cloned[index], ...patch, updatedAt };
+        return cloned;
+      }
+      return [{ periodType, periodKey, ...patch, updatedAt }, ...prev];
+    });
+  };
+
+  const monthlyReview = useMemo(
+    () => strategyReviews.find(item => item.periodType === 'month' && item.periodKey === selectedMonth),
+    [selectedMonth, strategyReviews]
+  );
+
+  const quarterlyReview = useMemo(
+    () => strategyReviews.find(item => item.periodType === 'quarter' && item.periodKey === selectedQuarter),
+    [selectedQuarter, strategyReviews]
+  );
+
+  const yearlyReview = useMemo(
+    () => strategyReviews.find(item => item.periodType === 'year' && item.periodKey === selectedYear),
+    [selectedYear, strategyReviews]
+  );
 
   const assetOptions = useMemo(
     () =>
       assetsForPlans.map(a => ({
         id: a.id,
         label: `${a.name || a.sub_category || a.asset_type} (${a.asset_type})`,
-        type: a.asset_type
       })),
     [assetsForPlans]
   );
 
-  const todayTasks = useMemo(() => dailyTasks.filter(t => t.date === today), [dailyTasks, today]);
+  const triggeredRiskCount = useMemo(
+    () => riskRules.filter(rule => rule.violation === '위반').length,
+    [riskRules]
+  );
 
-  const currentWeights = useMemo(() => {
-    const totals = assetsForPlans.reduce((acc, a) => acc + (a.evaluation_amount || a.principal || a.amount || 0), 0);
-    if (totals <= 0) return {};
-    const map: Record<string, number> = {};
-    assetsForPlans.forEach(a => {
-      const key = a.asset_type || '기타';
-      map[key] = (map[key] || 0) + ((a.evaluation_amount || a.principal || a.amount || 0) / totals) * 100;
-    });
-    return map;
-  }, [assetsForPlans]);
+  const failedHypothesisCount = useMemo(
+    () =>
+      hypothesisBoards.filter(
+        board => board.kpis.includes('X') || board.invalidations.includes('발생') || board.catalysts.includes('무산')
+      ).length,
+    [hypothesisBoards]
+  );
 
-  // 로그인하지 않은 경우 인증 폼 표시
+  const slippage = (plannedPrice?: number, executedPrice?: number) => {
+    if (!plannedPrice || !executedPrice || plannedPrice <= 0) return null;
+    return ((executedPrice - plannedPrice) / plannedPrice) * 100;
+  };
+
+  const statusBadgeVariant = (status: string) => {
+    if (status === 'X' || status === '발생' || status === '무산' || status === '위반' || status === '이탈' || status === '중단') {
+      return 'destructive' as const;
+    }
+    if (status === '?' || status === '지연' || status === '주의' || status === '부분작동' || status === '수정') {
+      return 'secondary' as const;
+    }
+    return 'default' as const;
+  };
+
   if (!user) {
     return <AuthForm onLogin={handleLogin} />;
   }
@@ -328,7 +453,6 @@ export default function PortfolioPage() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 overflow-x-hidden">
         <div className="space-y-6">
-          {/* 새 자산 추가 버튼 + 접이식 폼 */}
           <GlassCard className="p-0 overflow-hidden">
             <button
               onClick={() => setIsFormExpanded(!isFormExpanded)}
@@ -351,34 +475,60 @@ export default function PortfolioPage() {
             )}
           </GlassCard>
 
-          {/* 메인 대시보드 (요약 → 차트 → 목록) */}
-          <PortfolioDashboard key={`${refreshKey}-${user.id}`} user={user} showSideInfo />
+          <PortfolioDashboard key={String(user.id)} user={user} showSideInfo />
 
-          {/* 추가 섹션: 매수/매도 계획 */}
-          <GlassCard className="p-6" animate animationDelay={0}>
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold text-foreground mb-2 flex items-center gap-2">
-                <span className="text-3xl">📈</span> 매수/매도 계획
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                포트폴리오 자산을 선택해 목표가·수량·조건을 기록하세요 (로컬 저장)
-              </p>
+          <GlassCard className="p-5 border border-primary/20 bg-primary/5" animate animationDelay={0}>
+            <div className="grid gap-3 md:grid-cols-4 text-sm">
+              <div className="rounded-md bg-background/80 p-3 border border-border/60">
+                <p className="text-muted-foreground">가설 경고 기업</p>
+                <p className="text-xl font-bold">{failedHypothesisCount}</p>
+              </div>
+              <div className="rounded-md bg-background/80 p-3 border border-border/60">
+                <p className="text-muted-foreground">리스크 트리거</p>
+                <p className="text-xl font-bold">{triggeredRiskCount}</p>
+              </div>
+              <div className="rounded-md bg-background/80 p-3 border border-border/60">
+                <p className="text-muted-foreground">실행 로그 건수</p>
+                <p className="text-xl font-bold">{executionLogs.length}</p>
+              </div>
+              <div className="rounded-md bg-background/80 p-3 border border-border/60">
+                <p className="text-muted-foreground">구조 점검 기록</p>
+                <p className="text-xl font-bold">{portfolioChecks.length}</p>
+              </div>
             </div>
+          </GlassCard>
+
+          <GlassCard className="p-6" animate animationDelay={80}>
+            <div className="mb-5">
+              <h2 className="text-2xl font-bold text-foreground mb-2 flex items-center gap-2">
+                <span className="text-3xl">🧾</span> 실행 로그 (Execution Log)
+              </h2>
+              <p className="text-sm text-muted-foreground">판단 없이 계획 대비 집행 사실만 기록합니다.</p>
+            </div>
+
             <div className="space-y-4">
-              <div className="grid gap-3 md:grid-cols-5">
+              <div className="grid gap-3 md:grid-cols-6">
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">체결일</p>
+                  <Input
+                    type="date"
+                    value={executionForm.date}
+                    onChange={e => setExecutionForm(prev => ({ ...prev, date: e.target.value }))}
+                  />
+                </div>
                 <div className="space-y-1">
                   <p className="text-xs text-muted-foreground">자산 선택</p>
                   <Select
-                    value={String(planForm.assetId)}
+                    value={String(executionForm.assetId)}
                     onValueChange={val =>
-                      setPlanForm(prev => ({
+                      setExecutionForm(prev => ({
                         ...prev,
-                        assetId: val === 'custom' ? 'custom' : val === 'none' ? 'none' : Number(val)
+                        assetId: val === 'custom' ? 'custom' : val === 'none' ? 'none' : Number(val),
                       }))
                     }
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="포트폴리오 자산 선택" />
+                      <SelectValue placeholder="포트폴리오 자산" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">선택 안 함</SelectItem>
@@ -392,17 +542,20 @@ export default function PortfolioPage() {
                   </Select>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground">심볼/이름</p>
+                  <p className="text-xs text-muted-foreground">종목/심볼</p>
                   <Input
-                    placeholder="AAPL / BTC / ETF 등"
-                    value={planForm.symbol}
-                    onChange={e => setPlanForm(prev => ({ ...prev, symbol: e.target.value }))}
-                    disabled={planForm.assetId !== 'custom' && planForm.assetId !== 'none'}
+                    placeholder="예: AAPL"
+                    value={executionForm.symbol}
+                    onChange={e => setExecutionForm(prev => ({ ...prev, symbol: e.target.value }))}
+                    disabled={executionForm.assetId !== 'custom' && executionForm.assetId !== 'none'}
                   />
                 </div>
                 <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground">타입</p>
-                  <Select value={planForm.type} onValueChange={val => setPlanForm(prev => ({ ...prev, type: val as PlanType }))}>
+                  <p className="text-xs text-muted-foreground">매수/매도</p>
+                  <Select
+                    value={executionForm.side}
+                    onValueChange={val => setExecutionForm(prev => ({ ...prev, side: val as TradeSide }))}
+                  >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -413,105 +566,513 @@ export default function PortfolioPage() {
                   </Select>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground">목표가</p>
+                  <p className="text-xs text-muted-foreground">계획가</p>
                   <Input
                     type="number"
-                    placeholder="예: 120"
-                    value={planForm.targetPrice}
-                    onChange={e => setPlanForm(prev => ({ ...prev, targetPrice: e.target.value }))}
+                    placeholder="선택"
+                    value={executionForm.plannedPrice}
+                    onChange={e => setExecutionForm(prev => ({ ...prev, plannedPrice: e.target.value }))}
                   />
                 </div>
                 <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground">수량/예산</p>
+                  <p className="text-xs text-muted-foreground">실제 체결가*</p>
                   <Input
                     type="number"
-                    placeholder="예: 10"
-                    value={planForm.quantity}
-                    onChange={e => setPlanForm(prev => ({ ...prev, quantity: e.target.value }))}
+                    placeholder="필수"
+                    value={executionForm.executedPrice}
+                    onChange={e => setExecutionForm(prev => ({ ...prev, executedPrice: e.target.value }))}
                   />
                 </div>
-              </div>
-              <div className="grid gap-3 md:grid-cols-3">
-                <div className="md:col-span-2">
-                  <p className="text-xs text-muted-foreground mb-1">조건</p>
-                  <Textarea
-                    placeholder="가격/이벤트/지표 조건을 적어주세요"
-                    value={planForm.condition}
-                    onChange={e => setPlanForm(prev => ({ ...prev, condition: e.target.value }))}
-                    rows={2}
-                  />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1">메모</p>
-                  <Textarea
-                    placeholder="추가 메모"
-                    value={planForm.note}
-                    onChange={e => setPlanForm(prev => ({ ...prev, note: e.target.value }))}
-                    rows={2}
-                  />
-                </div>
-              </div>
-              <div className="flex justify-end">
-                <EnhancedButton variant="primary" onClick={handleAddPlanEntry} shimmer>
-                  계획 추가
-                </EnhancedButton>
               </div>
 
-              {/* 데스크톱: 테이블 */}
-              <div className="hidden md:block overflow-x-auto">
+              <div className="grid gap-3 md:grid-cols-5">
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">수량</p>
+                  <Input
+                    type="number"
+                    value={executionForm.quantity}
+                    onChange={e => setExecutionForm(prev => ({ ...prev, quantity: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">분할 계획 회차</p>
+                  <Input
+                    type="number"
+                    value={executionForm.splitPlanned}
+                    onChange={e => setExecutionForm(prev => ({ ...prev, splitPlanned: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">실행 회차</p>
+                  <Input
+                    type="number"
+                    value={executionForm.splitExecuted}
+                    onChange={e => setExecutionForm(prev => ({ ...prev, splitExecuted: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">감정 개입</p>
+                  <Select
+                    value={executionForm.emotion}
+                    onValueChange={val => setExecutionForm(prev => ({ ...prev, emotion: val as EmotionState }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="없음">없음</SelectItem>
+                      <SelectItem value="개입">개입</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-end justify-end">
+                  <EnhancedButton variant="primary" onClick={handleAddExecutionLog} shimmer>
+                    로그 추가
+                  </EnhancedButton>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground">사실 메모</p>
+                <Textarea
+                  rows={2}
+                  placeholder="예: 2차 분할 중 1차만 체결"
+                  value={executionForm.factualNote}
+                  onChange={e => setExecutionForm(prev => ({ ...prev, factualNote: e.target.value }))}
+                />
+              </div>
+
+              <div className="overflow-x-auto">
                 <table className="min-w-full text-sm">
                   <thead>
                     <tr className="text-left text-muted-foreground">
-                      <th className="px-2 py-2">심볼</th>
-                      <th className="px-2 py-2">타입</th>
-                      <th className="px-2 py-2">목표가</th>
-                      <th className="px-2 py-2">수량/예산</th>
-                      <th className="px-2 py-2">조건</th>
-                      <th className="px-2 py-2">상태</th>
+                      <th className="px-2 py-2">일자</th>
+                      <th className="px-2 py-2">종목</th>
+                      <th className="px-2 py-2">구분</th>
+                      <th className="px-2 py-2">계획가</th>
+                      <th className="px-2 py-2">체결가</th>
+                      <th className="px-2 py-2">슬리피지</th>
+                      <th className="px-2 py-2">분할</th>
+                      <th className="px-2 py-2">감정</th>
                       <th className="px-2 py-2 text-right">액션</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {tradePlans.length === 0 && (
+                    {executionLogs.length === 0 && (
                       <tr>
-                        <td className="px-2 py-8 text-center" colSpan={7}>
-                          <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                            <span className="text-4xl">📋</span>
-                            <p className="font-medium">매수/매도 계획이 없습니다</p>
-                            <p className="text-sm">위에서 자산을 선택하고 목표가와 조건을 입력해 보세요</p>
-                          </div>
+                        <td colSpan={9} className="px-2 py-8 text-center text-muted-foreground">
+                          실행 로그가 없습니다.
                         </td>
                       </tr>
                     )}
-                    {tradePlans.map(plan => (
-                      <tr key={plan.id} className="border-t border-border/60">
-                        <td className="px-2 py-3">{plan.symbol}</td>
-                        <td className="px-2 py-3">
-                          <Badge variant={plan.type === '매수' ? 'default' : 'secondary'}>{plan.type}</Badge>
-                        </td>
-                        <td className="px-2 py-3">{plan.targetPrice ? `$${plan.targetPrice}` : '-'}</td>
-                        <td className="px-2 py-3">{plan.quantity ?? '-'}</td>
-                        <td className="px-2 py-3 max-w-xs truncate" title={plan.condition}>
-                          {plan.condition || '-'}
-                        </td>
-                        <td className="px-2 py-3">
+                    {executionLogs.map(entry => {
+                      const s = slippage(entry.plannedPrice, entry.executedPrice);
+                      return (
+                        <tr key={entry.id} className="border-t border-border/60 align-top">
+                          <td className="px-2 py-3">{entry.date}</td>
+                          <td className="px-2 py-3">
+                            <div className="font-medium">{entry.symbol}</div>
+                            {entry.factualNote && <p className="text-xs text-muted-foreground">{entry.factualNote}</p>}
+                          </td>
+                          <td className="px-2 py-3">
+                            <Badge variant={entry.side === '매수' ? 'default' : 'secondary'}>{entry.side}</Badge>
+                          </td>
+                          <td className="px-2 py-3">{entry.plannedPrice ?? '-'}</td>
+                          <td className="px-2 py-3">{entry.executedPrice}</td>
+                          <td className="px-2 py-3">
+                            {s === null ? (
+                              <span className="text-muted-foreground">-</span>
+                            ) : (
+                              <span className={s > 0 ? 'text-rose-600' : 'text-emerald-600'}>{s.toFixed(2)}%</span>
+                            )}
+                          </td>
+                          <td className="px-2 py-3">
+                            {entry.splitPlanned || entry.splitExecuted
+                              ? `${entry.splitExecuted || 0}/${entry.splitPlanned || 0}`
+                              : '-'}
+                          </td>
+                          <td className="px-2 py-3">{entry.emotion}</td>
+                          <td className="px-2 py-3 text-right">
+                            <EnhancedButton variant="ghost" size="sm" onClick={() => handleDeleteExecutionLog(entry.id)}>
+                              삭제
+                            </EnhancedButton>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </GlassCard>
+
+          <GlassCard className="p-6" animate animationDelay={140}>
+            <div className="mb-5">
+              <h2 className="text-2xl font-bold text-foreground mb-2 flex items-center gap-2">
+                <span className="text-3xl">🎯</span> 가설 체크 대시보드 (핵심)
+              </h2>
+              <p className="text-sm text-muted-foreground">상태값만 업데이트합니다. 해석 문장은 입력하지 않습니다.</p>
+            </div>
+
+            <div className="grid gap-3 md:grid-cols-[1fr_auto] mb-4">
+              <Input
+                placeholder="기업명 입력"
+                value={newCompany}
+                onChange={e => setNewCompany(e.target.value)}
+              />
+              <EnhancedButton variant="secondary" onClick={handleAddHypothesisBoard}>
+                기업 추가
+              </EnhancedButton>
+            </div>
+
+            <div className="space-y-4">
+              {hypothesisBoards.length === 0 && (
+                <div className="rounded-md border border-dashed border-border px-4 py-8 text-center text-muted-foreground">
+                  가설 보드가 없습니다.
+                </div>
+              )}
+
+              {hypothesisBoards.map(board => (
+                <div key={board.id} className="rounded-lg border border-border/70 p-4 space-y-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <h3 className="text-lg font-semibold">{board.company}</h3>
+                      <p className="text-xs text-muted-foreground">업데이트: {new Date(board.updatedAt).toLocaleString()}</p>
+                    </div>
+                    <EnhancedButton variant="ghost" size="sm" onClick={() => handleDeleteHypothesisBoard(board.id)}>
+                      삭제
+                    </EnhancedButton>
+                  </div>
+
+                  <div className="grid gap-3 md:grid-cols-3">
+                    <div className="space-y-2">
+                      <p className="text-sm font-semibold">1. 핵심 KPI</p>
+                      {board.kpis.map((value, idx) => (
+                        <div key={`kpi-${idx}`} className="flex items-center justify-between gap-2">
+                          <span className="text-sm text-muted-foreground">KPI {idx + 1}</span>
                           <Select
-                            value={plan.status}
-                            onValueChange={val => handleUpdatePlanStatus(plan.id, val as PlanStatus)}
+                            value={value}
+                            onValueChange={val =>
+                              updateHypothesisBoard(board.id, current => {
+                                const next = [...current.kpis] as HypothesisBoard['kpis'];
+                                next[idx] = val as OXQStatus;
+                                return { ...current, kpis: next };
+                              })
+                            }
+                          >
+                            <SelectTrigger className="w-24">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="O">O</SelectItem>
+                              <SelectItem value="X">X</SelectItem>
+                              <SelectItem value="?">?</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="space-y-2">
+                      <p className="text-sm font-semibold">2. 촉매 진행 상황</p>
+                      {board.catalysts.map((value, idx) => (
+                        <div key={`cat-${idx}`} className="flex items-center justify-between gap-2">
+                          <span className="text-sm text-muted-foreground">촉매 {String.fromCharCode(65 + idx)}</span>
+                          <Select
+                            value={value}
+                            onValueChange={val =>
+                              updateHypothesisBoard(board.id, current => {
+                                const next = [...current.catalysts] as HypothesisBoard['catalysts'];
+                                next[idx] = val as CatalystStatus;
+                                return { ...current, catalysts: next };
+                              })
+                            }
+                          >
+                            <SelectTrigger className="w-24">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="진행">진행</SelectItem>
+                              <SelectItem value="지연">지연</SelectItem>
+                              <SelectItem value="무산">무산</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="space-y-2">
+                      <p className="text-sm font-semibold">3. 무효화 조건</p>
+                      {board.invalidations.map((value, idx) => (
+                        <div key={`inv-${idx}`} className="flex items-center justify-between gap-2">
+                          <span className="text-sm text-muted-foreground">조건 {idx + 1}</span>
+                          <Select
+                            value={value}
+                            onValueChange={val =>
+                              updateHypothesisBoard(board.id, current => {
+                                const next = [...current.invalidations] as HypothesisBoard['invalidations'];
+                                next[idx] = val as InvalidationStatus;
+                                return { ...current, invalidations: next };
+                              })
+                            }
                           >
                             <SelectTrigger className="w-28">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="대기">대기</SelectItem>
-                              <SelectItem value="부분체결">부분체결</SelectItem>
-                              <SelectItem value="완료">완료</SelectItem>
-                              <SelectItem value="취소">취소</SelectItem>
+                              <SelectItem value="미발생">미발생</SelectItem>
+                              <SelectItem value="발생">발생</SelectItem>
                             </SelectContent>
                           </Select>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2 text-xs">
+                    {board.kpis.map((value, idx) => (
+                      <Badge key={`badge-kpi-${idx}`} variant={statusBadgeVariant(value)}>
+                        KPI {idx + 1} {value}
+                      </Badge>
+                    ))}
+                    {board.catalysts.map((value, idx) => (
+                      <Badge key={`badge-cat-${idx}`} variant={statusBadgeVariant(value)}>
+                        촉매 {String.fromCharCode(65 + idx)} {value}
+                      </Badge>
+                    ))}
+                    {board.invalidations.map((value, idx) => (
+                      <Badge key={`badge-inv-${idx}`} variant={statusBadgeVariant(value)}>
+                        조건 {idx + 1} {value}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </GlassCard>
+
+          <GlassCard className="p-6" animate animationDelay={200}>
+            <div className="mb-5">
+              <h2 className="text-2xl font-bold text-foreground mb-2 flex items-center gap-2">
+                <span className="text-3xl">🚨</span> 리스크 규칙 감시 (Rule Monitoring)
+              </h2>
+              <p className="text-sm text-muted-foreground">트리거를 탐지하고 실행 상태만 기록합니다.</p>
+            </div>
+
+            <div className="space-y-3">
+              {riskRules.map(rule => (
+                <div key={rule.id} className="rounded-lg border border-border/70 p-4">
+                  <div className="grid gap-3 md:grid-cols-6 items-end">
+                    <div className="md:col-span-2">
+                      <p className="text-sm font-semibold">{rule.name}</p>
+                      <p className="text-xs text-muted-foreground">업데이트: {rule.updatedAt ? new Date(rule.updatedAt).toLocaleString() : '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">기준값</p>
+                      <Input
+                        value={rule.limitValue}
+                        onChange={e => updateRiskRule(rule.id, { limitValue: e.target.value })}
+                        placeholder="예: -8%"
+                      />
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">현재값</p>
+                      <Input
+                        value={rule.currentValue}
+                        onChange={e => updateRiskRule(rule.id, { currentValue: e.target.value })}
+                        placeholder="예: -10.2%"
+                      />
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">위반 여부</p>
+                      <Select
+                        value={rule.violation}
+                        onValueChange={val => updateRiskRule(rule.id, { violation: val as RuleViolation })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="미위반">미위반</SelectItem>
+                          <SelectItem value="위반">위반</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">행동 실행</p>
+                      <Select
+                        value={rule.actionStatus}
+                        onValueChange={val => updateRiskRule(rule.id, { actionStatus: val as ActionStatus })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="대기">대기</SelectItem>
+                          <SelectItem value="실행완료">실행완료</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </GlassCard>
+
+          <GlassCard className="p-6" animate animationDelay={260}>
+            <div className="mb-5">
+              <h2 className="text-2xl font-bold text-foreground mb-2 flex items-center gap-2">
+                <span className="text-3xl">🧭</span> 포트폴리오 구조 점검 (Portfolio Check)
+              </h2>
+              <p className="text-sm text-muted-foreground">시스템 레벨 왜곡만 점검합니다.</p>
+            </div>
+
+            <div className="space-y-4">
+              <div className="grid gap-3 md:grid-cols-6">
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">점검일</p>
+                  <Input
+                    type="date"
+                    value={portfolioCheckForm.date}
+                    onChange={e => setPortfolioCheckForm(prev => ({ ...prev, date: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">점검 타입</p>
+                  <Select
+                    value={portfolioCheckForm.checkType}
+                    onValueChange={val => setPortfolioCheckForm(prev => ({ ...prev, checkType: val as CheckType }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="정기(분기)">정기(분기)</SelectItem>
+                      <SelectItem value="이벤트">이벤트</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">자산군 비중</p>
+                  <Select
+                    value={portfolioCheckForm.assetClassBalance}
+                    onValueChange={val => setPortfolioCheckForm(prev => ({ ...prev, assetClassBalance: val as CheckStatus }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="양호">양호</SelectItem>
+                      <SelectItem value="주의">주의</SelectItem>
+                      <SelectItem value="이탈">이탈</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">쏠림 점검</p>
+                  <Select
+                    value={portfolioCheckForm.concentration}
+                    onValueChange={val => setPortfolioCheckForm(prev => ({ ...prev, concentration: val as CheckStatus }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="양호">양호</SelectItem>
+                      <SelectItem value="주의">주의</SelectItem>
+                      <SelectItem value="이탈">이탈</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">현금 비중</p>
+                  <Select
+                    value={portfolioCheckForm.cashLevel}
+                    onValueChange={val => setPortfolioCheckForm(prev => ({ ...prev, cashLevel: val as CheckStatus }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="양호">양호</SelectItem>
+                      <SelectItem value="주의">주의</SelectItem>
+                      <SelectItem value="이탈">이탈</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">변동성/MDD</p>
+                  <Select
+                    value={portfolioCheckForm.volatilityDrawdown}
+                    onValueChange={val => setPortfolioCheckForm(prev => ({ ...prev, volatilityDrawdown: val as CheckStatus }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="양호">양호</SelectItem>
+                      <SelectItem value="주의">주의</SelectItem>
+                      <SelectItem value="이탈">이탈</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid gap-3 md:grid-cols-[1fr_auto]">
+                <Textarea
+                  rows={2}
+                  placeholder="사실 메모 (선택): 예, 특정 자산군 비중이 상단 범위 2% 초과"
+                  value={portfolioCheckForm.factualNote}
+                  onChange={e => setPortfolioCheckForm(prev => ({ ...prev, factualNote: e.target.value }))}
+                />
+                <div className="flex items-end justify-end">
+                  <EnhancedButton variant="secondary" onClick={handleAddPortfolioCheck}>
+                    점검 기록 추가
+                  </EnhancedButton>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-sm">
+                  <thead>
+                    <tr className="text-left text-muted-foreground">
+                      <th className="px-2 py-2">일자</th>
+                      <th className="px-2 py-2">타입</th>
+                      <th className="px-2 py-2">자산군</th>
+                      <th className="px-2 py-2">쏠림</th>
+                      <th className="px-2 py-2">현금</th>
+                      <th className="px-2 py-2">변동성/MDD</th>
+                      <th className="px-2 py-2">메모</th>
+                      <th className="px-2 py-2 text-right">액션</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {portfolioChecks.length === 0 && (
+                      <tr>
+                        <td colSpan={8} className="px-2 py-8 text-center text-muted-foreground">
+                          구조 점검 기록이 없습니다.
                         </td>
+                      </tr>
+                    )}
+                    {portfolioChecks.map(row => (
+                      <tr key={row.id} className="border-t border-border/60">
+                        <td className="px-2 py-3">{row.date}</td>
+                        <td className="px-2 py-3">{row.checkType}</td>
+                        <td className="px-2 py-3">
+                          <Badge variant={statusBadgeVariant(row.assetClassBalance)}>{row.assetClassBalance}</Badge>
+                        </td>
+                        <td className="px-2 py-3">
+                          <Badge variant={statusBadgeVariant(row.concentration)}>{row.concentration}</Badge>
+                        </td>
+                        <td className="px-2 py-3">
+                          <Badge variant={statusBadgeVariant(row.cashLevel)}>{row.cashLevel}</Badge>
+                        </td>
+                        <td className="px-2 py-3">
+                          <Badge variant={statusBadgeVariant(row.volatilityDrawdown)}>{row.volatilityDrawdown}</Badge>
+                        </td>
+                        <td className="px-2 py-3">{row.factualNote || '-'}</td>
                         <td className="px-2 py-3 text-right">
-                          <EnhancedButton variant="ghost" size="sm" onClick={() => handleDeletePlan(plan.id)}>
+                          <EnhancedButton variant="ghost" size="sm" onClick={() => handleDeletePortfolioCheck(row.id)}>
                             삭제
                           </EnhancedButton>
                         </td>
@@ -520,359 +1081,171 @@ export default function PortfolioPage() {
                   </tbody>
                 </table>
               </div>
-
-              {/* 모바일: 카드 */}
-              <div className="block md:hidden space-y-3">
-                {tradePlans.length === 0 && (
-                  <div className="px-4 py-8 text-center">
-                    <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                      <span className="text-4xl">📋</span>
-                      <p className="font-medium">매수/매도 계획이 없습니다</p>
-                      <p className="text-sm">위에서 계획을 추가해 보세요</p>
-                    </div>
-                  </div>
-                )}
-                {tradePlans.map(plan => (
-                  <div key={plan.id} className="border border-border/60 rounded-lg p-4 space-y-3">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <div className="text-lg font-semibold">{plan.symbol}</div>
-                        <Badge variant={plan.type === '매수' ? 'default' : 'secondary'} className="mt-1">
-                          {plan.type}
-                        </Badge>
-                      </div>
-                      <EnhancedButton variant="ghost" size="sm" onClick={() => handleDeletePlan(plan.id)}>
-                        삭제
-                      </EnhancedButton>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3 text-sm">
-                      <div>
-                        <div className="text-muted-foreground">목표가</div>
-                        <div className="font-medium">{plan.targetPrice ? `$${plan.targetPrice}` : '-'}</div>
-                      </div>
-                      <div>
-                        <div className="text-muted-foreground">수량/예산</div>
-                        <div className="font-medium">{plan.quantity ?? '-'}</div>
-                      </div>
-                    </div>
-                    {plan.condition && (
-                      <div className="text-sm">
-                        <div className="text-muted-foreground">조건</div>
-                        <div className="font-medium break-words">{plan.condition}</div>
-                      </div>
-                    )}
-                    <div>
-                      <div className="text-muted-foreground text-sm mb-1">상태</div>
-                      <Select
-                        value={plan.status}
-                        onValueChange={val => handleUpdatePlanStatus(plan.id, val as PlanStatus)}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="대기">대기</SelectItem>
-                          <SelectItem value="부분체결">부분체결</SelectItem>
-                          <SelectItem value="완료">완료</SelectItem>
-                          <SelectItem value="취소">취소</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                ))}
-              </div>
             </div>
           </GlassCard>
 
-          {/* 추가 섹션: 데일리 모니터링 */}
-          <GlassCard className="p-6" animate animationDelay={100}>
-            <div className="mb-6">
+          <GlassCard className="p-6" animate animationDelay={320}>
+            <div className="mb-5">
               <h2 className="text-2xl font-bold text-foreground mb-2 flex items-center gap-2">
-                <span className="text-3xl">📝</span> 데일리 모니터링
+                <span className="text-3xl">📚</span> 성과 분석 & 전략 피드백 (Strategy Review)
               </h2>
-              <p className="text-sm text-muted-foreground">
-                오늘 체크리스트와 메모를 관리하세요 (날짜별 로컬 저장)
-              </p>
+              <p className="text-sm text-muted-foreground">결과가 아니라 의사결정 품질만 평가합니다.</p>
             </div>
-            <div className="space-y-4">
-              <div className="grid gap-3 md:grid-cols-5">
-                <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground">자산 선택 (선택)</p>
+
+            <div className="grid gap-4 lg:grid-cols-3">
+              <div className="rounded-lg border border-border/70 p-4 space-y-3">
+                <p className="font-semibold">월간 점검</p>
+                <Input type="month" value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)} />
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">규칙 위반 여부</p>
                   <Select
-                    value={String(taskForm.assetId)}
+                    value={monthlyReview?.monthlyRuleCompliance ?? '미점검'}
                     onValueChange={val =>
-                      setTaskForm(prev => ({
-                        ...prev,
-                        assetId: val === 'custom' ? 'custom' : val === 'none' ? 'none' : Number(val)
-                      }))
+                      upsertStrategyReview('month', selectedMonth, {
+                        monthlyRuleCompliance: val as ComplianceStatus,
+                      })
                     }
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="선택 안 함" />
+                      <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">선택 안 함</SelectItem>
-                      {assetOptions.map(opt => (
-                        <SelectItem key={opt.id} value={String(opt.id)}>
-                          {opt.label}
-                        </SelectItem>
-                      ))}
-                      <SelectItem value="custom">직접 입력</SelectItem>
+                      <SelectItem value="준수">준수</SelectItem>
+                      <SelectItem value="위반">위반</SelectItem>
+                      <SelectItem value="미점검">미점검</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="md:col-span-3 space-y-1">
-                  <p className="text-xs text-muted-foreground">체크 항목</p>
-                  <Input
-                    placeholder="오늘 확인할 사항"
-                    value={taskForm.text}
-                    onChange={e => setTaskForm(prev => ({ ...prev, text: e.target.value }))}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground">메모</p>
-                  <Input
-                    placeholder="간단 메모"
-                    value={taskForm.note}
-                    onChange={e => setTaskForm(prev => ({ ...prev, note: e.target.value }))}
-                  />
-                </div>
-              </div>
-              <div className="flex justify-end">
-                <EnhancedButton variant="secondary" onClick={handleAddTask} shimmer>
-                  오늘 항목 추가
-                </EnhancedButton>
-              </div>
-
-              <div className="space-y-2">
-                <p className="text-sm font-semibold">오늘({today}) 체크리스트</p>
-                {todayTasks.length === 0 && (
-                  <div className="py-6 text-center">
-                    <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                      <span className="text-3xl">✅</span>
-                      <p className="text-sm">오늘 체크할 항목이 없습니다</p>
-                      <p className="text-xs">위에서 체크리스트를 추가해 보세요</p>
-                    </div>
-                  </div>
-                )}
-                <div className="space-y-2">
-                  {todayTasks.map(task => (
-                    <div
-                      key={task.id}
-                      className="flex items-center justify-between rounded-md border border-dashed border-border bg-muted/30 px-3 py-2"
-                    >
-                      <div className="flex items-center gap-3">
-                        <input
-                          type="checkbox"
-                          checked={task.done}
-                          onChange={() => handleToggleTask(task.id)}
-                          className="h-4 w-4"
-                        />
-                        <div>
-                          <p className={`font-medium ${task.done ? 'line-through text-muted-foreground' : ''}`}>
-                            {task.text}
-                          </p>
-                          {task.note ? (
-                            <p className="text-xs text-muted-foreground">메모: {task.note}</p>
-                          ) : null}
-                        </div>
-                      </div>
-                      <EnhancedButton variant="ghost" size="sm" onClick={() => handleDeleteTask(task.id)}>
-                        삭제
-                      </EnhancedButton>
-                    </div>
-                  ))}
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">실행 로그 점검</p>
+                  <Select
+                    value={monthlyReview?.monthlyExecutionLogAudit ?? '미점검'}
+                    onValueChange={val =>
+                      upsertStrategyReview('month', selectedMonth, {
+                        monthlyExecutionLogAudit: val as ComplianceStatus,
+                      })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="준수">준수</SelectItem>
+                      <SelectItem value="위반">위반</SelectItem>
+                      <SelectItem value="미점검">미점검</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <p className="text-sm font-semibold">오늘 메모</p>
-                <Textarea
-                  placeholder="경제지표/뉴스/체크 결과를 기록하세요"
-                  value={dailyNote}
-                  onChange={e => handleUpdateDailyNote(e.target.value)}
-                  rows={4}
-                />
+              <div className="rounded-lg border border-border/70 p-4 space-y-3">
+                <p className="font-semibold">분기 점검</p>
+                <Input value={selectedQuarter} onChange={e => setSelectedQuarter(e.target.value)} placeholder="예: 2026-Q1" />
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">가설 체크 시스템 작동</p>
+                  <Select
+                    value={quarterlyReview?.quarterHypothesisEngine ?? '미점검'}
+                    onValueChange={val =>
+                      upsertStrategyReview('quarter', selectedQuarter, {
+                        quarterHypothesisEngine: val as ReviewStatus,
+                      })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="작동">작동</SelectItem>
+                      <SelectItem value="부분작동">부분작동</SelectItem>
+                      <SelectItem value="미작동">미작동</SelectItem>
+                      <SelectItem value="미점검">미점검</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">무효화 조건 타이밍</p>
+                  <Select
+                    value={quarterlyReview?.quarterInvalidationTiming ?? '미점검'}
+                    onValueChange={val =>
+                      upsertStrategyReview('quarter', selectedQuarter, {
+                        quarterInvalidationTiming: val as ReviewStatus,
+                      })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="작동">작동</SelectItem>
+                      <SelectItem value="부분작동">부분작동</SelectItem>
+                      <SelectItem value="미작동">미작동</SelectItem>
+                      <SelectItem value="미점검">미점검</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="rounded-lg border border-border/70 p-4 space-y-3">
+                <p className="font-semibold">연간 점검</p>
+                <Input type="number" value={selectedYear} onChange={e => setSelectedYear(e.target.value)} />
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">전략 존속 여부</p>
+                  <Select
+                    value={yearlyReview?.yearStrategyDecision ?? '미결정'}
+                    onValueChange={val =>
+                      upsertStrategyReview('year', selectedYear, {
+                        yearStrategyDecision: val as StrategyDecision,
+                      })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="존속">존속</SelectItem>
+                      <SelectItem value="수정">수정</SelectItem>
+                      <SelectItem value="중단">중단</SelectItem>
+                      <SelectItem value="미결정">미결정</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">프레임워크 수정 필요성</p>
+                  <Select
+                    value={yearlyReview?.yearFrameworkNeed ?? '미결정'}
+                    onValueChange={val =>
+                      upsertStrategyReview('year', selectedYear, {
+                        yearFrameworkNeed: val as StrategyDecision,
+                      })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="존속">유지</SelectItem>
+                      <SelectItem value="수정">수정</SelectItem>
+                      <SelectItem value="중단">중단</SelectItem>
+                      <SelectItem value="미결정">미결정</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
-          </GlassCard>
 
-          {/* 추가 섹션: 리밸런싱 제안 */}
-          <GlassCard className="p-6" animate animationDelay={200}>
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold text-foreground mb-2 flex items-center gap-2">
-                <span className="text-3xl">⚖️</span> 리밸런싱 제안
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                목표 비중을 설정하면 현재 비중과 차이를 보여줍니다 (보기용)
-              </p>
-            </div>
-            <div className="space-y-4">
-              <div className="grid gap-3 md:grid-cols-3">
-                {Object.keys(currentWeights).length === 0 && (
-                  <div className="md:col-span-3 py-8 text-center">
-                    <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                      <span className="text-4xl">⚖️</span>
-                      <p className="font-medium">포트폴리오 자산이 없습니다</p>
-                      <p className="text-sm">자산을 추가하면 자동으로 비중이 계산됩니다</p>
-                    </div>
-                  </div>
-                )}
-                {Object.entries(currentWeights).map(([category, current]) => (
-                  <div key={category} className="rounded-md border border-border bg-muted/30 p-3 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <p className="font-semibold">{category}</p>
-                      <Badge variant="outline">{current.toFixed(1)}%</Badge>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-xs text-muted-foreground">목표 비중</p>
-                      <Input
-                        type="number"
-                        value={targetWeights[category]?.toFixed(1) ?? ''}
-                        onChange={e => handleUpdateTargetWeight(category, Number(e.target.value))}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-              {/* 데스크톱: 테이블 */}
-              <div className="hidden md:block overflow-x-auto">
-                <table className="min-w-full text-sm">
-                  <thead>
-                    <tr className="text-left text-muted-foreground">
-                      <th className="px-2 py-2">카테고리</th>
-                      <th className="px-2 py-2">현재</th>
-                      <th className="px-2 py-2">목표</th>
-                      <th className="px-2 py-2">Δ 제안</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {Array.from(new Set([...Object.keys(currentWeights), ...Object.keys(targetWeights)])).map(cat => {
-                      const current = currentWeights[cat] ?? 0;
-                      const target = targetWeights[cat] ?? 0;
-                      const delta = target - current;
-                      return (
-                        <tr key={cat} className="border-t border-border/60">
-                          <td className="px-2 py-2">{cat}</td>
-                          <td className="px-2 py-2">{current.toFixed(1)}%</td>
-                          <td className="px-2 py-2">{target.toFixed(1)}%</td>
-                          <td className="px-2 py-2">
-                            {delta > 0 ? (
-                              <span className="text-emerald-600">매수 +{delta.toFixed(1)}%</span>
-                            ) : delta < 0 ? (
-                              <span className="text-rose-600">매도 {delta.toFixed(1)}%</span>
-                            ) : (
-                              <span className="text-muted-foreground">적정</span>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* 모바일: 카드 */}
-              <div className="block md:hidden space-y-3">
-                {Array.from(new Set([...Object.keys(currentWeights), ...Object.keys(targetWeights)])).map(cat => {
-                  const current = currentWeights[cat] ?? 0;
-                  const target = targetWeights[cat] ?? 0;
-                  const delta = target - current;
-                  return (
-                    <div key={cat} className="border border-border/60 rounded-lg p-4">
-                      <div className="font-semibold text-lg mb-3">{cat}</div>
-                      <div className="grid grid-cols-3 gap-3 text-sm">
-                        <div>
-                          <div className="text-muted-foreground">현재</div>
-                          <div className="font-medium text-base">{current.toFixed(1)}%</div>
-                        </div>
-                        <div>
-                          <div className="text-muted-foreground">목표</div>
-                          <div className="font-medium text-base">{target.toFixed(1)}%</div>
-                        </div>
-                        <div>
-                          <div className="text-muted-foreground">제안</div>
-                          <div className="font-medium text-base">
-                            {delta > 0 ? (
-                              <span className="text-emerald-600">매수 +{delta.toFixed(1)}%</span>
-                            ) : delta < 0 ? (
-                              <span className="text-rose-600">매도 {delta.toFixed(1)}%</span>
-                            ) : (
-                              <span className="text-muted-foreground">적정</span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </GlassCard>
-
-          {/* 추가 섹션: 월간 피드백 */}
-          <GlassCard className="p-6" animate animationDelay={300}>
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold text-foreground mb-2 flex items-center gap-2">
-                <span className="text-3xl">📊</span> 월간 피드백
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                월별로 성과와 잘한 점/실수/개선을 기록하세요 (로컬 저장)
-              </p>
-            </div>
-            <div className="space-y-4">
-              <div className="grid gap-3 md:grid-cols-4">
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1">월 선택</p>
-                  <Input
-                    type="month"
-                    value={selectedMonth}
-                    onChange={e => setSelectedMonth(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1">수익률(%)</p>
-                  <Input
-                    type="number"
-                    value={(monthlyReviews[selectedMonth]?.performance ?? '').toString()}
-                    onChange={e => handleUpdateReview('performance', e.target.value)}
-                  />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1">승률(%)</p>
-                  <Input
-                    type="number"
-                    value={(monthlyReviews[selectedMonth]?.winRate ?? '').toString()}
-                    onChange={e => handleUpdateReview('winRate', e.target.value)}
-                  />
-                </div>
-              </div>
-              <div className="grid gap-3 md:grid-cols-3">
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1">잘한 점</p>
-                  <Textarea
-                    rows={3}
-                    value={monthlyReviews[selectedMonth]?.wins ?? ''}
-                    onChange={e => handleUpdateReview('wins', e.target.value)}
-                  />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1">실수</p>
-                  <Textarea
-                    rows={3}
-                    value={monthlyReviews[selectedMonth]?.mistakes ?? ''}
-                    onChange={e => handleUpdateReview('mistakes', e.target.value)}
-                  />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1">개선</p>
-                  <Textarea
-                    rows={3}
-                    value={monthlyReviews[selectedMonth]?.improvements ?? ''}
-                    onChange={e => handleUpdateReview('improvements', e.target.value)}
-                  />
-                </div>
-              </div>
+            <div className="mt-4">
+              <p className="text-xs text-muted-foreground mb-1">사실 기록 (선택)</p>
+              <Textarea
+                rows={2}
+                placeholder="예: 월간 점검에서 실행 로그 누락 2건 확인"
+                value={
+                  monthlyReview?.factualNote || quarterlyReview?.factualNote || yearlyReview?.factualNote || ''
+                }
+                onChange={e => {
+                  const value = e.target.value;
+                  upsertStrategyReview('month', selectedMonth, { factualNote: value });
+                }}
+              />
             </div>
           </GlassCard>
         </div>
