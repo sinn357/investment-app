@@ -77,11 +77,14 @@ if "fred.stlouisfed.org" in url:
 
 ---
 
-## 현재 상태
+## 현재 상태 (2026-02-06 재점검)
 
-### ✅ 정상 작동 (19개)
+> **2026-02-06 업데이트**: Investing.com Render IP 차단이 해제됨.
+> 기존 28개 실패 지표가 모두 정상 복구되어 **51개 정상, 3개 실패** 상태.
 
-**FRED 기반:**
+### ✅ 정상 작동 (51개)
+
+**FRED 기반 (18개):**
 - federal-funds-rate (FEDFUNDS)
 - yield-curve-10y-2y (T10Y2Y)
 - real-yield-tips (DFII10)
@@ -97,57 +100,63 @@ if "fred.stlouisfed.org" in url:
 - services-trade-balance (BOPSTB)
 - hy-spread (BAMLH0A0HYM2)
 - ig-spread (BAMLC0A0CM)
-- nfci (NFCI)
+- fci / nfci (NFCI)
 - exports (EXPGS)
 - imports (IMPGS)
 
-**기타:**
+**Investing.com Economic Calendar (17개) — 차단 해제됨:**
+- ism-manufacturing, ism-non-manufacturing, sp-global-composite
+- industrial-production (MoM), retail-sales (MoM)
+- cb-consumer-confidence, consumer-confidence
+- nonfarm-payrolls, initial-jobless-claims
+- average-hourly-earnings (MoM), average-hourly-earnings-1777 (YoY)
+- trade-balance, export-price-index-mom, export-price-index-yoy
+- business-inventories-trade, pce, m2-yoy
+
+**Investing.com Rates/Bonds/Commodities/Indices (10개) — 차단 해제됨:**
+- two-year-treasury, ten-year-treasury
+- brent-oil, wti-oil
+- usd-index, usd-krw
+- baltic-dry-index, vix
+- michigan-1y-inflation, michigan-5y-inflation
+
+**기타 (6개):**
 - terms-of-trade (TradingEconomics)
+- current-account-balance (BEA → FRED BOPBCA)
+- goods-trade-balance (Investing.com)
+- sp500-pe (Multpl.com)
+- shiller-pe (Multpl.com)
+- put-call-ratio (CBOE fallback)
 
-### ❌ 실패 - Investing.com 차단 (28개)
+### ❌ 실패 (3개) — 전용 크롤러 없음
 
-**FRED 전환 가능 (5개):**
-| 지표 | FRED 코드 | 비고 |
-|------|-----------|------|
-| nonfarm-payrolls | PAYEMS | MoM 변화 계산 필요 |
-| initial-jobless-claims | ICSA | 주간 데이터 |
-| average-hourly-earnings | CES0500000003 | YoY 계산 필요 |
-| trade-balance | BOPGSTB | 직접 사용 가능 |
-| consumer-confidence | CSCICP03USM665S | OECD 버전 |
-
-**FRED에 없음 (대안 필요):**
-- ism-manufacturing (ISM 자체 유료 데이터)
-- ism-non-manufacturing (ISM 자체 유료 데이터)
-- sp-global-composite (S&P 유료 데이터)
-- cb-consumer-confidence (Conference Board 유료 데이터)
-- industrial-production (MoM 버전)
-- retail-sales (MoM 버전)
-- 기타 Investing.com 전용 지표들
+| 지표 | 현재 URL | 실패 원인 | 대안 |
+|------|---------|----------|------|
+| `leading-indicators` | oecd.org HTML | 전용 크롤러 없음, 기본 investing_crawler로 파싱 불가 | **FRED `USALOLITONOSTSAM`** (기존 fred_crawler 재사용) 또는 OECD SDMX API (키 불필요) |
+| `sp-gsci` | spglobal.com HTML | 전용 크롤러 없음, manual_check=True | **yfinance `^SPGSCI`** (무료, 키 불필요) 또는 FRED `PALLFNFINDEXM` (IMF 프록시) |
+| `aaii-bull` | aaii.com HTML | 전용 크롤러 없음 | **Nasdaq Data Link `AAII/AAII_SENTIMENT`** (무료 키) 또는 aaii.com 스크래핑 |
 
 ---
 
-## 향후 옵션
+## ~~향후 옵션~~ (2026-02-03 작성, 대부분 해소됨)
 
-### Option A: 추가 FRED 전환 (권장)
-- 비용: 무료
-- 작업량: 1-2시간
-- 효과: 5개 지표 추가 복구 (총 24개 정상)
+> Investing.com 차단이 해제되어 Option A~D는 더 이상 긴급하지 않음.
+> **현재 우선 과제**: 실패 3개 지표 전용 크롤러 개발.
 
-### Option B: 비활성화
-- 비용: 무료
-- 작업량: 30분
-- 효과: 에러 메시지 제거, 지표 수 감소
+### 실패 3개 복구 계획
 
-### Option C: 프록시 서버
-- 비용: 월 $5-20
-- 작업량: 2-3시간
-- 효과: 모든 Investing.com 지표 복구
+**1단계: leading-indicators → FRED 전환 (가장 쉬움)**
+- `indicators_config.py`에서 URL을 `https://fred.stlouisfed.org/series/USALOLITONOSTSAM`으로 변경
+- 기존 fred_crawler 그대로 활용, 코드 변경 1줄
 
-### Option D: 호스팅 이전
-- 비용: 무료~저렴
-- 작업량: 반나절
-- 효과: 개인 IP로 차단 우회 가능성
-- 후보: Railway, Fly.io, DigitalOcean
+**2단계: sp-gsci → yfinance 크롤러 신규 개발**
+- `yfinance_crawler.py` 생성
+- `yfinance.download("^SPGSCI")` 활용
+- pip 의존성 추가: `yfinance`
+
+**3단계: aaii-bull → Nasdaq Data Link 또는 스크래핑**
+- Option A: Nasdaq Data Link API (`AAII/AAII_SENTIMENT`) — 무료 키 발급 필요
+- Option B: aaii.com/sentimentsurvey/sent_results 스크래핑 (Playwright 필요할 수 있음)
 
 ---
 
@@ -161,10 +170,11 @@ if "fred.stlouisfed.org" in url:
 
 ## 기술적 세부사항
 
-### Render 플랫폼 차단 원인
+### Render 플랫폼 차단 원인 (2026-02-03 확인, 2026-02-06 해제 확인)
 - Investing.com은 클라우드 서비스(AWS, GCP, Azure, Render 등) IP 범위를 기본 차단
 - 봇/스크래핑 방지 정책
 - 로컬 IP에서는 정상 작동 확인됨
+- **2026-02-06**: 프로덕션 API 재점검 결과 Investing.com 지표 모두 정상 응답 (차단 해제 또는 IP 변경)
 
 ### FRED YoY 계산 로직
 ```python
@@ -188,4 +198,5 @@ headers = {
 ---
 
 **작성일**: 2026-02-03
+**최종 업데이트**: 2026-02-06
 **작성자**: Claude Opus 4.5
