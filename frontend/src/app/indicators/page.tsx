@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Navigation from '@/components/Navigation';
 import MasterCycleCard from '@/components/MasterCycleCard';
 // import CyclePanel from '@/components/CyclePanel'; // ✅ 제거: Master Cycle로 대체
@@ -9,16 +9,12 @@ import IndicatorTableView from '@/components/IndicatorTableView';
 import IndicatorChartPanel from '@/components/IndicatorChartPanel';
 // import EconomicIndicatorsSection from '@/components/EconomicIndicatorsSection'; // 통합으로 비활성화
 // import DataSection from '@/components/DataSection'; // 통합으로 비활성화
-import NewsNarrative from '@/components/NewsNarrative';
-import NarrativeReview from '@/components/NarrativeReview';
-import RiskRadar from '@/components/RiskRadar';
 // import CyclePanelSkeleton from '@/components/skeletons/CyclePanelSkeleton'; // ✅ 제거: Master Cycle로 대체
 import IndicatorGridSkeleton from '@/components/skeletons/IndicatorGridSkeleton';
 import ErrorBoundary from '@/components/ErrorBoundary';
 // import { calculateCycleScore, RawIndicators } from '@/utils/cycleCalculator'; // ✅ 제거: Master Cycle로 대체
 import { fetchJsonWithRetry } from '@/utils/fetchWithRetry';
 import { calculateCycleTrendsFromIndicators } from '@/utils/trendCalculator';
-import BigWaveSection, { BigWaveCard } from '@/components/BigWaveSection';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import GlassCard from '@/components/GlassCard';
@@ -109,40 +105,9 @@ function mapIndicatorToCategory(name: string): string {
   return 'business'; // 기본값
 }
 
-interface EconomicNarrative {
-  articles: Array<{ title: string; url: string; summary: string; keyword: string }>;
-  myNarrative: string;
-  risks: Array<{ category: string; level: number; description: string }>;
-}
-
-type RiskLevel = 'Low' | 'Medium' | 'High';
-interface RiskItem {
-  id: string;
-  category: string;
-  title: string;
-  level: RiskLevel;
-  note?: string;
-}
-
-interface RiskRadarData {
-  structural: RiskItem[];
-  cycle: RiskItem[];
-  portfolio: RiskItem[];
-  executionTags: string[];
-}
-
-interface BigWaveData {
-  cards: BigWaveCard[];
-}
-
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://investment-app-backend-x166.onrender.com';
-const RISK_STORAGE_KEY = 'risk_radar_v1';
-const BIGWAVE_STORAGE_KEY = 'bigwave_v1';
-const NARRATIVE_DRAFT_STORAGE_KEY = 'economic_narrative_draft_v1';
 
 export default function IndicatorsPage() {
-  const [userId] = useState(1); // 임시 user_id
-  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
   // const [cycleScore, setCycleScore] = useState<ReturnType<typeof calculateCycleScore> | null>(null); // ✅ 제거: Master Cycle로 대체
   const [allIndicators, setAllIndicators] = useState<GridIndicator[]>([]);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -165,31 +130,13 @@ export default function IndicatorsPage() {
   // ✅ NEW: Health Check state (Phase 2)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [healthCheck, setHealthCheck] = useState<any>(null);
-  const [narrative, setNarrative] = useState<EconomicNarrative>({
-    articles: [],
-    myNarrative: '',
-    risks: []
-  });
-  const [riskRadar, setRiskRadar] = useState<RiskRadarData>({
-    structural: [],
-    cycle: [],
-    portfolio: [],
-    executionTags: []
-  });
-  const [bigWave, setBigWave] = useState<BigWaveData>({ cards: [] });
-  const [isSavingNarrative, setIsSavingNarrative] = useState(false);
-  const [savingRisk, setSavingRisk] = useState(false);
   const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
   // 섹션별 접기 상태
   const [collapsedSections, setCollapsedSections] = useState({
     masterCycle: false,
     healthCheck: false,
     indicators: false,
-    newsNarrative: false,
-    riskRadar: false,
-    bigWave: false,
   });
-  const [narrativeRefreshKey, setNarrativeRefreshKey] = useState(0);
 
   // 섹션 접기/펼치기 토글 함수
   const toggleSection = useCallback((section: keyof typeof collapsedSections) => {
@@ -202,62 +149,11 @@ export default function IndicatorsPage() {
       masterCycle: collapsed,
       healthCheck: collapsed,
       indicators: collapsed,
-      newsNarrative: collapsed,
-      riskRadar: collapsed,
-      bigWave: collapsed,
     });
   }, []);
 
-  const getNarrativeDraftKey = useCallback((date: string) => {
-    return `${NARRATIVE_DRAFT_STORAGE_KEY}_${userId}_${date}`;
-  }, [userId]);
 
-  const handleSelectNarrativeDate = useCallback((date: string) => {
-    setSelectedDate(date);
-  }, []);
 
-  const handleDeleteNarrativeDate = useCallback((date: string) => {
-    try {
-      const draftKey = getNarrativeDraftKey(date);
-      localStorage.removeItem(draftKey);
-    } catch (error) {
-      console.warn('담론 임시저장 삭제 실패:', error);
-    }
-
-    if (date === selectedDate) {
-      setNarrative({
-        articles: [],
-        myNarrative: '',
-        risks: []
-      });
-    }
-  }, [getNarrativeDraftKey, selectedDate]);
-
-  // 리스크 레이더 로드 (로컬 스토리지)
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem(RISK_STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved) as RiskRadarData;
-        setRiskRadar(parsed);
-      }
-    } catch (error) {
-      console.warn('리스크 레이더 로드 실패:', error);
-    }
-  }, []);
-
-  // 빅웨이브 로드
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem(BIGWAVE_STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved) as BigWaveData;
-        setBigWave(parsed);
-      }
-    } catch (error) {
-      console.warn('빅웨이브 로드 실패:', error);
-    }
-  }, []);
 
   const fetchHealthCheck = useCallback(async () => {
     const cacheKey = 'health_check_cache_v1';
@@ -557,146 +453,10 @@ export default function IndicatorsPage() {
     }
   }, [countdownSeconds]);
 
-  // 경제 담론 데이터 로드
-  useEffect(() => {
-    const fetchNarrative = async () => {
-      let hasDraft = false;
-      try {
-        const draftKey = getNarrativeDraftKey(selectedDate);
-        const draftRaw = localStorage.getItem(draftKey);
-        if (draftRaw) {
-          const draft = JSON.parse(draftRaw) as EconomicNarrative;
-          setNarrative({
-            articles: draft.articles || [],
-            myNarrative: draft.myNarrative || '',
-            risks: draft.risks || []
-          });
-          hasDraft = true;
-        }
-      } catch (error) {
-        console.warn('담론 임시저장 로드 실패:', error);
-      }
 
-      try {
-        const response = await fetch(`${API_URL}/api/economic-narrative?user_id=${userId}&date=${selectedDate}`);
-        const result = await response.json();
 
-        if (result.status === 'success' && result.data) {
-          if (!hasDraft) {
-            setNarrative({
-              articles: result.data.articles || [],
-              myNarrative: result.data.my_narrative || '',
-              risks: result.data.risks || []
-            });
-          }
-        } else {
-          // 데이터 없으면 초기화
-          if (!hasDraft) {
-            setNarrative({
-              articles: [],
-              myNarrative: '',
-              risks: []
-            });
-          }
-        }
-      } catch (error) {
-        console.error('담론 로드 실패:', error);
-      }
-    };
 
-    fetchNarrative();
-  }, [userId, selectedDate, getNarrativeDraftKey]);
 
-  useEffect(() => {
-    if (!userId || !selectedDate) return;
-
-    const hasContent = Boolean(
-      narrative.myNarrative.trim() ||
-      narrative.articles.length > 0 ||
-      narrative.risks.length > 0
-    );
-    const draftKey = getNarrativeDraftKey(selectedDate);
-
-    const timer = setTimeout(() => {
-      try {
-        if (!hasContent) {
-          localStorage.removeItem(draftKey);
-          return;
-        }
-        localStorage.setItem(draftKey, JSON.stringify({
-          articles: narrative.articles,
-          myNarrative: narrative.myNarrative,
-          risks: narrative.risks
-        }));
-      } catch (error) {
-        console.warn('담론 임시저장 실패:', error);
-      }
-    }, 400);
-
-    return () => clearTimeout(timer);
-  }, [userId, selectedDate, narrative, getNarrativeDraftKey]);
-
-  // 경제 담론 저장
-  const handleSaveNarrative = async () => {
-    setIsSavingNarrative(true);
-    try {
-      const response = await fetch(`${API_URL}/api/economic-narrative`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          user_id: userId,
-          date: selectedDate,
-          articles: narrative.articles,
-          my_narrative: narrative.myNarrative,
-          risks: narrative.risks
-        })
-      });
-
-      const result = await response.json();
-
-      if (result.status === 'success') {
-        alert('✅ 경제 담론이 저장되었습니다!');
-        try {
-          const draftKey = getNarrativeDraftKey(selectedDate);
-          localStorage.removeItem(draftKey);
-        } catch (error) {
-          console.warn('담론 임시저장 삭제 실패:', error);
-        }
-        setNarrative({
-          articles: [],
-          myNarrative: '',
-          risks: []
-        });
-        setNarrativeRefreshKey((prev) => prev + 1);
-      } else {
-        alert('❌ 저장 실패: ' + result.message);
-      }
-    } catch (error) {
-      console.error('저장 오류:', error);
-      alert('❌ 저장 중 오류가 발생했습니다.');
-    } finally {
-      setIsSavingNarrative(false);
-    }
-  };
-
-  const handleSaveRisk = () => {
-    setSavingRisk(true);
-    try {
-      localStorage.setItem(RISK_STORAGE_KEY, JSON.stringify(riskRadar));
-    } catch (error) {
-      console.warn('리스크 레이더 저장 실패:', error);
-    } finally {
-      setTimeout(() => setSavingRisk(false), 400);
-    }
-  };
-
-  const handleSaveBigWave = () => {
-    try {
-      localStorage.setItem(BIGWAVE_STORAGE_KEY, JSON.stringify(bigWave));
-    } catch (error) {
-      console.warn('빅웨이브 저장 실패:', error);
-    }
-  };
 
   return (
     <ErrorBoundary>
@@ -1045,106 +805,6 @@ export default function IndicatorsPage() {
         {/* <EconomicIndicatorsSection /> */}
         {/* <DataSection /> */}
 
-        {/* 뉴스 & 담론 섹션 */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div
-            onClick={() => toggleSection('newsNarrative')}
-            className="flex items-center justify-between p-3 bg-card rounded-lg border border-primary/20 cursor-pointer hover:bg-muted/50 mb-4"
-          >
-            <div>
-              <h3 className="text-lg font-semibold text-foreground">📰 뉴스 & 담론</h3>
-              <p className="text-xs text-muted-foreground">뉴스 기반 시장 담론 기록</p>
-            </div>
-            <span className="text-sm text-muted-foreground">{collapsedSections.newsNarrative ? '펼치기 ▼' : '접기 ▲'}</span>
-          </div>
-
-          {!collapsedSections.newsNarrative && (
-            <>
-              <NewsNarrative
-                articles={narrative.articles}
-                myNarrative={narrative.myNarrative}
-                onChange={(data) => setNarrative({ ...narrative, ...data })}
-                mmcScore={masterCycleData?.mmc_score}
-                phase={masterCycleData?.phase}
-                selectedDate={selectedDate}
-                onDateChange={setSelectedDate}
-              />
-
-              {/* 담론 저장 버튼 */}
-              <div className="mt-4 flex justify-end">
-                <button
-                  onClick={handleSaveNarrative}
-                  disabled={isSavingNarrative}
-                  className="px-6 py-2 bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-white font-semibold rounded-lg shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isSavingNarrative ? '저장 중...' : '💾 담론 저장'}
-                </button>
-              </div>
-
-              {/* 과거 담론 리뷰 섹션 */}
-              <NarrativeReview
-                userId={userId}
-                refreshKey={narrativeRefreshKey}
-                onSelectDate={handleSelectNarrativeDate}
-                onDeleteDate={handleDeleteNarrativeDate}
-              />
-            </>
-          )}
-        </div>
-
-        {/* 리스크 레이더 섹션 */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-4">
-          <div
-            onClick={() => toggleSection('riskRadar')}
-            className="flex items-center justify-between p-3 bg-card rounded-lg border border-primary/20 cursor-pointer hover:bg-muted/50 mb-4"
-          >
-            <div>
-              <h3 className="text-lg font-semibold text-foreground">🎯 리스크 레이더</h3>
-              <p className="text-xs text-muted-foreground">구조·정책 / 사이클 / 포트폴리오 + 실행 리스크 태그</p>
-            </div>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={(e) => { e.stopPropagation(); handleSaveRisk(); }}
-                disabled={savingRisk}
-                className="px-3 py-1.5 text-xs bg-primary text-white rounded-md shadow-sm disabled:opacity-50"
-              >
-                {savingRisk ? '저장 중...' : '저장'}
-              </button>
-              <span className="text-sm text-muted-foreground">{collapsedSections.riskRadar ? '펼치기 ▼' : '접기 ▲'}</span>
-            </div>
-          </div>
-          {!collapsedSections.riskRadar && <RiskRadar value={riskRadar} onChange={setRiskRadar} />}
-        </div>
-
-        {/* 빅웨이브 섹션 */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-10">
-          <div
-            onClick={() => toggleSection('bigWave')}
-            className="flex items-center justify-between p-3 bg-card rounded-lg border border-primary/20 cursor-pointer hover:bg-muted/50 mb-4"
-          >
-            <div>
-              <h3 className="text-lg font-semibold text-foreground">🌊 빅웨이브 트래커</h3>
-              <p className="text-xs text-muted-foreground">
-                구조적 파동(빅웨이브)을 카테고리·단계·이벤트·포지션으로 관리하세요.
-              </p>
-            </div>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={(e) => { e.stopPropagation(); handleSaveBigWave(); }}
-                className="px-3 py-1.5 text-xs bg-primary text-white rounded-md shadow-sm"
-              >
-                저장
-              </button>
-              <span className="text-sm text-muted-foreground">{collapsedSections.bigWave ? '펼치기 ▼' : '접기 ▲'}</span>
-            </div>
-          </div>
-          {!collapsedSections.bigWave && (
-            <BigWaveSection
-              cards={bigWave.cards}
-              onChange={(cards) => setBigWave({ cards })}
-            />
-          )}
-        </div>
       </main>
       </div>
     </ErrorBoundary>
