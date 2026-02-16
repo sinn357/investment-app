@@ -77,6 +77,8 @@ interface AIInterpretationResponse {
   overall_summary?: string;
   categories?: Record<string, AIInterpretationItem>;
   excluded_manual_check_count?: number;
+  fallback_reason?: string | null;
+  openai_error?: string | null;
   message?: string;
 }
 
@@ -677,6 +679,12 @@ export default function IndicatorsPage() {
                         ? ` · Direct Check 제외: ${aiInterpretation.excluded_manual_check_count}개`
                         : ''}
                     </p>
+                    {aiInterpretation.source === 'fallback' && (
+                      <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                        fallback_reason: {aiInterpretation.fallback_reason || 'unknown'}
+                        {aiInterpretation.openai_error ? ` · openai_error: ${aiInterpretation.openai_error}` : ''}
+                      </p>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">

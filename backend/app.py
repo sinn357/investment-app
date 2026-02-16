@@ -1089,6 +1089,53 @@ def _extract_output_text(response_json):
     return None
 
 
+def _mask_error_message(error):
+    """민감정보가 섞일 수 있는 에러 메시지를 짧게 마스킹"""
+    text = str(error) if error else "unknown error"
+    # API 키/토큰 유출 방지용 간단 마스킹
+    text = text.replace(os.getenv("OPENAI_API_KEY", ""), "[REDACTED]") if os.getenv("OPENAI_API_KEY") else text
+    return text[:300]
+
+
+def _build_fallback_sections(category, payload, base_text):
+    titles = CATEGORY_SECTION_TITLES.get(category, ["해석", "한 줄 요약"])
+    avg_surprise = payload.get("avg_surprise")
+    freshness = payload.get("freshness_score", 0)
+    improving = payload.get("improving_count", 0)
+    weakening = payload.get("weakening_count", 0)
+    coverage = payload.get("count", 0) - payload.get("missing_count", 0)
+
+    sections = []
+    for idx, title in enumerate(titles):
+        if idx == len(titles) - 1:
+            content = f"{CATEGORY_LABELS.get(category, category)}: {base_text}"
+        elif "속도" in title:
+            if improving > weakening:
+                content = f"최근 추세 기준으로 개선 신호가 {improving}개로 악화 신호({weakening}개)보다 많습니다."
+            elif weakening > improving:
+                content = f"최근 추세 기준으로 악화 신호가 {weakening}개로 개선 신호({improving}개)보다 많습니다."
+            else:
+                content = "최근 추세 신호가 엇갈려 속도 판단은 중립적으로 보는 것이 안전합니다."
+        elif "금리" in title:
+            if avg_surprise is not None and avg_surprise < 0:
+                content = "예상 하회 흐름이 이어져 금리 인하 기대를 일부 높일 수 있으나, 단정은 어렵습니다."
+            elif avg_surprise is not None and avg_surprise > 0:
+                content = "예상 상회 흐름은 금리 인하 기대를 늦추는 요인으로 해석될 수 있습니다."
+            else:
+                content = "금리 방향 판단에 필요한 예측/실제 비교 데이터가 제한적입니다."
+        elif "자산시장" in title or "위험자산" in title:
+            if freshness < 45:
+                content = "데이터 신선도가 낮아 자산시장 영향은 보수적으로 해석하는 것이 적절합니다."
+            else:
+                content = "자산시장 영향은 최근 데이터와 함께 점진적으로 반영될 가능성이 큽니다."
+        else:
+            content = f"{base_text} (유효 데이터 {coverage}개, 신선도 {freshness})"
+
+        sections.append({"title": title, "content": content})
+
+    return sections
+
+
 def _build_fallback_category_interpretation(category_summary):
     """OpenAI 실패 시 카테고리별 기본 해석 생성"""
     fallback_categories = {}
@@ -1098,7 +1145,6 @@ def _build_fallback_category_interpretation(category_summary):
         avg_surprise = payload.get("avg_surprise")
         missing = payload.get("missing_count", 0)
         freshness_score = payload.get("freshness_score", 0)
-        section_titles = CATEGORY_SECTION_TITLES.get(category, ["해석", "한 줄 요약"])
 
         if count == 0:
             base_text = f"{label} 지표 데이터가 부족해 추세 판단이 어렵습니다."
@@ -1127,13 +1173,7 @@ def _build_fallback_category_interpretation(category_summary):
         if freshness_score < 45:
             signals.append("신선도 낮음: 최근 데이터 부족")
 
-        sections = []
-        for idx, title in enumerate(section_titles):
-            if idx == len(section_titles) - 1:
-                content = f"{label}: {base_text}"
-            else:
-                content = base_text
-            sections.append({"title": title, "content": content})
+        sections = _build_fallback_sections(category, payload, base_text)
 
         fallback_categories[category] = {
             "label": label,
@@ -1149,6 +1189,8 @@ def _build_fallback_category_interpretation(category_summary):
         "overall_summary": "일부 지표 기준 기본 해석입니다. OpenAI 연결 시 더 정교한 맥락 해석이 제공됩니다.",
         "categories": fallback_categories,
         "source": "fallback",
+        "fallback_reason": "openai_unavailable_or_failed",
+        "openai_error": None,
     }
 
 
@@ -1275,10 +1317,16 @@ manual_check 지표는 제외되어 있습니다.
 
         parsed = json.loads(output_text)
         parsed["source"] = "openai"
+        parsed["fallback_reason"] = None
+        parsed["openai_error"] = None
         return parsed
     except Exception as e:
-        print(f"⚠️ OpenAI interpretation failed, fallback used: {e}")
-        return _build_fallback_category_interpretation(category_summary)
+        masked = _mask_error_message(e)
+        print(f"⚠️ OpenAI interpretation failed, fallback used: {masked}")
+        fallback = _build_fallback_category_interpretation(category_summary)
+        fallback["fallback_reason"] = "openai_call_failed"
+        fallback["openai_error"] = masked
+        return fallback
 
 @app.route('/api/v2/indicators')
 def get_all_indicators_from_db():
@@ -1564,6 +1612,8 @@ def get_ai_interpretation_for_indicators():
             "category_summary": category_summary,
             "excluded_manual_check_count": len(excluded_manual_check),
             "excluded_manual_check_ids": excluded_manual_check,
+            "fallback_reason": interpretation.get("fallback_reason"),
+            "openai_error": interpretation.get("openai_error"),
         })
     except Exception as e:
         import traceback
