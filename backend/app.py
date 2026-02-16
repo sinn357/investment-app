@@ -1097,6 +1097,84 @@ def _mask_error_message(error):
     return text[:300]
 
 
+def _normalize_score_0_100(value, default=0):
+    num = _to_float(value)
+    if num is None:
+        return default
+    if 0 <= num <= 1:
+        num = num * 100
+    return max(min(round(num, 1), 100), 0)
+
+
+def _normalize_ai_category_output(category, raw_category, fallback_category):
+    """모델 출력을 UI 친화 형태로 보정 (신뢰도/신선도 스케일, 누락 필드 보완)"""
+    if not isinstance(raw_category, dict):
+        return fallback_category
+
+    normalized = dict(raw_category)
+    normalized["label"] = raw_category.get("label") or CATEGORY_LABELS.get(category, category)
+    normalized["risk_level"] = raw_category.get("risk_level") if raw_category.get("risk_level") in ["positive", "neutral", "caution", "unknown"] else fallback_category.get("risk_level", "unknown")
+    normalized["confidence"] = _normalize_score_0_100(raw_category.get("confidence"), default=fallback_category.get("confidence", 0))
+    normalized["freshness_score"] = _normalize_score_0_100(raw_category.get("freshness_score"), default=fallback_category.get("freshness_score", 0))
+
+    sections = raw_category.get("sections")
+    if not isinstance(sections, list) or not sections:
+        normalized["sections"] = fallback_category.get("sections", [])
+    else:
+        fixed_sections = []
+        for section in sections:
+            if not isinstance(section, dict):
+                continue
+            title = section.get("title")
+            content = section.get("content")
+            if not title or not content:
+                continue
+            fixed_sections.append({"title": str(title), "content": str(content)})
+        normalized["sections"] = fixed_sections if fixed_sections else fallback_category.get("sections", [])
+
+    signals = raw_category.get("signals")
+    if not isinstance(signals, list) or not signals:
+        normalized["signals"] = fallback_category.get("signals", [])
+    else:
+        normalized["signals"] = [str(s) for s in signals[:6]]
+
+    one_line_summary = raw_category.get("one_line_summary")
+    normalized["one_line_summary"] = str(one_line_summary) if one_line_summary else fallback_category.get("one_line_summary", "")
+    return normalized
+
+
+def _build_overall_summary_from_categories(categories):
+    """카테고리 결과를 근거 기반 한글 요약으로 합성"""
+    cautions = []
+    positives = []
+    neutrals = []
+
+    for key, item in categories.items():
+        label = CATEGORY_LABELS.get(key, key)
+        summary = item.get("one_line_summary", "")
+        if item.get("risk_level") == "caution":
+            cautions.append((label, summary))
+        elif item.get("risk_level") == "positive":
+            positives.append((label, summary))
+        else:
+            neutrals.append((label, summary))
+
+    parts = []
+    if cautions:
+        labels = ", ".join([x[0] for x in cautions[:3]])
+        parts.append(f"경계 신호는 {labels}에서 확인됩니다.")
+    if positives:
+        labels = ", ".join([x[0] for x in positives[:3]])
+        parts.append(f"개선 신호는 {labels}에서 관찰됩니다.")
+    if neutrals:
+        labels = ", ".join([x[0] for x in neutrals[:3]])
+        parts.append(f"나머지 영역은 중립 흐름입니다.")
+
+    if not parts:
+        return "카테고리별 데이터가 제한적이라 방향성 판단은 보수적으로 접근해야 합니다."
+    return " ".join(parts)
+
+
 def _build_fallback_sections(category, payload, base_text):
     titles = CATEGORY_SECTION_TITLES.get(category, ["해석", "한 줄 요약"])
     avg_surprise = payload.get("avg_surprise")
@@ -1309,6 +1387,7 @@ manual_check 지표는 제외되어 있습니다.
 [지시사항]
 1) 각 카테고리의 sections는 해당 카테고리 고정 제목 순서 그대로 작성하세요.
 2) 각 section.content는 초보자도 이해 가능한 한국어로 1~3문장.
+2-1) 가능한 경우 지표명과 수치(예: PMI 47.9, 실업률 4.3%)를 문장에 포함하세요.
 3) 숫자 하나에 과도한 확신 금지, 데이터 부족 시 판단 유보를 명시.
 4) freshness_score가 낮으면 signals에 신선도 경고를 포함.
 5) one_line_summary는 카테고리 핵심 결론 한 줄.
@@ -1332,6 +1411,17 @@ manual_check 지표는 제외되어 있습니다.
 
     try:
         parsed = _post_openai(request_payload, timeout_sec=75, max_attempts=3)
+        fallback_categories = _build_fallback_category_interpretation(category_summary)["categories"]
+        if isinstance(parsed.get("categories"), dict):
+            normalized_categories = {}
+            for category in CATEGORY_LABELS.keys():
+                normalized_categories[category] = _normalize_ai_category_output(
+                    category,
+                    parsed["categories"].get(category, {}),
+                    fallback_categories.get(category, {}),
+                )
+            parsed["categories"] = normalized_categories
+        parsed["overall_summary"] = parsed.get("overall_summary") or _build_overall_summary_from_categories(parsed.get("categories", {}))
         parsed["source"] = "openai"
         parsed["fallback_reason"] = None
         parsed["openai_error"] = None
@@ -1407,6 +1497,7 @@ manual_check 지표는 제외되어 있습니다.
 [지시사항]
 1) sections는 고정 섹션 제목과 같은 순서/개수로 작성.
 2) 각 section.content는 한국어 1문장(최대 60자 내외).
+2-1) 가능하면 지표명+수치를 함께 언급(예: PMI 47.9, 실업률 4.3%).
 3) 숫자 하나로 단정 금지. 데이터 부족 시 판단 유보.
 4) one_line_summary는 핵심 결론 한 줄.
 """
@@ -1428,14 +1519,22 @@ manual_check 지표는 제외되어 있습니다.
 
             try:
                 cat_parsed = _post_openai(cat_request, timeout_sec=45, max_attempts=2)
-                degraded_categories[category] = cat_parsed
+                degraded_categories[category] = _normalize_ai_category_output(
+                    category,
+                    cat_parsed,
+                    fallback_categories[category],
+                )
             except Exception as e:
                 # JSON truncation(unterminated string) 발생 시 토큰 상향 1회 재시도
                 if "Unterminated string" in str(e) or "Expecting value" in str(e):
                     try:
                         cat_request["max_output_tokens"] = 620
                         cat_parsed = _post_openai(cat_request, timeout_sec=55, max_attempts=2)
-                        degraded_categories[category] = cat_parsed
+                        degraded_categories[category] = _normalize_ai_category_output(
+                            category,
+                            cat_parsed,
+                            fallback_categories[category],
+                        )
                         continue
                     except Exception as e2:
                         degraded_errors.append(f"{category}:{_mask_error_message(e2)}")
@@ -1459,9 +1558,7 @@ manual_check 지표는 제외되어 있습니다.
                 risk_counts[risk] += 1
 
             overall_summary = (
-                f"카테고리별 흐름은 혼조입니다. "
-                f"긍정 {risk_counts['positive']}개, 중립 {risk_counts['neutral']}개, 경계 {risk_counts['caution']}개로 집계되었습니다. "
-                f"데이터 신선도와 발표 주기 차이를 감안해 방향성 중심으로 해석하세요."
+                _build_overall_summary_from_categories(degraded_categories)
             )
             return {
                 "overall_summary": overall_summary,
