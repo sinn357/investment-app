@@ -938,6 +938,76 @@ CATEGORY_LABELS = {
     "sentiment": "심리",
 }
 
+CATEGORY_SECTION_TITLES = {
+    "business": [
+        "현재 경기 상태",
+        "속도 변화",
+        "무엇이 경제를 이끄는지",
+        "금리 방향에 미칠 영향",
+        "자산시장 영향",
+        "한 줄 요약",
+    ],
+    "employment": [
+        "현재 고용 상태 (강함 / 둔화 / 위험 신호)",
+        "해고 위험 여부",
+        "임금 압력 수준",
+        "소비 지속 가능성",
+        "금리 방향에 미칠 영향",
+        "자산시장 영향 (성장주 / 소비주 / 채권 / 달러)",
+        "한 줄 요약",
+    ],
+    "inflation": [
+        "인플레이션 방향 (상승 / 둔화 / 정체)",
+        "속도 변화 (MoM 기준)",
+        "구조적 물가 압력 존재 여부",
+        "금리 인하 가능성에 미칠 영향",
+        "자산시장 영향 (금리 / 성장주 / 원자재 / 달러)",
+        "한 줄 요약",
+    ],
+    "interest": [
+        "현재 정책 상태 (긴축 / 중립 / 완화)",
+        "시장의 금리 기대 (인하 기대 / 유지 / 긴축 지속)",
+        "성장 기대 해석 (10년물 기준)",
+        "실질금리의 자산시장 영향",
+        "달러 및 위험자산에 미칠 영향",
+        "한 줄 요약",
+    ],
+    "trade": [
+        "미국 소비 및 대외수지 상태",
+        "달러 방향과 강도",
+        "글로벌 자금 흐름 (미국 집중 / 분산 / 신흥국 유입)",
+        "위험자산 환경 (리스크온 / 중립 / 리스크오프)",
+        "한국시장에 미칠 영향",
+        "한 줄 요약",
+    ],
+    "credit": [
+        "현재 신용 스트레스 수준 (낮음 / 보통 / 높음)",
+        "기업 자금조달 환경 (완화 / 중립 / 악화)",
+        "유동성 환경 (확대 / 정체 / 축소)",
+        "신용시장 기준 경기 선행 신호",
+        "자산시장 영향 (주식 / 회사채 / 달러 / 원자재)",
+        "한 줄 요약",
+    ],
+    "sentiment": [
+        "현재 투자심리 상태 (낙관 / 중립 / 경계 / 공포)",
+        "변동성 체제 변화 (안정 / 전환 / 불안정)",
+        "군중심리 과열·과매도 여부",
+        "소비심리 관점의 실물경제 시사점",
+        "자산시장 영향 (성장주 / 가치주 / 채권 / 달러)",
+        "한 줄 요약",
+    ],
+}
+
+CATEGORY_GUIDELINES = {
+    "business": "- PMI 50 이상/이하 기준, 전월 대비 방향 중심 판단\n- 소비 둔화 연속성 반영, GDP는 후행 보조 참고\n- 숫자 하나에 과신 금지",
+    "employment": "- NFP 둔화/실업률/청구건수 방향을 함께 판단\n- 임금 MoM 반복 압력 반영\n- 항상 금리 기대와 연결",
+    "inflation": "- YoY는 큰 방향, MoM은 단기 속도\n- Core 끈적함, 서비스/주거 요인 반영\n- 한 달 수치 과신 금지",
+    "interest": "- 기준금리/2Y/10Y/장단기/실질금리 종합 판단\n- 경기/물가 흐름과 연결\n- 단일 금리 수치 과신 금지",
+    "trade": "- 무역수지/경상수지/달러 지표를 자금 흐름과 연결\n- 달러 강세와 위험자산 환경 함께 해석\n- 단일 수치 과신 금지",
+    "credit": "- 스프레드/FCI/M2로 신용 스트레스·유동성 판단\n- 경기·금리와 동시 해석\n- 단일 수치 과신 금지",
+    "sentiment": "- VIX/Put-Call/심리지표를 결합 판단\n- 역지표 성격과 체제 전환 가능성 반영\n- 단일 수치 과신 금지",
+}
+
 
 def _to_float(value):
     """문자/숫자 값을 float로 변환. 실패 시 None"""
@@ -952,6 +1022,57 @@ def _to_float(value):
         except Exception:
             return None
     return None
+
+
+def _days_old(release_date_str):
+    if not release_date_str:
+        return None
+    try:
+        release_date = datetime.strptime(str(release_date_str), "%Y-%m-%d")
+        return max((datetime.now() - release_date).days, 0)
+    except Exception:
+        return None
+
+
+def _freshness_weight(days_old):
+    if days_old is None:
+        return 0.2
+    if days_old <= 7:
+        return 1.0
+    if days_old <= 30:
+        return 0.6
+    if days_old <= 90:
+        return 0.25
+    return 0.1
+
+
+def _history_trend(history_rows):
+    actuals = []
+    for row in history_rows:
+        value = _to_float(row.get("actual"))
+        if value is not None:
+            actuals.append(value)
+
+    if len(actuals) < 2:
+        return {"direction": "unknown", "acceleration": "unknown"}
+
+    recent = actuals[0]
+    prev = actuals[1]
+    delta = recent - prev
+    direction = "up" if delta > 0 else "down" if delta < 0 else "flat"
+
+    acceleration = "unknown"
+    if len(actuals) >= 4:
+        latest_move = actuals[0] - actuals[1]
+        previous_move = actuals[1] - actuals[2]
+        if abs(latest_move) > abs(previous_move):
+            acceleration = "faster"
+        elif abs(latest_move) < abs(previous_move):
+            acceleration = "slower"
+        else:
+            acceleration = "flat"
+
+    return {"direction": direction, "acceleration": acceleration}
 
 
 def _extract_output_text(response_json):
@@ -976,37 +1097,52 @@ def _build_fallback_category_interpretation(category_summary):
         count = payload.get("count", 0)
         avg_surprise = payload.get("avg_surprise")
         missing = payload.get("missing_count", 0)
+        freshness_score = payload.get("freshness_score", 0)
+        section_titles = CATEGORY_SECTION_TITLES.get(category, ["해석", "한 줄 요약"])
 
         if count == 0:
-            interpretation = f"{label} 지표 데이터가 부족해 추세 판단이 어렵습니다."
+            base_text = f"{label} 지표 데이터가 부족해 추세 판단이 어렵습니다."
             risk_level = "unknown"
             signals = ["데이터 업데이트 필요"]
         else:
             if avg_surprise is None:
-                interpretation = f"{label} 지표는 발표값이 누적되고 있으나 서프라이즈 정보가 제한적입니다."
+                base_text = f"{label} 지표는 발표값이 누적되고 있으나 서프라이즈 정보가 제한적입니다."
                 risk_level = "neutral"
                 signals = ["발표/예측치 축적 필요"]
             elif avg_surprise > 0:
-                interpretation = f"{label} 지표는 평균적으로 예상치를 상회하며 상대적 개선 흐름입니다."
+                base_text = f"{label} 지표는 평균적으로 예상치를 상회하며 상대적 개선 흐름입니다."
                 risk_level = "positive"
                 signals = [f"평균 서프라이즈 +{avg_surprise:.2f}"]
             elif avg_surprise < 0:
-                interpretation = f"{label} 지표는 평균적으로 예상치를 하회해 둔화 신호가 있습니다."
+                base_text = f"{label} 지표는 평균적으로 예상치를 하회해 둔화 신호가 있습니다."
                 risk_level = "caution"
                 signals = [f"평균 서프라이즈 {avg_surprise:.2f}"]
             else:
-                interpretation = f"{label} 지표는 평균적으로 예상과 유사한 흐름입니다."
+                base_text = f"{label} 지표는 평균적으로 예상과 유사한 흐름입니다."
                 risk_level = "neutral"
                 signals = ["서프라이즈 중립"]
 
         if missing > 0:
             signals.append(f"미집계 지표 {missing}개")
+        if freshness_score < 45:
+            signals.append("신선도 낮음: 최근 데이터 부족")
+
+        sections = []
+        for idx, title in enumerate(section_titles):
+            if idx == len(section_titles) - 1:
+                content = f"{label}: {base_text}"
+            else:
+                content = base_text
+            sections.append({"title": title, "content": content})
 
         fallback_categories[category] = {
             "label": label,
-            "interpretation": interpretation,
+            "sections": sections,
             "signals": signals,
             "risk_level": risk_level,
+            "freshness_score": freshness_score,
+            "confidence": max(min(int(freshness_score), 100), 0),
+            "one_line_summary": f"{label}: {base_text}",
         }
 
     return {
@@ -1022,31 +1158,55 @@ def _generate_ai_indicator_interpretation(category_summary):
     if not api_key:
         return _build_fallback_category_interpretation(category_summary)
 
+    category_schema = {
+        category: {
+            "type": "object",
+            "properties": {
+                "label": {"type": "string"},
+                "risk_level": {
+                    "type": "string",
+                    "enum": ["positive", "neutral", "caution", "unknown"]
+                },
+                "confidence": {"type": "number"},
+                "freshness_score": {"type": "number"},
+                "signals": {
+                    "type": "array",
+                    "items": {"type": "string"}
+                },
+                "sections": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "title": {"type": "string"},
+                            "content": {"type": "string"}
+                        },
+                        "required": ["title", "content"],
+                        "additionalProperties": False
+                    }
+                },
+                "one_line_summary": {"type": "string"}
+            },
+            "required": [
+                "label",
+                "risk_level",
+                "confidence",
+                "freshness_score",
+                "signals",
+                "sections",
+                "one_line_summary"
+            ],
+            "additionalProperties": False
+        } for category in CATEGORY_LABELS.keys()
+    }
+
     schema = {
         "type": "object",
         "properties": {
             "overall_summary": {"type": "string"},
             "categories": {
                 "type": "object",
-                "properties": {
-                    category: {
-                        "type": "object",
-                        "properties": {
-                            "label": {"type": "string"},
-                            "interpretation": {"type": "string"},
-                            "signals": {
-                                "type": "array",
-                                "items": {"type": "string"}
-                            },
-                            "risk_level": {
-                                "type": "string",
-                                "enum": ["positive", "neutral", "caution", "unknown"]
-                            }
-                        },
-                        "required": ["label", "interpretation", "signals", "risk_level"],
-                        "additionalProperties": False
-                    } for category in CATEGORY_LABELS.keys()
-                },
+                "properties": category_schema,
                 "required": list(CATEGORY_LABELS.keys()),
                 "additionalProperties": False
             }
@@ -1055,18 +1215,31 @@ def _generate_ai_indicator_interpretation(category_summary):
         "additionalProperties": False
     }
 
+    frame_guide = []
+    for category, titles in CATEGORY_SECTION_TITLES.items():
+        frame_guide.append(
+            f"[{CATEGORY_LABELS[category]}]\n"
+            f"- 섹션 제목 고정: {titles}\n"
+            f"- 해석 기준: {CATEGORY_GUIDELINES.get(category, '')}"
+        )
+
     prompt = f"""당신은 매크로 전략가입니다.
-아래 지표 집계를 바탕으로 카테고리별(경기/고용/금리/무역/물가/신용/심리) 해석을 작성하세요.
+아래는 DB 저장 지표를 카테고리별로 정리한 데이터입니다.
+manual_check 지표는 제외되어 있습니다.
 
 [입력 데이터]
 {json.dumps(category_summary, ensure_ascii=False)}
 
+[카테고리별 해석 프레임]
+{chr(10).join(frame_guide)}
+
 [지시사항]
-1) 각 카테고리마다 현재 흐름을 1~2문장으로 설명
-2) signals에는 핵심 신호 2~3개 작성
-3) risk_level은 positive/neutral/caution/unknown 중 하나
-4) overall_summary는 전체 매크로 상황을 2문장 이내로 요약
-5) 한국어로 작성
+1) 각 카테고리의 sections는 해당 카테고리 고정 제목 순서 그대로 작성하세요.
+2) 각 section.content는 초보자도 이해 가능한 한국어로 1~3문장.
+3) 숫자 하나에 과도한 확신 금지, 데이터 부족 시 판단 유보를 명시.
+4) freshness_score가 낮으면 signals에 신선도 경고를 포함.
+5) one_line_summary는 카테고리 핵심 결론 한 줄.
+6) overall_summary는 전체 환경을 2~3문장으로 요약.
 """
 
     try:
@@ -1295,11 +1468,23 @@ def get_ai_interpretation_for_indicators():
         else:
             all_data = {indicator_id: db_service.get_indicator_data(indicator_id) for indicator_id in all_indicator_ids}
 
+        if hasattr(db_service, "get_multiple_history_data"):
+            all_history = db_service.get_multiple_history_data(all_indicator_ids, limit=6)
+        else:
+            all_history = {
+                indicator_id: db_service.get_history_data(indicator_id, limit=6)
+                for indicator_id in all_indicator_ids
+            }
+
         category_details = {key: [] for key in CATEGORY_LABELS.keys()}
+        excluded_manual_check = []
 
         for indicator_id in all_indicator_ids:
             metadata = get_indicator_config(indicator_id)
             if not metadata:
+                continue
+            if metadata.manual_check:
+                excluded_manual_check.append(indicator_id)
                 continue
 
             category = metadata.category
@@ -1308,10 +1493,15 @@ def get_ai_interpretation_for_indicators():
 
             data = all_data.get(indicator_id, {})
             latest = data.get("latest_release", {}) if isinstance(data, dict) else {}
+            history_rows = all_history.get(indicator_id, []) if isinstance(all_history, dict) else []
 
             actual = latest.get("actual")
             forecast = latest.get("forecast")
             previous = latest.get("previous")
+            release_date = latest.get("release_date")
+            days_old = _days_old(release_date)
+            freshness_weight = _freshness_weight(days_old)
+            trend = _history_trend(history_rows)
 
             actual_num = _to_float(actual)
             forecast_num = _to_float(forecast)
@@ -1334,18 +1524,33 @@ def get_ai_interpretation_for_indicators():
                 "previous": previous,
                 "surprise": surprise,
                 "delta_prev": delta_prev,
-                "release_date": latest.get("release_date"),
+                "release_date": release_date,
+                "days_old": days_old,
+                "freshness_weight": freshness_weight,
+                "trend_direction": trend.get("direction"),
+                "trend_acceleration": trend.get("acceleration"),
+                "history_actuals": [
+                    _to_float(row.get("actual")) for row in history_rows[:6]
+                ],
             })
 
         category_summary = {}
         for category, rows in category_details.items():
             valid_surprises = [row["surprise"] for row in rows if row["surprise"] is not None]
+            weighted_sum = sum((row.get("freshness_weight", 0.2) * 100) for row in rows)
+            freshness_score = round(weighted_sum / len(rows), 1) if rows else 0
+
+            improving_count = len([row for row in rows if row.get("trend_direction") == "up"])
+            weakening_count = len([row for row in rows if row.get("trend_direction") == "down"])
             category_summary[category] = {
                 "label": CATEGORY_LABELS[category],
                 "count": len(rows),
                 "avg_surprise": round(sum(valid_surprises) / len(valid_surprises), 2) if valid_surprises else None,
                 "missing_count": sum(1 for row in rows if row["actual"] in [None, "-", ""]),
-                "top_indicators": rows[:6],  # 프롬프트 길이 제어
+                "freshness_score": freshness_score,
+                "improving_count": improving_count,
+                "weakening_count": weakening_count,
+                "indicators": rows[:12],  # 프롬프트 길이 제어
             }
 
         interpretation = _generate_ai_indicator_interpretation(category_summary)
@@ -1357,6 +1562,8 @@ def get_ai_interpretation_for_indicators():
             "overall_summary": interpretation.get("overall_summary"),
             "categories": interpretation.get("categories"),
             "category_summary": category_summary,
+            "excluded_manual_check_count": len(excluded_manual_check),
+            "excluded_manual_check_ids": excluded_manual_check,
         })
     except Exception as e:
         import traceback

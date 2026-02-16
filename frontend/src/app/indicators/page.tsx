@@ -59,9 +59,15 @@ interface GridIndicator {
 
 interface AIInterpretationItem {
   label: string;
-  interpretation: string;
+  sections: Array<{
+    title: string;
+    content: string;
+  }>;
   signals: string[];
   risk_level: 'positive' | 'neutral' | 'caution' | 'unknown';
+  freshness_score: number;
+  confidence: number;
+  one_line_summary: string;
 }
 
 interface AIInterpretationResponse {
@@ -70,6 +76,7 @@ interface AIInterpretationResponse {
   source?: 'openai' | 'fallback';
   overall_summary?: string;
   categories?: Record<string, AIInterpretationItem>;
+  excluded_manual_check_count?: number;
   message?: string;
 }
 
@@ -666,10 +673,13 @@ export default function IndicatorsPage() {
                     <p className="text-xs text-muted-foreground mt-1">
                       출처: {aiInterpretation.source === 'openai' ? 'OpenAI (gpt-4o-mini)' : 'Fallback 규칙 기반'}
                       {aiInterpretation.generated_at ? ` · 생성시각: ${new Date(aiInterpretation.generated_at).toLocaleString('ko-KR')}` : ''}
+                      {typeof aiInterpretation.excluded_manual_check_count === 'number'
+                        ? ` · Direct Check 제외: ${aiInterpretation.excluded_manual_check_count}개`
+                        : ''}
                     </p>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
                     {Object.entries(aiInterpretation.categories).map(([key, item]) => {
                       const riskClass =
                         item.risk_level === 'positive'
@@ -682,13 +692,34 @@ export default function IndicatorsPage() {
 
                       return (
                         <div key={key} className="rounded-md border border-border bg-card p-3">
-                          <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center justify-between mb-2 gap-2">
                             <h4 className="text-sm font-semibold text-foreground">{item.label}</h4>
-                            <span className={`px-2 py-0.5 rounded text-xs font-medium ${riskClass}`}>
-                              {item.risk_level}
-                            </span>
+                            <div className="flex items-center gap-1">
+                              <span className="px-2 py-0.5 rounded text-xs font-medium bg-muted text-muted-foreground">
+                                신선도 {item.freshness_score}
+                              </span>
+                              <span className="px-2 py-0.5 rounded text-xs font-medium bg-muted text-muted-foreground">
+                                신뢰도 {item.confidence}
+                              </span>
+                              <span className={`px-2 py-0.5 rounded text-xs font-medium ${riskClass}`}>
+                                {item.risk_level}
+                              </span>
+                            </div>
                           </div>
-                          <p className="text-sm text-foreground mb-2">{item.interpretation}</p>
+
+                          <p className="text-sm font-medium text-foreground mb-3">
+                            {item.one_line_summary}
+                          </p>
+
+                          <div className="space-y-2 mb-3">
+                            {item.sections.map((section, idx) => (
+                              <div key={`${key}-section-${idx}`} className="rounded-md border border-border/60 p-2">
+                                <p className="text-xs font-semibold text-foreground mb-1">{section.title}</p>
+                                <p className="text-sm text-foreground-secondary">{section.content}</p>
+                              </div>
+                            ))}
+                          </div>
+
                           <ul className="text-xs text-muted-foreground space-y-1">
                             {item.signals.map((signal, idx) => (
                               <li key={`${key}-${idx}`}>- {signal}</li>
