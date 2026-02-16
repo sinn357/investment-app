@@ -1284,42 +1284,59 @@ manual_check 지표는 제외되어 있습니다.
 6) overall_summary는 전체 환경을 2~3문장으로 요약.
 """
 
+    request_payload = {
+        "model": "gpt-4o-mini",
+        "input": prompt,
+        "text": {
+            "format": {
+                "type": "json_schema",
+                "name": "indicator_category_interpretation",
+                "strict": True,
+                "schema": schema,
+            }
+        },
+        "temperature": 0.3,
+        "max_output_tokens": 800,
+    }
+
+    max_attempts = 3
+    timeout_sec = 75
+
     try:
-        resp = requests.post(
-            "https://api.openai.com/v1/responses",
-            headers={
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json",
-            },
-            json={
-                "model": "gpt-4o-mini",
-                "input": prompt,
-                "text": {
-                    "format": {
-                        "type": "json_schema",
-                        "name": "indicator_category_interpretation",
-                        "strict": True,
-                        "schema": schema,
-                    }
-                },
-                "temperature": 0.4,
-                "max_output_tokens": 900,
-            },
-            timeout=30,
-        )
-        if not resp.ok:
-            raise RuntimeError(f"OpenAI API error: {resp.status_code} {resp.text[:300]}")
+        last_error = None
+        for attempt in range(1, max_attempts + 1):
+            try:
+                resp = requests.post(
+                    "https://api.openai.com/v1/responses",
+                    headers={
+                        "Authorization": f"Bearer {api_key}",
+                        "Content-Type": "application/json",
+                    },
+                    json=request_payload,
+                    timeout=timeout_sec,
+                )
 
-        data = resp.json()
-        output_text = _extract_output_text(data)
-        if not output_text:
-            raise RuntimeError("OpenAI output_text is empty")
+                if resp.status_code in (429, 500, 502, 503, 504):
+                    raise RuntimeError(f"OpenAI transient error {resp.status_code}: {resp.text[:200]}")
+                if not resp.ok:
+                    raise RuntimeError(f"OpenAI API error: {resp.status_code} {resp.text[:300]}")
 
-        parsed = json.loads(output_text)
-        parsed["source"] = "openai"
-        parsed["fallback_reason"] = None
-        parsed["openai_error"] = None
-        return parsed
+                data = resp.json()
+                output_text = _extract_output_text(data)
+                if not output_text:
+                    raise RuntimeError("OpenAI output_text is empty")
+
+                parsed = json.loads(output_text)
+                parsed["source"] = "openai"
+                parsed["fallback_reason"] = None
+                parsed["openai_error"] = None
+                return parsed
+            except Exception as e:
+                last_error = e
+                if attempt < max_attempts:
+                    time.sleep(1.2 * attempt)
+                    continue
+                raise
     except Exception as e:
         masked = _mask_error_message(e)
         print(f"⚠️ OpenAI interpretation failed, fallback used: {masked}")
@@ -1578,7 +1595,7 @@ def get_ai_interpretation_for_indicators():
                 "trend_direction": trend.get("direction"),
                 "trend_acceleration": trend.get("acceleration"),
                 "history_actuals": [
-                    _to_float(row.get("actual")) for row in history_rows[:6]
+                    _to_float(row.get("actual")) for row in history_rows[:4]
                 ],
             })
 
@@ -1598,7 +1615,7 @@ def get_ai_interpretation_for_indicators():
                 "freshness_score": freshness_score,
                 "improving_count": improving_count,
                 "weakening_count": weakening_count,
-                "indicators": rows[:12],  # 프롬프트 길이 제어
+                "indicators": rows[:8],  # 프롬프트 길이 제어 (타임아웃 완화)
             }
 
         interpretation = _generate_ai_indicator_interpretation(category_summary)
