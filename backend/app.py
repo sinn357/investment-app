@@ -1200,6 +1200,37 @@ def _generate_ai_indicator_interpretation(category_summary):
     if not api_key:
         return _build_fallback_category_interpretation(category_summary)
 
+    def _post_openai(request_payload, timeout_sec=60, max_attempts=2):
+        last_error = None
+        for attempt in range(1, max_attempts + 1):
+            try:
+                resp = requests.post(
+                    "https://api.openai.com/v1/responses",
+                    headers={
+                        "Authorization": f"Bearer {api_key}",
+                        "Content-Type": "application/json",
+                    },
+                    json=request_payload,
+                    timeout=timeout_sec,
+                )
+
+                if resp.status_code in (429, 500, 502, 503, 504):
+                    raise RuntimeError(f"OpenAI transient error {resp.status_code}: {resp.text[:200]}")
+                if not resp.ok:
+                    raise RuntimeError(f"OpenAI API error: {resp.status_code} {resp.text[:300]}")
+
+                data = resp.json()
+                output_text = _extract_output_text(data)
+                if not output_text:
+                    raise RuntimeError("OpenAI output_text is empty")
+                return json.loads(output_text)
+            except Exception as e:
+                last_error = e
+                if attempt < max_attempts:
+                    time.sleep(1.2 * attempt)
+                    continue
+                raise last_error
+
     category_schema = {
         category: {
             "type": "object",
@@ -1296,53 +1327,146 @@ manual_check 지표는 제외되어 있습니다.
             }
         },
         "temperature": 0.3,
-        "max_output_tokens": 800,
+        "max_output_tokens": 700,
     }
 
-    max_attempts = 3
-    timeout_sec = 75
-
     try:
-        last_error = None
-        for attempt in range(1, max_attempts + 1):
+        parsed = _post_openai(request_payload, timeout_sec=75, max_attempts=3)
+        parsed["source"] = "openai"
+        parsed["fallback_reason"] = None
+        parsed["openai_error"] = None
+        return parsed
+    except Exception as full_error:
+        # 일괄 요청이 타임아웃/과부하로 실패하면 카테고리별 경량 호출로 강등 시도
+        one_category_schema = {
+            "type": "object",
+            "properties": {
+                "label": {"type": "string"},
+                "risk_level": {
+                    "type": "string",
+                    "enum": ["positive", "neutral", "caution", "unknown"]
+                },
+                "confidence": {"type": "number"},
+                "freshness_score": {"type": "number"},
+                "signals": {
+                    "type": "array",
+                    "items": {"type": "string"}
+                },
+                "sections": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "title": {"type": "string"},
+                            "content": {"type": "string"}
+                        },
+                        "required": ["title", "content"],
+                        "additionalProperties": False
+                    }
+                },
+                "one_line_summary": {"type": "string"}
+            },
+            "required": [
+                "label",
+                "risk_level",
+                "confidence",
+                "freshness_score",
+                "signals",
+                "sections",
+                "one_line_summary"
+            ],
+            "additionalProperties": False
+        }
+
+        degraded_categories = {}
+        degraded_errors = []
+        fallback_categories = _build_fallback_category_interpretation(category_summary)["categories"]
+
+        for category in CATEGORY_LABELS.keys():
+            payload = category_summary.get(category, {})
+            if payload.get("count", 0) == 0:
+                degraded_categories[category] = fallback_categories[category]
+                continue
+
+            titles = CATEGORY_SECTION_TITLES.get(category, [])
+            cat_prompt = f"""당신은 매크로 전략가입니다.
+아래 단일 카테고리를 해석하세요.
+
+[카테고리]
+{CATEGORY_LABELS.get(category, category)}
+
+[입력 데이터]
+{json.dumps(payload, ensure_ascii=False)}
+
+[고정 섹션 제목]
+{titles}
+
+[해석 기준]
+{CATEGORY_GUIDELINES.get(category, '')}
+
+[지시사항]
+1) sections는 고정 섹션 제목과 같은 순서/개수로 작성.
+2) 각 section.content는 한국어 1~2문장.
+3) 숫자 하나로 단정 금지. 데이터 부족 시 판단 유보.
+4) one_line_summary는 핵심 결론 한 줄.
+"""
+
+            cat_request = {
+                "model": "gpt-4o-mini",
+                "input": cat_prompt,
+                "text": {
+                    "format": {
+                        "type": "json_schema",
+                        "name": f"indicator_{category}_interpretation",
+                        "strict": True,
+                        "schema": one_category_schema,
+                    }
+                },
+                "temperature": 0.25,
+                "max_output_tokens": 260,
+            }
+
             try:
-                resp = requests.post(
-                    "https://api.openai.com/v1/responses",
-                    headers={
-                        "Authorization": f"Bearer {api_key}",
-                        "Content-Type": "application/json",
-                    },
-                    json=request_payload,
-                    timeout=timeout_sec,
-                )
-
-                if resp.status_code in (429, 500, 502, 503, 504):
-                    raise RuntimeError(f"OpenAI transient error {resp.status_code}: {resp.text[:200]}")
-                if not resp.ok:
-                    raise RuntimeError(f"OpenAI API error: {resp.status_code} {resp.text[:300]}")
-
-                data = resp.json()
-                output_text = _extract_output_text(data)
-                if not output_text:
-                    raise RuntimeError("OpenAI output_text is empty")
-
-                parsed = json.loads(output_text)
-                parsed["source"] = "openai"
-                parsed["fallback_reason"] = None
-                parsed["openai_error"] = None
-                return parsed
+                cat_parsed = _post_openai(cat_request, timeout_sec=45, max_attempts=2)
+                degraded_categories[category] = cat_parsed
             except Exception as e:
-                last_error = e
-                if attempt < max_attempts:
-                    time.sleep(1.2 * attempt)
-                    continue
-                raise
-    except Exception as e:
-        masked = _mask_error_message(e)
+                degraded_errors.append(f"{category}:{_mask_error_message(e)}")
+                degraded_categories[category] = fallback_categories[category]
+
+        openai_success_count = sum(
+            1 for c in CATEGORY_LABELS.keys()
+            if degraded_categories.get(c, {}).get("one_line_summary") != fallback_categories.get(c, {}).get("one_line_summary")
+        )
+
+        if openai_success_count > 0:
+            risk_counts = {"positive": 0, "neutral": 0, "caution": 0, "unknown": 0}
+            for c in CATEGORY_LABELS.keys():
+                risk = degraded_categories.get(c, {}).get("risk_level", "unknown")
+                if risk not in risk_counts:
+                    risk = "unknown"
+                risk_counts[risk] += 1
+
+            overall_summary = (
+                f"카테고리별 흐름은 혼조입니다. "
+                f"긍정 {risk_counts['positive']}개, 중립 {risk_counts['neutral']}개, 경계 {risk_counts['caution']}개로 집계되었습니다. "
+                f"데이터 신선도와 발표 주기 차이를 감안해 방향성 중심으로 해석하세요."
+            )
+            return {
+                "overall_summary": overall_summary,
+                "categories": degraded_categories,
+                "source": "openai",
+                "fallback_reason": None,
+                "openai_error": None,
+            }
+
+        masked = _mask_error_message(full_error)
         print(f"⚠️ OpenAI interpretation failed, fallback used: {masked}")
         fallback = _build_fallback_category_interpretation(category_summary)
         fallback["fallback_reason"] = "openai_call_failed"
-        fallback["openai_error"] = masked
+        if degraded_errors:
+            fallback["openai_error"] = " | ".join(degraded_errors[:4])
+        else:
+            fallback["openai_error"] = masked
         return fallback
 
 @app.route('/api/v2/indicators')
