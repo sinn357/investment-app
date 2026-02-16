@@ -57,6 +57,22 @@ interface GridIndicator {
   };
 }
 
+interface AIInterpretationItem {
+  label: string;
+  interpretation: string;
+  signals: string[];
+  risk_level: 'positive' | 'neutral' | 'caution' | 'unknown';
+}
+
+interface AIInterpretationResponse {
+  status: 'success' | 'error';
+  generated_at?: string;
+  source?: 'openai' | 'fallback';
+  overall_summary?: string;
+  categories?: Record<string, AIInterpretationItem>;
+  message?: string;
+}
+
 // ✅ 성능 최적화: 순수 함수를 컴포넌트 외부로 이동 (매 렌더링마다 재생성 방지)
 // 지표명을 카테고리로 매핑하는 헬퍼 함수
 function mapIndicatorToCategory(name: string): string {
@@ -96,10 +112,16 @@ function mapIndicatorToCategory(name: string): string {
     return 'inflation';
   }
 
-  // 정책지표
-  if (lowerName.includes('gdp') || lowerName.includes('fomc') ||
-      lowerName.includes('confidence') || lowerName.includes('policy')) {
-    return 'policy';
+  // 신용/금융여건
+  if (lowerName.includes('spread') || lowerName.includes('fci') ||
+      lowerName.includes('credit') || lowerName.includes('m2')) {
+    return 'credit';
+  }
+
+  // 심리지표
+  if (lowerName.includes('vix') || lowerName.includes('put') ||
+      lowerName.includes('fear') || lowerName.includes('sentiment')) {
+    return 'sentiment';
   }
 
   return 'business'; // 기본값
@@ -131,6 +153,9 @@ export default function IndicatorsPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [healthCheck, setHealthCheck] = useState<any>(null);
   const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
+  const [aiInterpretation, setAiInterpretation] = useState<AIInterpretationResponse | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
   // 섹션별 접기 상태
   const [collapsedSections, setCollapsedSections] = useState({
     masterCycle: false,
@@ -176,6 +201,25 @@ export default function IndicatorsPage() {
       }
     } catch (error) {
       console.error('헬스체크 데이터 로드 실패:', error);
+    }
+  }, []);
+
+  const fetchAiInterpretation = useCallback(async () => {
+    try {
+      setAiLoading(true);
+      setAiError(null);
+
+      const response = await fetchJsonWithRetry(`${API_URL}/api/v2/indicators/ai-interpretation`);
+      if (response.status !== 'success') {
+        throw new Error(response.message || 'AI 해석 생성 실패');
+      }
+
+      setAiInterpretation(response as AIInterpretationResponse);
+    } catch (error) {
+      console.error('AI interpretation fetch failed:', error);
+      setAiError(error instanceof Error ? error.message : 'AI 해석을 불러오지 못했습니다');
+    } finally {
+      setAiLoading(false);
     }
   }, []);
 
@@ -579,6 +623,84 @@ export default function IndicatorsPage() {
               </div>
             </GlassCard>
             )}
+          </div>
+        )}
+
+        {/* AI 종합 해석 */}
+        {!loading && allIndicators.length > 0 && (
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-4">
+            <GlassCard className="p-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-foreground">🧠 카테고리별 AI 종합 해석</h3>
+                  <p className="text-xs text-muted-foreground">
+                    저장된 모든 지표 수치 기반으로 경기·고용·금리·무역·물가·신용·심리를 해석합니다.
+                  </p>
+                </div>
+                <Button
+                  onClick={fetchAiInterpretation}
+                  disabled={aiLoading}
+                  size="sm"
+                  className="w-full sm:w-auto"
+                >
+                  {aiLoading ? '분석 중...' : 'AI 해석 생성'}
+                </Button>
+              </div>
+
+              {aiError && (
+                <div className="mb-3 rounded-md border border-red-300 bg-red-50 dark:bg-red-900/20 p-3 text-sm text-red-700 dark:text-red-300">
+                  {aiError}
+                </div>
+              )}
+
+              {aiLoading && (
+                <div className="text-sm text-muted-foreground">
+                  지표 해석을 생성하고 있습니다...
+                </div>
+              )}
+
+              {!aiLoading && aiInterpretation?.status === 'success' && aiInterpretation.categories && (
+                <div className="space-y-3">
+                  <div className="rounded-md border border-border bg-muted/30 p-3">
+                    <p className="text-sm text-foreground">{aiInterpretation.overall_summary}</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      출처: {aiInterpretation.source === 'openai' ? 'OpenAI (gpt-4o-mini)' : 'Fallback 규칙 기반'}
+                      {aiInterpretation.generated_at ? ` · 생성시각: ${new Date(aiInterpretation.generated_at).toLocaleString('ko-KR')}` : ''}
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                    {Object.entries(aiInterpretation.categories).map(([key, item]) => {
+                      const riskClass =
+                        item.risk_level === 'positive'
+                          ? 'text-green-700 bg-green-100 dark:text-green-300 dark:bg-green-900/30'
+                          : item.risk_level === 'caution'
+                          ? 'text-red-700 bg-red-100 dark:text-red-300 dark:bg-red-900/30'
+                          : item.risk_level === 'unknown'
+                          ? 'text-gray-700 bg-gray-100 dark:text-gray-300 dark:bg-gray-800'
+                          : 'text-amber-700 bg-amber-100 dark:text-amber-300 dark:bg-amber-900/30';
+
+                      return (
+                        <div key={key} className="rounded-md border border-border bg-card p-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <h4 className="text-sm font-semibold text-foreground">{item.label}</h4>
+                            <span className={`px-2 py-0.5 rounded text-xs font-medium ${riskClass}`}>
+                              {item.risk_level}
+                            </span>
+                          </div>
+                          <p className="text-sm text-foreground mb-2">{item.interpretation}</p>
+                          <ul className="text-xs text-muted-foreground space-y-1">
+                            {item.signals.map((signal, idx) => (
+                              <li key={`${key}-${idx}`}>- {signal}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </GlassCard>
           </div>
         )}
 

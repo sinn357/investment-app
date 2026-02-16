@@ -928,6 +928,185 @@ def get_participation_rate_history():
 
 # ========== 새로운 데이터베이스 기반 API 엔드포인트 ==========
 
+CATEGORY_LABELS = {
+    "business": "경기",
+    "employment": "고용",
+    "interest": "금리",
+    "trade": "무역",
+    "inflation": "물가",
+    "credit": "신용",
+    "sentiment": "심리",
+}
+
+
+def _to_float(value):
+    """문자/숫자 값을 float로 변환. 실패 시 None"""
+    if value is None:
+        return None
+    if isinstance(value, (int, float)):
+        return float(value)
+    if isinstance(value, str):
+        try:
+            cleaned = value.replace("%", "").replace("K", "000").replace(",", "").strip()
+            return float(cleaned)
+        except Exception:
+            return None
+    return None
+
+
+def _extract_output_text(response_json):
+    """Responses API 응답에서 텍스트 추출"""
+    output_text = response_json.get("output_text")
+    if output_text:
+        return output_text
+
+    output = response_json.get("output", [])
+    for item in output:
+        for content in item.get("content", []):
+            if content.get("type") == "output_text" and content.get("text"):
+                return content.get("text")
+    return None
+
+
+def _build_fallback_category_interpretation(category_summary):
+    """OpenAI 실패 시 카테고리별 기본 해석 생성"""
+    fallback_categories = {}
+    for category, payload in category_summary.items():
+        label = CATEGORY_LABELS.get(category, category)
+        count = payload.get("count", 0)
+        avg_surprise = payload.get("avg_surprise")
+        missing = payload.get("missing_count", 0)
+
+        if count == 0:
+            interpretation = f"{label} 지표 데이터가 부족해 추세 판단이 어렵습니다."
+            risk_level = "unknown"
+            signals = ["데이터 업데이트 필요"]
+        else:
+            if avg_surprise is None:
+                interpretation = f"{label} 지표는 발표값이 누적되고 있으나 서프라이즈 정보가 제한적입니다."
+                risk_level = "neutral"
+                signals = ["발표/예측치 축적 필요"]
+            elif avg_surprise > 0:
+                interpretation = f"{label} 지표는 평균적으로 예상치를 상회하며 상대적 개선 흐름입니다."
+                risk_level = "positive"
+                signals = [f"평균 서프라이즈 +{avg_surprise:.2f}"]
+            elif avg_surprise < 0:
+                interpretation = f"{label} 지표는 평균적으로 예상치를 하회해 둔화 신호가 있습니다."
+                risk_level = "caution"
+                signals = [f"평균 서프라이즈 {avg_surprise:.2f}"]
+            else:
+                interpretation = f"{label} 지표는 평균적으로 예상과 유사한 흐름입니다."
+                risk_level = "neutral"
+                signals = ["서프라이즈 중립"]
+
+        if missing > 0:
+            signals.append(f"미집계 지표 {missing}개")
+
+        fallback_categories[category] = {
+            "label": label,
+            "interpretation": interpretation,
+            "signals": signals,
+            "risk_level": risk_level,
+        }
+
+    return {
+        "overall_summary": "일부 지표 기준 기본 해석입니다. OpenAI 연결 시 더 정교한 맥락 해석이 제공됩니다.",
+        "categories": fallback_categories,
+        "source": "fallback",
+    }
+
+
+def _generate_ai_indicator_interpretation(category_summary):
+    """OpenAI를 사용해 카테고리별 지표 해석 생성"""
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        return _build_fallback_category_interpretation(category_summary)
+
+    schema = {
+        "type": "object",
+        "properties": {
+            "overall_summary": {"type": "string"},
+            "categories": {
+                "type": "object",
+                "properties": {
+                    category: {
+                        "type": "object",
+                        "properties": {
+                            "label": {"type": "string"},
+                            "interpretation": {"type": "string"},
+                            "signals": {
+                                "type": "array",
+                                "items": {"type": "string"}
+                            },
+                            "risk_level": {
+                                "type": "string",
+                                "enum": ["positive", "neutral", "caution", "unknown"]
+                            }
+                        },
+                        "required": ["label", "interpretation", "signals", "risk_level"],
+                        "additionalProperties": False
+                    } for category in CATEGORY_LABELS.keys()
+                },
+                "required": list(CATEGORY_LABELS.keys()),
+                "additionalProperties": False
+            }
+        },
+        "required": ["overall_summary", "categories"],
+        "additionalProperties": False
+    }
+
+    prompt = f"""당신은 매크로 전략가입니다.
+아래 지표 집계를 바탕으로 카테고리별(경기/고용/금리/무역/물가/신용/심리) 해석을 작성하세요.
+
+[입력 데이터]
+{json.dumps(category_summary, ensure_ascii=False)}
+
+[지시사항]
+1) 각 카테고리마다 현재 흐름을 1~2문장으로 설명
+2) signals에는 핵심 신호 2~3개 작성
+3) risk_level은 positive/neutral/caution/unknown 중 하나
+4) overall_summary는 전체 매크로 상황을 2문장 이내로 요약
+5) 한국어로 작성
+"""
+
+    try:
+        resp = requests.post(
+            "https://api.openai.com/v1/responses",
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": "gpt-4o-mini",
+                "input": prompt,
+                "text": {
+                    "format": {
+                        "type": "json_schema",
+                        "name": "indicator_category_interpretation",
+                        "strict": True,
+                        "schema": schema,
+                    }
+                },
+                "temperature": 0.4,
+                "max_output_tokens": 900,
+            },
+            timeout=30,
+        )
+        if not resp.ok:
+            raise RuntimeError(f"OpenAI API error: {resp.status_code} {resp.text[:300]}")
+
+        data = resp.json()
+        output_text = _extract_output_text(data)
+        if not output_text:
+            raise RuntimeError("OpenAI output_text is empty")
+
+        parsed = json.loads(output_text)
+        parsed["source"] = "openai"
+        return parsed
+    except Exception as e:
+        print(f"⚠️ OpenAI interpretation failed, fallback used: {e}")
+        return _build_fallback_category_interpretation(category_summary)
+
 @app.route('/api/v2/indicators')
 def get_all_indicators_from_db():
     """데이터베이스에서 모든 지표 데이터 조회 (빠른 로딩용) - 히스토리 포함"""
@@ -1103,6 +1282,88 @@ def get_all_indicators_from_db():
         return jsonify({
             "status": "error",
             "message": f"Database query failed: {str(e)}"
+        }), 500
+
+
+@app.route('/api/v2/indicators/ai-interpretation', methods=['GET'])
+def get_ai_interpretation_for_indicators():
+    """저장된 모든 지표 수치 기반 카테고리별 AI 종합 해석"""
+    try:
+        all_indicator_ids = list(get_all_enabled_indicators().keys())
+        if hasattr(db_service, "get_multiple_indicators_data"):
+            all_data = db_service.get_multiple_indicators_data(all_indicator_ids)
+        else:
+            all_data = {indicator_id: db_service.get_indicator_data(indicator_id) for indicator_id in all_indicator_ids}
+
+        category_details = {key: [] for key in CATEGORY_LABELS.keys()}
+
+        for indicator_id in all_indicator_ids:
+            metadata = get_indicator_config(indicator_id)
+            if not metadata:
+                continue
+
+            category = metadata.category
+            if category not in category_details:
+                continue
+
+            data = all_data.get(indicator_id, {})
+            latest = data.get("latest_release", {}) if isinstance(data, dict) else {}
+
+            actual = latest.get("actual")
+            forecast = latest.get("forecast")
+            previous = latest.get("previous")
+
+            actual_num = _to_float(actual)
+            forecast_num = _to_float(forecast)
+            previous_num = _to_float(previous)
+
+            surprise = None
+            if actual_num is not None and forecast_num is not None:
+                surprise = round(actual_num - forecast_num, 2)
+
+            delta_prev = None
+            if actual_num is not None and previous_num is not None:
+                delta_prev = round(actual_num - previous_num, 2)
+
+            category_details[category].append({
+                "indicator_id": indicator_id,
+                "name_ko": metadata.name_ko,
+                "name": metadata.name,
+                "actual": actual,
+                "forecast": forecast,
+                "previous": previous,
+                "surprise": surprise,
+                "delta_prev": delta_prev,
+                "release_date": latest.get("release_date"),
+            })
+
+        category_summary = {}
+        for category, rows in category_details.items():
+            valid_surprises = [row["surprise"] for row in rows if row["surprise"] is not None]
+            category_summary[category] = {
+                "label": CATEGORY_LABELS[category],
+                "count": len(rows),
+                "avg_surprise": round(sum(valid_surprises) / len(valid_surprises), 2) if valid_surprises else None,
+                "missing_count": sum(1 for row in rows if row["actual"] in [None, "-", ""]),
+                "top_indicators": rows[:6],  # 프롬프트 길이 제어
+            }
+
+        interpretation = _generate_ai_indicator_interpretation(category_summary)
+
+        return jsonify({
+            "status": "success",
+            "generated_at": datetime.now().isoformat(),
+            "source": interpretation.get("source", "fallback"),
+            "overall_summary": interpretation.get("overall_summary"),
+            "categories": interpretation.get("categories"),
+            "category_summary": category_summary,
+        })
+    except Exception as e:
+        import traceback
+        print(f"Error in ai interpretation endpoint: {traceback.format_exc()}")
+        return jsonify({
+            "status": "error",
+            "message": f"AI interpretation failed: {str(e)}"
         }), 500
 
 @app.route('/api/v2/indicators/health-check')
