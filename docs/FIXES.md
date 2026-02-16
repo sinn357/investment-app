@@ -2,6 +2,31 @@
 
 ## Recent Fixes
 
+### Indicators AI Interpretation Fallback / Truncated JSON
+**Status**: Resolved (stabilized with degraded fallback path)
+**Symptoms**:
+- `AI 해석 생성` 시 `fallback_reason: openai_call_failed`
+- `openai_error: ... Unterminated string ...`
+- 일부 배포 시점에 `404 /api/v2/indicators/ai-interpretation`
+
+**Root Causes**:
+1. 대형 JSON schema 응답이 timeout 또는 output truncation으로 실패.
+2. 카테고리별 경량 호출의 토큰 한도가 낮아 JSON 문자열이 중간에서 잘림.
+3. 초기 배포 타이밍에서 백엔드 라우트 미반영 상태 존재.
+
+**Fixes**:
+- `/api/v2/indicators/ai-interpretation` 라우트 추가 및 배포 반영.
+- OpenAI 호출 재시도/백오프 + timeout 상향.
+- 일괄 호출 실패 시 카테고리별 경량 OpenAI 호출로 강등.
+- `Unterminated string` 감지 시 토큰 상향 재시도.
+- `fallback_reason`, `openai_error` 응답/화면 노출로 진단 가능화.
+- `confidence/freshness_score` 0~1 출력 자동 정규화(0~100).
+
+**Verification**:
+- 프론트에서 `AI 해석 생성` 버튼 클릭 시 on-demand 호출 동작.
+- 실패 시 원인 문자열 확인 가능.
+- 성공 시 카테고리별 섹션/시그널/요약 구조 정상 표시.
+
 ### Render Deploy Timeout (Missing retail_sales crawler)
 **Status**: Resolved
 **Symptoms**:
@@ -84,4 +109,4 @@
 
 ---
 
-**Last Updated**: 2026-01-26
+**Last Updated**: 2026-02-16

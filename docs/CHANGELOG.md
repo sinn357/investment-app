@@ -1,5 +1,56 @@
 # Investment App Changelog
 
+## 2026-02-16
+
+### Added
+- **경제지표 상세의 히스토리 하단 출처 링크 추가**
+  - 지표별 원문 URL(`manual_check` 포함)을 상세 보기에서 바로 확인 가능
+  - 파일: `frontend/src/components/IndicatorChartPanel.tsx`
+
+- **지표 해석 수동 실행 API/버튼 추가**
+  - 백엔드: `GET /api/v2/indicators/ai-interpretation`
+  - 프론트엔드: `AI 해석 생성` 버튼 클릭 시에만 호출(자동 호출 없음)
+  - Direct Check 지표(`manual_check`) 자동 제외
+  - 파일: `backend/app.py`, `frontend/src/app/indicators/page.tsx`
+
+### Changed
+- **카테고리별 해석 포맷 고도화**
+  - 경기/고용/금리/무역/물가/신용/심리 7개 카테고리 고정 섹션 구조 적용
+  - `sections`, `signals`, `risk_level`, `freshness_score`, `confidence`, `one_line_summary` 반환
+  - 파일: `backend/app.py`, `frontend/src/app/indicators/page.tsx`
+
+- **OpenAI 실패 대응 강화**
+  - 타임아웃/일시 장애(429/5xx) 재시도 및 백오프
+  - 대형 일괄 요청 실패 시 카테고리별 경량 요청으로 강등(degraded path)
+  - JSON 잘림(`Unterminated string`) 감지 시 토큰 상향 재시도
+  - 파일: `backend/app.py`
+
+### Fixed
+- **`404 /api/v2/indicators/ai-interpretation` 대응 완료**
+  - 배포본 라우트 누락 상태를 코드/배포 반영 후 정상화
+
+- **Fallback 원인 가시화**
+  - 응답에 `fallback_reason`, `openai_error` 포함
+  - 프론트 카드에서 디버그 정보 표시
+  - 파일: `backend/app.py`, `frontend/src/app/indicators/page.tsx`
+
+- **AI 결과 품질 보정**
+  - `confidence`/`freshness_score` 0~1 출력 시 0~100으로 정규화
+  - 상단 전체 요약을 실제 카테고리 결과 기반으로 합성
+  - 섹션 누락/형식 이상 시 서버 보정 로직 추가
+  - 파일: `backend/app.py`
+
+### Commits
+- `658ce05`: feat: add source links and on-demand AI indicator interpretation
+- `bd29a1b`: feat: enforce detailed AI macro interpretation format
+- `cea7352`: fix: expose AI fallback cause and improve fallback sections
+- `5a99863`: fix: reduce OpenAI timeout failures with retries
+- `ffa59d5`: fix: add degraded per-category OpenAI interpretation fallback
+- `7eee753`: fix: handle truncated OpenAI JSON in category fallback path
+- `efffc92`: fix: improve AI interpretation quality and score normalization
+
+---
+
 ## 2026-01-26
 
 ### Added
