@@ -1406,7 +1406,7 @@ manual_check 지표는 제외되어 있습니다.
 
 [지시사항]
 1) sections는 고정 섹션 제목과 같은 순서/개수로 작성.
-2) 각 section.content는 한국어 1~2문장.
+2) 각 section.content는 한국어 1문장(최대 60자 내외).
 3) 숫자 하나로 단정 금지. 데이터 부족 시 판단 유보.
 4) one_line_summary는 핵심 결론 한 줄.
 """
@@ -1423,13 +1423,25 @@ manual_check 지표는 제외되어 있습니다.
                     }
                 },
                 "temperature": 0.25,
-                "max_output_tokens": 260,
+                "max_output_tokens": 420,
             }
 
             try:
                 cat_parsed = _post_openai(cat_request, timeout_sec=45, max_attempts=2)
                 degraded_categories[category] = cat_parsed
             except Exception as e:
+                # JSON truncation(unterminated string) 발생 시 토큰 상향 1회 재시도
+                if "Unterminated string" in str(e) or "Expecting value" in str(e):
+                    try:
+                        cat_request["max_output_tokens"] = 620
+                        cat_parsed = _post_openai(cat_request, timeout_sec=55, max_attempts=2)
+                        degraded_categories[category] = cat_parsed
+                        continue
+                    except Exception as e2:
+                        degraded_errors.append(f"{category}:{_mask_error_message(e2)}")
+                        degraded_categories[category] = fallback_categories[category]
+                        continue
+
                 degraded_errors.append(f"{category}:{_mask_error_message(e)}")
                 degraded_categories[category] = fallback_categories[category]
 
