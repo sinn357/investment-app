@@ -2,19 +2,14 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import Navigation from '@/components/Navigation';
-// import CyclePanel from '@/components/CyclePanel'; // ✅ 제거: Master Cycle로 대체
 import FlowDashboard from '@/components/FlowDashboard';
 import AIBriefing from '@/components/AIBriefing';
 import IndicatorGrid from '@/components/IndicatorGrid';
 import IndicatorTableView from '@/components/IndicatorTableView';
 import IndicatorChartPanel from '@/components/IndicatorChartPanel';
 import RemovedIndicatorsSection from '@/components/RemovedIndicatorsSection';
-// import EconomicIndicatorsSection from '@/components/EconomicIndicatorsSection'; // 통합으로 비활성화
-// import DataSection from '@/components/DataSection'; // 통합으로 비활성화
-// import CyclePanelSkeleton from '@/components/skeletons/CyclePanelSkeleton'; // ✅ 제거: Master Cycle로 대체
 import IndicatorGridSkeleton from '@/components/skeletons/IndicatorGridSkeleton';
 import ErrorBoundary from '@/components/ErrorBoundary';
-// import { calculateCycleScore, RawIndicators } from '@/utils/cycleCalculator'; // ✅ 제거: Master Cycle로 대체
 import { fetchJsonWithRetry } from '@/utils/fetchWithRetry';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -170,7 +165,7 @@ export default function IndicatorsPage() {
   const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
   // 섹션별 접기 상태
   const [collapsedSections, setCollapsedSections] = useState({
-    masterCycle: false,
+    flowDashboard: false,
     healthCheck: false,
     indicators: false,
   });
@@ -183,7 +178,7 @@ export default function IndicatorsPage() {
   // 전체 접기/펼치기
   const toggleAllSections = useCallback((collapsed: boolean) => {
     setCollapsedSections({
-      masterCycle: collapsed,
+      flowDashboard: collapsed,
       healthCheck: collapsed,
       indicators: collapsed,
     });
@@ -302,8 +297,6 @@ export default function IndicatorsPage() {
           if (result.last_updated) {
             setLastUpdated(result.last_updated);
           }
-
-          // ✅ 제거: cycleCalculator 로직 - Master Cycle로 대체
 
           // 그리드용 지표 데이터 생성 (백엔드에서 메타데이터 포함됨)
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -472,13 +465,13 @@ export default function IndicatorsPage() {
         {!loading && allIndicators.length > 0 && (
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-4">
             <div
-              onClick={() => toggleSection('masterCycle')}
+              onClick={() => toggleSection('flowDashboard')}
               className="flex items-center justify-between p-3 bg-card rounded-t-lg border border-b-0 border-primary/20 cursor-pointer hover:bg-muted/50"
             >
               <h3 className="text-lg font-semibold text-foreground">🌊 지표 흐름 대시보드</h3>
-              <span className="text-sm text-muted-foreground">{collapsedSections.masterCycle ? '펼치기 ▼' : '접기 ▲'}</span>
+              <span className="text-sm text-muted-foreground">{collapsedSections.flowDashboard ? '펼치기 ▼' : '접기 ▲'}</span>
             </div>
-            {!collapsedSections.masterCycle && <FlowDashboard indicators={allIndicators} />}
+            {!collapsedSections.flowDashboard && <FlowDashboard indicators={allIndicators} />}
           </div>
         )}
 
@@ -786,10 +779,6 @@ export default function IndicatorsPage() {
             )}
           </>
         )}
-
-        {/* 상세 지표 섹션 (Raw Data + History Table) - 통합으로 비활성화 */}
-        {/* <EconomicIndicatorsSection /> */}
-        {/* <DataSection /> */}
 
       </main>
       </div>
