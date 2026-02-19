@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import Navigation from '@/components/Navigation';
-import MasterCycleCard from '@/components/MasterCycleCard';
 // import CyclePanel from '@/components/CyclePanel'; // ✅ 제거: Master Cycle로 대체
+import FlowDashboard from '@/components/FlowDashboard';
 import IndicatorGrid from '@/components/IndicatorGrid';
 import IndicatorTableView from '@/components/IndicatorTableView';
 import IndicatorChartPanel from '@/components/IndicatorChartPanel';
@@ -15,7 +15,6 @@ import IndicatorGridSkeleton from '@/components/skeletons/IndicatorGridSkeleton'
 import ErrorBoundary from '@/components/ErrorBoundary';
 // import { calculateCycleScore, RawIndicators } from '@/utils/cycleCalculator'; // ✅ 제거: Master Cycle로 대체
 import { fetchJsonWithRetry } from '@/utils/fetchWithRetry';
-import { calculateCycleTrendsFromIndicators } from '@/utils/trendCalculator';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import GlassCard from '@/components/GlassCard';
@@ -177,8 +176,6 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://investment-app-backe
 export default function IndicatorsPage() {
   // const [cycleScore, setCycleScore] = useState<ReturnType<typeof calculateCycleScore> | null>(null); // ✅ 제거: Master Cycle로 대체
   const [allIndicators, setAllIndicators] = useState<GridIndicator[]>([]);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [indicatorsPayload, setIndicatorsPayload] = useState<any[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedIndicatorId, setSelectedIndicatorId] = useState<string | undefined>(undefined);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
@@ -191,9 +188,6 @@ export default function IndicatorsPage() {
     duration: number;
     count: number;
   }>({ type: 'loading', duration: 0, count: 0 });
-  // ✅ NEW: Master Market Cycle state (Phase 1)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [masterCycleData, setMasterCycleData] = useState<any>(null);
   // ✅ NEW: Health Check state (Phase 2)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [healthCheck, setHealthCheck] = useState<any>(null);
@@ -354,7 +348,6 @@ export default function IndicatorsPage() {
           if (result.last_updated) {
             setLastUpdated(result.last_updated);
           }
-          setIndicatorsPayload(result.indicators);
 
           // ✅ 제거: cycleCalculator 로직 - Master Cycle로 대체
 
@@ -467,71 +460,6 @@ export default function IndicatorsPage() {
     fetchAndCalculateCycle();
   }, []);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    async function fetchMasterCycle() {
-      try {
-        const masterResult = await fetchJsonWithRetry(
-          `${API_URL}/api/v4/master-cycle`,
-          {},
-          3,
-          1000
-        );
-
-        if (cancelled) return;
-
-        if (masterResult.status === 'success' && masterResult.data) {
-          const needsTrendFallback =
-            masterResult.data.macro?.trend == null ||
-            masterResult.data.credit?.trend == null ||
-            masterResult.data.sentiment?.trend == null;
-
-          let trendFallback = null;
-          if (needsTrendFallback && indicatorsPayload) {
-            // ✅ Fallback: 히스토리 기반 Trend 계산 (API 미제공 시)
-            const indicatorsMap: Record<string, { data?: { latest_release?: { actual?: number | string | null }; history_table?: Array<{ release_date: string; actual: number | string | null }> } }> = {};
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            indicatorsPayload.forEach((item: any) => {
-              if (item?.indicator_id) {
-                indicatorsMap[item.indicator_id] = { data: item.data };
-              }
-            });
-            trendFallback = calculateCycleTrendsFromIndicators(indicatorsMap);
-          }
-
-          // masterResult.data에 trend 보강 (API 우선, 없으면 fallback)
-          const enrichedData = {
-            ...masterResult.data,
-            macro: {
-              ...masterResult.data.macro,
-              trend: masterResult.data.macro?.trend ?? trendFallback?.macro,
-            },
-            credit: {
-              ...masterResult.data.credit,
-              trend: masterResult.data.credit?.trend ?? trendFallback?.credit,
-            },
-            sentiment: {
-              ...masterResult.data.sentiment,
-              trend: masterResult.data.sentiment?.trend ?? trendFallback?.sentiment,
-            },
-          };
-
-          setMasterCycleData(enrichedData);
-        }
-      } catch (error) {
-        if (!cancelled) {
-          console.warn('Master Cycle API 호출 실패 (v4):', error);
-        }
-      }
-    }
-
-    fetchMasterCycle();
-    return () => {
-      cancelled = true;
-    };
-  }, [indicatorsPayload]);
-
   const removedIndicators = useMemo(
     () => allIndicators.filter((indicator) => indicator.isCore === false),
     [allIndicators]
@@ -586,17 +514,17 @@ export default function IndicatorsPage() {
           </div>
         </div>
 
-        {/* ✅ NEW: Master Market Cycle (Phase 1) */}
-        {!loading && masterCycleData && (
+        {/* ✅ Phase 2: Flow Dashboard */}
+        {!loading && allIndicators.length > 0 && (
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-4">
             <div
               onClick={() => toggleSection('masterCycle')}
               className="flex items-center justify-between p-3 bg-card rounded-t-lg border border-b-0 border-primary/20 cursor-pointer hover:bg-muted/50"
             >
-              <h3 className="text-lg font-semibold text-foreground">🎯 Master Market Cycle</h3>
+              <h3 className="text-lg font-semibold text-foreground">🌊 지표 흐름 대시보드</h3>
               <span className="text-sm text-muted-foreground">{collapsedSections.masterCycle ? '펼치기 ▼' : '접기 ▲'}</span>
             </div>
-            {!collapsedSections.masterCycle && <MasterCycleCard data={masterCycleData} />}
+            {!collapsedSections.masterCycle && <FlowDashboard indicators={allIndicators} />}
           </div>
         )}
 

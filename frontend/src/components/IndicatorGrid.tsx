@@ -33,11 +33,10 @@ interface IndicatorGridProps {
   onIndicatorClick?: (indicator: Indicator) => void;
 }
 
-type FilterCategory = 'all' | 'business' | 'employment' | 'interest' | 'trade' | 'inflation' | 'credit' | 'sentiment';
+type FilterCategory = 'business' | 'employment' | 'interest' | 'trade' | 'inflation' | 'credit' | 'sentiment';
 type SortOption = 'default' | 'alphabetical' | 'impact';
 
 const CATEGORY_FILTERS = [
-  { id: 'all' as FilterCategory, name: '전체', icon: '🌐' },
   { id: 'business' as FilterCategory, name: '경기', icon: '📊' },
   { id: 'employment' as FilterCategory, name: '고용', icon: '👷' },
   { id: 'interest' as FilterCategory, name: '금리', icon: '🏦' },
@@ -54,7 +53,7 @@ const SORT_OPTIONS = [
 ];
 
 export default function IndicatorGrid({ indicators, selectedId, onIndicatorClick }: IndicatorGridProps) {
-  const [activeFilter, setActiveFilter] = useState<FilterCategory>('all');
+  const [activeFilter, setActiveFilter] = useState<FilterCategory>('business');
   const [sortOption, setSortOption] = useState<SortOption>('default');
   const coreIndicators = useMemo(() => {
     return indicators.filter((indicator) => indicator.isCore !== false);
@@ -63,9 +62,7 @@ export default function IndicatorGrid({ indicators, selectedId, onIndicatorClick
   // 필터링 및 정렬된 지표 (useMemo로 최적화)
   const filteredIndicators = useMemo(() => {
     // 1. 필터링
-    let result = activeFilter === 'all'
-      ? coreIndicators
-      : coreIndicators.filter(ind => ind.category === activeFilter);
+    let result = coreIndicators.filter(ind => ind.category === activeFilter);
 
     // 2. 정렬
     if (sortOption === 'alphabetical') {
@@ -85,7 +82,6 @@ export default function IndicatorGrid({ indicators, selectedId, onIndicatorClick
   // ✅ 성능 최적화: 카테고리별 지표 개수를 useMemo로 미리 계산 (매번 필터링 방지)
   const categoryCounts = useMemo(() => {
     const counts: Record<FilterCategory, number> = {
-      all: coreIndicators.length,
       business: 0,
       employment: 0,
       interest: 0,
@@ -97,7 +93,7 @@ export default function IndicatorGrid({ indicators, selectedId, onIndicatorClick
 
     coreIndicators.forEach(ind => {
       const cat = ind.category as FilterCategory;
-      if (cat in counts && cat !== 'all') {
+      if (cat in counts) {
         counts[cat]++;
       }
     });
@@ -119,7 +115,7 @@ export default function IndicatorGrid({ indicators, selectedId, onIndicatorClick
             경제지표 한눈에 보기
           </h2>
           <p className={CARD_CLASSES.subtitle}>
-            전체 지표를 카테고리별로 필터링하여 확인하세요 • 클릭하면 상세 정보 표시
+            카테고리별 핵심 지표를 확인하세요 • 클릭하면 상세 정보 표시
           </p>
         </div>
 
@@ -224,14 +220,6 @@ export default function IndicatorGrid({ indicators, selectedId, onIndicatorClick
           <span>
             총 {coreIndicators.length}개 핵심 지표 중 {filteredIndicators.length}개 표시
           </span>
-          {activeFilter !== 'all' && (
-            <button
-              onClick={() => setActiveFilter('all')}
-              className="text-blue-600 dark:text-blue-400 hover:underline"
-            >
-              전체 보기
-            </button>
-          )}
         </div>
       </div>
     </section>
