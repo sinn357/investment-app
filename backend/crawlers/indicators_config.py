@@ -7,6 +7,47 @@
 
 from typing import Dict, Any, Optional
 
+CORE_INDICATOR_IDS = {
+    # Growth
+    "ism-manufacturing",
+    "ism-non-manufacturing",
+    "retail-sales",
+    "michigan-consumer-sentiment",
+    # Labor
+    "nonfarm-payrolls",
+    "unemployment-rate",
+    "average-hourly-earnings",
+    "initial-jobless-claims",
+    # Rates
+    "federal-funds-rate",
+    "two-year-treasury",
+    "ten-year-treasury",
+    "yield-curve-10y-2y",
+    "real-yield-tips",
+    # Inflation
+    "core-cpi",
+    "pce",
+    "cpi",
+    "brent-oil",
+    "sp-gsci",
+    # Trade
+    "usd-index",
+    "usd-krw",
+    "goods-trade-balance",
+    "business-inventories-trade",
+    "baltic-dry-index",
+    "trade-balance",
+    # Credit
+    "hy-spread",
+    "ig-spread",
+    "fci",
+    # Sentiment
+    "vix",
+    "put-call-ratio",
+    "aaii-bull",
+    "sp500-pe",
+}
+
 class IndicatorConfig:
     """개별 지표 설정"""
     def __init__(
@@ -21,6 +62,7 @@ class IndicatorConfig:
         reverse_color: bool = False,  # True면 낮을수록 좋은 지표 (실업률 등)
         manual_check: bool = False,  # True면 크롤링 불가, 직접 확인 필요
         calculate_yoy: bool = False,  # True면 FRED 데이터를 YoY% 변화율로 변환
+        is_core: Optional[bool] = None,  # 핵심 지표 여부 (Phase 1)
     ):
         self.id = id
         self.name = name
@@ -32,6 +74,7 @@ class IndicatorConfig:
         self.reverse_color = reverse_color
         self.manual_check = manual_check
         self.calculate_yoy = calculate_yoy
+        self.is_core = (id in CORE_INDICATOR_IDS) if is_core is None else is_core
 
 # 전체 지표 설정 (정책지표 제외, 활성 지표만)
 INDICATORS: Dict[str, IndicatorConfig] = {

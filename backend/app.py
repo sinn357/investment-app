@@ -1663,6 +1663,7 @@ def get_all_indicators_from_db():
                 "category": metadata.category if metadata else "business",
                 "reverse_color": metadata.reverse_color if metadata else False,
                 "manual_check": metadata.manual_check if metadata else False,  # 직접 확인 필요 여부
+                "is_core": metadata.is_core if metadata else False,  # 핵심 지표 여부
                 "url": metadata.url if metadata else None,  # 직접 확인 URL
                 "surprise": surprise,  # Surprise 값 추가
                 "interpretation": interpretation,  # 5개 섹션 해석 추가
@@ -4979,7 +4980,8 @@ def get_all_indicators_metadata():
                     "name_ko": config.name_ko,
                     "category": config.category,
                     "threshold": config.threshold,
-                    "reverse_color": config.reverse_color
+                    "reverse_color": config.reverse_color,
+                    "is_core": config.is_core
                 }
                 for id, config in enabled_indicators.items()
             }

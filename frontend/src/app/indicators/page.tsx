@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import Navigation from '@/components/Navigation';
 import MasterCycleCard from '@/components/MasterCycleCard';
 // import CyclePanel from '@/components/CyclePanel'; // ✅ 제거: Master Cycle로 대체
 import IndicatorGrid from '@/components/IndicatorGrid';
 import IndicatorTableView from '@/components/IndicatorTableView';
 import IndicatorChartPanel from '@/components/IndicatorChartPanel';
+import RemovedIndicatorsSection from '@/components/RemovedIndicatorsSection';
 // import EconomicIndicatorsSection from '@/components/EconomicIndicatorsSection'; // 통합으로 비활성화
 // import DataSection from '@/components/DataSection'; // 통합으로 비활성화
 // import CyclePanelSkeleton from '@/components/skeletons/CyclePanelSkeleton'; // ✅ 제거: Master Cycle로 대체
@@ -40,6 +41,7 @@ interface GridIndicator {
   reverseColor?: boolean;
   manualCheck?: boolean;  // 직접 확인 필요 여부
   url?: string;  // 직접 확인 URL
+  isCore?: boolean;
   interpretation?: Interpretation;
   data?: {
     latest_release?: {
@@ -356,6 +358,7 @@ export default function IndicatorsPage() {
               sparklineData,
               reverseColor: item.reverse_color || false,
               manualCheck: item.manual_check || false,  // 직접 확인 필요 여부
+              isCore: item.is_core !== false,
               url: item.url || undefined,  // 직접 확인 URL
               interpretation: item.interpretation,  // 해석 데이터 전달
               data: item.data,  // 히스토리 포함한 전체 데이터 전달
@@ -492,6 +495,11 @@ export default function IndicatorsPage() {
       cancelled = true;
     };
   }, [indicatorsPayload]);
+
+  const removedIndicators = useMemo(
+    () => allIndicators.filter((indicator) => indicator.isCore === false),
+    [allIndicators]
+  );
 
   // ✅ Phase 2: 카운트다운 감소 로직
   useEffect(() => {
@@ -948,6 +956,8 @@ export default function IndicatorsPage() {
                     }}
                   />
                 )}
+
+                <RemovedIndicatorsSection indicators={removedIndicators} />
               </>
             ) : null}
 

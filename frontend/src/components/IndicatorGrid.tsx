@@ -24,6 +24,7 @@ interface Indicator {
   reverseColor?: boolean;
   manualCheck?: boolean;  // 직접 확인 필요 여부
   url?: string;  // 직접 확인 URL
+  isCore?: boolean;
 }
 
 interface IndicatorGridProps {
@@ -55,13 +56,16 @@ const SORT_OPTIONS = [
 export default function IndicatorGrid({ indicators, selectedId, onIndicatorClick }: IndicatorGridProps) {
   const [activeFilter, setActiveFilter] = useState<FilterCategory>('all');
   const [sortOption, setSortOption] = useState<SortOption>('default');
+  const coreIndicators = useMemo(() => {
+    return indicators.filter((indicator) => indicator.isCore !== false);
+  }, [indicators]);
 
   // 필터링 및 정렬된 지표 (useMemo로 최적화)
   const filteredIndicators = useMemo(() => {
     // 1. 필터링
     let result = activeFilter === 'all'
-      ? indicators
-      : indicators.filter(ind => ind.category === activeFilter);
+      ? coreIndicators
+      : coreIndicators.filter(ind => ind.category === activeFilter);
 
     // 2. 정렬
     if (sortOption === 'alphabetical') {
@@ -76,12 +80,12 @@ export default function IndicatorGrid({ indicators, selectedId, onIndicatorClick
     // 'default'는 원본 순서 유지
 
     return result;
-  }, [activeFilter, sortOption, indicators]);
+  }, [activeFilter, sortOption, coreIndicators]);
 
   // ✅ 성능 최적화: 카테고리별 지표 개수를 useMemo로 미리 계산 (매번 필터링 방지)
   const categoryCounts = useMemo(() => {
     const counts: Record<FilterCategory, number> = {
-      all: indicators.length,
+      all: coreIndicators.length,
       business: 0,
       employment: 0,
       interest: 0,
@@ -91,7 +95,7 @@ export default function IndicatorGrid({ indicators, selectedId, onIndicatorClick
       sentiment: 0,
     };
 
-    indicators.forEach(ind => {
+    coreIndicators.forEach(ind => {
       const cat = ind.category as FilterCategory;
       if (cat in counts && cat !== 'all') {
         counts[cat]++;
@@ -99,7 +103,7 @@ export default function IndicatorGrid({ indicators, selectedId, onIndicatorClick
     });
 
     return counts;
-  }, [indicators]);
+  }, [coreIndicators]);
 
   // 카테고리별 지표 개수 조회 함수 (useMemo로 계산된 값 반환)
   const getCategoryCount = useCallback((category: FilterCategory) => {
@@ -218,7 +222,7 @@ export default function IndicatorGrid({ indicators, selectedId, onIndicatorClick
         {/* 통계 */}
         <div className="mt-6 flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
           <span>
-            총 {indicators.length}개 지표 중 {filteredIndicators.length}개 표시
+            총 {coreIndicators.length}개 핵심 지표 중 {filteredIndicators.length}개 표시
           </span>
           {activeFilter !== 'all' && (
             <button
