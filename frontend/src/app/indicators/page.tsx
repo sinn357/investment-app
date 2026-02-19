@@ -8,6 +8,7 @@ import IndicatorGrid from '@/components/IndicatorGrid';
 import IndicatorTableView from '@/components/IndicatorTableView';
 import IndicatorChartPanel from '@/components/IndicatorChartPanel';
 import RemovedIndicatorsSection from '@/components/RemovedIndicatorsSection';
+import IndicatorReleaseCalendar from '@/components/IndicatorReleaseCalendar';
 import IndicatorGridSkeleton from '@/components/skeletons/IndicatorGridSkeleton';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { fetchJsonWithRetry } from '@/utils/fetchWithRetry';
@@ -43,6 +44,11 @@ interface GridIndicator {
       actual: number | string | null;
       forecast?: number | string | null;
       previous: number | string;
+      release_date?: string;
+    };
+    next_release?: {
+      release_date?: string;
+      time?: string;
     };
     history_table?: Array<{
       release_date: string;
@@ -167,6 +173,7 @@ export default function IndicatorsPage() {
   const [collapsedSections, setCollapsedSections] = useState({
     flowDashboard: false,
     indicators: false,
+    releaseCalendar: true,
   });
 
   // 섹션 접기/펼치기 토글 함수
@@ -179,6 +186,7 @@ export default function IndicatorsPage() {
     setCollapsedSections({
       flowDashboard: collapsed,
       indicators: collapsed,
+      releaseCalendar: collapsed,
     });
   }, []);
 
@@ -410,6 +418,11 @@ export default function IndicatorsPage() {
     [allIndicators]
   );
 
+  const coreIndicators = useMemo(
+    () => allIndicators.filter((indicator) => indicator.isCore !== false),
+    [allIndicators]
+  );
+
   const coreHealthSummary = useMemo(() => {
     const base = {
       healthy: 0,
@@ -424,11 +437,7 @@ export default function IndicatorsPage() {
       return base;
     }
 
-    const coreIds = new Set(
-      allIndicators
-        .filter((indicator) => indicator.isCore !== false)
-        .map((indicator) => indicator.id)
-    );
+    const coreIds = new Set(coreIndicators.map((indicator) => indicator.id));
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     for (const item of healthCheck.indicators as any[]) {
@@ -440,7 +449,7 @@ export default function IndicatorsPage() {
     }
 
     return base;
-  }, [healthCheck, allIndicators]);
+  }, [healthCheck, coreIndicators]);
 
   // ✅ Phase 2: 카운트다운 감소 로직
   useEffect(() => {
@@ -787,6 +796,31 @@ export default function IndicatorsPage() {
                 )}
 
                 <RemovedIndicatorsSection indicators={removedIndicators} />
+
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
+                  <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/60">
+                    <button
+                      type="button"
+                      onClick={() => toggleSection('releaseCalendar')}
+                      className="w-full px-4 py-3 text-left flex items-center justify-between"
+                    >
+                      <div>
+                        <h4 className="text-base font-semibold text-gray-900 dark:text-gray-100">🗓️ 중요 지표 발표 일정</h4>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">
+                          확정 발표일 + 히스토리 기반 예상 발표일
+                        </p>
+                      </div>
+                      <span className="text-sm text-gray-600 dark:text-gray-400">
+                        {collapsedSections.releaseCalendar ? '펼치기 ▼' : '접기 ▲'}
+                      </span>
+                    </button>
+                    {!collapsedSections.releaseCalendar && (
+                      <div className="px-4 pb-4">
+                        <IndicatorReleaseCalendar indicators={coreIndicators} />
+                      </div>
+                    )}
+                  </div>
+                </div>
               </>
             ) : null}
 
