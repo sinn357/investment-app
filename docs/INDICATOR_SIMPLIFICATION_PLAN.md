@@ -1,8 +1,8 @@
 # 경제지표 개편 계획 (확정본)
 
 > **작성일**: 2026-02-19
-> **최종 수정**: 2026-02-20
-> **상태**: 🟢 확정 - X 작업 가능
+> **최종 수정**: 2026-02-19
+> **상태**: ✅ Phase 1~5 및 후속 보완 완료
 > **목표**: 지표 축소 + 흐름 섹션 도입 + 사이클 시스템 대체
 
 ---
@@ -470,9 +470,16 @@ GET /api/v2/briefing
 - [x] 빌드 테스트
 - [x] 문서 업데이트
 
+### Post-Phase 보완 ✅ 완료
+- [x] 지표 업데이트 기본 모드를 `remaining_only`로 전환 (남은 지표만 갱신)
+- [x] AI 브리핑 API 404/HTML 응답 fallback 처리 (레거시 AI 해석 API 연동)
+- [x] 경제지표 한눈에보기 레이아웃 정리 (중복 제목 제거, 상태요약 내장)
+- [x] 상태요약 집계를 core 카드 지표 기준으로 변경
+- [x] 중요 지표 발표 캘린더(접힘 기본) 추가
+
 ---
 
-## 10. 파일 변경 목록 (예상)
+## 10. 파일 변경 목록 (실제)
 
 ### 백엔드
 ```
@@ -481,8 +488,7 @@ backend/
 │   └─ indicators_config.py    # is_core 필드 추가
 ├─ services/
 │   └─ briefing_service.py     # 신규: AI 브리핑 생성
-├─ routes/
-│   └─ api_v2.py               # 브리핑 엔드포인트 추가
+└─ app.py                      # 브리핑 엔드포인트/remaining update 모드 추가
 ```
 
 ### 프론트엔드
@@ -494,17 +500,29 @@ frontend/src/
 │   ├─ FlowDetailPanel.tsx         # 신규: 상세 해석 패널
 │   ├─ RemovedIndicatorsSection.tsx # 신규: 삭제 지표 링크
 │   ├─ AIBriefing.tsx              # 신규: AI 브리핑 표시
-│   └─ CyclePanel.tsx              # 삭제 예정
+│   ├─ IndicatorReleaseCalendar.tsx # 신규: 중요 지표 발표 캘린더
+│   └─ CyclePanel.tsx              # 삭제 완료
 ├─ utils/
 │   ├─ flowCalculator.ts           # 신규: 방향성 계산
-│   └─ cycleCalculator.ts          # 정리 (일부 함수 이동 후 삭제)
-├─ app/(dashboard)/indicators/
-│   └─ page.tsx                    # FlowDashboard 통합
+│   └─ cycleCalculator.ts          # 삭제 완료
+└─ app/indicators/page.tsx         # FlowDashboard/브리핑/캘린더 통합
 ```
 
 ---
 
-## 11. 참고 문서
+## 11. 완료 커밋 요약
+
+- `d5a2b8d`: Phase 1 core indicator filtering + removed links section
+- `5799965`: `is_core` 누락 시 프론트 fallback 매핑
+- `7c62a67`: Phase 2 FlowDashboard + 카테고리 전용 뷰
+- `4b4589f`: Phase 3 사이클 로직 흡수 + cycle 파일 제거
+- `3d3f834`: Phase 4 briefing service + UI 연동
+- `b5c0466`: remaining-only 업데이트 + 브리핑 404 fallback
+- `1c20e3e`: Phase 5 정리/테스트/문서 동기화
+- `3706b14`: 경제지표 한눈에보기 섹션 UI 구조 정리 + core 상태요약
+- `572415d`: 중요 지표 발표 캘린더(접힘 기본) 추가
+
+## 12. 참고 문서
 
 - `docs/지표흐름.md` - 카테고리별 해석 가이드 (임시 참고용)
 - `docs/CYCLE_SYSTEM_ARCHITECTURE.md` - 기존 사이클 시스템 (로직 흡수 참고)
@@ -512,6 +530,6 @@ frontend/src/
 
 ---
 
-**Last Updated**: 2026-02-20
-**Status**: 🟢 확정 - X 작업 가능
-**Next Action**: Phase 1부터 순차 진행
+**Last Updated**: 2026-02-19
+**Status**: ✅ 전 Phase + 후속 보완 완료
+**Next Action**: 운영/품질 개선 이슈 단위 유지보수
