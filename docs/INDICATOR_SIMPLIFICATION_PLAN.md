@@ -331,5 +331,49 @@ IndicatorChartPanel (수치/차트/해석 탭)
 
 ---
 
+## 11. 지표 총정리 (카테고리별 확정안)
+
+### 11.1 경기 (Growth)
+- **필수 4**: ISM 제조업 PMI, ISM 서비스업 PMI, 소매판매 MoM, 미시간 소비자심리
+- **선택 1**: GDP QoQ (분기 확인용)
+- **제외 후보**: 산업생산, CB 소비자신뢰, OECD CLI, LEI
+
+### 11.2 고용 (Labor)
+- **필수 4**: Initial Jobless Claims(4주평균), NFP(3개월평균), 실업률(U3+Sahm Rule), 평균시간당임금(AHE)
+- **선택 1**: LFPR(가능하면 prime-age 25-54)
+- **장기 분리**: 인구증가율 (단기 대시보드에서 분리)
+
+### 11.3 금리 (Rates)
+- **필수 5**: FFR, 2Y Treasury, 10Y Treasury, 10Y-2Y Spread, 10Y Real Yield(TIPS/DFII10)
+- **운영 포인트**: FFR은 FOMC 이벤트 중심, 나머지는 일간/실시간 추세 중심
+
+### 11.4 물가 (Inflation)
+- **필수 5**: Core CPI MoM, Core PCE YoY, 5Y Breakeven(T5YIE), Brent, BCOM/CRB
+- **선택 2**: Core PPI MoM, 미시간 5Y 기대인플레
+- **비고**: Headline CPI는 착시 가능성이 있어 보조 해석용
+
+### 11.5 무역/달러/공급망 (Trade)
+- **필수 6**: DXY, USD/KRW, 미국 상품무역수지, Inventory-to-Sales Ratio, GSCPI, FBX(또는 BDI 1개 선택)
+- **선택**: 경상수지(분기), REER(월간), XPI/TOT(월간 구조 해석용)
+- **비고**: XPI/TOT는 단기 트레이딩보다 중기 경쟁력/구매력 분석에 중요
+
+### 11.6 신용 (Credit)
+- **필수 4**: HY OAS, IG OAS, BBB-10Y Spread, 커브 지표(10Y-2Y 등 핵심 1개)
+- **선택 2**: SLOOS, 연체율/충당금(분기)
+- **제외 후보**: 등급별 스프레드 과다 중복(AA~CCC 전부 상시 노출)
+
+### 11.7 심리 (Sentiment)
+- **필수 4**: VIX, VIX Term Structure(VIX3M-VIX), Put/Call Ratio(5일 평균), AAII Bull-Bear Spread
+- **선택 2**: NAAIM Exposure, Fear & Greed
+- **제외 후보**: 유사 설문 다중 중복, 해석 기준 불명확한 감성 지표
+
+### 11.8 운영 원칙
+1. 카테고리별 `필수`는 기본 화면 고정 노출
+2. `선택`은 Advanced(접힘)로 배치
+3. 장기 구조 지표(인구, REER, 경상수지 등)는 별도 섹션 분리
+4. 단계적 전환은 Option B(유지+추가) 기준으로 진행
+
+---
+
 **Last Updated**: 2026-02-19
 **Status**: 🟡 핵심 방향 정리 완료, Option 확정 필요
