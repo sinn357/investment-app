@@ -48,6 +48,7 @@ export interface FlowCategorySummary {
   interpretation: string;
   rateImplication: string;
   indicators: FlowIndicatorPoint[];
+  specialSignals: string[];
 }
 
 const LEVEL_LABELS = ['강한수축', '수축', '중립', '확장', '강한확장'];
@@ -219,6 +220,87 @@ function buildRateImplication(category: FlowCategoryKey, levelScore: number, tre
     : '탐욕 심리 과열은 연준의 긴축 경계 신호가 될 수 있습니다.';
 }
 
+function getIndicatorValue(byId: Map<string, FlowIndicatorInput>, id: string): number | null {
+  return parseNumeric(byId.get(id)?.actual);
+}
+
+function getSortedHistoryValues(indicator: FlowIndicatorInput | undefined): number[] {
+  if (!indicator?.data?.history_table?.length) return [];
+  const sorted = [...indicator.data.history_table].sort(
+    (a, b) => new Date(b.release_date).getTime() - new Date(a.release_date).getTime()
+  );
+  return sorted
+    .map((item) => parseNumeric(item.actual))
+    .filter((value): value is number => value !== null);
+}
+
+function buildInterestSignals(byId: Map<string, FlowIndicatorInput>): string[] {
+  const signals: string[] = [];
+
+  const nominal = getIndicatorValue(byId, 'federal-funds-rate') ?? getIndicatorValue(byId, 'ten-year-treasury');
+  const inflation = getIndicatorValue(byId, 'core-cpi') ?? getIndicatorValue(byId, 'cpi');
+  if (nominal !== null && inflation !== null) {
+    const realRate = nominal - inflation;
+    const stance =
+      realRate < 0 ? '부양적 💚' :
+      realRate <= 1.5 ? '중립 ⚪' :
+      '억제적 🔴';
+    signals.push(`실질금리: ${realRate.toFixed(2)}% (${stance})`);
+  }
+
+  const curveIndicator = byId.get('yield-curve-10y-2y');
+  const curveHistory = getSortedHistoryValues(curveIndicator);
+  if (curveHistory.length > 0) {
+    let consecutive = 0;
+    for (const value of curveHistory) {
+      if (value < 0) consecutive += 1;
+      else break;
+    }
+    const status =
+      consecutive === 0 ? '정상 ✓' :
+      consecutive <= 2 ? '경계 ⚠️' :
+      consecutive <= 5 ? '위험 🔴' :
+      '침체 확률 높음 🚨';
+    signals.push(
+      consecutive > 0
+        ? `장단기 역전: 현재 역전 중 ⚠️ (${consecutive}개월째, ${status})`
+        : `장단기 역전: ${status}`
+    );
+  }
+
+  return signals;
+}
+
+function detectSpreadShock(
+  byId: Map<string, FlowIndicatorInput>,
+  indicatorId: 'hy-spread' | 'ig-spread'
+): string | null {
+  const indicator = byId.get(indicatorId);
+  const values = getSortedHistoryValues(indicator);
+  if (values.length < 2) return null;
+
+  const deltaBp = Math.abs((values[0] - values[1]) * 100);
+  const status =
+    deltaBp < 50 ? '안정' :
+    deltaBp < 100 ? '경계 ⚠️' :
+    '급변 🔴';
+
+  const label = indicatorId === 'hy-spread' ? 'HY 스프레드' : 'IG 스프레드';
+  return `${label} Δ1M: ${deltaBp.toFixed(1)}bp (${status})`;
+}
+
+function buildCreditSignals(byId: Map<string, FlowIndicatorInput>): string[] {
+  const signals: string[] = [];
+
+  const hy = detectSpreadShock(byId, 'hy-spread');
+  if (hy) signals.push(hy);
+
+  const ig = detectSpreadShock(byId, 'ig-spread');
+  if (ig) signals.push(ig);
+
+  return signals;
+}
+
 export function calculateFlowSummaries(indicators: FlowIndicatorInput[]): FlowCategorySummary[] {
   const byId = new Map(indicators.map((indicator) => [indicator.id, indicator]));
 
@@ -226,7 +308,6 @@ export function calculateFlowSummaries(indicators: FlowIndicatorInput[]): FlowCa
     const indicatorIds = CATEGORY_INDICATORS[key];
     const points: FlowIndicatorPoint[] = [];
     const levelScores: number[] = [];
-    const trendScores: number[] = [];
 
     indicatorIds.forEach((indicatorId) => {
       const indicator = byId.get(indicatorId);
@@ -241,9 +322,6 @@ export function calculateFlowSummaries(indicators: FlowIndicatorInput[]): FlowCa
 
       if (value !== null) {
         levelScores.push(levelByIndicator(indicator.id, value));
-      }
-      if (trendPercent !== null) {
-        trendScores.push(classifyTrend(trendPercent).score);
       }
 
       points.push({
@@ -273,6 +351,12 @@ export function calculateFlowSummaries(indicators: FlowIndicatorInput[]): FlowCa
 
     const meta = CATEGORY_META[key];
     const interpretation = `${meta.question} 현재 ${LEVEL_LABELS[levelScore - 1]} 상태이며 속도는 ${trend.label}입니다.`;
+    const specialSignals =
+      key === 'interest'
+        ? buildInterestSignals(byId)
+        : key === 'credit'
+        ? buildCreditSignals(byId)
+        : [];
 
     return {
       key,
@@ -287,6 +371,7 @@ export function calculateFlowSummaries(indicators: FlowIndicatorInput[]): FlowCa
       interpretation,
       rateImplication: buildRateImplication(key, levelScore, trend.score),
       indicators: points,
+      specialSignals,
     };
   });
 }

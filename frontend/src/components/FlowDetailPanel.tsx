@@ -34,6 +34,17 @@ export default function FlowDetailPanel({ summary }: FlowDetailPanelProps) {
         </ul>
       </div>
 
+      {summary.specialSignals.length > 0 && (
+        <div className="mt-4 rounded-lg border border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/20 p-3">
+          <p className="text-xs font-semibold text-blue-800 dark:text-blue-300">🧮 흡수 계산 로직</p>
+          <ul className="mt-1 space-y-1 text-sm text-blue-900 dark:text-blue-200">
+            {summary.specialSignals.map((signal, index) => (
+              <li key={`${summary.key}-signal-${index}`}>- {signal}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       <div className="mt-4 rounded-lg border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 p-3">
         <p className="text-xs font-semibold text-amber-800 dark:text-amber-300">💰 금리 시사점</p>
         <p className="text-sm text-amber-900 dark:text-amber-200 mt-1">{summary.rateImplication}</p>
