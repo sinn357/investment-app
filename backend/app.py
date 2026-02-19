@@ -18,6 +18,7 @@ from services.database_service import DatabaseService
 from services.crawler_service import CrawlerService
 from services.macro_cycle_service import MacroCycleService
 from services.credit_cycle_service import CreditCycleService
+from services.briefing_service import generate_briefing, get_latest_briefing
 from metadata.indicator_metadata import IndicatorMetadata
 import threading
 import time
@@ -2043,6 +2044,42 @@ def get_indicators_health_check():
             "message": f"Health check failed: {str(e)}"
         }), 500
 
+
+@app.route('/api/v2/generate-briefing', methods=['POST'])
+def generate_indicator_briefing():
+    """카테고리별 + 종합 브리핑 생성 (데이터 시그니처 기반 캐싱)"""
+    try:
+        body = request.get_json(silent=True) or {}
+        force = bool(body.get("force"))
+        result = generate_briefing(db_service, redis_client=redis_client, force=force)
+        return jsonify(result)
+    except Exception as e:
+        import traceback
+        print(f"Error in generate briefing endpoint: {traceback.format_exc()}")
+        return jsonify({
+            "status": "error",
+            "message": f"Briefing generation failed: {str(e)}"
+        }), 500
+
+
+@app.route('/api/v2/briefing', methods=['GET'])
+def get_indicator_briefing():
+    """최신 브리핑 조회 (없으면 1회 생성)"""
+    try:
+        cached = get_latest_briefing(redis_client=redis_client)
+        if cached:
+            return jsonify(cached)
+
+        result = generate_briefing(db_service, redis_client=redis_client, force=False)
+        return jsonify(result)
+    except Exception as e:
+        import traceback
+        print(f"Error in get briefing endpoint: {traceback.format_exc()}")
+        return jsonify({
+            "status": "error",
+            "message": f"Briefing fetch failed: {str(e)}"
+        }), 500
+
 @app.route('/api/v2/indicators/<indicator_id>')
 def get_indicator_from_db(indicator_id):
     """데이터베이스에서 특정 지표 데이터 조회"""
@@ -2249,6 +2286,13 @@ async def update_all_indicators_background_async():
                 print("✅ Redis cache invalidated")
             except Exception as e:
                 print(f"⚠️ Redis cache invalidation error: {e}")
+
+        # Phase 4: 업데이트 직후 최신 브리핑 생성/캐시
+        try:
+            generate_briefing(db_service, redis_client=redis_client, force=True)
+            print("✅ Briefing regenerated after update")
+        except Exception as e:
+            print(f"⚠️ Briefing regeneration error: {e}")
 
         update_status["is_updating"] = False
         save_update_status()

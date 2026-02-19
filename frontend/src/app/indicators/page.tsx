@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import Navigation from '@/components/Navigation';
 // import CyclePanel from '@/components/CyclePanel'; // ✅ 제거: Master Cycle로 대체
 import FlowDashboard from '@/components/FlowDashboard';
+import AIBriefing from '@/components/AIBriefing';
 import IndicatorGrid from '@/components/IndicatorGrid';
 import IndicatorTableView from '@/components/IndicatorTableView';
 import IndicatorChartPanel from '@/components/IndicatorChartPanel';
@@ -56,31 +57,6 @@ interface GridIndicator {
       previous: number | string;
     }>;
   };
-}
-
-interface AIInterpretationItem {
-  label: string;
-  sections: Array<{
-    title: string;
-    content: string;
-  }>;
-  signals: string[];
-  risk_level: 'positive' | 'neutral' | 'caution' | 'unknown';
-  freshness_score: number;
-  confidence: number;
-  one_line_summary: string;
-}
-
-interface AIInterpretationResponse {
-  status: 'success' | 'error';
-  generated_at?: string;
-  source?: 'openai' | 'fallback';
-  overall_summary?: string;
-  categories?: Record<string, AIInterpretationItem>;
-  excluded_manual_check_count?: number;
-  fallback_reason?: string | null;
-  openai_error?: string | null;
-  message?: string;
 }
 
 const CORE_INDICATOR_IDS = new Set([
@@ -192,9 +168,6 @@ export default function IndicatorsPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [healthCheck, setHealthCheck] = useState<any>(null);
   const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
-  const [aiInterpretation, setAiInterpretation] = useState<AIInterpretationResponse | null>(null);
-  const [aiLoading, setAiLoading] = useState(false);
-  const [aiError, setAiError] = useState<string | null>(null);
   // 섹션별 접기 상태
   const [collapsedSections, setCollapsedSections] = useState({
     masterCycle: false,
@@ -240,25 +213,6 @@ export default function IndicatorsPage() {
       }
     } catch (error) {
       console.error('헬스체크 데이터 로드 실패:', error);
-    }
-  }, []);
-
-  const fetchAiInterpretation = useCallback(async () => {
-    try {
-      setAiLoading(true);
-      setAiError(null);
-
-      const response = await fetchJsonWithRetry(`${API_URL}/api/v2/indicators/ai-interpretation`);
-      if (response.status !== 'success') {
-        throw new Error(response.message || 'AI 해석 생성 실패');
-      }
-
-      setAiInterpretation(response as AIInterpretationResponse);
-    } catch (error) {
-      console.error('AI interpretation fetch failed:', error);
-      setAiError(error instanceof Error ? error.message : 'AI 해석을 불러오지 못했습니다');
-    } finally {
-      setAiLoading(false);
     }
   }, []);
 
@@ -607,112 +561,9 @@ export default function IndicatorsPage() {
           </div>
         )}
 
-        {/* AI 종합 해석 */}
+        {/* Phase 4: AI 브리핑 */}
         {!loading && allIndicators.length > 0 && (
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-4">
-            <GlassCard className="p-4">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-                <div>
-                  <h3 className="text-lg font-semibold text-foreground">🧠 카테고리별 AI 종합 해석</h3>
-                  <p className="text-xs text-muted-foreground">
-                    저장된 모든 지표 수치 기반으로 경기·고용·금리·무역·물가·신용·심리를 해석합니다.
-                  </p>
-                </div>
-                <Button
-                  onClick={fetchAiInterpretation}
-                  disabled={aiLoading}
-                  size="sm"
-                  className="w-full sm:w-auto"
-                >
-                  {aiLoading ? '분석 중...' : 'AI 해석 생성'}
-                </Button>
-              </div>
-
-              {aiError && (
-                <div className="mb-3 rounded-md border border-red-300 bg-red-50 dark:bg-red-900/20 p-3 text-sm text-red-700 dark:text-red-300">
-                  {aiError}
-                </div>
-              )}
-
-              {aiLoading && (
-                <div className="text-sm text-muted-foreground">
-                  지표 해석을 생성하고 있습니다...
-                </div>
-              )}
-
-              {!aiLoading && aiInterpretation?.status === 'success' && aiInterpretation.categories && (
-                <div className="space-y-3">
-                  <div className="rounded-md border border-border bg-muted/30 p-3">
-                    <p className="text-sm text-foreground">{aiInterpretation.overall_summary}</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      출처: {aiInterpretation.source === 'openai' ? 'OpenAI (gpt-4o-mini)' : 'Fallback 규칙 기반'}
-                      {aiInterpretation.generated_at ? ` · 생성시각: ${new Date(aiInterpretation.generated_at).toLocaleString('ko-KR')}` : ''}
-                      {typeof aiInterpretation.excluded_manual_check_count === 'number'
-                        ? ` · Direct Check 제외: ${aiInterpretation.excluded_manual_check_count}개`
-                        : ''}
-                    </p>
-                    {aiInterpretation.source === 'fallback' && (
-                      <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
-                        fallback_reason: {aiInterpretation.fallback_reason || 'unknown'}
-                        {aiInterpretation.openai_error ? ` · openai_error: ${aiInterpretation.openai_error}` : ''}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
-                    {Object.entries(aiInterpretation.categories).map(([key, item]) => {
-                      const riskClass =
-                        item.risk_level === 'positive'
-                          ? 'text-green-700 bg-green-100 dark:text-green-300 dark:bg-green-900/30'
-                          : item.risk_level === 'caution'
-                          ? 'text-red-700 bg-red-100 dark:text-red-300 dark:bg-red-900/30'
-                          : item.risk_level === 'unknown'
-                          ? 'text-gray-700 bg-gray-100 dark:text-gray-300 dark:bg-gray-800'
-                          : 'text-amber-700 bg-amber-100 dark:text-amber-300 dark:bg-amber-900/30';
-
-                      return (
-                        <div key={key} className="rounded-md border border-border bg-card p-3">
-                          <div className="flex items-center justify-between mb-2 gap-2">
-                            <h4 className="text-sm font-semibold text-foreground">{item.label}</h4>
-                            <div className="flex items-center gap-1">
-                              <span className="px-2 py-0.5 rounded text-xs font-medium bg-muted text-muted-foreground">
-                                신선도 {item.freshness_score}
-                              </span>
-                              <span className="px-2 py-0.5 rounded text-xs font-medium bg-muted text-muted-foreground">
-                                신뢰도 {item.confidence}
-                              </span>
-                              <span className={`px-2 py-0.5 rounded text-xs font-medium ${riskClass}`}>
-                                {item.risk_level}
-                              </span>
-                            </div>
-                          </div>
-
-                          <p className="text-sm font-medium text-foreground mb-3">
-                            {item.one_line_summary}
-                          </p>
-
-                          <div className="space-y-2 mb-3">
-                            {item.sections.map((section, idx) => (
-                              <div key={`${key}-section-${idx}`} className="rounded-md border border-border/60 p-2">
-                                <p className="text-xs font-semibold text-foreground mb-1">{section.title}</p>
-                                <p className="text-sm text-foreground-secondary">{section.content}</p>
-                              </div>
-                            ))}
-                          </div>
-
-                          <ul className="text-xs text-muted-foreground space-y-1">
-                            {item.signals.map((signal, idx) => (
-                              <li key={`${key}-${idx}`}>- {signal}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </GlassCard>
-          </div>
+          <AIBriefing />
         )}
 
         {/* 경제지표 한눈에 보기 */}
