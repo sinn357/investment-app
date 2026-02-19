@@ -84,6 +84,40 @@ interface AIInterpretationResponse {
   message?: string;
 }
 
+const CORE_INDICATOR_IDS = new Set([
+  'ism-manufacturing',
+  'ism-non-manufacturing',
+  'retail-sales',
+  'michigan-consumer-sentiment',
+  'nonfarm-payrolls',
+  'unemployment-rate',
+  'average-hourly-earnings',
+  'initial-jobless-claims',
+  'federal-funds-rate',
+  'two-year-treasury',
+  'ten-year-treasury',
+  'yield-curve-10y-2y',
+  'real-yield-tips',
+  'core-cpi',
+  'pce',
+  'cpi',
+  'brent-oil',
+  'sp-gsci',
+  'usd-index',
+  'usd-krw',
+  'goods-trade-balance',
+  'business-inventories-trade',
+  'baltic-dry-index',
+  'trade-balance',
+  'hy-spread',
+  'ig-spread',
+  'fci',
+  'vix',
+  'put-call-ratio',
+  'aaii-bull',
+  'sp500-pe',
+]);
+
 // ✅ 성능 최적화: 순수 함수를 컴포넌트 외부로 이동 (매 렌더링마다 재생성 방지)
 // 지표명을 카테고리로 매핑하는 헬퍼 함수
 function mapIndicatorToCategory(name: string): string {
@@ -358,7 +392,9 @@ export default function IndicatorsPage() {
               sparklineData,
               reverseColor: item.reverse_color || false,
               manualCheck: item.manual_check || false,  // 직접 확인 필요 여부
-              isCore: item.is_core !== false,
+              isCore: typeof item.is_core === 'boolean'
+                ? item.is_core
+                : CORE_INDICATOR_IDS.has(item.indicator_id),
               url: item.url || undefined,  // 직접 확인 URL
               interpretation: item.interpretation,  // 해석 데이터 전달
               data: item.data,  // 히스토리 포함한 전체 데이터 전달
