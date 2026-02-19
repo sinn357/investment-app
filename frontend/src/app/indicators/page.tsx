@@ -166,7 +166,6 @@ export default function IndicatorsPage() {
   // 섹션별 접기 상태
   const [collapsedSections, setCollapsedSections] = useState({
     flowDashboard: false,
-    healthCheck: false,
     indicators: false,
   });
 
@@ -179,7 +178,6 @@ export default function IndicatorsPage() {
   const toggleAllSections = useCallback((collapsed: boolean) => {
     setCollapsedSections({
       flowDashboard: collapsed,
-      healthCheck: collapsed,
       indicators: collapsed,
     });
   }, []);
@@ -412,6 +410,38 @@ export default function IndicatorsPage() {
     [allIndicators]
   );
 
+  const coreHealthSummary = useMemo(() => {
+    const base = {
+      healthy: 0,
+      stale: 0,
+      outdated: 0,
+      manual_check: 0,
+      updated_recent: 0,
+      error: 0,
+    };
+
+    if (!healthCheck?.indicators || allIndicators.length === 0) {
+      return base;
+    }
+
+    const coreIds = new Set(
+      allIndicators
+        .filter((indicator) => indicator.isCore !== false)
+        .map((indicator) => indicator.id)
+    );
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    for (const item of healthCheck.indicators as any[]) {
+      if (!coreIds.has(item.indicator_id)) continue;
+      const status = item.status as keyof typeof base;
+      if (status in base) {
+        base[status] += 1;
+      }
+    }
+
+    return base;
+  }, [healthCheck, allIndicators]);
+
   // ✅ Phase 2: 카운트다운 감소 로직
   useEffect(() => {
     if (countdownSeconds !== null && countdownSeconds > 0) {
@@ -475,85 +505,6 @@ export default function IndicatorsPage() {
           </div>
         )}
 
-        {/* ✅ NEW: Health Check Summary (Phase 2) */}
-        {!loading && healthCheck && healthCheck.summary && (
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-4">
-            <div
-              onClick={() => toggleSection('healthCheck')}
-              className="flex items-center justify-between p-3 bg-card rounded-t-lg border border-b-0 border-primary/20 cursor-pointer hover:bg-muted/50"
-            >
-              <h3 className="text-lg font-semibold text-foreground">📊 지표 상태 요약</h3>
-              <span className="text-sm text-muted-foreground">{collapsedSections.healthCheck ? '펼치기 ▼' : '접기 ▲'}</span>
-            </div>
-            {!collapsedSections.healthCheck && (
-            <GlassCard className="p-4 rounded-t-none" animate animationDelay={50}>
-              <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl">✅</span>
-                  <div>
-                    <span className="text-sm text-muted-foreground">Healthy</span>
-                    <p className="text-xl font-bold text-green-600 dark:text-green-400">
-                      {healthCheck.summary.healthy}개
-                    </p>
-                    <span className="text-xs text-muted-foreground">(7일 이내)</span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl">⚠️</span>
-                  <div>
-                    <span className="text-sm text-muted-foreground">Stale</span>
-                    <p className="text-xl font-bold text-yellow-600 dark:text-yellow-400">
-                      {healthCheck.summary.stale}개
-                    </p>
-                    <span className="text-xs text-muted-foreground">(7-30일)</span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl">🔗</span>
-                  <div>
-                    <span className="text-sm text-muted-foreground">Direct Check</span>
-                    <p className="text-xl font-bold text-blue-600 dark:text-blue-400">
-                      {healthCheck.summary.manual_check ?? 0}개
-                    </p>
-                    <span className="text-xs text-muted-foreground">(직접 확인)</span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl">🚨</span>
-                  <div>
-                    <span className="text-sm text-muted-foreground">Outdated</span>
-                    <p className="text-xl font-bold text-orange-600 dark:text-orange-400">
-                      {healthCheck.summary.outdated}개
-                    </p>
-                    <span className="text-xs text-muted-foreground">(30일+)</span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl">🆕</span>
-                  <div>
-                    <span className="text-sm text-muted-foreground">Updated 24h</span>
-                    <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400">
-                      {healthCheck.summary.updated_recent ?? 0}개
-                    </p>
-                    <span className="text-xs text-muted-foreground">(최근 업데이트)</span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl">❌</span>
-                  <div>
-                    <span className="text-sm text-muted-foreground">Error</span>
-                    <p className="text-xl font-bold text-red-600 dark:text-red-400">
-                      {healthCheck.summary.error}개
-                    </p>
-                    <span className="text-xs text-muted-foreground">(크롤링 실패)</span>
-                  </div>
-                </div>
-              </div>
-            </GlassCard>
-            )}
-          </div>
-        )}
-
         {/* Phase 4: AI 브리핑 */}
         {!loading && allIndicators.length > 0 && (
           <AIBriefing />
@@ -577,6 +528,76 @@ export default function IndicatorsPage() {
 
         {!collapsedSections.indicators && (
           <>
+            {/* 카드 표시(core) 지표 기준 상태 요약 */}
+            {!loading && healthCheck && (
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-4">
+                <GlassCard className="p-4">
+                  <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl">✅</span>
+                      <div>
+                        <span className="text-sm text-muted-foreground">Healthy</span>
+                        <p className="text-xl font-bold text-green-600 dark:text-green-400">
+                          {coreHealthSummary.healthy}개
+                        </p>
+                        <span className="text-xs text-muted-foreground">(7일 이내)</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl">⚠️</span>
+                      <div>
+                        <span className="text-sm text-muted-foreground">Stale</span>
+                        <p className="text-xl font-bold text-yellow-600 dark:text-yellow-400">
+                          {coreHealthSummary.stale}개
+                        </p>
+                        <span className="text-xs text-muted-foreground">(7-30일)</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl">🔗</span>
+                      <div>
+                        <span className="text-sm text-muted-foreground">Direct Check</span>
+                        <p className="text-xl font-bold text-blue-600 dark:text-blue-400">
+                          {coreHealthSummary.manual_check}개
+                        </p>
+                        <span className="text-xs text-muted-foreground">(직접 확인)</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl">🚨</span>
+                      <div>
+                        <span className="text-sm text-muted-foreground">Outdated</span>
+                        <p className="text-xl font-bold text-orange-600 dark:text-orange-400">
+                          {coreHealthSummary.outdated}개
+                        </p>
+                        <span className="text-xs text-muted-foreground">(30일+)</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl">🆕</span>
+                      <div>
+                        <span className="text-sm text-muted-foreground">Updated 24h</span>
+                        <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400">
+                          {coreHealthSummary.updated_recent}개
+                        </p>
+                        <span className="text-xs text-muted-foreground">(최근 업데이트)</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl">❌</span>
+                      <div>
+                        <span className="text-sm text-muted-foreground">Error</span>
+                        <p className="text-xl font-bold text-red-600 dark:text-red-400">
+                          {coreHealthSummary.error}개
+                        </p>
+                        <span className="text-xs text-muted-foreground">(크롤링 실패)</span>
+                      </div>
+                    </div>
+                  </div>
+                </GlassCard>
+              </div>
+            )}
+
             {/* 경제지표 그리드 (Phase 8 - 한눈에 보기) */}
             {loading ? (
               <IndicatorGridSkeleton />
@@ -584,7 +605,7 @@ export default function IndicatorsPage() {
               <>
                 {/* 업데이트 정보 및 뷰 토글 - 모바일 반응형 */}
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-4">
-                  <div className="flex flex-col gap-3 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
+                  <GlassCard className="flex flex-col gap-3 p-4">
                     {/* 첫 번째 줄: 업데이트 버튼 + 뷰 토글 (모바일에서 가장 중요) */}
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       {/* 업데이트 버튼 - 모바일에서 먼저 표시 */}
@@ -737,7 +758,7 @@ export default function IndicatorsPage() {
                         </span>
                       )}
                     </div>
-                  </div>
+                  </GlassCard>
                 </div>
 
                 {/* 조건부 렌더링: 카드 뷰 vs 테이블 뷰 */}

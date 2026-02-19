@@ -9,7 +9,6 @@
 
 import { useState, useMemo, useCallback } from 'react';
 import EnhancedIndicatorCard from './EnhancedIndicatorCard';
-import { CARD_CLASSES } from '@/styles/theme';
 
 interface Indicator {
   id: string;
@@ -107,18 +106,8 @@ export default function IndicatorGrid({ indicators, selectedId, onIndicatorClick
   }, [categoryCounts]);
 
   return (
-    <section className="py-8 bg-gradient-to-b from-transparent to-gray-50 dark:to-gray-900/30">
+    <section className="pt-2 pb-6 bg-gradient-to-b from-transparent to-gray-50 dark:to-gray-900/30">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* 헤더 */}
-        <div className="mb-8">
-          <h2 className={`${CARD_CLASSES.title} text-3xl mb-2`}>
-            경제지표 한눈에 보기
-          </h2>
-          <p className={CARD_CLASSES.subtitle}>
-            카테고리별 핵심 지표를 확인하세요 • 클릭하면 상세 정보 표시
-          </p>
-        </div>
-
         {/* 카테고리 필터 및 정렬 */}
         <div className="mb-6">
           {/* 카테고리 필터 */}
