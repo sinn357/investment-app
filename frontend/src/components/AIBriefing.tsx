@@ -24,6 +24,44 @@ interface BriefingResponse {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://investment-app-backend-x166.onrender.com';
 
+async function safeJson(response: Response) {
+  const contentType = response.headers.get('content-type') || '';
+  if (!contentType.includes('application/json')) {
+    const text = await response.text();
+    throw new Error(`JSON 응답이 아닙니다 (status ${response.status}): ${text.slice(0, 80)}`);
+  }
+  return response.json();
+}
+
+function mapLegacyInterpretationToBriefing(legacy: any): BriefingResponse {
+  const categoryBriefings: Record<string, CategoryBriefing> = {};
+  const categories = legacy?.categories || {};
+
+  Object.entries(categories).forEach(([key, raw]) => {
+    const item = raw as any;
+    const rateSection = Array.isArray(item.sections)
+      ? item.sections.find((section: any) => String(section?.title || '').includes('금리'))
+      : null;
+
+    categoryBriefings[key] = {
+      label: item.label || key,
+      summary: item.one_line_summary || item.sections?.[0]?.content || '해석 데이터 부족',
+      rate_implication: rateSection?.content || '금리 시사점 데이터가 충분하지 않습니다.',
+      risk_level: item.risk_level || 'unknown',
+      signals: Array.isArray(item.signals) ? item.signals : [],
+    };
+  });
+
+  return {
+    status: 'success',
+    generated_at: legacy?.generated_at,
+    source: legacy?.source || 'fallback',
+    overall_summary: legacy?.overall_summary || '브리핑 데이터가 제한적입니다.',
+    category_briefings: categoryBriefings,
+    cached: false,
+  };
+}
+
 export default function AIBriefing() {
   const [briefing, setBriefing] = useState<BriefingResponse | null>(null);
   const [loading, setLoading] = useState(false);
@@ -34,9 +72,21 @@ export default function AIBriefing() {
       setLoading(true);
       setError(null);
       const response = await fetch(`${API_URL}/api/v2/briefing`);
-      const result = await response.json();
+
+      if (response.status === 404) {
+        // 신규 브리핑 API 미배포 환경 fallback
+        const legacyResp = await fetch(`${API_URL}/api/v2/indicators/ai-interpretation`);
+        const legacy = await safeJson(legacyResp);
+        if (!legacyResp.ok || legacy.status !== 'success') {
+          throw new Error(legacy.message || '브리핑 조회 실패');
+        }
+        setBriefing(mapLegacyInterpretationToBriefing(legacy));
+        return;
+      }
+
+      const result = await safeJson(response);
       if (!response.ok || result.status !== 'success') {
-        throw new Error(result.message || '브리핑 조회 실패');
+        throw new Error(result.message || `브리핑 조회 실패 (status ${response.status})`);
       }
       setBriefing(result as BriefingResponse);
     } catch (err) {
@@ -55,9 +105,21 @@ export default function AIBriefing() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ force: true }),
       });
-      const result = await response.json();
+
+      if (response.status === 404) {
+        // 신규 생성 API 미배포 환경 fallback
+        const legacyResp = await fetch(`${API_URL}/api/v2/indicators/ai-interpretation`);
+        const legacy = await safeJson(legacyResp);
+        if (!legacyResp.ok || legacy.status !== 'success') {
+          throw new Error(legacy.message || '브리핑 생성 실패');
+        }
+        setBriefing(mapLegacyInterpretationToBriefing(legacy));
+        return;
+      }
+
+      const result = await safeJson(response);
       if (!response.ok || result.status !== 'success') {
-        throw new Error(result.message || '브리핑 생성 실패');
+        throw new Error(result.message || `브리핑 생성 실패 (status ${response.status})`);
       }
       setBriefing(result as BriefingResponse);
     } catch (err) {

@@ -2185,8 +2185,58 @@ def get_history_from_db(indicator_id):
             "message": f"Database query failed: {str(e)}"
         }), 500
 
-async def update_all_indicators_background_async():
-    """백그라운드에서 모든 지표 업데이트 실행 (비동기 병렬 크롤링)"""
+def _should_refresh_indicator(indicator_id, stale_days=7):
+    """남은 지표만 업데이트할지 판단."""
+    try:
+        data = db_service.get_indicator_data(indicator_id)
+        crawl_info = db_service.get_crawl_info(indicator_id)
+
+        if not isinstance(data, dict) or "error" in data:
+            return True
+
+        latest = data.get("latest_release", {})
+        release_date = latest.get("release_date")
+        actual = latest.get("actual")
+
+        if actual in [None, "", "-"]:
+            return True
+        if not release_date or release_date == "미정":
+            return True
+
+        try:
+            release_dt = datetime.strptime(str(release_date), "%Y-%m-%d")
+            days_old = max((datetime.now() - release_dt).days, 0)
+            if days_old >= stale_days:
+                return True
+        except Exception:
+            return True
+
+        if crawl_info and crawl_info.get("status") == "error":
+            return True
+
+        return False
+    except Exception:
+        return True
+
+
+def _select_indicators_for_update(remaining_only=True):
+    from crawlers.indicators_config import get_all_enabled_indicators
+
+    enabled = [
+        indicator_id
+        for indicator_id, config in get_all_enabled_indicators().items()
+        if not config.manual_check
+    ]
+
+    if not remaining_only:
+        return enabled
+
+    stale_days = int(os.getenv("UPDATE_REMAINING_STALE_DAYS", "7"))
+    return [indicator_id for indicator_id in enabled if _should_refresh_indicator(indicator_id, stale_days=stale_days)]
+
+
+async def update_all_indicators_background_async(remaining_only=True):
+    """백그라운드 지표 업데이트 (기본: 남은 지표만)."""
     global update_status, INDICATORS_CACHE
     import asyncio
 
@@ -2200,16 +2250,16 @@ async def update_all_indicators_background_async():
         update_status["total_indicators"] = 0
         save_update_status()
 
-        # indicators_config.py에서 활성화된 모든 지표 사용 (manual_check 제외)
-        from crawlers.indicators_config import get_all_enabled_indicators
-        indicators = [
-            indicator_id
-            for indicator_id, config in get_all_enabled_indicators().items()
-            if not config.manual_check
-        ]
+        indicators = _select_indicators_for_update(remaining_only=remaining_only)
         total_indicators = len(indicators)
         update_status["total_indicators"] = total_indicators  # 전체 개수 저장
         save_update_status()
+
+        if total_indicators == 0:
+            update_status["progress"] = 100
+            update_status["current_indicator"] = ""
+            save_update_status()
+            return
 
         # 비동기 크롤링 설정
         # 동시 요청 제한 + 지터로 429 완화
@@ -2297,7 +2347,7 @@ async def update_all_indicators_background_async():
         update_status["is_updating"] = False
         save_update_status()
 
-def update_all_indicators_background():
+def update_all_indicators_background(remaining_only=True):
     """비동기 함수를 동기 컨텍스트에서 실행하는 래퍼"""
     import asyncio
 
@@ -2305,7 +2355,7 @@ def update_all_indicators_background():
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     try:
-        loop.run_until_complete(update_all_indicators_background_async())
+        loop.run_until_complete(update_all_indicators_background_async(remaining_only=remaining_only))
     finally:
         loop.close()
 
@@ -2313,6 +2363,12 @@ def update_all_indicators_background():
 def trigger_update_indicators():
     """모든 지표 업데이트 트리거 (백그라운드 실행)"""
     global update_status
+    body = request.get_json(silent=True) or {}
+    remaining_only = body.get("remaining_only", True)
+    if isinstance(remaining_only, str):
+        remaining_only = remaining_only.lower() not in ("0", "false", "no")
+    else:
+        remaining_only = bool(remaining_only)
 
     current_status = load_update_status()
     if current_status:
@@ -2336,7 +2392,10 @@ def trigger_update_indicators():
             }), 409
 
     # 백그라운드 스레드로 업데이트 실행
-    thread = threading.Thread(target=update_all_indicators_background)
+    thread = threading.Thread(
+        target=update_all_indicators_background,
+        kwargs={"remaining_only": remaining_only},
+    )
     thread.daemon = True
     thread.start()
 
@@ -2350,6 +2409,7 @@ def trigger_update_indicators():
     return jsonify({
         "status": "success",
         "message": "Update started in background",
+        "mode": "remaining_only" if remaining_only else "full",
         "check_status_url": "/api/v2/update-status"
     })
 
